@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 // Пускаем на сайт только по паролю — но лишь если APP_PASSWORD задан.
 // Пока пароль не настроен, сайт открыт (для первичного просмотра).
 export function middleware(req: NextRequest) {
-  const pass = process.env.APP_PASSWORD;
+  const pass = (process.env.APP_PASSWORD || "").trim();
   if (!pass) return NextResponse.next();
 
-  const cookie = req.cookies.get("lifeos_auth")?.value;
+  const cookie = (req.cookies.get("lifeos_auth")?.value || "").trim();
   if (cookie === pass) return NextResponse.next();
 
   const url = req.nextUrl.clone();

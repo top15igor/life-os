@@ -4,11 +4,12 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const form = await req.formData();
-  const password = String(form.get("password") || "");
+  const password = String(form.get("password") || "").trim();
   const from = String(form.get("from") || "/");
   const target = from.startsWith("/") && !from.startsWith("/login") ? from : "/";
+  const expected = (process.env.APP_PASSWORD || "").trim();
 
-  if (!process.env.APP_PASSWORD || password !== process.env.APP_PASSWORD) {
+  if (!expected || password !== expected) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.search = "?e=1";
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.redirect(new URL(target, req.url), 303);
-  res.cookies.set("lifeos_auth", process.env.APP_PASSWORD, {
+  res.cookies.set("lifeos_auth", expected, {
     httpOnly: true,
     secure: true,
     sameSite: "lax",
