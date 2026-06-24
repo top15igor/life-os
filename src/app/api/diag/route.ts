@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
       anthropic: !!process.env.ANTHROPIC_API_KEY,
       openai: !!process.env.OPENAI_API_KEY,
     },
+    // JSON.stringify покажет кавычки, пробелы и переводы строк, если они есть.
+    supabaseUrlRaw: JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_URL),
   };
 
   // 1) Supabase: чтение
