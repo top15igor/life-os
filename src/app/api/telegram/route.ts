@@ -5,7 +5,6 @@ import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   // Защита вебхука: Telegram присылает наш секрет в заголовке.
