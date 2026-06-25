@@ -36,10 +36,10 @@ export default function Sidebar({
   const path = usePathname();
   return (
     <aside className="sidebar">
-      <div className="brand">
+      <Link href="/" className="brand" style={{ textDecoration: "none" }}>
         <i className="ti ti-flower" style={{ fontSize: 18, color: "var(--accent)" }} />
         <span>{brand}</span>
-      </div>
+      </Link>
       {NAV.map((n) => {
         const active = n.href === path;
         const label = navLabels[n.key] || n.key;
