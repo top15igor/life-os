@@ -2,6 +2,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "today", href: "/", icon: "ti-home" },
   { key: "guide", href: "/guide", icon: "ti-help" },
   { key: "diary", href: "/diary", icon: "ti-book" },
+  { key: "tasks", href: "/tasks", icon: "ti-checkbox" },
   { key: "health", href: "/health", icon: "ti-heartbeat" },
   { key: "energy", href: "/energy", icon: "ti-bolt" },
   { key: "sport", href: "/sport", icon: "ti-run" },

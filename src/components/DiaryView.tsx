@@ -18,12 +18,12 @@ const STR: Record<string, any> = {
 
 const selStyle: any = { fontSize: 12.5, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", color: "var(--text)", background: "var(--surface)", cursor: "pointer", maxWidth: 200 };
 
-export default function DiaryView({ entries, t, locale }: any) {
+export default function DiaryView({ entries, t, locale, initial }: any) {
   const s = STR[locale] || STR.ru;
   const [period, setPeriod] = useState("");
-  const [category, setCategory] = useState("");
-  const [tag, setTag] = useState("");
-  const [person, setPerson] = useState("");
+  const [category, setCategory] = useState(initial?.category || "");
+  const [tag, setTag] = useState(initial?.tag || "");
+  const [person, setPerson] = useState(initial?.person || "");
   const [mood, setMood] = useState("");
 
   const catOpts: { slug: string; name: string }[] = [];

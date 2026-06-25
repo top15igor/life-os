@@ -9,7 +9,8 @@ import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default async function DiaryPage() {
+export default async function DiaryPage({ searchParams }: { searchParams: Promise<{ tag?: string; category?: string; person?: string }> }) {
+  const sp = await searchParams;
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
@@ -35,7 +36,7 @@ export default async function DiaryPage() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <PageHead icon="ti-book" color="var(--accent)" title={t.diaryTitle} hint={h.diary} />
-        <DiaryView entries={entries} t={t} locale={locale} />
+        <DiaryView entries={entries} t={t} locale={locale} initial={{ tag: sp.tag || "", category: sp.category || "", person: sp.person || "" }} />
       </main>
     </div>
   );

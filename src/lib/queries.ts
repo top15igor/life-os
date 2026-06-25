@@ -124,6 +124,15 @@ export async function getBiographerHistory(userId: string, limit = 30) {
   return data || [];
 }
 
+export async function getAllTasks(userId: string) {
+  const { data } = await supabaseAdmin()
+    .from("tasks")
+    .select("id, text, done, entry_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
 export async function getOpenTasks(userId: string, limit = 5) {
   const { data } = await supabaseAdmin()
     .from("tasks")

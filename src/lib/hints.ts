@@ -4,6 +4,7 @@ const H: Record<Locale, Record<string, string>> = {
   ru: {
     today: "Главный экран: твои показатели и записи за сегодня. Можно добавить запись прямо здесь или голосом в Telegram.",
     diary: "Все записи по датам. Нажми на запись — увидишь полный AI-разбор.",
+    tasks: "Все твои задачи из записей в одном месте. Отмечай выполненные галочкой.",
     health: "Сон, вес, самочувствие и тренды. Наполняется, когда упоминаешь здоровье в записях.",
     analytics: "Тренды настроения и энергии, главные темы и закономерности твоей жизни.",
     insights: "Все важные мысли и осознания, которые AI выделил из твоих записей.",
@@ -22,6 +23,7 @@ const H: Record<Locale, Record<string, string>> = {
   en: {
     today: "Your day at a glance: today's metrics and entries. Add an entry here or by voice in Telegram.",
     diary: "All your entries by date. Tap an entry to see the full AI breakdown.",
+    tasks: "All your tasks from entries in one place. Tick them off when done.",
     health: "Sleep, weight, wellbeing and trends. Fills in as you mention health in entries.",
     analytics: "Mood and energy trends, top themes and patterns of your life.",
     insights: "All the key thoughts and realizations AI extracted from your entries.",
@@ -40,6 +42,7 @@ const H: Record<Locale, Record<string, string>> = {
   uk: {
     today: "Головний екран: твої показники та записи за сьогодні. Можна додати запис тут або голосом у Telegram.",
     diary: "Усі записи за датами. Натисни на запис — побачиш повний AI-розбір.",
+    tasks: "Усі твої завдання із записів в одному місці. Познач виконані галочкою.",
     health: "Сон, вага, самопочуття та тренди. Наповнюється, коли згадуєш здоров'я в записах.",
     analytics: "Тренди настрою й енергії, головні теми та закономірності твого життя.",
     insights: "Усі важливі думки та усвідомлення, які AI виділив із твоїх записів.",
@@ -58,6 +61,7 @@ const H: Record<Locale, Record<string, string>> = {
   fr: {
     today: "Ta journée en un coup d'œil : indicateurs et entrées du jour. Ajoute une entrée ici ou par la voix dans Telegram.",
     diary: "Toutes tes entrées par date. Touche une entrée pour voir l'analyse IA complète.",
+    tasks: "Toutes tes tâches en un seul endroit. Coche-les quand c'est fait.",
     health: "Sommeil, poids, bien-être et tendances. Se remplit quand tu mentionnes la santé.",
     analytics: "Tendances d'humeur et d'énergie, thèmes principaux et schémas de ta vie.",
     insights: "Toutes les pensées clés que l'IA a extraites de tes entrées.",

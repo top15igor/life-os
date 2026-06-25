@@ -29,6 +29,19 @@ function KV({ label, value, top, href }: { label: string; value: string; top?: b
   );
 }
 
+function ChipRow({ label, items, top }: { label: string; items: { text: string; href: string }[]; top?: boolean }) {
+  return (
+    <div style={{ display: "flex", gap: 10, fontSize: 12.5, padding: "7px 0", borderTop: top ? "1px solid var(--border)" : "none", alignItems: "baseline" }}>
+      <span style={{ color: "var(--text-2)", minWidth: 92 }}>{label}</span>
+      <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {items.length === 0 ? <span>—</span> : items.map((it, i) => (
+          <Link key={i} href={it.href} style={{ color: "var(--accent)", background: "var(--accent-bg)", padding: "1px 8px", borderRadius: 6 }}>{it.text}</Link>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 export default async function EntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser();
@@ -94,8 +107,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             ))}
           </div>
           <div className="card" style={{ padding: "6px 14px" }}>
-            <KV label={t.entry.tags} value={tagList(e).map((tag: string) => `#${tag}`).join("  ") || "—"} />
-            <KV label={t.entry.categories} value={catNames.join(", ") || "—"} top />
+            <ChipRow label={t.entry.tags} items={tagList(e).map((tag: string) => ({ text: `#${tag}`, href: `/diary?tag=${encodeURIComponent(tag)}` }))} />
+            <ChipRow label={t.entry.categories} items={cats(e).map((c: any) => ({ text: t.cats[c.slug] || c.slug, href: `/diary?category=${c.slug}` }))} top />
             <KV label={t.entry.people} value={people(e).join(", ") || "—"} top href="/people" />
             <KV label={t.entry.projects} value={projectNames.join(", ") || "—"} top href="/projects" />
             <KV label={t.entry.places} value={placeNames.join(", ") || "—"} top href="/places" />
