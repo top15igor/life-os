@@ -2,8 +2,9 @@ import Sidebar from "@/components/Sidebar";
 import HomeTabs from "@/components/HomeTabs";
 import {
   getToday, getEntries, getGoals, getMonths, getOpenTasks, getRecentGratitude, getInsights,
-  getOnThisDay, cats, tagList, projects as projectsOf, type Entry,
+  getOnThisDay, getStreak, cats, tagList, projects as projectsOf, type Entry,
 } from "@/lib/queries";
+import { getExperiments } from "@/lib/lab";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -23,15 +24,45 @@ export default async function HomePage() {
   const h = hints(locale);
 
   const { date, entries: todayEntries } = await getToday(user.id);
-  const [allEntries, goals, months, openTasks, gratitude, insights] = await Promise.all([
+  const [allEntries, goals, months, openTasks, gratitude, insights, streak, experiments] = await Promise.all([
     getEntries(user.id, 200),
     getGoals(user.id),
     getMonths(user.id),
     getOpenTasks(user.id, 3),
     getRecentGratitude(user.id, 3),
     getInsights(user.id),
+    getStreak(user.id),
+    getExperiments(user.id),
   ]);
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
+
+  // Контекст дня
+  const nd = new Date();
+  const dayOfYear = Math.floor((nd.getTime() - new Date(nd.getFullYear(), 0, 0).getTime()) / 86400000);
+  const daysLeft = Math.round((new Date(nd.getFullYear(), 11, 31).getTime() - nd.getTime()) / 86400000);
+
+  const activeExp = (experiments || []).find((e: any) => e.status === "active");
+  const expDay = activeExp ? Math.max(1, Math.round((Date.now() - new Date(activeExp.start_date + "T00:00:00Z").getTime()) / 86400000) + 1) : null;
+
+  // Что изменилось со вчера
+  const byDate: Record<string, Entry[]> = {};
+  for (const e of allEntries) (byDate[e.entry_date] ||= []).push(e);
+  const dts = Object.keys(byDate).sort().reverse();
+  const avgOf = (ds: string, k: string) => {
+    const arr = (byDate[ds] || []).map((e: any) => e[k]).filter((x: any) => x != null) as number[];
+    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+  };
+  const dir = (k: string) => {
+    const a = dts[1] ? avgOf(dts[1], k) : null;
+    const b = dts[0] ? avgOf(dts[0], k) : null;
+    if (a == null || b == null) return null;
+    return b > a ? "up" : b < a ? "down" : "flat";
+  };
+  const changes = {
+    mood: dir("mood"),
+    sleep: dir("sleep_hours"),
+    newIdea: dts[0] ? (byDate[dts[0]] || []).some((e: any) => cats(e).some((c: any) => ["ideas", "insight"].includes(c.slug))) : false,
+  };
 
   const catCount: Record<string, number> = {};
   for (const e of allEntries) for (const c of cats(e)) catCount[c.slug] = (catCount[c.slug] || 0) + 1;
@@ -70,6 +101,11 @@ export default async function HomePage() {
     projects,
     insights: insights.slice(0, 4).map((i: any) => i.text),
     monthsCount: months.length,
+    dayOfYear,
+    daysLeft,
+    streak,
+    experiment: activeExp ? { title: activeExp.title, day: expDay, duration: activeExp.duration_days } : null,
+    changes,
   };
 
   const qa = {

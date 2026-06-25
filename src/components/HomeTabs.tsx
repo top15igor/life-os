@@ -13,6 +13,27 @@ const HS: Record<string, any> = {
   fr: { tabs: ["Aujourd'hui", "Chemin", "Héritage"], focus: "Focus du jour", tasks: "Tâches clés", gratitude: "Gratitude", memory: "Souvenir", ask: "Interroge ta vie", askSub: "L'IA répond depuis toutes tes entrées", balance: "Équilibre de vie", recent: "Entrées du jour", noTasks: "Aucune tâche en cours 👌", noEntries: "Pas encore d'entrées — écris quelques lignes ci-dessus.", goals: "Objectifs", projects: "Projets", lifebook: "Livre de vie", lifebookSub: "L'IA transforme les mois en chapitres", insights: "Insights clés", biographer: "Biographe IA", legacyEmpty: "Ton héritage grandit à mesure que tu écris.", memYear: (t: string) => `Il y a un an : « ${t} »`, memMonth: (t: string) => `Il y a un mois : « ${t} »` },
 };
 
+const HEROLINES: Record<string, string[]> = {
+  ru: ["Каждый день — новая страница твоей истории. Ты пишешь её осознанно.", "Сегодня станет частью твоей жизни. Не дай ему просто исчезнуть.", "Маленькие записи сегодня — твоя память на годы вперёд.", "Ты не просто проживаешь день — ты его сохраняешь.", "Жизнь складывается из таких дней. И ты их не теряешь."],
+  en: ["Every day is a new page of your story. You write it mindfully.", "Today becomes part of your life. Don't let it just vanish.", "Small notes today are your memory for years ahead.", "You don't just live the day — you keep it.", "Life is made of days like this. And you won't lose them."],
+  uk: ["Кожен день — нова сторінка твоєї історії. Ти пишеш її свідомо.", "Сьогодні стане частиною твого життя. Не дай йому просто зникнути.", "Маленькі записи сьогодні — твоя пам'ять на роки вперед.", "Ти не просто проживаєш день — ти його зберігаєш.", "Життя складається з таких днів. І ти їх не втрачаєш."],
+  fr: ["Chaque jour est une nouvelle page de ton histoire. Tu l'écris en conscience.", "Aujourd'hui fera partie de ta vie. Ne le laisse pas disparaître.", "De petites notes aujourd'hui — ta mémoire pour les années à venir.", "Tu ne vis pas seulement la journée — tu la gardes.", "La vie est faite de jours comme celui-ci. Et tu ne les perds pas."],
+};
+
+const QUOTES: Record<string, { text: string; author?: string }[]> = {
+  ru: [{ text: "Фокусируйся на прогрессе, а не на совершенстве." }, { text: "Маленькие шаги каждый день меняют всё." }, { text: "Лучшее время начать — сегодня." }, { text: "Ты — это сумма твоих дней." }, { text: "Замечай хорошее — и его станет больше." }, { text: "Дисциплина — это форма любви к себе." }],
+  en: [{ text: "Focus on progress, not perfection." }, { text: "Small steps every day change everything." }, { text: "The best time to start is today." }, { text: "You are the sum of your days." }, { text: "Notice the good — and it grows." }, { text: "Discipline is a form of self-love." }],
+  uk: [{ text: "Фокусуйся на прогресі, а не на досконалості." }, { text: "Маленькі кроки щодня змінюють усе." }, { text: "Найкращий час почати — сьогодні." }, { text: "Ти — це сума твоїх днів." }, { text: "Помічай хороше — і його стане більше." }, { text: "Дисципліна — це форма любові до себе." }],
+  fr: [{ text: "Concentre-toi sur le progrès, pas la perfection." }, { text: "De petits pas chaque jour changent tout." }, { text: "Le meilleur moment pour commencer, c'est aujourd'hui." }, { text: "Tu es la somme de tes jours." }, { text: "Remarque le bien — et il grandit." }, { text: "La discipline est une forme d'amour de soi." }],
+};
+
+const T0: Record<string, any> = {
+  ru: { dayYear: "й день года", daysLeft: "до конца года", days: "дн.", expDay: "й день эксперимента", changed: "Что изменилось со вчера", stories: "Незавершённые истории", thought: "Мысль дня", focus: "Фокус дня", up: "Лучше", down: "Хуже", flat: "Так же", mood: "Настроение", sleep: "Сон", idea: "Новая идея", appeared: "Появилась", streakWord: "Серия", exp: "Эксперимент", expGo: "Продолжается", yearAgo: "Год назад в этот день", monthAgo: "Месяц назад в этот день", noStories: "Здесь появятся проекты, цели и идеи, к которым стоит вернуться.", notes: "зап." },
+  en: { dayYear: "th day of the year", daysLeft: "left this year", days: "d", expDay: "th day of experiment", changed: "What changed since yesterday", stories: "Unfinished stories", thought: "Thought of the day", focus: "Focus of the day", up: "Better", down: "Worse", flat: "Same", mood: "Mood", sleep: "Sleep", idea: "New idea", appeared: "Appeared", streakWord: "Streak", exp: "Experiment", expGo: "Ongoing", yearAgo: "A year ago today", monthAgo: "A month ago today", noStories: "Projects, goals and ideas worth returning to will appear here.", notes: "entries" },
+  uk: { dayYear: "й день року", daysLeft: "до кінця року", days: "дн.", expDay: "й день експерименту", changed: "Що змінилося з учора", stories: "Незавершені історії", thought: "Думка дня", focus: "Фокус дня", up: "Краще", down: "Гірше", flat: "Так само", mood: "Настрій", sleep: "Сон", idea: "Нова ідея", appeared: "З'явилася", streakWord: "Серія", exp: "Експеримент", expGo: "Триває", yearAgo: "Рік тому цього дня", monthAgo: "Місяць тому цього дня", noStories: "Тут з'являться проєкти, цілі та ідеї, до яких варто повернутися.", notes: "зап." },
+  fr: { dayYear: "e jour de l'année", daysLeft: "avant la fin de l'année", days: "j", expDay: "e jour d'expérience", changed: "Ce qui a changé depuis hier", stories: "Histoires inachevées", thought: "Pensée du jour", focus: "Focus du jour", up: "Mieux", down: "Moins bien", flat: "Pareil", mood: "Humeur", sleep: "Sommeil", idea: "Nouvelle idée", appeared: "Apparue", streakWord: "Série", exp: "Expérience", expGo: "En cours", yearAgo: "Il y a un an aujourd'hui", monthAgo: "Il y a un mois aujourd'hui", noStories: "Les projets, objectifs et idées à reprendre apparaîtront ici.", notes: "entrées" },
+};
+
 const CAT_COLOR: Record<string, string> = { health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", business: "#3b82f6", finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4", emotions: "#a78bfa" };
 const CAT_HREF: Record<string, string> = { health: "/health", sport: "/sport", food: "/food", family: "/family", insight: "/insights" };
 
@@ -39,9 +60,56 @@ function Section({ title, children, right }: any) {
   );
 }
 
+function ContextCard({ icon, title, sub, href }: any) {
+  const inner = (
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 600, marginBottom: 3 }}>
+        <i className={`ti ${icon}`} style={{ fontSize: 16, color: "var(--accent)", flexShrink: 0 }} />{title}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sub}</div>
+    </>
+  );
+  return href
+    ? <Link href={href} className="card" style={{ display: "block", textDecoration: "none", color: "var(--text)" }}>{inner}</Link>
+    : <div className="card">{inner}</div>;
+}
+
+function Chip({ icon, label, value, color }: any) {
+  return (
+    <div className="card" style={{ padding: "10px 13px", minWidth: 132, flex: "1 1 132px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text-2)" }}>
+        <i className={`ti ${icon}`} style={{ fontSize: 14, color }} />{label}
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 600, marginTop: 2, color }}>{value}</div>
+    </div>
+  );
+}
+
 export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) {
   const s = HS[locale] || HS.ru;
   const [tab, setTab] = useState(0);
+
+  const t0 = T0[locale] || T0.ru;
+  const heroPool = HEROLINES[locale] || HEROLINES.ru;
+  const quotePool = QUOTES[locale] || QUOTES.ru;
+  const doy = data.dayOfYear || 0;
+  const heroLine = heroPool[doy % heroPool.length];
+  const quote = quotePool[doy % quotePool.length];
+
+  const arrow = (d: string) => (d === "up" ? "ti-arrow-up-right" : d === "down" ? "ti-arrow-down-right" : "ti-arrow-right");
+  const dirCol = (d: string) => (d === "up" ? "var(--positive)" : d === "down" ? "#ef4444" : "var(--text-3)");
+  const dirWord = (d: string) => (d === "up" ? t0.up : d === "down" ? t0.down : t0.flat);
+  const changeChips: any[] = [];
+  if (data.changes?.mood) changeChips.push({ icon: arrow(data.changes.mood), label: t0.mood, value: dirWord(data.changes.mood), color: dirCol(data.changes.mood) });
+  if (data.changes?.sleep) changeChips.push({ icon: arrow(data.changes.sleep), label: t0.sleep, value: dirWord(data.changes.sleep), color: dirCol(data.changes.sleep) });
+  if (data.changes?.newIdea) changeChips.push({ icon: "ti-bulb", label: t0.idea, value: t0.appeared, color: "var(--energy)" });
+  if ((data.streak || 0) >= 2) changeChips.push({ icon: "ti-flame", label: t0.streakWord, value: `${data.streak} ${t0.days}`, color: "#f97316" });
+  if (data.experiment) changeChips.push({ icon: "ti-flask-2", label: t0.exp, value: t0.expGo, color: "var(--accent)" });
+
+  const stories = [
+    ...(data.projects || []).slice(0, 3).map((p: any) => ({ icon: "ti-briefcase", title: p.name, sub: `${p.count} ${t0.notes}`, href: "/projects", color: "#3b82f6" })),
+    ...(data.goals || []).slice(0, 2).map((g: any) => ({ icon: "ti-target", title: g.title, sub: `${g.progress}%`, href: "/goals", color: "var(--accent)" })),
+  ];
 
   return (
     <div>
@@ -60,23 +128,58 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
         <div className="fade-up">
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 10 }}>
+          <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 20 }}>
+            <ContextCard icon="ti-calendar" title={`${data.dayOfYear}${t0.dayYear}`} sub={`${t0.daysLeft}: ${data.daysLeft} ${t0.days}`} />
+            {data.experiment && <ContextCard icon="ti-flask-2" title={`${data.experiment.day}${t0.expDay}`} sub={data.experiment.title} href="/lab" />}
+            {data.memory && <ContextCard icon="ti-book" title={data.memory.period === "year" ? t0.yearAgo : t0.monthAgo} sub={data.memory.summary} href="/diary" />}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 18 }}>
             <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" href="/analytics" />
-            <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" href="/energy" />
+            <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" href="/health?tab=energy" />
             <Metric label={metricsLabels.health} icon="ti-heart" value={data.health} suffix="/10" color="var(--health)" href="/health" />
           </div>
 
+          {changeChips.length > 0 && (
+            <Section title={t0.changed}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {changeChips.map((c, i) => <Chip key={i} {...c} />)}
+              </div>
+            </Section>
+          )}
+
           {data.focus && (
-            <div className="card" style={{ display: "flex", gap: 11, marginBottom: 18, alignItems: "flex-start" }}>
+            <div className="card" style={{ display: "flex", gap: 11, marginBottom: 22, alignItems: "flex-start" }}>
               <i className="ti ti-target" style={{ fontSize: 20, color: "#3b82f6", flexShrink: 0, marginTop: 1 }} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 2 }}>{metricsLabels.focus}</div>
-                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{data.focus}</div>
+                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 2 }}>{t0.focus}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4 }}>{data.focus}</div>
               </div>
             </div>
           )}
 
-          {data.openTasks.length > 0 ? (
+          {stories.length > 0 && (
+            <Section title={t0.stories} right={<Link href="/projects" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 9 }}>
+                {stories.map((st, i) => (
+                  <Link key={i} href={st.href} className="card" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <i className={`ti ${st.icon}`} style={{ fontSize: 18, color: st.color, flexShrink: 0, marginTop: 1 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{st.title}</div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{st.sub}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {data.openTasks.length > 0 && (
             <Section title={s.tasks}>
               <div className="card">
                 {data.openTasks.map((tk: any) => (
@@ -84,21 +187,21 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
                 ))}
               </div>
             </Section>
-          ) : null}
+          )}
 
-          {data.gratitude.length > 0 && (
-            <Section title={s.gratitude}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 22 }}>
+            {data.gratitude.length > 0 && (
               <div className="card" style={{ background: "#E1F5EE", border: "none" }}>
+                <div style={{ fontSize: 12, color: "#04342C", opacity: 0.7, marginBottom: 6 }}>{s.gratitude}</div>
                 {data.gratitude.map((g: string, k: number) => (<div key={k} style={{ fontSize: 13.5, padding: "3px 0", color: "#04342C" }}>🙏 {g}</div>))}
               </div>
-            </Section>
-          )}
-
-          {data.memory && (
-            <Section title={s.memory}>
-              <Link href="/diary" className="card" style={{ display: "block", fontSize: 13.5, color: "var(--text-2)" }}>⏳ {s[data.memory.period === "year" ? "memYear" : "memMonth"](data.memory.summary)}</Link>
-            </Section>
-          )}
+            )}
+            <div className="card" style={{ background: "var(--surface-2)", border: "none" }}>
+              <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 6 }}>{t0.thought}</div>
+              <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.5 }}>“{quote.text}”</div>
+              {quote.author && <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>— {quote.author}</div>}
+            </div>
+          </div>
 
           <Section title={s.recent}>
             {data.today.length === 0 ? (
