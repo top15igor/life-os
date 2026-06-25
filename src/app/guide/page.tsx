@@ -18,6 +18,15 @@ async function getBotLink(): Promise<string> {
   }
 }
 
+function SectionTitle({ children }: { children: any }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12, marginTop: 6 }}>
+      <span style={{ width: 4, height: 19, borderRadius: 2, background: "var(--accent)" }} />
+      <span style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", letterSpacing: "-0.01em" }}>{children}</span>
+    </div>
+  );
+}
+
 const SECTIONS: { key: string; icon: string; color: string; label?: string }[] = [
   { key: "today", icon: "ti-home", color: "var(--accent)" },
   { key: "diary", icon: "ti-book", color: "var(--accent)" },
@@ -53,13 +62,13 @@ export default async function GuidePage() {
         </a>
 
         {/* Что это */}
+        <SectionTitle>{g.whatTitle}</SectionTitle>
         <div className="card" style={{ marginBottom: 22 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.whatTitle}</div>
           <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>{g.what}</div>
         </div>
 
         {/* Как пользоваться */}
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.howTitle}</div>
+        <SectionTitle>{g.howTitle}</SectionTitle>
         <div style={{ marginBottom: 26 }}>
           {g.how.map((step, i) => (
             <div key={i} style={{ display: "flex", gap: 13, marginBottom: 12, alignItems: "flex-start" }}>
@@ -69,8 +78,19 @@ export default async function GuidePage() {
           ))}
         </div>
 
+        {/* Бот-ассистент */}
+        <SectionTitle>{g.assistantTitle}</SectionTitle>
+        <div className="card" style={{ marginBottom: 26 }}>
+          {g.assistant.map((line, i) => (
+            <div key={i} style={{ display: "flex", gap: 11, marginBottom: i === g.assistant.length - 1 ? 0 : 11, alignItems: "flex-start" }}>
+              <i className="ti ti-message-chatbot" style={{ fontSize: 17, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 14, lineHeight: 1.6 }}>{line}</span>
+            </div>
+          ))}
+        </div>
+
         {/* Команды */}
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.cmdTitle}</div>
+        <SectionTitle>{g.cmdTitle}</SectionTitle>
         <div className="card" style={{ marginBottom: 26, padding: "6px 14px" }}>
           {g.cmds.map(([cmd, desc], i) => (
             <div key={cmd} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none", fontSize: 14 }}>
@@ -81,7 +101,7 @@ export default async function GuidePage() {
         </div>
 
         {/* Разделы */}
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.sectionsTitle}</div>
+        <SectionTitle>{g.sectionsTitle}</SectionTitle>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
           {SECTIONS.map((sec) => (
             <div key={sec.key} className="card" style={{ display: "flex", gap: 11 }}>
@@ -95,7 +115,7 @@ export default async function GuidePage() {
         </div>
 
         {/* Лайфхаки */}
-        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.lifehacksTitle}</div>
+        <SectionTitle>{g.lifehacksTitle}</SectionTitle>
         <div style={{ marginBottom: 26 }}>
           {g.lifehacks.map((tip, i) => (
             <div key={i} style={{ display: "flex", gap: 11, marginBottom: 11, alignItems: "flex-start" }}>

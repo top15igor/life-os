@@ -8,6 +8,8 @@ type Guide = {
   what: string;
   howTitle: string;
   how: string[];
+  assistantTitle: string;
+  assistant: string[];
   cmdTitle: string;
   cmds: [string, string][];
   sectionsTitle: string;
@@ -29,6 +31,12 @@ const G: Record<Locale, Guide> = {
       "🎤 Наговори голосовое или напиши текст боту в Telegram — о чём угодно: день, мысли, здоровье, идеи, тренировки, семья.",
       "🧠 AI распознает речь, разложит по полочкам и выделит главное.",
       "🌐 Открой веб-версию (кнопка в боте) — там дневник, аналитика, поиск и AI-Биограф.",
+    ],
+    assistantTitle: "Бот-ассистент",
+    assistant: [
+      "Просто задай вопрос — бот сам поймёт, что это вопрос, и ответит по твоему дневнику. Например: «какие у меня цели?», «что я писал про спорт?», «когда я последний раз болел?».",
+      "Расскажешь про день — бот сохранит это как запись. Если сомневается — сохраняет, чтобы не потерять мысль.",
+      "Хочешь наверняка: /ask … — точно задать вопрос, /save … — точно сохранить запись.",
     ],
     cmdTitle: "Команды бота",
     cmds: [
@@ -64,6 +72,12 @@ const G: Record<Locale, Guide> = {
       "🧠 AI transcribes it, sorts it out and extracts what matters.",
       "🌐 Open the web version (button in the bot) — diary, analytics, search and the AI Biographer.",
     ],
+    assistantTitle: "Assistant",
+    assistant: [
+      "Just ask a question — the bot recognizes it's a question and answers from your diary. E.g. “what are my goals?”, “what did I write about sport?”, “when was I last sick?”.",
+      "Tell it about your day — it saves that as an entry. When unsure, it saves, so no thought is lost.",
+      "Want to be sure: /ask … to ask for certain, /save … to save for certain.",
+    ],
     cmdTitle: "Bot commands",
     cmds: [
       ["/start", "welcome and your personal link"],
@@ -98,6 +112,12 @@ const G: Record<Locale, Guide> = {
       "🧠 AI розпізнає мовлення, розкладе по полицях і виділить головне.",
       "🌐 Відкрий веб-версію (кнопка в боті) — щоденник, аналітика, пошук і AI-Біограф.",
     ],
+    assistantTitle: "Бот-асистент",
+    assistant: [
+      "Просто постав питання — бот сам зрозуміє, що це питання, і відповість за твоїм щоденником. Напр.: «які в мене цілі?», «що я писав про спорт?».",
+      "Розкажеш про день — бот збереже це як запис. Якщо сумнівається — зберігає, щоб не втратити думку.",
+      "Хочеш напевно: /ask … — точно запитати, /save … — точно зберегти запис.",
+    ],
     cmdTitle: "Команди бота",
     cmds: [
       ["/start", "привітання і твоє особисте посилання"],
@@ -131,6 +151,12 @@ const G: Record<Locale, Guide> = {
       "🎤 Envoie une note vocale ou un texte au bot Telegram — tout : ta journée, tes pensées, ta santé, tes idées, le sport, la famille.",
       "🧠 L'IA transcrit, organise et extrait l'essentiel.",
       "🌐 Ouvre la version web (bouton dans le bot) — journal, analytique, recherche et le Biographe IA.",
+    ],
+    assistantTitle: "Assistant",
+    assistant: [
+      "Pose simplement une question — le bot comprend que c'est une question et répond à partir de ton journal. Ex. : « quels sont mes objectifs ? », « qu'ai-je écrit sur le sport ? ».",
+      "Raconte ta journée — il l'enregistre comme une entrée. En cas de doute, il enregistre, pour ne rien perdre.",
+      "Pour être sûr : /ask … pour demander, /save … pour enregistrer.",
     ],
     cmdTitle: "Commandes du bot",
     cmds: [
