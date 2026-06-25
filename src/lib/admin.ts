@@ -129,10 +129,17 @@ export async function getAdminData() {
     usage = { total, last7, perWriter: writers ? total / writers : 0, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents) };
   } catch {}
 
+  // Обратная связь (если запущен feedback.sql).
+  let feedback: { kind: string; text: string; created_at: string; name: string }[] = [];
+  try {
+    const { data: fb } = await db.from("feedback").select("user_id, kind, text, created_at").order("created_at", { ascending: false }).limit(40);
+    feedback = (fb || []).map((f: any) => ({ kind: f.kind || "other", text: f.text, created_at: f.created_at, name: userMap[f.user_id]?.name || "—" }));
+  } catch {}
+
   return {
     totalUsers, activeUsers, active30, inactiveUsers: totalUsers - activeUsers,
     totalEntries, writers, returning, avgPerWriter,
     entriesSeries, newUsersSeries, voice, textEntries, avgMood, avgEnergy, catDist,
-    list, topReferrers, tree, usage,
+    list, topReferrers, tree, usage, feedback,
   };
 }

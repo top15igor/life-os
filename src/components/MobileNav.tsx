@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { NAV, MOBILE_PRIMARY } from "@/lib/nav";
 import LangSwitcher from "./LangSwitcher";
 import InviteButton from "./InviteButton";
+import Feedback from "./Feedback";
 import type { Locale } from "@/lib/i18n";
 
 const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu" };
@@ -35,6 +36,7 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink }: { 
                 );
               })}
             </div>
+            <Feedback locale={locale} variant="drawer" />
             {inviteLink && <InviteButton link={inviteLink} locale={locale} variant="drawer" />}
             {isOwner && (
               <Link href="/admin" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 10, background: "var(--accent-bg)", color: "var(--accent-text)", marginBottom: 14 }}>

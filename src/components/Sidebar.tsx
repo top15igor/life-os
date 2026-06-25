@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import LangSwitcher from "./LangSwitcher";
 import MobileNav from "./MobileNav";
 import InviteButton from "./InviteButton";
+import Feedback from "./Feedback";
 import { NAV } from "@/lib/nav";
 import type { Locale } from "@/lib/i18n";
 
@@ -52,6 +53,7 @@ export default function Sidebar({
           </Link>
         )}
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          <Feedback locale={locale} variant="sidebar" />
           {inviteLink && <InviteButton link={inviteLink} locale={locale} />}
           <LangSwitcher current={locale} />
         </div>
