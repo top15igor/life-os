@@ -15,6 +15,11 @@ const STR: Record<string, any> = {
     conf: { low: "гипотеза", medium: "вероятно", high: "есть признаки" },
     result: "Итог", enoughNo: "Данных пока мало — вывод предварительный. Продолжай записывать.",
     before: "до", after: "во время", noChange: "без изменений",
+    howTitle: "Как это работает",
+    how: ["1. 👀 Наблюдения — факты из твоих записей: сон, настроение, шаги, события.", "2. 🔬 Гипотеза — AI предполагает связь: «возможно, прогулки улучшают сон».", "3. 🧪 Эксперимент — ты проверяешь её несколько дней.", "4. 💡 Вывод — AI честно сравнивает «до» и «во время» и говорит, хватило ли данных."],
+    examplesTitle: "Примеры",
+    examples: [{ title: "Ложиться спать до 22:30", days: 14 }, { title: "21 день без сахара", days: 21 }, { title: "10 000 шагов каждый день", days: 14 }, { title: "Холодный душ по утрам", days: 21 }, { title: "2 литра воды в день", days: 14 }, { title: "Прогулка 40 минут ежедневно", days: 21 }],
+    hypExamples: "Например AI заметит: «в дни, когда ты гуляешь, настроение выше» или «после поздних записей сон хуже».",
     metrics: { mood: "Настроение", energy: "Энергия", health: "Здоровье", sleep_hours: "Сон" },
   },
   en: {
@@ -28,6 +33,11 @@ const STR: Record<string, any> = {
     conf: { low: "hypothesis", medium: "likely", high: "signs of it" },
     result: "Conclusion", enoughNo: "Not much data yet — preliminary. Keep journaling.",
     before: "before", after: "during", noChange: "no change",
+    howTitle: "How it works",
+    how: ["1. 👀 Observations — facts from your entries: sleep, mood, steps, events.", "2. 🔬 Hypothesis — AI suggests a link: \"maybe walks improve your sleep\".", "3. 🧪 Experiment — you test it for a few days.", "4. 💡 Conclusion — AI honestly compares \"before\" vs \"during\" and says if there's enough data."],
+    examplesTitle: "Examples",
+    examples: [{ title: "Bed before 22:30", days: 14 }, { title: "21 days no sugar", days: 21 }, { title: "10,000 steps a day", days: 14 }, { title: "Cold shower in the morning", days: 21 }, { title: "2 liters of water a day", days: 14 }, { title: "40-min walk every day", days: 21 }],
+    hypExamples: "E.g. AI might notice: \"on days you walk, your mood is higher\" or \"after late entries your sleep is worse\".",
     metrics: { mood: "Mood", energy: "Energy", health: "Health", sleep_hours: "Sleep" },
   },
   uk: {
@@ -41,6 +51,11 @@ const STR: Record<string, any> = {
     conf: { low: "гіпотеза", medium: "ймовірно", high: "є ознаки" },
     result: "Підсумок", enoughNo: "Даних поки мало — висновок попередній. Продовжуй записувати.",
     before: "до", after: "під час", noChange: "без змін",
+    howTitle: "Як це працює",
+    how: ["1. 👀 Спостереження — факти з твоїх записів: сон, настрій, кроки, події.", "2. 🔬 Гіпотеза — AI припускає зв'язок: «можливо, прогулянки покращують сон».", "3. 🧪 Експеримент — ти перевіряєш її кілька днів.", "4. 💡 Висновок — AI чесно порівнює «до» і «під час» і каже, чи вистачило даних."],
+    examplesTitle: "Приклади",
+    examples: [{ title: "Лягати спати до 22:30", days: 14 }, { title: "21 день без цукру", days: 21 }, { title: "10 000 кроків щодня", days: 14 }, { title: "Холодний душ зранку", days: 21 }, { title: "2 літри води на день", days: 14 }, { title: "Прогулянка 40 хвилин щодня", days: 21 }],
+    hypExamples: "Наприклад AI помітить: «у дні, коли ти гуляєш, настрій вищий» або «після пізніх записів сон гірший».",
     metrics: { mood: "Настрій", energy: "Енергія", health: "Здоров'я", sleep_hours: "Сон" },
   },
   fr: {
@@ -54,6 +69,11 @@ const STR: Record<string, any> = {
     conf: { low: "hypothèse", medium: "probable", high: "des signes" },
     result: "Conclusion", enoughNo: "Peu de données — préliminaire. Continue le journal.",
     before: "avant", after: "pendant", noChange: "aucun changement",
+    howTitle: "Comment ça marche",
+    how: ["1. 👀 Observations — des faits de tes entrées : sommeil, humeur, pas, événements.", "2. 🔬 Hypothèse — l'IA suggère un lien : « les promenades améliorent peut-être ton sommeil ».", "3. 🧪 Expérience — tu la testes pendant quelques jours.", "4. 💡 Conclusion — l'IA compare honnêtement « avant » et « pendant » et dit s'il y a assez de données."],
+    examplesTitle: "Exemples",
+    examples: [{ title: "Au lit avant 22:30", days: 14 }, { title: "21 jours sans sucre", days: 21 }, { title: "10 000 pas par jour", days: 14 }, { title: "Douche froide le matin", days: 21 }, { title: "2 litres d'eau par jour", days: 14 }, { title: "Marche de 40 min chaque jour", days: 21 }],
+    hypExamples: "Ex. l'IA pourrait remarquer : « les jours où tu marches, ton humeur est meilleure » ou « après des entrées tardives, ton sommeil est pire ».",
     metrics: { mood: "Humeur", energy: "Énergie", health: "Santé", sleep_hours: "Sommeil" },
   },
 };
@@ -132,7 +152,14 @@ export default function Lab({ experiments, locale }: { experiments: any[]; local
 
   return (
     <div>
-      <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 8, maxWidth: 620 }}>{s.tagline}</div>
+      <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 12, maxWidth: 620 }}>{s.tagline}</div>
+
+      <div className="card" style={{ background: "var(--surface-2)", border: "none", marginBottom: 4 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{s.howTitle}</div>
+        {s.how.map((step: string, i: number) => (
+          <div key={i} style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55, padding: "3px 0" }}>{step}</div>
+        ))}
+      </div>
 
       {/* Активные эксперименты */}
       <H>🧪 {s.active}</H>
@@ -158,9 +185,19 @@ export default function Lab({ experiments, locale }: { experiments: any[]; local
         })
       )}
       {!form && (
-        <button onClick={() => setForm({ title: "" })} style={{ fontSize: 13, padding: "8px 14px", borderRadius: 9, border: "1px dashed var(--border)", background: "transparent", color: "var(--accent)", cursor: "pointer", marginTop: 4 }}>
-          <i className="ti ti-plus" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.custom}
-        </button>
+        <div style={{ marginTop: 4 }}>
+          <button onClick={() => setForm({ title: "" })} style={{ fontSize: 13, padding: "8px 14px", borderRadius: 9, border: "1px dashed var(--border)", background: "transparent", color: "var(--accent)", cursor: "pointer" }}>
+            <i className="ti ti-plus" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.custom}
+          </button>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center", marginTop: 11 }}>
+            <span style={{ fontSize: 12, color: "var(--text-3)" }}>{s.examplesTitle}:</span>
+            {s.examples.map((ex: any, i: number) => (
+              <button key={i} onClick={() => { setForm({ title: ex.title }); setDuration(ex.days); }} style={{ fontSize: 12, padding: "6px 11px", borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer" }}>
+                {ex.title} · {ex.days}{s.days}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Гипотезы AI */}
@@ -168,7 +205,10 @@ export default function Lab({ experiments, locale }: { experiments: any[]; local
       {loadingHyp ? (
         <div className="card" style={{ color: "var(--text-3)", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-sparkles" style={{ color: "var(--insight)" }} />{s.loading}</div>
       ) : !hyp || hyp.length === 0 ? (
-        <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5 }}>{s.noHyp}</div>
+        <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5 }}>
+          {s.noHyp}
+          <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8, fontStyle: "italic" }}>{s.hypExamples}</div>
+        </div>
       ) : (
         hyp.map((h: any, i: number) => dismissed[i] ? null : (
           <div key={i} className="card" style={{ marginBottom: 10 }}>

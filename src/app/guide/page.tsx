@@ -30,11 +30,13 @@ function SectionTitle({ children }: { children: any }) {
 const SECTIONS: { key: string; icon: string; color: string; label?: string }[] = [
   { key: "today", icon: "ti-home", color: "var(--accent)" },
   { key: "diary", icon: "ti-book", color: "var(--accent)" },
-  { key: "health", icon: "ti-heartbeat", color: "#ef4444" },
-  { key: "analytics", icon: "ti-chart-line", color: "#3b82f6" },
-  { key: "insights", icon: "ti-bulb", color: "var(--energy)" },
+  { key: "wellness", icon: "ti-heartbeat", color: "#ef4444" },
+  { key: "plans", icon: "ti-target", color: "#3b82f6" },
+  { key: "analytics", icon: "ti-sparkles", color: "var(--insight)" },
+  { key: "lab", icon: "ti-flask-2", color: "var(--insight)" },
   { key: "people", icon: "ti-user-heart", color: "#ec4899" },
   { key: "projects", icon: "ti-briefcase", color: "#3b82f6" },
+  { key: "lifebook", icon: "ti-book-2", color: "var(--accent)" },
   { key: "biographer", icon: "ti-messages", color: "var(--insight)" },
   { key: "intelligence", icon: "ti-brain", color: "var(--insight)", label: "Life Intelligence" },
 ];
