@@ -2,12 +2,13 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const REC: Record<string, any> = {
-  ru: { rec: "Идёт запись", transcribing: "Распознаю голос…", mic: "Записать голосом", stop: "Стоп", denied: "Нет доступа к микрофону. Разреши его в настройках браузера." },
-  en: { rec: "Recording", transcribing: "Transcribing…", mic: "Record by voice", stop: "Stop", denied: "No microphone access. Allow it in your browser settings." },
-  uk: { rec: "Триває запис", transcribing: "Розпізнаю голос…", mic: "Записати голосом", stop: "Стоп", denied: "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера." },
-  fr: { rec: "Enregistrement", transcribing: "Transcription…", mic: "Enregistrer à la voix", stop: "Stop", denied: "Pas d'accès au micro. Autorise-le dans les réglages du navigateur." },
+  ru: { rec: "Идёт запись", transcribing: "Распознаю голос…", mic: "Записать голосом", stop: "Стоп", denied: "Нет доступа к микрофону. Разреши его в настройках браузера.", saved: "Запись сохранена", open: "Открыть запись", empty: "Ничего не расслышал — попробуй ещё раз." },
+  en: { rec: "Recording", transcribing: "Transcribing…", mic: "Record by voice", stop: "Stop", denied: "No microphone access. Allow it in your browser settings.", saved: "Entry saved", open: "Open entry", empty: "Didn't catch that — try again." },
+  uk: { rec: "Триває запис", transcribing: "Розпізнаю голос…", mic: "Записати голосом", stop: "Стоп", denied: "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера.", saved: "Запис збережено", open: "Відкрити запис", empty: "Нічого не розчув — спробуй ще раз." },
+  fr: { rec: "Enregistrement", transcribing: "Transcription…", mic: "Enregistrer à la voix", stop: "Stop", denied: "Pas d'accès au micro. Autorise-le dans les réglages du navigateur.", saved: "Entrée enregistrée", open: "Ouvrir l'entrée", empty: "Je n'ai rien entendu — réessaie." },
 };
 
 function mmss(s: number) {
@@ -34,18 +35,28 @@ export default function QuickAdd({
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [result, setResult] = useState<{ text: string; id?: string } | null>(null);
   const router = useRouter();
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<any>(null);
+  const dismissRef = useRef<any>(null);
+
+  function showResult(res: { text: string; id?: string }) {
+    setResult(res);
+    if (dismissRef.current) clearTimeout(dismissRef.current);
+    dismissRef.current = setTimeout(() => setResult(null), 12000);
+  }
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!text.trim() || busy) return;
+    const sent = text.trim();
     setBusy(true);
     try {
-      const res = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
-      if (res.ok) { setText(""); router.refresh(); }
+      const res = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: sent }) });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.ok) { setText(""); showResult({ text: sent, id: j.id }); router.refresh(); }
     } finally {
       setBusy(false);
     }
@@ -53,6 +64,7 @@ export default function QuickAdd({
 
   async function startRec() {
     if (busy || recording) return;
+    setResult(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
@@ -87,7 +99,8 @@ export default function QuickAdd({
       fd.append("audio", blob, `voice.${ext}`);
       const res = await fetch("/api/capture-voice", { method: "POST", body: fd });
       const j = await res.json().catch(() => null);
-      if (res.ok && j?.ok) router.refresh();
+      if (res.ok && j?.ok) { showResult({ text: j.text || "", id: j.id }); router.refresh(); }
+      else alert(r.empty);
     } finally {
       setBusy(false);
     }
@@ -96,6 +109,22 @@ export default function QuickAdd({
   return (
     <form onSubmit={submit} style={{ border: "1px solid var(--border)", borderRadius: 13, padding: "12px 15px", marginBottom: 18 }}>
       <style>{`@keyframes qapulse{0%,100%{opacity:1}50%{opacity:.35}}`}</style>
+
+      {result && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "var(--positive-bg, #ecfdf5)", border: "1px solid var(--positive)", borderRadius: 11, padding: "11px 13px", marginBottom: 10 }}>
+          <i className="ti ti-circle-check-filled" style={{ fontSize: 18, color: "var(--positive)", flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>{r.saved}</div>
+            {result.text && <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 3, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{result.text}</div>}
+            {result.id && (
+              <Link href={`/entry/${result.id}`} style={{ display: "inline-block", marginTop: 6, fontSize: 12.5, fontWeight: 500, color: "var(--accent)" }}>
+                {r.open} →
+              </Link>
+            )}
+          </div>
+          <button type="button" onClick={() => setResult(null)} aria-label="close" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", flexShrink: 0, padding: 0 }}><i className="ti ti-x" style={{ fontSize: 16 }} /></button>
+        </div>
+      )}
 
       {recording ? (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 2px" }}>
@@ -119,8 +148,11 @@ export default function QuickAdd({
 
       {!recording && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-          <i className="ti ti-brand-telegram" style={{ fontSize: 15, color: "var(--text-3)" }} />
-          <span style={{ fontSize: 11.5, color: "var(--text-3)", flex: 1 }}>{hint}</span>
+          {busy ? (
+            <><i className="ti ti-loader-2" style={{ fontSize: 15, color: "var(--accent)" }} /><span style={{ fontSize: 12, color: "var(--text-2)", flex: 1 }}>{r.transcribing}</span></>
+          ) : (
+            <><i className="ti ti-brand-telegram" style={{ fontSize: 15, color: "var(--text-3)" }} /><span style={{ fontSize: 11.5, color: "var(--text-3)", flex: 1 }}>{hint}</span></>
+          )}
           <button type="button" onClick={startRec} disabled={busy} title={r.mic} aria-label={r.mic} style={{ width: 36, height: 36, borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", cursor: busy ? "default" : "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <i className="ti ti-microphone" style={{ fontSize: 18 }} />
           </button>

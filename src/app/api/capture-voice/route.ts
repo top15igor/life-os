@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
     if (!text || !text.trim()) return NextResponse.json({ ok: false, error: "empty" });
 
     const analysis = await analyze(text);
-    await saveEntry({ userId: user.id, raw_text: text, source: "web_voice", analysis });
-    return NextResponse.json({ ok: true, text });
+    const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web_voice", analysis });
+    return NextResponse.json({ ok: true, text, id: entry.id });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ ok: false }, { status: 500 });
