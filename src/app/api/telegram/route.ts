@@ -5,6 +5,7 @@ import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
+import { askLife, saveChat } from "@/lib/biographer";
 
 export const runtime = "nodejs";
 
@@ -171,6 +172,25 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/link") {
     await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`);
+    return NextResponse.json({ ok: true });
+  }
+
+  // Ассистент: /ask <вопрос> или /q <вопрос> — отвечает по записям, НЕ сохраняет.
+  if (msg.text === "/ask" || msg.text === "/q" || (typeof msg.text === "string" && (msg.text.startsWith("/ask ") || msg.text.startsWith("/q ")))) {
+    const q = (msg.text || "").replace(/^\/(ask|q)\s*/, "").trim();
+    if (!q) {
+      await sendMessage(chatId, "Спроси что-нибудь после команды, например:\n<code>/ask как менялось моё здоровье?</code>");
+      return NextResponse.json({ ok: true });
+    }
+    await sendChatAction(chatId, "typing");
+    try {
+      const ans = await askLife(user.id, q);
+      await saveChat(user.id, q, ans);
+      await sendMessage(chatId, esc(ans) || "—");
+    } catch (e) {
+      console.error(e);
+      await sendMessage(chatId, "Не получилось ответить, попробуй ещё раз.");
+    }
     return NextResponse.json({ ok: true });
   }
 
