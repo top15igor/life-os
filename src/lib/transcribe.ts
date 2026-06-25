@@ -1,15 +1,20 @@
 import OpenAI, { toFile } from "openai";
 
-// Голос (ogg/opus из Telegram) → текст через Whisper.
-export async function transcribe(fileUrl: string): Promise<string> {
+// Голос (Buffer любого формата: ogg/m4a/mp4/webm/wav) → текст через Whisper.
+export async function transcribeFile(buf: Buffer, filename = "voice.ogg"): Promise<string> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const res = await fetch(fileUrl);
-  const buf = Buffer.from(await res.arrayBuffer());
-  const file = await toFile(buf, "voice.ogg");
+  const file = await toFile(buf, filename);
   const tr = await openai.audio.transcriptions.create({
     file,
     model: "whisper-1",
     language: "ru",
   });
   return tr.text.trim();
+}
+
+// Голос по URL (ogg/opus из Telegram) → текст.
+export async function transcribe(fileUrl: string): Promise<string> {
+  const res = await fetch(fileUrl);
+  const buf = Buffer.from(await res.arrayBuffer());
+  return transcribeFile(buf, "voice.ogg");
 }

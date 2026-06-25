@@ -57,7 +57,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
 
       {tab === 0 && (
         <div className="fade-up">
-          <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} />
+          <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 10 }}>
             <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" href="/analytics" />
