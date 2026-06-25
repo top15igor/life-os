@@ -162,11 +162,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (msg.text === "/invite") {
-    const me = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`).then((r) => r.json()).catch(() => null);
-    const botLink = me?.result?.username ? `https://t.me/${me.result.username}?start=ref_${user.id}` : origin;
     const I = INVITE[pickLang(msg.from?.language_code)] || INVITE.ru;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
-    await sendMessage(chatId, I.text.replace("{bot}", botLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
+    const inviteLink = `${origin}/welcome?ref=${user.id}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
+    await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
     return NextResponse.json({ ok: true });
   }
 
@@ -207,8 +206,7 @@ export async function POST(req: NextRequest) {
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
-    const bl = await botShareLink(origin);
-    const refLink = bl.startsWith("https://t.me/") ? `${bl}?start=ref_${user.id}` : bl;
+    const refLink = `${origin}/welcome?ref=${user.id}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     await sendMessage(chatId, body, {
       reply_markup: {

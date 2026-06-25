@@ -15,8 +15,14 @@ async function getBotLink(): Promise<string> {
   }
 }
 
-export default async function WelcomePage() {
+export default async function WelcomePage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+  const sp = await searchParams;
   const locale = await getLocale();
-  const botLink = await getBotLink();
+  let botLink = await getBotLink();
+  const ref = sp.ref;
+  // Реферал: передаём пригласившего в бота (start=ref_<id>).
+  if (ref && /^[0-9a-f-]{36}$/i.test(ref) && botLink.startsWith("https://t.me/")) {
+    botLink += `?start=ref_${ref}`;
+  }
   return <Onboarding locale={locale} botLink={botLink} />;
 }
