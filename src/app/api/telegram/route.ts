@@ -68,10 +68,10 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights" },
 };
 
 const MILE: Record<string, any> = {
@@ -229,20 +229,31 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function formatConfirm(a: Analysis, streak: number, lang: string): string {
   const L = CONFIRM[lang] || CONFIRM.ru;
-  const lines = [`✅ <b>${L.saved}</b>`, "", a.summary];
-  const extra: string[] = [];
-  if (a.insights?.length) extra.push(`💡 ${a.insights.length} ${L.insights}`);
-  if (a.tasks?.length) extra.push(`🎯 ${a.tasks.length} ${L.tasks}`);
-  if (a.tags?.length) extra.push(`#️⃣ ${a.tags.length} ${L.tags}`);
-  if (extra.length) lines.push("", extra.join("\n"));
+  const lines = [`✅ <b>${L.saved}</b>`, "", esc(a.summary || "")];
+
+  if (a.tags?.length) {
+    lines.push("", a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" "));
+  }
+  if (a.tasks?.length) {
+    lines.push("", `🎯 <b>${L.tasksTitle}</b>`);
+    a.tasks.slice(0, 3).forEach((tk) => lines.push("• " + esc(tk)));
+  }
+  if (a.insights?.length) {
+    lines.push("", `💡 <b>${L.insightsTitle}</b>`);
+    a.insights.slice(0, 2).forEach((it) => lines.push("• " + esc(it)));
+  }
   const m = [
-    a.mood != null ? `Mood ${a.mood}` : null,
-    a.energy != null ? `Energy ${a.energy}` : null,
-    a.health != null ? `Health ${a.health}` : null,
+    a.mood != null ? `😊 ${a.mood}` : null,
+    a.energy != null ? `⚡ ${a.energy}` : null,
+    a.health != null ? `❤️ ${a.health}` : null,
   ].filter(Boolean);
-  if (m.length) lines.push("", m.join(" · "));
+  if (m.length) lines.push("", m.join("   "));
   if (streak >= 2) lines.push("", `🔥 ${streak} ${L.streakWord}`);
   return lines.join("\n");
 }
