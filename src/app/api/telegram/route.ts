@@ -104,6 +104,54 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
   return null;
 }
 
+// Постоянная клавиатура с кнопками под полем ввода.
+const KB: Record<string, { ask: string; invite: string; diary: string; help: string }> = {
+  ru: { ask: "🧠 Спросить", invite: "🎁 Пригласить друга", diary: "📖 Открыть дневник", help: "❓ Помощь" },
+  en: { ask: "🧠 Ask", invite: "🎁 Invite a friend", diary: "📖 Open diary", help: "❓ Help" },
+  uk: { ask: "🧠 Запитати", invite: "🎁 Запросити друга", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
+  fr: { ask: "🧠 Demander", invite: "🎁 Inviter un ami", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
+};
+
+function mainKeyboard(lang: string) {
+  const k = KB[lang] || KB.ru;
+  return { keyboard: [[{ text: k.ask }, { text: k.invite }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
+}
+
+function buttonAction(text?: string): "ask" | "invite" | "diary" | "help" | null {
+  if (!text) return null;
+  for (const lang of Object.keys(KB)) {
+    const k = KB[lang];
+    if (text === k.ask) return "ask";
+    if (text === k.invite) return "invite";
+    if (text === k.diary) return "diary";
+    if (text === k.help) return "help";
+  }
+  return null;
+}
+
+const HELP: Record<string, (o: string) => string> = {
+  ru: (o) => `Что я умею:\n• 🎤 Зажми микрофон справа от поля ввода и наговори — я расшифрую и сохраню.\n• ✍️ Или просто напиши, что произошло.\n• 🧠 Задай вопрос — отвечу по твоему дневнику.\n\nВсе разделы и команды — в Инструкции:\n${o}/guide`,
+  en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
+  uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
+  fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n\nTout est dans le Guide :\n${o}/guide`,
+};
+
+const ASK_PROMPT: Record<string, string> = {
+  ru: "Напиши или наговори свой вопрос — отвечу по твоему дневнику 🙂",
+  en: "Type or say your question — I'll answer from your diary 🙂",
+  uk: "Напиши або наговори своє питання — відповім за твоїм щоденником 🙂",
+  fr: "Écris ou dis ta question — je réponds depuis ton journal 🙂",
+};
+
+const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
+
+async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
+  const I = INVITE[lang] || INVITE.ru;
+  const inviteLink = `${origin}/welcome?ref=${userId}`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
+  await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -143,10 +191,10 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < seq.length; i++) {
         await sendChatAction(chatId, "typing");
         await sleep(i === 0 ? 400 : 1300);
-        await sendMessage(chatId, seq[i].replace("{link}", link));
+        await sendMessage(chatId, seq[i].replace("{link}", link), i === seq.length - 1 ? { reply_markup: mainKeyboard(lang) } : undefined);
       }
     } else {
-      await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link));
+      await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
     }
     return NextResponse.json({ ok: true });
   }
@@ -157,21 +205,29 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
       await sleep(i === 0 ? 400 : 1300);
-      await sendMessage(chatId, seq[i].replace("{link}", link));
+      await sendMessage(chatId, seq[i].replace("{link}", link), i === seq.length - 1 ? { reply_markup: mainKeyboard(lang) } : undefined);
     }
     return NextResponse.json({ ok: true });
   }
 
   if (msg.text === "/invite") {
-    const I = INVITE[pickLang(msg.from?.language_code)] || INVITE.ru;
-    const inviteLink = `${origin}/welcome?ref=${user.id}`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
-    await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
+    await sendInvite(chatId, pickLang(msg.from?.language_code), origin, user.id);
     return NextResponse.json({ ok: true });
   }
 
   if (msg.text === "/link") {
-    await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`);
+    await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`, { reply_markup: mainKeyboard(pickLang(msg.from?.language_code)) });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Нажатия кнопок постоянной клавиатуры.
+  const ba = buttonAction(msg.text);
+  if (ba) {
+    const lang = pickLang(msg.from?.language_code);
+    if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
+    else if (ba === "diary") await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}`);
+    else if (ba === "help") await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
+    else await sendMessage(chatId, ASK_PROMPT[lang] || ASK_PROMPT.ru);
     return NextResponse.json({ ok: true });
   }
 

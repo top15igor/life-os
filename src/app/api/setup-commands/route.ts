@@ -1,0 +1,38 @@
+import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+
+const COMMANDS_RU = [
+  { command: "start", description: "Начать и получить ссылку на дневник" },
+  { command: "ask", description: "Спросить ассистента о своей жизни" },
+  { command: "save", description: "Сохранить запись принудительно" },
+  { command: "link", description: "Ссылка на веб-дневник" },
+  { command: "invite", description: "Пригласить друга" },
+  { command: "demo", description: "Показать приветствие заново" },
+];
+
+const COMMANDS_EN = [
+  { command: "start", description: "Start and get your diary link" },
+  { command: "ask", description: "Ask the assistant about your life" },
+  { command: "save", description: "Force-save an entry" },
+  { command: "link", description: "Web diary link" },
+  { command: "invite", description: "Invite a friend" },
+  { command: "demo", description: "Replay the welcome" },
+];
+
+async function call(token: string, method: string, body: any) {
+  return fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+}
+
+export async function GET() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return NextResponse.json({ ok: false, error: "no token" });
+  const r1 = await call(token, "setMyCommands", { commands: COMMANDS_RU });
+  const r2 = await call(token, "setMyCommands", { commands: COMMANDS_EN, language_code: "en" });
+  const r3 = await call(token, "setChatMenuButton", { menu_button: { type: "commands" } });
+  return NextResponse.json({ ok: true, results: { ru: r1?.ok, en: r2?.ok, menu: r3?.ok } });
+}
