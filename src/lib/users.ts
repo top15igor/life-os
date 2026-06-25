@@ -14,7 +14,14 @@ export async function getOrCreateUser(chatId: number, name?: string): Promise<Us
     .select("id, token, name")
     .eq("chat_id", chatId)
     .maybeSingle();
-  if (existing) return existing as User;
+  if (existing) {
+    // Подхватываем актуальное имя из Telegram (чинит «кракозябры» из seed).
+    if (name && existing.name !== name) {
+      await db.from("users").update({ name }).eq("chat_id", chatId);
+      return { ...existing, name } as User;
+    }
+    return existing as User;
+  }
 
   const id = chatId === 115629292 ? OWNER : randomUUID();
   const token = randomUUID();
