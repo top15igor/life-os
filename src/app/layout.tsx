@@ -2,7 +2,16 @@ import "./globals.css";
 
 export const metadata = {
   title: "LIFE OS",
-  description: "Личный дневник жизни",
+  description: "Твой личный дневник жизни — второй мозг.",
+  applicationName: "LIFE OS",
+  appleWebApp: { capable: true, title: "LIFE OS", statusBarStyle: "default" as const },
+  formatDetection: { telephone: false },
+};
+
+export const viewport = {
+  themeColor: "#6d5efc",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
         />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>{children}</body>
     </html>
