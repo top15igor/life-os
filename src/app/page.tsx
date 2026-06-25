@@ -9,6 +9,8 @@ import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
+import { cookies, headers } from "next/headers";
+import EnterInBrowser from "@/components/EnterInBrowser";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,10 @@ export default async function HomePage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const h = hints(locale);
+
+  const tok = (await cookies()).get("lifeos_token")?.value || "";
+  const hdrs = await headers();
+  const personalLink = tok ? `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || ""}/u/${tok}` : "";
 
   const { date, entries: todayEntries } = await getToday(user.id);
   const [allEntries, goals, months, openTasks, gratitude, insights, streak, experiments] = await Promise.all([
@@ -119,6 +125,7 @@ export default async function HomePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <EnterInBrowser link={personalLink} locale={locale} />
         <HomeTabs
           data={data}
           locale={locale}
