@@ -8,6 +8,11 @@ export type Happy = { emoji: string; label: string; why?: string };
 export type Energy = { label: string; strength: number; why?: string };
 export type Chain = { steps: string[] };
 export type Surprise = { text: string; why?: string };
+export type Balance = {
+  growing: { emoji?: string; label: string; text: string }[];
+  neglected: { emoji?: string; label: string; text?: string }[];
+  evolution: { label: string; direction: "up" | "down" | "flat"; why?: string }[];
+};
 
 export type LifeOverview = {
   noticed?: Noticed;
@@ -19,6 +24,7 @@ export type LifeOverview = {
   surprise?: Surprise;
   story?: string;
   patterns: string[];
+  balance?: Balance;
   note?: string;
   entryCount: number;
 };
@@ -38,6 +44,14 @@ const TOOL: Anthropic.Tool = {
       surprise: { type: "object", properties: { text: { type: "string" }, why: { type: "string" } }, required: ["text"] },
       story: { type: "string" },
       patterns: { type: "array", items: { type: "string" } },
+      balance: {
+        type: "object",
+        properties: {
+          growing: { type: "array", items: { type: "object", properties: { emoji: { type: "string" }, label: { type: "string" }, text: { type: "string" } }, required: ["label", "text"] } },
+          neglected: { type: "array", items: { type: "object", properties: { emoji: { type: "string" }, label: { type: "string" }, text: { type: "string" } }, required: ["label"] } },
+          evolution: { type: "array", items: { type: "object", properties: { label: { type: "string" }, direction: { type: "string", enum: ["up", "down", "flat"] }, why: { type: "string" } }, required: ["label", "direction"] } },
+        },
+      },
       note: { type: "string", description: "Заполни честно, если данных мало." },
     },
     required: ["happiness", "energyGivers", "energyDrainers", "chains", "patterns"],
@@ -101,6 +115,7 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
 - surprise: одна неожиданная закономерность.
 - story: тёплый связный рассказ о последних ~30 днях (главная тема, человек, проект, эмоция, решение, инсайт, победа, урок) — это история, а не отчёт.
 - patterns: 2–5 замеченных закономерностей.
+- balance («зеркало жизни», только по данным): growing — 1–3 сферы жизни, которые сейчас РАСТУТ/развиваются (emoji + label + text: что именно развивается и почему так видно); neglected — 1–4 сферы, которым ДАВНО не уделялось внимания (emoji + label + короткий text); evolution — 2–5 ключевых сфер с направлением (label + direction: up/down/flat + why). Если данных мало — пустые массивы.
 
 ЗАПИСИ:
 ${context}`;
@@ -126,6 +141,9 @@ ${context}`;
       surprise: d.surprise?.text ? d.surprise : undefined,
       story: d.story || undefined,
       patterns: d.patterns || [],
+      balance: d.balance && (d.balance.growing?.length || d.balance.neglected?.length || d.balance.evolution?.length)
+        ? { growing: d.balance.growing || [], neglected: d.balance.neglected || [], evolution: d.balance.evolution || [] }
+        : undefined,
       note: d.note,
       entryCount: count,
     };

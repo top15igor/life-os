@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import QuickAdd from "./QuickAdd";
+import LifeBalance from "./LifeBalance";
 import Hint from "./Hint";
 
 const HS: Record<string, any> = {
@@ -142,27 +143,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             )}
           </Section>
 
-          {data.balance.length > 0 && (
-            <Section title={s.balance}>
-              <div className="card">
-                {data.balance.map((b: any) => {
-                  const max = data.balance[0].count || 1;
-                  const href = CAT_HREF[b.slug];
-                  const row = (
-                    <>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}><span>{b.name}</span><span style={{ color: "var(--text-3)" }}>{b.count}</span></div>
-                      <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}><div style={{ width: `${Math.round((b.count / max) * 100)}%`, height: "100%", background: CAT_COLOR[b.slug] || "var(--accent)" }} /></div>
-                    </>
-                  );
-                  return href ? (
-                    <Link key={b.slug} href={href} style={{ display: "block", marginBottom: 8, textDecoration: "none", color: "var(--text)" }}>{row}</Link>
-                  ) : (
-                    <div key={b.slug} style={{ marginBottom: 8 }}>{row}</div>
-                  );
-                })}
-              </div>
-            </Section>
-          )}
+          <LifeBalance locale={locale} />
 
           {data.projects.length > 0 && (
             <Section title={s.projects} right={<Link href="/projects" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
