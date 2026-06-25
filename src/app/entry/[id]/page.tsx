@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import TaskList from "@/components/TaskList";
+import LifeIntelligence from "@/components/LifeIntelligence";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             </div>
           </Section>
         )}
+
+        <LifeIntelligence entryId={id} locale={locale} />
 
         <Section icon="ti-database" title={t.entry.extracted}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(85px, 1fr))", gap: 8, marginBottom: 10 }}>
