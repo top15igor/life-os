@@ -81,7 +81,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         )}
 
         <Section icon="ti-database" title={t.entry.extracted}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(85px, 1fr))", gap: 8, marginBottom: 10 }}>
             {[[t.mood, e.mood, "var(--accent)"], [t.energy, e.energy, "var(--energy)"], [t.health, e.health, "var(--health)"]].map(([l, v, c]: any) => (
               <div key={l} style={{ background: "var(--surface-2)", borderRadius: 10, padding: "9px 11px", textAlign: "center" }}>
                 <div style={{ fontSize: 11, color: "var(--text-2)" }}>{l}</div>

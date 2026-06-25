@@ -62,7 +62,7 @@ export default async function TodayPage() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 9, marginBottom: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 9, marginBottom: 22 }}>
           <Metric label={t.mood} icon="ti-mood-smile" value={mood} suffix="/10" color="var(--accent)" />
           <Metric label={t.energy} icon="ti-bolt" value={energy} suffix="/10" color="var(--energy)" />
           <Metric label={t.health} icon="ti-heart" value={health} suffix="/10" color="var(--health)" />
