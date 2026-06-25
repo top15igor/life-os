@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const STR: Record<string, any> = {
   ru: { copy: "Копировать", copied: "Скопировано", logout: "Выйти", delete: "Удалить аккаунт", confirm1: "Удалить аккаунт и ВСЕ записи без возможности восстановления?", confirm2: "Точно? Это необратимо.", deleting: "Удаляю…" },
@@ -45,6 +46,78 @@ export function ProfileButtons({ locale }: { locale: string }) {
       <button onClick={del} disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 11, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 14, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
         <i className="ti ti-trash" style={{ fontSize: 17 }} />{busy ? s.deleting : s.delete}
       </button>
+    </div>
+  );
+}
+
+const PSTR: Record<string, any> = {
+  ru: { on: "PIN установлен — вход защищён", off: "PIN не установлен", set: "Установить PIN", change: "Изменить PIN", remove: "Убрать PIN", newPin: "Новый PIN (4–8 цифр)", current: "Текущий PIN", save: "Сохранить", cancel: "Отмена", bad: "PIN — от 4 до 8 цифр", wrong: "Неверный текущий PIN", noCol: "Сначала запусти pin.sql в Supabase." },
+  en: { on: "PIN is set — access protected", off: "No PIN set", set: "Set PIN", change: "Change PIN", remove: "Remove PIN", newPin: "New PIN (4–8 digits)", current: "Current PIN", save: "Save", cancel: "Cancel", bad: "PIN must be 4–8 digits", wrong: "Wrong current PIN", noCol: "Run pin.sql in Supabase first." },
+  uk: { on: "PIN встановлено — вхід захищено", off: "PIN не встановлено", set: "Встановити PIN", change: "Змінити PIN", remove: "Прибрати PIN", newPin: "Новий PIN (4–8 цифр)", current: "Поточний PIN", save: "Зберегти", cancel: "Скасувати", bad: "PIN — від 4 до 8 цифр", wrong: "Невірний поточний PIN", noCol: "Спершу запусти pin.sql у Supabase." },
+  fr: { on: "PIN défini — accès protégé", off: "Aucun PIN", set: "Définir un PIN", change: "Changer le PIN", remove: "Retirer le PIN", newPin: "Nouveau PIN (4–8 chiffres)", current: "PIN actuel", save: "Enregistrer", cancel: "Annuler", bad: "Le PIN doit faire 4–8 chiffres", wrong: "PIN actuel incorrect", noCol: "Lance d'abord pin.sql dans Supabase." },
+};
+
+export function PinSettings({ locale, hasPin }: { locale: string; hasPin: boolean }) {
+  const s = PSTR[locale] || PSTR.ru;
+  const [mode, setMode] = useState<null | "set" | "remove">(null);
+  const [pin, setPin] = useState("");
+  const [current, setCurrent] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const router = useRouter();
+
+  const numInput = (val: string, set: (v: string) => void, ph: string) => (
+    <input type="password" inputMode="numeric" value={val} onChange={(e) => { set(e.target.value.replace(/\D/g, "").slice(0, 8)); setErr(""); }} placeholder={ph}
+      style={{ width: "100%", fontSize: 14, padding: "9px 11px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", marginBottom: 8, boxSizing: "border-box" }} />
+  );
+
+  async function save() {
+    if (busy) return;
+    if (!/^\d{4,8}$/.test(pin)) { setErr(s.bad); return; }
+    setBusy(true); setErr("");
+    const r = await fetch("/api/pin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "set", pin, current }) }).then((x) => x.json()).catch(() => null);
+    setBusy(false);
+    if (r?.ok) { setMode(null); setPin(""); setCurrent(""); router.refresh(); }
+    else setErr(r?.error === "wrong" ? s.wrong : r?.error === "no_column" ? s.noCol : s.bad);
+  }
+  async function remove() {
+    if (busy) return;
+    setBusy(true); setErr("");
+    const r = await fetch("/api/pin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "remove", current }) }).then((x) => x.json()).catch(() => null);
+    setBusy(false);
+    if (r?.ok) { setMode(null); setCurrent(""); router.refresh(); }
+    else setErr(r?.error === "wrong" ? s.wrong : s.noCol);
+  }
+
+  const btn = (label: string, onClick: () => void, primary?: boolean) => (
+    <button onClick={onClick} disabled={busy} style={{ fontSize: 13, fontWeight: 500, padding: "8px 14px", borderRadius: 9, border: primary ? "none" : "1px solid var(--border)", background: primary ? "var(--accent)" : "var(--surface)", color: primary ? "#fff" : "var(--text)", cursor: "pointer", opacity: busy ? 0.6 : 1 }}>{label}</button>
+  );
+
+  return (
+    <div className="card">
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: mode ? 12 : 0 }}>
+        <i className="ti ti-lock" style={{ fontSize: 18, color: hasPin ? "var(--positive)" : "var(--text-3)" }} />
+        <span style={{ fontSize: 13.5, flex: 1 }}>{hasPin ? s.on : s.off}</span>
+        {!mode && (hasPin ? (
+          <div style={{ display: "flex", gap: 6 }}>{btn(s.change, () => setMode("set"))}{btn(s.remove, () => setMode("remove"))}</div>
+        ) : btn(s.set, () => setMode("set"), true))}
+      </div>
+
+      {mode === "set" && (
+        <div>
+          {hasPin && numInput(current, setCurrent, s.current)}
+          {numInput(pin, setPin, s.newPin)}
+          {err && <div style={{ fontSize: 12.5, color: "#ef4444", marginBottom: 8 }}>{err}</div>}
+          <div style={{ display: "flex", gap: 8 }}>{btn(s.save, save, true)}{btn(s.cancel, () => { setMode(null); setErr(""); setPin(""); setCurrent(""); })}</div>
+        </div>
+      )}
+      {mode === "remove" && (
+        <div>
+          {numInput(current, setCurrent, s.current)}
+          {err && <div style={{ fontSize: 12.5, color: "#ef4444", marginBottom: 8 }}>{err}</div>}
+          <div style={{ display: "flex", gap: 8 }}>{btn(s.remove, remove, true)}{btn(s.cancel, () => { setMode(null); setErr(""); setCurrent(""); })}</div>
+        </div>
+      )}
     </div>
   );
 }

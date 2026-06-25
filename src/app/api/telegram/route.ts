@@ -6,6 +6,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -217,6 +218,12 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/link") {
     await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`, { reply_markup: mainKeyboard(pickLang(msg.from?.language_code)) });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (msg.text === "/resetpin") {
+    try { await supabaseAdmin().from("users").update({ pin_hash: null }).eq("id", user.id); } catch {}
+    await sendMessage(chatId, "🔓 PIN сброшен. Теперь можно войти в веб без кода — и при желании задать новый в разделе «Профиль».");
     return NextResponse.json({ ok: true });
   }
 

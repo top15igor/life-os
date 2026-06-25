@@ -2,18 +2,19 @@ import { headers, cookies } from "next/headers";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import LangSwitcher from "@/components/LangSwitcher";
-import { CopyLink, ProfileButtons } from "@/components/ProfileActions";
+import { CopyLink, ProfileButtons, PinSettings } from "@/components/ProfileActions";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { title: "Профиль", privateT: "Это твой личный кабинет", privateS: "Дневник виден только тебе — по этой личной ссылке. Никто другой его не видит, и в публичном доступе его нет.", yourLink: "Твоя личная ссылка", linkHint: "Сохрани её — по ней ты входишь в свой дневник на любом устройстве.", language: "Язык", privacy: "Подробнее о приватности", danger: "Управление аккаунтом" },
-  en: { title: "Profile", privateT: "This is your private space", privateS: "Your diary is visible only to you — via this personal link. No one else can see it, and it's not public.", yourLink: "Your personal link", linkHint: "Save it — it's how you sign in to your diary on any device.", language: "Language", privacy: "More about privacy", danger: "Account" },
-  uk: { title: "Профіль", privateT: "Це твій особистий кабінет", privateS: "Щоденник бачиш лише ти — за цим особистим посиланням. Ніхто інший його не бачить, і в публічному доступі його немає.", yourLink: "Твоє особисте посилання", linkHint: "Збережи його — за ним ти входиш у щоденник на будь-якому пристрої.", language: "Мова", privacy: "Докладніше про приватність", danger: "Керування акаунтом" },
-  fr: { title: "Profil", privateT: "C'est ton espace privé", privateS: "Ton journal n'est visible que par toi — via ce lien personnel. Personne d'autre ne le voit, il n'est pas public.", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil.", language: "Langue", privacy: "En savoir plus sur la confidentialité", danger: "Compte" },
+  ru: { title: "Профиль", privateT: "Это твой личный кабинет", privateS: "Дневник виден только тебе — по этой личной ссылке. Никто другой его не видит, и в публичном доступе его нет.", yourLink: "Твоя личная ссылка", linkHint: "Сохрани её — по ней ты входишь в свой дневник на любом устройстве.", language: "Язык", privacy: "Подробнее о приватности", security: "Безопасность", danger: "Управление аккаунтом" },
+  en: { title: "Profile", privateT: "This is your private space", privateS: "Your diary is visible only to you — via this personal link. No one else can see it, and it's not public.", yourLink: "Your personal link", linkHint: "Save it — it's how you sign in to your diary on any device.", language: "Language", privacy: "More about privacy", security: "Security", danger: "Account" },
+  uk: { title: "Профіль", privateT: "Це твій особистий кабінет", privateS: "Щоденник бачиш лише ти — за цим особистим посиланням. Ніхто інший його не бачить, і в публічному доступі його немає.", yourLink: "Твоє особисте посилання", linkHint: "Збережи його — за ним ти входиш у щоденник на будь-якому пристрої.", language: "Мова", privacy: "Докладніше про приватність", security: "Безпека", danger: "Керування акаунтом" },
+  fr: { title: "Profil", privateT: "C'est ton espace privé", privateS: "Ton journal n'est visible que par toi — via ce lien personnel. Personne d'autre ne le voit, il n'est pas public.", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil.", language: "Langue", privacy: "En savoir plus sur la confidentialité", security: "Sécurité", danger: "Compte" },
 };
 
 export default async function ProfilePage() {
@@ -28,6 +29,12 @@ export default async function ProfilePage() {
   const token = (await cookies()).get("lifeos_token")?.value || "";
   const link = `${proto}://${host}/u/${token}`;
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
+
+  let hasPin = false;
+  try {
+    const { data } = await supabaseAdmin().from("users").select("pin_hash").eq("id", user.id).maybeSingle();
+    hasPin = !!data?.pin_hash;
+  } catch {}
 
   return (
     <div className="shell">
@@ -64,6 +71,10 @@ export default async function ProfilePage() {
             <span style={{ fontSize: 14, fontWeight: 500 }}>{s.language}</span>
             <LangSwitcher current={locale} />
           </div>
+
+          {/* Безопасность */}
+          <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.security}</div>
+          <PinSettings locale={locale} hasPin={hasPin} />
 
           {/* Управление */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.danger}</div>
