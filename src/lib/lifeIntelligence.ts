@@ -44,7 +44,7 @@ const TOOL: Anthropic.Tool = {
   },
 };
 
-export async function buildLifeOverview(userId: string): Promise<LifeOverview> {
+export async function buildLifeOverview(userId: string, fresh = false): Promise<LifeOverview> {
   const db = supabaseAdmin();
   const { data: entries } = await db
     .from("entries")
@@ -54,8 +54,33 @@ export async function buildLifeOverview(userId: string): Promise<LifeOverview> {
     .limit(200);
 
   const list = entries || [];
-  const base: LifeOverview = { happiness: [], energyGivers: [], energyDrainers: [], chains: [], patterns: [], entryCount: list.length };
-  if (list.length === 0) return { ...base, note: "Пока нет записей — наблюдения появятся, как только ты начнёшь писать боту." };
+  const count = list.length;
+  const today = new Date().toISOString().slice(0, 10);
+  const base: LifeOverview = { happiness: [], energyGivers: [], energyDrainers: [], chains: [], patterns: [], entryCount: count };
+
+  // Кэш на день: если за сегодня уже считали при том же числе записей — отдаём мгновенно.
+  if (!fresh) {
+    try {
+      const { data: cached } = await db.from("life_overview").select("data, entry_count, day").eq("user_id", userId).maybeSingle();
+      if (cached?.data && cached.entry_count === count && cached.day === today) return cached.data as LifeOverview;
+    } catch {
+      // таблицы кэша может не быть — просто считаем вживую
+    }
+  }
+
+  const save = async (data: LifeOverview) => {
+    try {
+      await db.from("life_overview").upsert({ user_id: userId, day: today, entry_count: count, data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    } catch {
+      // нет таблицы кэша — не страшно
+    }
+  };
+
+  if (count === 0) {
+    const empty = { ...base, note: "Пока нет записей — наблюдения появятся, как только ты начнёшь писать боту." };
+    await save(empty);
+    return empty;
+  }
 
   const context = list.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 600)}`).join("\n");
 
@@ -91,7 +116,7 @@ ${context}`;
     const block = m.content.find((b) => b.type === "tool_use");
     const d = (block && block.type === "tool_use" ? block.input : {}) as any;
     const clampStrength = (x: any) => ({ ...x, strength: Math.max(1, Math.min(5, Math.round(x.strength || 1))) });
-    return {
+    const result: LifeOverview = {
       noticed: d.noticed?.text ? d.noticed : undefined,
       discovery: d.discovery?.text ? d.discovery : undefined,
       happiness: d.happiness || [],
@@ -102,10 +127,12 @@ ${context}`;
       story: d.story || undefined,
       patterns: d.patterns || [],
       note: d.note,
-      entryCount: list.length,
+      entryCount: count,
     };
+    await save(result);
+    return result;
   } catch (e) {
     console.error(e);
-    return { ...base, note: "Не удалось собрать наблюдения, попробуй обновить страницу." };
+    return { ...base, note: "Не удалось собрать наблюдения, попробуй обновить." };
   }
 }

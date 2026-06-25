@@ -8,7 +8,7 @@ const STR: Record<string, any> = {
     noticed: "Сегодня AI заметил", discovery: "Главное открытие",
     happiness: "Что делает тебя счастливым", givers: "Что даёт энергию", drainers: "Что забирает энергию",
     chains: "Причины → последствия", surprise: "AI удивился", story: "История последних 30 дней", patterns: "Закономерности",
-    conf: { low: "гипотеза", medium: "вероятно", high: "уверенно" }, basis: "на основе", retry: "Обновить",
+    conf: { low: "гипотеза", medium: "вероятно", high: "уверенно" }, basis: "на основе", retry: "Обновить", loadingHint: "Это занимает 10–20 секунд", failed: "Не удалось собрать наблюдения. Попробуй обновить.",
     empty: "Наблюдения появятся, когда накопится больше записей. Пиши боту каждый день 🙂",
   },
   en: {
@@ -16,7 +16,7 @@ const STR: Record<string, any> = {
     noticed: "Today AI noticed", discovery: "Key discovery",
     happiness: "What makes you happy", givers: "What gives energy", drainers: "What drains energy",
     chains: "Causes → effects", surprise: "AI was surprised", story: "Story of the last 30 days", patterns: "Patterns",
-    conf: { low: "hypothesis", medium: "likely", high: "confident" }, basis: "based on", retry: "Refresh",
+    conf: { low: "hypothesis", medium: "likely", high: "confident" }, basis: "based on", retry: "Refresh", loadingHint: "This takes 10–20 seconds", failed: "Couldn't build insights. Try refreshing.",
     empty: "Insights will appear as more entries accumulate. Write to the bot every day 🙂",
   },
   uk: {
@@ -24,7 +24,7 @@ const STR: Record<string, any> = {
     noticed: "Сьогодні AI помітив", discovery: "Головне відкриття",
     happiness: "Що робить тебе щасливим", givers: "Що дає енергію", drainers: "Що забирає енергію",
     chains: "Причини → наслідки", surprise: "AI здивувався", story: "Історія останніх 30 днів", patterns: "Закономірності",
-    conf: { low: "гіпотеза", medium: "ймовірно", high: "впевнено" }, basis: "на основі", retry: "Оновити",
+    conf: { low: "гіпотеза", medium: "ймовірно", high: "впевнено" }, basis: "на основі", retry: "Оновити", loadingHint: "Це триває 10–20 секунд", failed: "Не вдалося зібрати спостереження. Спробуй оновити.",
     empty: "Спостереження з'являться, коли накопичиться більше записів. Пиши боту щодня 🙂",
   },
   fr: {
@@ -32,7 +32,7 @@ const STR: Record<string, any> = {
     noticed: "Aujourd'hui l'IA a remarqué", discovery: "Découverte clé",
     happiness: "Ce qui te rend heureux", givers: "Ce qui donne de l'énergie", drainers: "Ce qui épuise",
     chains: "Causes → effets", surprise: "L'IA a été surprise", story: "Histoire des 30 derniers jours", patterns: "Schémas",
-    conf: { low: "hypothèse", medium: "probable", high: "sûr" }, basis: "d'après", retry: "Actualiser",
+    conf: { low: "hypothèse", medium: "probable", high: "sûr" }, basis: "d'après", retry: "Actualiser", loadingHint: "Cela prend 10–20 secondes", failed: "Impossible de générer. Réessaie.",
     empty: "Les observations apparaîtront avec plus d'entrées. Écris au bot chaque jour 🙂",
   },
 };
@@ -76,9 +76,10 @@ function Skeleton({ s }: any) {
   return (
     <div>
       <style>{`@keyframes lopulse{0%,100%{opacity:.45}50%{opacity:.85}}`}</style>
-      <div style={{ fontSize: 13.5, color: "var(--text-2)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ fontSize: 13.5, color: "var(--text-2)", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
         <i className="ti ti-sparkles" style={{ color: "var(--insight)" }} />{s.loading}
       </div>
+      <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 14, marginLeft: 24 }}>{s.loadingHint}</div>
       {[120, 80, 96].map((hgt, i) => (
         <div key={i} style={{ height: hgt, borderRadius: 14, background: "var(--surface-2)", marginBottom: 12, animation: "lopulse 1.4s ease-in-out infinite", animationDelay: `${i * 0.18}s` }} />
       ))}
@@ -91,13 +92,15 @@ export default function IntelligenceOverview({ locale }: { locale: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  function load() {
+  function load(fresh = false) {
     setLoading(true);
-    fetch("/api/life-overview", { method: "POST" })
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 75000);
+    fetch("/api/life-overview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ fresh }), signal: ctrl.signal })
       .then((r) => r.json())
       .then((j) => setData(j.data || null))
       .catch(() => setData(null))
-      .finally(() => setLoading(false));
+      .finally(() => { clearTimeout(to); setLoading(false); });
   }
   useEffect(() => { load(); }, []);
 
@@ -109,8 +112,8 @@ export default function IntelligenceOverview({ locale }: { locale: string }) {
   if (!hasAny) {
     return (
       <div className="card" style={{ color: "var(--text-2)", fontSize: 14, lineHeight: 1.6 }}>
-        {d?.note || s.empty}
-        <button onClick={load} style={{ display: "block", marginTop: 12, fontSize: 13, padding: "7px 14px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", cursor: "pointer" }}>
+        {!data ? s.failed : (d.note || s.empty)}
+        <button onClick={() => load(true)} style={{ display: "block", marginTop: 12, fontSize: 13, padding: "7px 14px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", cursor: "pointer" }}>
           <i className="ti ti-refresh" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.retry}
         </button>
       </div>

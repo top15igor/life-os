@@ -1,15 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { buildLifeOverview } from "@/lib/lifeIntelligence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const fresh = !!body?.fresh;
   try {
-    const data = await buildLifeOverview(user.id);
+    const data = await buildLifeOverview(user.id, fresh);
     return NextResponse.json({ ok: true, data });
   } catch (e) {
     console.error(e);
