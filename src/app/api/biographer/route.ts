@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     .order("entry_date", { ascending: true })
     .limit(200);
 
-  const list = (entries || []).map((e) => `${e.entry_date}: ${e.summary || e.raw_text}`).join("\n") || "(записей пока нет)";
+  const list = (entries || []).map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n") || "(записей пока нет)";
 
   const prompt = `Ты — AI-биограф личного дневника LIFE OS. Ответь на вопрос пользователя СВЯЗНЫМ, тёплым повествованием на языке вопроса, опираясь ТОЛЬКО на записи ниже. Ссылайся на даты, показывай развитие во времени. НЕ выдумывай того, чего нет в записях. Если данных мало — честно скажи об этом и предложи вести дневник дальше.
 

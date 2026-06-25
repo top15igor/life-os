@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   if (!data?.length) return NextResponse.json({ ok: true, chapter: null });
 
-  const list = data.map((e) => `${e.entry_date}: ${e.summary || e.raw_text}`).join("\n");
+  const list = data.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n");
   const prompt = `Ты — AI-биограф LIFE OS. Напиши главу Книги жизни за месяц по записям ниже. Пиши на языке записей, тепло и по-человечески, строго по фактам (не выдумывай). Вызови инструмент chapter.\n\nЗАПИСИ:\n${list}`;
 
   try {

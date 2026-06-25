@@ -51,7 +51,7 @@ export async function buildIntelligence(userId: string, entryId: string): Promis
 
   const { data: others } = await db
     .from("entries")
-    .select("id, entry_date, summary")
+    .select("id, entry_date, summary, raw_text")
     .eq("user_id", userId)
     .neq("id", entryId)
     .order("entry_date", { ascending: true })
@@ -62,13 +62,13 @@ export async function buildIntelligence(userId: string, entryId: string): Promis
   for (const e of list) refsInfo[e.id] = { id: e.id, date: e.entry_date, summary: e.summary || "" };
 
   const context = list.length
-    ? list.map((e) => `[${e.id}] ${e.entry_date}: ${e.summary || ""}`).join("\n")
+    ? list.map((e) => `[${e.id}] ${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 400)}`).join("\n")
     : "(других записей пока нет)";
 
   const prompt = `Ты — аналитик причинно-следственных связей в личном дневнике LIFE OS.
 
 ЦЕЛЕВАЯ ЗАПИСЬ (id ${target.id}, ${target.entry_date}):
-"""${target.summary || target.raw_text}"""
+"""${target.raw_text || target.summary || ""}"""
 
 ДРУГИЕ ЗАПИСИ пользователя (формат [id] дата: суть):
 ${context}

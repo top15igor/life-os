@@ -18,7 +18,7 @@ async function weeklyDigest(userId: string): Promise<string | null> {
     .order("entry_date", { ascending: true });
   if (!data?.length) return null;
 
-  const list = data.map((e) => `${e.entry_date}: ${e.summary || e.raw_text}`).join("\n");
+  const list = data.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n");
   const prompt = `Ты — AI-биограф дневника LIFE OS. Сделай тёплый короткий обзор недели пользователя на русском по записям ниже: главные события, повторяющаяся тема, 1 инсайт и 1 мягкий совет на следующую неделю. 5–7 строк, по-человечески, без канцелярита.\n\nЗАПИСИ:\n${list}`;
   try {
     const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
