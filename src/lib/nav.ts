@@ -8,7 +8,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "lifebook", href: "/lifebook", icon: "ti-book-2" },
   { key: "people", href: "/people", icon: "ti-user-heart" },
   { key: "places", href: "/places", icon: "ti-map-pin" },
-  { key: "analytics", href: "/analytics", icon: "ti-chart-line" },
+  { key: "analytics", href: "/analytics", icon: "ti-sparkles" },
   { key: "biographer", href: "/biographer", icon: "ti-messages" },
   { key: "guide", href: "/guide", icon: "ti-help" },
 ];
