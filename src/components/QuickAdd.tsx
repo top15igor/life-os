@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const REC: Record<string, any> = {
-  ru: { rec: "Идёт запись", transcribing: "Распознаю голос…", mic: "Записать голосом", stop: "Стоп", denied: "Нет доступа к микрофону. Разреши его в настройках браузера.", saved: "Запись сохранена", open: "Открыть запись", empty: "Ничего не расслышал — попробуй ещё раз." },
-  en: { rec: "Recording", transcribing: "Transcribing…", mic: "Record by voice", stop: "Stop", denied: "No microphone access. Allow it in your browser settings.", saved: "Entry saved", open: "Open entry", empty: "Didn't catch that — try again." },
-  uk: { rec: "Триває запис", transcribing: "Розпізнаю голос…", mic: "Записати голосом", stop: "Стоп", denied: "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера.", saved: "Запис збережено", open: "Відкрити запис", empty: "Нічого не розчув — спробуй ще раз." },
-  fr: { rec: "Enregistrement", transcribing: "Transcription…", mic: "Enregistrer à la voix", stop: "Stop", denied: "Pas d'accès au micro. Autorise-le dans les réglages du navigateur.", saved: "Entrée enregistrée", open: "Ouvrir l'entrée", empty: "Je n'ai rien entendu — réessaie." },
+  ru: { rec: "Идёт запись", transcribing: "Распознаю голос…", mic: "Записать голосом", stop: "Стоп", denied: "Нет доступа к микрофону. Разреши его в настройках браузера.", saved: "Запись сохранена", open: "Открыть запись", empty: "Ничего не расслышал — попробуй ещё раз.", compact: "Записать событие, мысль или обещание…" },
+  en: { rec: "Recording", transcribing: "Transcribing…", mic: "Record by voice", stop: "Stop", denied: "No microphone access. Allow it in your browser settings.", saved: "Entry saved", open: "Open entry", empty: "Didn't catch that — try again.", compact: "Note an event, thought or promise…" },
+  uk: { rec: "Триває запис", transcribing: "Розпізнаю голос…", mic: "Записати голосом", stop: "Стоп", denied: "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера.", saved: "Запис збережено", open: "Відкрити запис", empty: "Нічого не розчув — спробуй ще раз.", compact: "Записати подію, думку чи обіцянку…" },
+  fr: { rec: "Enregistrement", transcribing: "Transcription…", mic: "Enregistrer à la voix", stop: "Stop", denied: "Pas d'accès au micro. Autorise-le dans les réglages du navigateur.", saved: "Entrée enregistrée", open: "Ouvrir l'entrée", empty: "Je n'ai rien entendu — réessaie.", compact: "Noter un événement, une pensée ou une promesse…" },
 };
 
 function mmss(s: number) {
@@ -33,6 +33,7 @@ export default function QuickAdd({
   const r = REC[locale || "ru"] || REC.ru;
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [result, setResult] = useState<{ text: string; id?: string } | null>(null);
@@ -41,6 +42,13 @@ export default function QuickAdd({
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<any>(null);
   const dismissRef = useRef<any>(null);
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+
+  function openExpand() {
+    setExpanded(true);
+    setResult(null);
+    setTimeout(() => taRef.current?.focus(), 30);
+  }
 
   function showResult(res: { text: string; id?: string }) {
     setResult(res);
@@ -56,7 +64,7 @@ export default function QuickAdd({
     try {
       const res = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: sent }) });
       const j = await res.json().catch(() => null);
-      if (res.ok && j?.ok) { setText(""); showResult({ text: sent, id: j.id }); router.refresh(); }
+      if (res.ok && j?.ok) { setText(""); setExpanded(false); showResult({ text: sent, id: j.id }); router.refresh(); }
     } finally {
       setBusy(false);
     }
@@ -106,8 +114,10 @@ export default function QuickAdd({
     }
   }
 
+  const open = expanded || busy || !!text;
+
   return (
-    <form onSubmit={submit} style={{ border: "1px solid var(--border)", borderRadius: 13, padding: "12px 15px", marginBottom: 18 }}>
+    <form onSubmit={submit} style={{ border: "1px solid var(--border)", borderRadius: 13, padding: open || recording ? "12px 15px" : "4px 6px 4px 14px", marginBottom: 18 }}>
       <style>{`@keyframes qapulse{0%,100%{opacity:1}50%{opacity:.35}}`}</style>
 
       {result && (
@@ -135,31 +145,42 @@ export default function QuickAdd({
             <i className="ti ti-player-stop-filled" style={{ fontSize: 14 }} />{r.stop}
           </button>
         </div>
-      ) : (
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={busy ? r.transcribing : placeholder}
-          rows={2}
-          disabled={busy}
-          style={{ width: "100%", border: "none", outline: "none", resize: "vertical", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5 }}
-        />
-      )}
-
-      {!recording && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-          {busy ? (
-            <><i className="ti ti-loader-2" style={{ fontSize: 15, color: "var(--accent)" }} /><span style={{ fontSize: 12, color: "var(--text-2)", flex: 1 }}>{r.transcribing}</span></>
-          ) : (
-            <><i className="ti ti-brand-telegram" style={{ fontSize: 15, color: "var(--text-3)" }} /><span style={{ fontSize: 11.5, color: "var(--text-3)", flex: 1 }}>{hint}</span></>
-          )}
-          <button type="button" onClick={startRec} disabled={busy} title={r.mic} aria-label={r.mic} style={{ width: 36, height: 36, borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", cursor: busy ? "default" : "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <i className="ti ti-microphone" style={{ fontSize: 18 }} />
-          </button>
-          <button type="submit" disabled={busy || !text.trim()} style={{ fontSize: 13, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: busy ? "default" : "pointer", background: "var(--accent)", color: "#fff", opacity: busy || !text.trim() ? 0.6 : 1 }}>
-            {busy ? saving : button}
+      ) : !open ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div onClick={openExpand} style={{ flex: 1, display: "flex", alignItems: "center", gap: 9, cursor: "text", padding: "8px 0", color: "var(--text-3)", fontSize: 14.5 }}>
+            <i className="ti ti-pencil" style={{ fontSize: 16 }} />
+            <span>{r.compact}</span>
+          </div>
+          <button type="button" onClick={startRec} title={r.mic} aria-label={r.mic} style={{ width: 34, height: 34, borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <i className="ti ti-microphone" style={{ fontSize: 17 }} />
           </button>
         </div>
+      ) : (
+        <>
+          <textarea
+            ref={taRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={() => { if (!text.trim() && !busy) setExpanded(false); }}
+            placeholder={busy ? r.transcribing : placeholder}
+            rows={2}
+            disabled={busy}
+            style={{ width: "100%", border: "none", outline: "none", resize: "vertical", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5 }}
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+            {busy ? (
+              <><i className="ti ti-loader-2" style={{ fontSize: 15, color: "var(--accent)" }} /><span style={{ fontSize: 12, color: "var(--text-2)", flex: 1 }}>{r.transcribing}</span></>
+            ) : (
+              <><i className="ti ti-brand-telegram" style={{ fontSize: 15, color: "var(--text-3)" }} /><span style={{ fontSize: 11.5, color: "var(--text-3)", flex: 1 }}>{hint}</span></>
+            )}
+            <button type="button" onClick={startRec} disabled={busy} title={r.mic} aria-label={r.mic} style={{ width: 36, height: 36, borderRadius: 99, border: "1px solid var(--border)", background: "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", cursor: busy ? "default" : "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <i className="ti ti-microphone" style={{ fontSize: 18 }} />
+            </button>
+            <button type="submit" disabled={busy || !text.trim()} style={{ fontSize: 13, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: busy ? "default" : "pointer", background: "var(--accent)", color: "#fff", opacity: busy || !text.trim() ? 0.6 : 1 }}>
+              {busy ? saving : button}
+            </button>
+          </div>
+        </>
       )}
     </form>
   );

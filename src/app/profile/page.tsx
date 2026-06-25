@@ -33,10 +33,14 @@ export default async function ProfilePage() {
 
   let hasPin = false;
   let homePreset = "mindful";
+  let homeBlocks: string[] = [];
   try {
-    const { data } = await supabaseAdmin().from("users").select("pin_hash, home_preset").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
     hasPin = !!data?.pin_hash;
     if (data?.home_preset) homePreset = data.home_preset;
+    if (data?.home_blocks) {
+      try { homeBlocks = JSON.parse(data.home_blocks); } catch { homeBlocks = String(data.home_blocks).split(",").map((x: string) => x.trim()).filter(Boolean); }
+    }
   } catch {}
 
   return (
@@ -77,7 +81,7 @@ export default async function ProfilePage() {
 
           {/* Акцент главной */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.accent}</div>
-          <HomePresetPicker current={homePreset} locale={locale} />
+          <HomePresetPicker current={homePreset} locale={locale} currentBlocks={homeBlocks} />
 
           {/* Твои данные */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.yourData}</div>

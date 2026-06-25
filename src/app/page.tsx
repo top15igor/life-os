@@ -50,15 +50,19 @@ export default async function HomePage() {
 
   let hasPin = false;
   let preset = "mindful";
+  let blocks: string[] | null = null;
   try {
-    const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset").eq("id", user.id).maybeSingle();
+    const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
     hasPin = !!pinRow?.pin_hash;
     if (pinRow?.home_preset) preset = pinRow.home_preset;
+    if (pinRow?.home_blocks) {
+      try { blocks = JSON.parse(pinRow.home_blocks); } catch { blocks = String(pinRow.home_blocks).split(",").map((x: string) => x.trim()).filter(Boolean); }
+    }
   } catch {}
 
-  // Время суток (ориентир Киев, UTC+3) — для adaptive-акцента главной.
-  const kyivHour = (new Date().getUTCHours() + 3) % 24;
-  const daypart = kyivHour < 11 ? "morning" : kyivHour < 18 ? "day" : "evening";
+  // Время суток — тот же источник и пороги, что и в greeting() (Europe/Kyiv), чтобы не противоречить приветствию.
+  const kyivHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Kyiv", hour: "2-digit", hour12: false }).format(new Date()));
+  const daypart = kyivHour < 6 ? "night" : kyivHour < 12 ? "morning" : kyivHour < 18 ? "day" : "evening";
 
   const tok = (await cookies()).get("lifeos_token")?.value || "";
   const hdrs = await headers();
@@ -137,6 +141,7 @@ export default async function HomePage() {
     promises,
     traceWeek,
     preset,
+    blocks,
     daypart,
     experiment: activeExp ? { title: activeExp.title, day: expDay, duration: activeExp.duration_days } : null,
     changes,
