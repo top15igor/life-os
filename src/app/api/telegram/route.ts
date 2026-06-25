@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
-import { analyze, type Analysis } from "@/lib/ai";
+import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
@@ -208,6 +208,30 @@ export async function POST(req: NextRequest) {
     if (!text || !text.trim()) {
       await sendMessage(chatId, "Пришли текст или голосовое сообщение 🙂");
       return NextResponse.json({ ok: true });
+    }
+
+    // /save <текст> — принудительно сохранить как запись (минуя авто-определение смысла).
+    let forceSave = false;
+    if (text.startsWith("/save")) {
+      forceSave = true;
+      text = text.replace(/^\/save\s*/, "").trim();
+      if (!text) {
+        await sendMessage(chatId, "После /save напиши текст записи 🙂");
+        return NextResponse.json({ ok: true });
+      }
+    }
+
+    // По смыслу: это вопрос к ассистенту или запись в дневник?
+    // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
+    if (!forceSave && (!isVoice || text.length < 160)) {
+      const intent = await classifyIntent(text);
+      if (intent === "question") {
+        await sendChatAction(chatId, "typing");
+        const ans = await askLife(user.id, text);
+        await saveChat(user.id, text, ans);
+        await sendMessage(chatId, esc(ans) || "—");
+        return NextResponse.json({ ok: true });
+      }
     }
 
     const analysis = await analyze(text);

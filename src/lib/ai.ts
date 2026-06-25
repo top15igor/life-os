@@ -77,6 +77,32 @@ ${text}
 """`;
 }
 
+// Быстрый маршрутизатор: это вопрос к ассистенту или запись в дневник?
+export async function classifyIntent(text: string): Promise<"question" | "note"> {
+  try {
+    const msg = await client().messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 5,
+      messages: [{ role: "user", content: `Сообщение пользователя в его личном дневнике. Определи намерение и ответь СТРОГО одним словом.
+
+"question" — пользователь СПРАШИВАЕТ ассистента, просит найти / вспомнить / проанализировать что-то из дневника, либо задаёт вопрос. Примеры: «какие у меня цели?», «что я писал про здоровье», «когда я последний раз бегал», «сколько раз я болел», «расскажи историю проекта», «тебе можно задавать вопросы?».
+
+"note" — пользователь ЗАПИСЫВАЕТ мысль, событие, состояние, идею или факт о своём дне. Примеры: «сегодня тренировался, устал», «классная идея для проекта», «поговорил с мамой», «спал 5 часов, болит голова».
+
+Если сомневаешься — отвечай note.
+
+Сообщение:
+"""${text}"""
+
+Одним словом (question или note):` }],
+    });
+    const out = msg.content.filter((b) => b.type === "text").map((b: any) => b.text).join("").toLowerCase();
+    return out.includes("question") ? "question" : "note";
+  } catch {
+    return "note"; // при ошибке безопаснее сохранить
+  }
+}
+
 export async function analyze(text: string): Promise<Analysis> {
   const msg = await client().messages.create({
     model: "claude-sonnet-4-6",
