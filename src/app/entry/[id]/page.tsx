@@ -4,6 +4,7 @@ import { getEntry, cats, tagList, people } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import TaskList from "@/components/TaskList";
 
 export const dynamic = "force-dynamic";
 
@@ -112,14 +113,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
 
         {e.tasks?.length > 0 && (
           <Section icon="ti-checkbox" title={t.entry.tasks} color="#3b82f6">
-            <div className="card">
-              {e.tasks.map((task: any) => (
-                <div key={task.id} style={{ fontSize: 13, lineHeight: 1.5, display: "flex", gap: 8, padding: "3px 0", color: task.done ? "var(--text-3)" : "var(--text)" }}>
-                  <i className={`ti ${task.done ? "ti-square-check" : "ti-square"}`} style={{ fontSize: 15, color: task.done ? "var(--positive)" : "var(--text-3)" }} />
-                  <span style={{ textDecoration: task.done ? "line-through" : "none" }}>{task.text}</span>
-                </div>
-              ))}
-            </div>
+            <TaskList tasks={e.tasks} />
           </Section>
         )}
 
