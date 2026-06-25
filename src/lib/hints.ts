@@ -22,6 +22,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Записи про питание и еду.",
     family: "Моменты и события с семьёй.",
     places: "Места из твоих записей — где ты бывал.",
+    profile: "Твой личный кабинет: личная ссылка, язык, приватность, выход и удаление аккаунта.",
   },
   en: {
     today: "Your day at a glance: today's metrics and entries. Add an entry here or by voice in Telegram.",
@@ -44,6 +45,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Entries about food and nutrition.",
     family: "Moments and events with your family.",
     places: "Places from your entries — where you've been.",
+    profile: "Your account: personal link, language, privacy, log out and delete account.",
   },
   uk: {
     today: "Головний екран: твої показники та записи за сьогодні. Можна додати запис тут або голосом у Telegram.",
@@ -66,6 +68,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Записи про харчування та їжу.",
     family: "Моменти й події з сім'єю.",
     places: "Місця з твоїх записів — де ти бував.",
+    profile: "Твій особистий кабінет: посилання, мова, приватність, вихід і видалення акаунта.",
   },
   fr: {
     today: "Ta journée en un coup d'œil : indicateurs et entrées du jour. Ajoute une entrée ici ou par la voix dans Telegram.",
@@ -88,6 +91,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Entrées sur l'alimentation.",
     family: "Moments et événements en famille.",
     places: "Les lieux de tes entrées — où tu es allé.",
+    profile: "Ton compte : lien personnel, langue, confidentialité, déconnexion et suppression.",
   },
 };
 
