@@ -111,6 +111,27 @@ export async function getOnThisDay(userId: string, todayISO: string): Promise<{ 
   return { period: y ? "year" : "month", summary: (pick.summary || pick.raw_text || "").slice(0, 140) };
 }
 
+export async function getOpenTasks(userId: string, limit = 5) {
+  const { data } = await supabaseAdmin()
+    .from("tasks")
+    .select("id, text, done")
+    .eq("user_id", userId)
+    .eq("done", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+export async function getRecentGratitude(userId: string, limit = 3) {
+  const { data } = await supabaseAdmin()
+    .from("gratitude")
+    .select("text")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data || []).map((g: any) => g.text);
+}
+
 export async function getGoals(userId: string) {
   const { data } = await supabaseAdmin()
     .from("goals")
