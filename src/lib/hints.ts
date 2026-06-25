@@ -13,6 +13,11 @@ const H: Record<Locale, Record<string, string>> = {
     intelligence: "AI находит причины, последствия и связи этой записи с другими — строго по твоим данным, без выдумок.",
     goals: "Цели на год с прогрессом. Добавляй цель и двигай ползунок по мере выполнения.",
     lifebook: "AI собирает каждый месяц твоей жизни в главу — с темами и связным рассказом.",
+    energy: "Как меняется твоя энергия и что её повышает.",
+    sport: "Все записи про спорт и тренировки.",
+    food: "Записи про питание и еду.",
+    family: "Моменты и события с семьёй.",
+    places: "Места из твоих записей — где ты бывал.",
   },
   en: {
     today: "Your day at a glance: today's metrics and entries. Add an entry here or by voice in Telegram.",
@@ -26,6 +31,11 @@ const H: Record<Locale, Record<string, string>> = {
     intelligence: "AI finds causes, consequences and links of this entry to others — strictly from your data, no invention.",
     goals: "Yearly goals with progress. Add a goal and move the slider as you advance.",
     lifebook: "AI turns each month of your life into a chapter — themes and a flowing story.",
+    energy: "How your energy changes and what lifts it.",
+    sport: "All your entries about sport and workouts.",
+    food: "Entries about food and nutrition.",
+    family: "Moments and events with your family.",
+    places: "Places from your entries — where you've been.",
   },
   uk: {
     today: "Головний екран: твої показники та записи за сьогодні. Можна додати запис тут або голосом у Telegram.",
@@ -39,6 +49,11 @@ const H: Record<Locale, Record<string, string>> = {
     intelligence: "AI знаходить причини, наслідки та зв'язки цього запису з іншими — строго за твоїми даними.",
     goals: "Цілі на рік із прогресом. Додавай ціль і рухай повзунок у міру виконання.",
     lifebook: "AI збирає кожен місяць твого життя у главу — з темами та зв'язною розповіддю.",
+    energy: "Як змінюється твоя енергія і що її підвищує.",
+    sport: "Усі записи про спорт і тренування.",
+    food: "Записи про харчування та їжу.",
+    family: "Моменти й події з сім'єю.",
+    places: "Місця з твоїх записів — де ти бував.",
   },
   fr: {
     today: "Ta journée en un coup d'œil : indicateurs et entrées du jour. Ajoute une entrée ici ou par la voix dans Telegram.",
@@ -52,6 +67,11 @@ const H: Record<Locale, Record<string, string>> = {
     intelligence: "L'IA trouve causes, conséquences et liens de cette entrée — strictement à partir de tes données.",
     goals: "Objectifs annuels avec progression. Ajoute un objectif et déplace le curseur.",
     lifebook: "L'IA transforme chaque mois de ta vie en chapitre — thèmes et récit fluide.",
+    energy: "Comment ton énergie évolue et ce qui la booste.",
+    sport: "Toutes tes entrées sur le sport.",
+    food: "Entrées sur l'alimentation.",
+    family: "Moments et événements en famille.",
+    places: "Les lieux de tes entrées — où tu es allé.",
   },
 };
 

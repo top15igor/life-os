@@ -6,12 +6,12 @@ const LIST_SELECT = `
   entry_categories ( categories ( name, slug, color ) ),
   entry_tags ( tags ( name ) ),
   entry_people ( people ( name ) ),
-  entry_projects ( projects ( name ) )
+  entry_projects ( projects ( name ) ),
+  entry_places ( places ( name ) )
 `;
 
 const DETAIL_SELECT = `
   ${LIST_SELECT},
-  entry_places ( places ( name ) ),
   tasks ( id, text, done ),
   insights ( text ),
   gratitude ( text )
@@ -58,6 +58,9 @@ export function people(e: Entry): string[] {
 }
 export function projects(e: Entry): string[] {
   return (e.entry_projects || []).map((x: any) => x.projects?.name).filter(Boolean);
+}
+export function places(e: Entry): string[] {
+  return (e.entry_places || []).map((x: any) => x.places?.name).filter(Boolean);
 }
 
 export async function getInsights(userId: string) {
