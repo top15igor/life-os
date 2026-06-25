@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LangSwitcher from "./LangSwitcher";
@@ -17,6 +18,15 @@ export default function Sidebar({
   locale: Locale;
 }) {
   const path = usePathname();
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setIsOwner(!!d.isOwner))
+      .catch(() => {});
+  }, []);
+
   return (
     <>
       <aside className="sidebar">
@@ -30,12 +40,18 @@ export default function Sidebar({
             <span className="navlabel">{navLabels[n.key] || n.key}</span>
           </Link>
         ))}
+        {isOwner && (
+          <Link href="/admin" className={`navlink${path === "/admin" ? " active" : ""}`} style={{ marginTop: 6, color: "var(--accent)" }}>
+            <i className="ti ti-shield-lock" />
+            <span className="navlabel">Admin</span>
+          </Link>
+        )}
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
           <LangSwitcher current={locale} />
         </div>
       </aside>
 
-      <MobileNav navLabels={navLabels} locale={locale} />
+      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} />
     </>
   );
 }
