@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getToday, cats, tagList, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,10 @@ function Metric({ label, icon, value, suffix, color }: any) {
 }
 
 export default async function TodayPage() {
+  const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
-  const { date, entries } = await getToday();
+  const { date, entries } = await getToday(user.id);
   const mood = pickLatest(entries, "mood");
   const energy = pickLatest(entries, "energy");
   const health = pickLatest(entries, "health");
@@ -44,7 +46,7 @@ export default async function TodayPage() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 19, fontWeight: 500 }}>{greeting(locale)}, Игорь</div>
+          <div style={{ fontSize: 19, fontWeight: 500 }}>{greeting(locale)}{user.name ? ", " + user.name : ""}</div>
           <div style={{ fontSize: 13, color: "var(--text-2)" }}>
             {dateLabel(locale, date || undefined)} · {entries.length} {t.entriesWord}
           </div>

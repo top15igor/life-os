@@ -3,11 +3,11 @@ import { getFileUrl, sendMessage } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
+import { getOrCreateUser } from "@/lib/users";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  // Защита вебхука: Telegram присылает наш секрет в заголовке.
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
     return new NextResponse("forbidden", { status: 403 });
@@ -18,20 +18,32 @@ export async function POST(req: NextRequest) {
   if (!msg) return NextResponse.json({ ok: true });
 
   const chatId: number = msg.chat.id;
+  const origin = req.nextUrl.origin;
 
-  // Команда /start — показываем chat_id, чтобы привязать «своего» пользователя.
+  // Каждый пользователь Telegram = аккаунт. Создаём при первом сообщении.
+  let user;
+  try {
+    user = await getOrCreateUser(chatId, msg.from?.first_name);
+  } catch (e) {
+    console.error(e);
+    await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
+    return NextResponse.json({ ok: true });
+  }
+
+  const link = `${origin}/u/${user.token}`;
+
   if (msg.text === "/start") {
     await sendMessage(
       chatId,
-      `Привет! Это твой личный дневник LIFE OS.\nТвой chat_id: <b>${chatId}</b>\n\nПросто наговори голосовое или напиши текст — я разложу всё по полочкам.`
+      `Привет${user.name ? ", " + user.name : ""}! Это твой личный дневник <b>LIFE OS</b>.\n\n` +
+        `Твоя личная ссылка на веб-дневник (сохрани её — это твой вход):\n${link}\n\n` +
+        `Просто наговори голосовое или напиши текст — я разложу всё по полочкам.`
     );
     return NextResponse.json({ ok: true });
   }
 
-  // Доступ только своим (если задан разрешённый chat_id).
-  const allowed = process.env.TELEGRAM_ALLOWED_CHAT_ID;
-  if (allowed && String(chatId) !== allowed) {
-    await sendMessage(chatId, "Этот дневник личный 🙂");
+  if (msg.text === "/link") {
+    await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`);
     return NextResponse.json({ ok: true });
   }
 
@@ -53,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     const analysis = await analyze(text);
     await saveEntry({
+      userId: user.id,
       raw_text: text,
       source: isVoice ? "telegram_voice" : "telegram_text",
       analysis,

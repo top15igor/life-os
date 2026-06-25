@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getEntries, cats, tagList, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ const CAT_COLOR: Record<string, string> = {
 };
 
 export default async function DiaryPage() {
+  const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
-  const entries = await getEntries(200);
+  const entries = await getEntries(user.id, 200);
   const byDate: Record<string, Entry[]> = {};
   for (const e of entries) (byDate[e.entry_date] ||= []).push(e);
   const dates = Object.keys(byDate).sort().reverse();

@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Пускаем на сайт только по паролю — но лишь если APP_PASSWORD задан.
-// Пока пароль не настроен, сайт открыт (для первичного просмотра).
+// Пускаем на страницы только при наличии cookie-токена (личная ссылка из бота).
+// Реальная проверка токена по базе — в самих страницах (requireUser).
 export function middleware(req: NextRequest) {
-  const pass = (process.env.APP_PASSWORD || "").trim();
-  if (!pass) return NextResponse.next();
-
-  const cookie = (req.cookies.get("lifeos_auth")?.value || "").trim();
-  if (cookie === pass) return NextResponse.next();
+  const token = req.cookies.get("lifeos_token")?.value;
+  if (token) return NextResponse.next();
 
   const url = req.nextUrl.clone();
   url.pathname = "/login";
-  url.searchParams.set("from", req.nextUrl.pathname);
   return NextResponse.redirect(url);
 }
 
 export const config = {
-  // Защищаем страницы, кроме /login, всех /api/*, статики и favicon.
-  matcher: ["/((?!login|api|_next/static|_next/image|favicon.ico).*)"],
+  // Защищаем страницы, кроме /login, /u/* (вход по ссылке), /api/* и статики.
+  matcher: ["/((?!login|u|api|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getEntry, cats, tagList, people } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,10 @@ function KV({ label, value, top }: { label: string; value: string; top?: boolean
 
 export default async function EntryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
-  const e = await getEntry(id);
+  const e = await getEntry(id, user.id);
 
   if (!e) {
     return (
