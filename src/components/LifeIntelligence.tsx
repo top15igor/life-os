@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Hint from "./Hint";
+import { hints } from "@/lib/hints";
 
 const STR: Record<string, any> = {
   ru: { title: "Life Intelligence", causes: "Почему это произошло", consequences: "Что изменилось после", related: "Связанные и похожие", decisions: "Какие решения появились", patterns: "Закономерности", loading: "AI выстраивает связи…", empty: "Связи появятся, когда накопится больше записей." },
@@ -66,6 +68,7 @@ export default function LifeIntelligence({ entryId, locale }: { entryId: string;
     <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: "13px 15px", marginBottom: 16, background: "var(--surface)" }}>
       <div style={{ fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
         <i className="ti ti-brain" style={{ color: "var(--insight)", fontSize: 17 }} />{s.title}
+        <Hint text={hints(locale as any).intelligence} />
       </div>
 
       {loading ? (

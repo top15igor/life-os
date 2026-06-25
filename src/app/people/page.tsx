@@ -4,6 +4,8 @@ import { getEntries, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import PageHead from "@/components/PageHead";
+import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ export default async function PeoplePage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale];
+  const h = hints(locale);
   const entries = await getEntries(user.id, 300);
 
   const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[] }>();
@@ -39,9 +42,7 @@ export default async function PeoplePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
-        <div style={{ fontSize: 19, fontWeight: 500, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ti ti-user-heart" style={{ color: "#ec4899" }} />{t.nav.people}
-        </div>
+        <PageHead icon="ti-user-heart" color="#ec4899" title={t.nav.people} hint={h.people} />
         {list.length === 0 ? (
           <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
         ) : (

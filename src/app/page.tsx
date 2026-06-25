@@ -5,6 +5,8 @@ import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import QuickAdd from "@/components/QuickAdd";
+import Hint from "@/components/Hint";
+import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,7 @@ export default async function TodayPage() {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
+  const h = hints(locale);
   const { date, entries } = await getToday(user.id);
   const mood = pickLatest(entries, "mood");
   const energy = pickLatest(entries, "energy");
@@ -53,7 +56,7 @@ export default async function TodayPage() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 19, fontWeight: 500 }}>{greeting(locale)}{user.name ? ", " + user.name : ""}</div>
+          <div style={{ fontSize: 19, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>{greeting(locale)}{user.name ? ", " + user.name : ""}<Hint text={h.today} /></div>
           <div style={{ fontSize: 13, color: "var(--text-2)" }}>
             {dateLabel(locale, date || undefined)} · {entries.length} {t.entriesWord}
           </div>

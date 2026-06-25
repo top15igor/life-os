@@ -4,6 +4,8 @@ import { getInsights } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import PageHead from "@/components/PageHead";
+import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +21,14 @@ export default async function InsightsPage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale];
+  const h = hints(locale);
   const insights = await getInsights(user.id);
 
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
-        <div style={{ fontSize: 19, fontWeight: 500, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ti ti-bulb" style={{ color: "var(--energy)" }} />{t.nav.insights}
-        </div>
+        <PageHead icon="ti-bulb" color="var(--energy)" title={t.nav.insights} hint={h.insights} />
         {insights.length === 0 ? (
           <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
         ) : (

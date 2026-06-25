@@ -4,6 +4,8 @@ import { getEntries, cats, people as peopleOf, type Entry } from "@/lib/queries"
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import PageHead from "@/components/PageHead";
+import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,7 @@ export default async function AnalyticsPage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale];
+  const h = hints(locale);
   const entries = await getEntries(user.id, 200);
 
   if (entries.length === 0) {
@@ -65,9 +68,7 @@ export default async function AnalyticsPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
-        <div style={{ fontSize: 19, fontWeight: 500, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          <i className="ti ti-chart-line" style={{ color: "#3b82f6" }} />{t.nav.analytics}
-        </div>
+        <PageHead icon="ti-chart-line" color="#3b82f6" title={t.nav.analytics} hint={h.analytics} />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 9, marginBottom: 20 }}>
           {[[s.total, entries.length], [s.avgMood, avg(entries, "mood")], [s.avgEnergy, avg(entries, "energy")], [s.avgHealth, avg(entries, "health")]].map(([l, v]: any) => (

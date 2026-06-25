@@ -20,6 +20,7 @@ const NAV = [
   { key: "people", href: "/people", icon: "ti-user-heart", ready: true },
   { key: "places", href: "#", icon: "ti-map-pin", ready: false },
   { key: "analytics", href: "/analytics", icon: "ti-chart-line", ready: true },
+  { key: "biographer", href: "/biographer", icon: "ti-messages", ready: true },
 ];
 
 export default function Sidebar({
