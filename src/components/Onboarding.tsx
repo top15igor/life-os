@@ -4,11 +4,12 @@ import { useState } from "react";
 
 type Screen = { t: string; s?: string; list?: string[]; cta?: string };
 
-const ONB: Record<string, { next: string; privacy: string; skip: string; screens: Screen[] }> = {
+const ONB: Record<string, { next: string; privacy: string; skip: string; login: string; screens: Screen[] }> = {
   ru: {
     next: "Далее",
     privacy: "Приватность",
     skip: "Пропустить",
+    login: "Уже есть аккаунт?",
     screens: [
       { t: "Добро пожаловать в LIFE OS", s: "Ваша жизнь заслуживает быть сохранённой." },
       { t: "Вы забудете почти всё, что произошло сегодня.", s: "Но именно из таких дней складывается вся ваша жизнь." },
@@ -26,6 +27,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; screens
     next: "Next",
     privacy: "Privacy",
     skip: "Skip",
+    login: "Already have an account?",
     screens: [
       { t: "Welcome to LIFE OS", s: "Your life deserves to be saved." },
       { t: "You'll forget almost everything that happened today.", s: "Yet your whole life is made of days like this." },
@@ -43,6 +45,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; screens
     next: "Далі",
     privacy: "Приватність",
     skip: "Пропустити",
+    login: "Вже маєш акаунт?",
     screens: [
       { t: "Ласкаво просимо до LIFE OS", s: "Твоє життя варте того, щоб його зберегти." },
       { t: "Ти забудеш майже все, що сталося сьогодні.", s: "Але саме з таких днів складається все твоє життя." },
@@ -60,6 +63,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; screens
     next: "Suivant",
     privacy: "Confidentialité",
     skip: "Passer",
+    login: "Déjà un compte ?",
     screens: [
       { t: "Bienvenue dans LIFE OS", s: "Ta vie mérite d'être sauvegardée." },
       { t: "Tu oublieras presque tout ce qui s'est passé aujourd'hui.", s: "Pourtant ta vie entière est faite de jours comme celui-ci." },
@@ -128,7 +132,10 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
         >
           ← {data.next === "Next" ? "Back" : data.next === "Suivant" ? "Retour" : "Назад"}
         </button>
-        <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>🔒 {data.privacy}</a>
+        <div style={{ display: "flex", gap: 18, marginTop: 2, alignItems: "center" }}>
+          <a href={botLink} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>{data.login}</a>
+          <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>🔒 {data.privacy}</a>
+        </div>
       </div>
     </div>
   );

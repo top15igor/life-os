@@ -10,6 +10,8 @@ export const dynamic = "force-dynamic";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
+const KIND_LABEL: Record<string, string> = { analyze: "Разбор записей", transcribe: "Голос (Whisper)", biographer: "Биограф", overview: "Аналитика / Зеркало", intent: "Классификатор", intelligence: "Связи записей", summarize: "Перегенерация" };
+
 const CAT_COLOR: Record<string, string> = {
   health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", relationship: "#f472b6", business: "#3b82f6",
   finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4",
@@ -185,6 +187,28 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+
+        {d.usage && (d.usage.total > 0 || d.usage.byKind.length > 0) && (
+          <div style={{ marginBottom: 24 }}>
+            <Title>💰 Расход AI (примерно)</Title>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 10 }}>
+              <Stat label="Всего" value={`$${(d.usage.total / 100).toFixed(2)}`} color="var(--accent)" />
+              <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
+              <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
+            </div>
+            {d.usage.byKind.length > 0 && (
+              <div className="card" style={{ padding: "4px 14px" }}>
+                {d.usage.byKind.map((k: any, i: number) => (
+                  <div key={k.kind} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
+                    <span>{KIND_LABEL[k.kind] || k.kind}</span>
+                    <span style={{ color: "var(--text-3)" }}>${(k.cents / 100).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 8 }}>Оценка по токенам моделей (голос — приблизительно). Работает после запуска usage.sql.</div>
+          </div>
+        )}
 
         {d.topReferrers.length > 0 && (
           <div style={{ marginBottom: 24 }}>

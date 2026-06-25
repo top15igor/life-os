@@ -29,7 +29,7 @@ export async function GET() {
       const src = e.raw_text || e.summary;
       if (!src) return;
       try {
-        const s = await summarize(src);
+        const s = await summarize(src, user.id);
         if (s) { await db.from("entries").update({ summary: s }).eq("id", e.id); updated++; }
       } catch {}
     }));

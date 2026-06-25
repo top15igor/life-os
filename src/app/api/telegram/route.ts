@@ -7,6 +7,7 @@ import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { logUsage } from "@/lib/usage";
 
 export const runtime = "nodejs";
 
@@ -145,6 +146,10 @@ const ASK_PROMPT: Record<string, string> = {
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
+const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
+function openBtn(lang: string, link: string) {
+  return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
+}
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
   const I = INVITE[lang] || INVITE.ru;
@@ -192,7 +197,7 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < seq.length; i++) {
         await sendChatAction(chatId, "typing");
         await sleep(i === 0 ? 400 : 1300);
-        await sendMessage(chatId, seq[i].replace("{link}", link), i === seq.length - 1 ? { reply_markup: mainKeyboard(lang) } : undefined);
+        await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
       }
     } else {
       await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
@@ -206,7 +211,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
       await sleep(i === 0 ? 400 : 1300);
-      await sendMessage(chatId, seq[i].replace("{link}", link), i === seq.length - 1 ? { reply_markup: mainKeyboard(lang) } : undefined);
+      await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
     }
     return NextResponse.json({ ok: true });
   }
@@ -217,7 +222,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (msg.text === "/link") {
-    await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`, { reply_markup: mainKeyboard(pickLang(msg.from?.language_code)) });
+    const lang = pickLang(msg.from?.language_code);
+    await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}`, openBtn(lang, link));
     return NextResponse.json({ ok: true });
   }
 
@@ -232,7 +238,7 @@ export async function POST(req: NextRequest) {
   if (ba) {
     const lang = pickLang(msg.from?.language_code);
     if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
-    else if (ba === "diary") await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}`);
+    else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     else if (ba === "help") await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     else await sendMessage(chatId, ASK_PROMPT[lang] || ASK_PROMPT.ru);
     return NextResponse.json({ ok: true });
@@ -266,6 +272,7 @@ export async function POST(req: NextRequest) {
       const fileId = (msg.voice || msg.audio).file_id;
       const url = await getFileUrl(fileId);
       text = await transcribe(url);
+      logUsage(user.id, "transcribe", 0, 0, 0.5);
     }
 
     if (!text || !text.trim()) {
@@ -287,7 +294,7 @@ export async function POST(req: NextRequest) {
     // По смыслу: это вопрос к ассистенту или запись в дневник?
     // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
     if (!forceSave && (!isVoice || text.length < 160)) {
-      const intent = await classifyIntent(text);
+      const intent = await classifyIntent(text, user.id);
       if (intent === "question") {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text);
@@ -297,7 +304,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const analysis = await analyze(text);
+    const analysis = await analyze(text, user.id);
     const entry = await saveEntry({
       userId: user.id,
       raw_text: text,

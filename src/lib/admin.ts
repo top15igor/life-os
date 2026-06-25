@@ -112,10 +112,27 @@ export async function getAdminData() {
   const roots = (users || []).filter((u: any) => !u.referred_by || !userMap[u.referred_by]);
   const tree = roots.map((u: any) => buildNode(u, 0, new Set<string>())).filter((n: any) => n.children.length > 0);
 
+  // Расход AI (если запущен usage.sql).
+  let usage: { total: number; last7: number; perWriter: number; byKind: { kind: string; cents: number }[] } = { total: 0, last7: 0, perWriter: 0, byKind: [] };
+  try {
+    const since7 = dayStr(Date.now() - 7 * 86400000);
+    const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at");
+    const rows = ev || [];
+    let total = 0, last7 = 0;
+    const bk: Record<string, number> = {};
+    for (const r of rows) {
+      const c = Number(r.cost_cents) || 0;
+      total += c;
+      if ((r.created_at || "").slice(0, 10) >= since7) last7 += c;
+      bk[r.kind] = (bk[r.kind] || 0) + c;
+    }
+    usage = { total, last7, perWriter: writers ? total / writers : 0, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents) };
+  } catch {}
+
   return {
     totalUsers, activeUsers, active30, inactiveUsers: totalUsers - activeUsers,
     totalEntries, writers, returning, avgPerWriter,
     entriesSeries, newUsersSeries, voice, textEntries, avgMood, avgEnergy, catDist,
-    list, topReferrers, tree,
+    list, topReferrers, tree, usage,
   };
 }

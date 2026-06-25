@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!text) return NextResponse.json({ ok: false }, { status: 400 });
 
   try {
-    const analysis = await analyze(text);
+    const analysis = await analyze(text, user.id);
     const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web", analysis });
     return NextResponse.json({ ok: true, id: entry.id });
   } catch (e) {

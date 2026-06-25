@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { logClaude } from "./usage";
 
 export type Ref = { id: string; date: string; summary: string };
 export type Link = { text: string; confidence: string; refs: string[] };
@@ -83,6 +84,7 @@ ${context}
     messages: [{ role: "user", content: prompt }],
   });
 
+  logClaude(userId, "intelligence", "sonnet", (m as any).usage);
   const block = m.content.find((b) => b.type === "tool_use");
   const data = (block && block.type === "tool_use" ? block.input : {}) as any;
 

@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { logClaude } from "./usage";
 
 function client() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -78,7 +79,7 @@ ${text}
 }
 
 // Быстрый маршрутизатор: это вопрос к ассистенту или запись в дневник?
-export async function classifyIntent(text: string): Promise<"question" | "note"> {
+export async function classifyIntent(text: string, userId?: string): Promise<"question" | "note"> {
   try {
     const msg = await client().messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -96,6 +97,7 @@ export async function classifyIntent(text: string): Promise<"question" | "note">
 
 Одним словом (question или note):` }],
     });
+    logClaude(userId, "intent", "haiku", (msg as any).usage);
     const out = msg.content.filter((b) => b.type === "text").map((b: any) => b.text).join("").toLowerCase();
     return out.includes("question") ? "question" : "note";
   } catch {
@@ -103,7 +105,7 @@ export async function classifyIntent(text: string): Promise<"question" | "note">
   }
 }
 
-export async function analyze(text: string): Promise<Analysis> {
+export async function analyze(text: string, userId?: string): Promise<Analysis> {
   const msg = await client().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
@@ -111,13 +113,14 @@ export async function analyze(text: string): Promise<Analysis> {
     tool_choice: { type: "tool", name: "save_analysis" },
     messages: [{ role: "user", content: prompt(text) }],
   });
+  logClaude(userId, "analyze", "sonnet", (msg as any).usage);
   const block = msg.content.find((b) => b.type === "tool_use");
   if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
   return block.input as Analysis;
 }
 
 // Переписать запись в тёплое резюме ОТ ПЕРВОГО ЛИЦА (для обновления старых записей).
-export async function summarize(text: string): Promise<string> {
+export async function summarize(text: string, userId?: string): Promise<string> {
   const m = await client().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 300,
@@ -126,5 +129,6 @@ export async function summarize(text: string): Promise<string> {
 Запись:
 """${text}"""` }],
   });
+  logClaude(userId, "summarize", "sonnet", (m as any).usage);
   return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("").trim();
 }

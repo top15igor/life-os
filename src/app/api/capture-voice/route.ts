@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { analyze } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { transcribeFile } from "@/lib/transcribe";
+import { logUsage } from "@/lib/usage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,9 +21,10 @@ export async function POST(req: NextRequest) {
     const buf = Buffer.from(await file.arrayBuffer());
     const filename = (file as any).name || "voice.m4a";
     const text = await transcribeFile(buf, filename);
+    logUsage(user.id, "transcribe", 0, 0, 0.5);
     if (!text || !text.trim()) return NextResponse.json({ ok: false, error: "empty" });
 
-    const analysis = await analyze(text);
+    const analysis = await analyze(text, user.id);
     const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web_voice", analysis });
     return NextResponse.json({ ok: true, text, id: entry.id });
   } catch (e) {

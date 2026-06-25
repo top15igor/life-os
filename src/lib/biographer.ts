@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import Anthropic from "@anthropic-ai/sdk";
+import { logClaude } from "./usage";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
 export async function askLife(userId: string, question: string): Promise<string> {
@@ -25,6 +26,7 @@ ${list}
     max_tokens: 1000,
     messages: [{ role: "user", content: prompt }],
   });
+  logClaude(userId, "biographer", "sonnet", (m as any).usage);
   return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
 }
 

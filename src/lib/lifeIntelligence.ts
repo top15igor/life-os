@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { logClaude } from "./usage";
 
 export type Conf = "low" | "medium" | "high";
 export type Noticed = { text: string; confidence: Conf; why?: string; refs?: string[] };
@@ -136,6 +137,7 @@ ${context}`;
       tool_choice: { type: "tool", name: "life_overview" },
       messages: [{ role: "user", content: prompt }],
     });
+    logClaude(userId, "overview", "sonnet", (m as any).usage);
     const block = m.content.find((b) => b.type === "tool_use");
     const d = (block && block.type === "tool_use" ? block.input : {}) as any;
     const clampStrength = (x: any) => ({ ...x, strength: Math.max(1, Math.min(5, Math.round(x.strength || 1))) });
