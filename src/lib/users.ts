@@ -6,19 +6,22 @@ const OWNER = "00000000-0000-0000-0000-000000000000";
 export type User = { id: string; token: string; name: string | null; chat_id?: number; isNew?: boolean };
 
 // Находит пользователя по chat_id или создаёт нового (при первом сообщении).
-export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string): Promise<User> {
+export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string): Promise<User> {
   const db = supabaseAdmin();
 
   const { data: existing } = await db
     .from("users")
-    .select("id, token, name")
+    .select("id, token, name, lang")
     .eq("chat_id", chatId)
     .maybeSingle();
   if (existing) {
-    // Подхватываем актуальное имя из Telegram (чинит «кракозябры» из seed).
-    if (name && existing.name !== name) {
-      await db.from("users").update({ name }).eq("chat_id", chatId);
-      return { ...existing, name, isNew: false } as User;
+    // Подхватываем актуальные имя/язык из Telegram (имя чинит «кракозябры» из seed).
+    const upd: any = {};
+    if (name && existing.name !== name) upd.name = name;
+    if (lang && (existing as any).lang !== lang) upd.lang = lang;
+    if (Object.keys(upd).length) {
+      await db.from("users").update(upd).eq("chat_id", chatId);
+      return { ...existing, ...upd, isNew: false } as User;
     }
     return { ...existing, isNew: false } as User;
   }
@@ -28,7 +31,7 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
   const ref = referredBy && /^[0-9a-f-]{36}$/i.test(referredBy) && referredBy !== id ? referredBy : null;
   const { data, error } = await db
     .from("users")
-    .insert({ id, chat_id: chatId, name: name || null, token, referred_by: ref })
+    .insert({ id, chat_id: chatId, name: name || null, token, referred_by: ref, lang: lang || null })
     .select("id, token, name")
     .single();
 

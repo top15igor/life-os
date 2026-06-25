@@ -4,12 +4,73 @@ import { sendMessage } from "@/lib/telegram";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
-const REMINDER = "🌙 Как прошёл твой день?\nНаговори пару строк — я сохраню и найду главное. Даже короткая запись важна для твоей Книги жизни.";
+type Lang = "ru" | "en" | "uk" | "fr";
 
-async function weeklyDigest(userId: string): Promise<string | null> {
+const MSG: Record<Lang, {
+  reminder: string;
+  reminderStreak: (n: number) => string;
+  back: Record<number, string>;
+  digestHeader: string;
+  digestLang: string;
+}> = {
+  ru: {
+    reminder: "🌙 Как прошёл твой день?\nНаговори пару строк — даже короткая запись важна для твоей Книги жизни.",
+    reminderStreak: (n) => `🔥 Твоя серия — ${n} дн. подряд!\nЗапиши сегодняшний день, чтобы не разорвать цепочку.`,
+    back: {
+      3: "Тебя не было пару дней 🙂\nТвой дневник скучает — расскажи, что нового?",
+      7: "Прошла неделя без записей.\nДаже одна строчка сегодня вернёт привычку 🌱",
+      14: "Две недели тишины.\nЖизнь идёт — давай сохраним этот момент? 📖",
+      30: "Целый месяц прошёл.\nЯ всё помню и жду тебя — вернёшься одной записью? 💛",
+    },
+    digestHeader: "📅 <b>Твоя неделя</b>",
+    digestLang: "русском",
+  },
+  en: {
+    reminder: "🌙 How was your day?\nJot down a couple of lines — even a short note matters for your Book of Life.",
+    reminderStreak: (n) => `🔥 Your streak — ${n} days in a row!\nWrite today so you don't break the chain.`,
+    back: {
+      3: "You've been away a couple of days 🙂\nYour diary misses you — what's new?",
+      7: "A week without entries.\nEven one line today brings the habit back 🌱",
+      14: "Two weeks of silence.\nLife goes on — let's capture this moment? 📖",
+      30: "A whole month has passed.\nI remember everything and I'm waiting — come back with one entry? 💛",
+    },
+    digestHeader: "📅 <b>Your week</b>",
+    digestLang: "English",
+  },
+  uk: {
+    reminder: "🌙 Як минув твій день?\nНаговори кілька рядків — навіть короткий запис важливий для твоєї Книги життя.",
+    reminderStreak: (n) => `🔥 Твоя серія — ${n} дн. поспіль!\nЗапиши сьогоднішній день, щоб не розірвати ланцюжок.`,
+    back: {
+      3: "Тебе не було кілька днів 🙂\nТвій щоденник сумує — розкажи, що нового?",
+      7: "Минув тиждень без записів.\nНавіть один рядок сьогодні поверне звичку 🌱",
+      14: "Два тижні тиші.\nЖиття триває — збережемо цей момент? 📖",
+      30: "Минув цілий місяць.\nЯ все пам'ятаю і чекаю — повернешся одним записом? 💛",
+    },
+    digestHeader: "📅 <b>Твій тиждень</b>",
+    digestLang: "українській",
+  },
+  fr: {
+    reminder: "🌙 Comment s'est passée ta journée ?\nNote quelques lignes — même une courte note compte pour ton Livre de vie.",
+    reminderStreak: (n) => `🔥 Ta série — ${n} jours d'affilée !\nÉcris aujourd'hui pour ne pas briser la chaîne.`,
+    back: {
+      3: "Tu as disparu quelques jours 🙂\nTon journal s'ennuie — quoi de neuf ?",
+      7: "Une semaine sans entrées.\nMême une ligne aujourd'hui ramène l'habitude 🌱",
+      14: "Deux semaines de silence.\nLa vie continue — on garde ce moment ? 📖",
+      30: "Un mois entier s'est écoulé.\nJe me souviens de tout et je t'attends — reviens avec une entrée ? 💛",
+    },
+    digestHeader: "📅 <b>Ta semaine</b>",
+    digestLang: "français",
+  },
+};
+
+const dayMs = 86400000;
+const isoOf = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> {
   const db = supabaseAdmin();
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const weekAgo = isoOf(Date.now() - 7 * dayMs);
   const { data } = await db
     .from("entries")
     .select("entry_date, summary, raw_text")
@@ -19,15 +80,16 @@ async function weeklyDigest(userId: string): Promise<string | null> {
   if (!data?.length) return null;
 
   const list = data.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n");
-  const prompt = `Ты — AI-биограф дневника LIFE OS. Сделай тёплый короткий обзор недели пользователя на русском по записям ниже: главные события, повторяющаяся тема, 1 инсайт и 1 мягкий совет на следующую неделю. 5–7 строк, по-человечески, без канцелярита.\n\nЗАПИСИ:\n${list}`;
+  const m = MSG[lang];
+  const prompt = `Ты — AI-биограф дневника LIFE OS. Сделай тёплый короткий обзор недели пользователя на ${m.digestLang} языке по записям ниже: главные события, повторяющаяся тема, 1 инсайт и 1 мягкий совет на следующую неделю. 5–7 строк, по-человечески, без канцелярита.\n\nЗАПИСИ:\n${list}`;
   try {
-    const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
+    const r = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     });
-    const text = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-    return `📅 <b>Твоя неделя</b>\n\n${text}`;
+    const text = r.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+    return `${m.digestHeader}\n\n${text}`;
   } catch {
     return null;
   }
@@ -41,35 +103,72 @@ export async function GET(req: NextRequest) {
   }
 
   const db = supabaseAdmin();
-  const { data: users } = await db.from("users").select("id, chat_id").not("chat_id", "is", null);
-  const today = new Date().toISOString().slice(0, 10);
+  const { data: users } = await db.from("users").select("id, chat_id, lang, created_at").not("chat_id", "is", null);
+  const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
+  const today = isoOf(todayT);
   const isSunday = new Date().getUTCDay() === 0;
 
-  let reminders = 0;
-  let digests = 0;
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0 };
 
   for (const u of users || []) {
     try {
-      const { count } = await db
+      const lang: Lang = (["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru") as Lang;
+      const m = MSG[lang];
+
+      const { data: ents } = await db
         .from("entries")
-        .select("*", { count: "exact", head: true })
+        .select("entry_date")
         .eq("user_id", u.id)
-        .eq("entry_date", today);
-      if (!count) {
-        await sendMessage(u.chat_id, REMINDER);
-        reminders++;
-      }
+        .order("entry_date", { ascending: false })
+        .limit(40);
+      const days = Array.from(new Set((ents || []).map((e: any) => e.entry_date)));
+      const wroteToday = days[0] === today;
+
+      // Воскресный AI-обзор недели — всем, кто писал на этой неделе.
       if (isSunday) {
-        const digest = await weeklyDigest(u.id);
+        const digest = await weeklyDigest(u.id, lang);
         if (digest) {
           await sendMessage(u.chat_id, digest);
-          digests++;
+          stats.digests++;
         }
+      }
+
+      if (wroteToday) continue;
+
+      // Сколько дней «тишины»: от последней записи или от регистрации.
+      let gap: number;
+      let streak = 0;
+      if (days.length) {
+        gap = Math.round((todayT - new Date(days[0] + "T00:00:00Z").getTime()) / dayMs);
+        streak = 1;
+        for (let i = 1; i < days.length; i++) {
+          const diff = Math.round((new Date(days[i - 1] + "T00:00:00Z").getTime() - new Date(days[i] + "T00:00:00Z").getTime()) / dayMs);
+          if (diff === 1) streak++;
+          else break;
+        }
+      } else {
+        const created = u.created_at ? new Date(String(u.created_at).slice(0, 10) + "T00:00:00Z").getTime() : todayT;
+        gap = Math.max(1, Math.round((todayT - created) / dayMs));
+      }
+
+      if (gap <= 2) {
+        // Активные — мягкое напоминание; если серия жива (писал вчера) — мотивируем не разорвать.
+        if (gap === 1 && streak >= 2) {
+          await sendMessage(u.chat_id, m.reminderStreak(streak));
+          stats.streakReminders++;
+        } else {
+          await sendMessage(u.chat_id, m.reminder);
+          stats.reminders++;
+        }
+      } else if (m.back[gap]) {
+        // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.
+        await sendMessage(u.chat_id, m.back[gap]);
+        stats.winbacks++;
       }
     } catch (e) {
       console.error("cron user", u.id, e);
     }
   }
 
-  return NextResponse.json({ ok: true, reminders, digests, sunday: isSunday });
+  return NextResponse.json({ ok: true, ...stats, sunday: isSunday });
 }

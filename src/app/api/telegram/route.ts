@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
   // Каждый пользователь Telegram = аккаунт. Создаём при первом сообщении.
   let user;
   try {
-    user = await getOrCreateUser(chatId, msg.from?.first_name, referredBy);
+    user = await getOrCreateUser(chatId, msg.from?.first_name, referredBy, pickLang(msg.from?.language_code));
   } catch (e) {
     console.error(e);
     await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
