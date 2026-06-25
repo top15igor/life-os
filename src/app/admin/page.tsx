@@ -9,6 +9,12 @@ export const dynamic = "force-dynamic";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
+const CAT_COLOR: Record<string, string> = {
+  health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", relationship: "#f472b6", business: "#3b82f6",
+  finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4",
+  emotions: "#a78bfa", problem: "#fb7185", decision: "#22d3ee", event: "#94a3b8",
+};
+
 function Stat({ label, value, color }: any) {
   return (
     <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: "13px 15px" }}>
@@ -16,6 +22,24 @@ function Stat({ label, value, color }: any) {
       <div style={{ fontSize: 26, fontWeight: 500, marginTop: 3, color: color || "var(--text)" }}>{value}</div>
     </div>
   );
+}
+
+function Bars({ series, color }: { series: { day: string; count: number }[]; color: string }) {
+  const max = Math.max(1, ...series.map((s) => s.count));
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 90 }}>
+      {series.map((s) => (
+        <div key={s.day} title={`${s.day}: ${s.count}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 4 }}>
+          <div style={{ width: "100%", height: `${Math.round((s.count / max) * 72)}px`, minHeight: s.count ? 3 : 0, background: color, borderRadius: 4 }} />
+          <span style={{ fontSize: 9, color: "var(--text-3)" }}>{s.day.slice(8)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Title({ children }: any) {
+  return <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>{children}</div>;
 }
 
 export default async function AdminPage() {
@@ -26,24 +50,78 @@ export default async function AdminPage() {
   const t = getDict(locale);
   const d = await getAdminData();
 
+  const srcTotal = d.voice + d.textEntries || 1;
+  const voicePct = Math.round((d.voice / srcTotal) * 100);
+  const maxCat = d.catDist[0]?.count || 1;
+
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
-        <div style={{ fontSize: 19, fontWeight: 500, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ fontSize: 19, fontWeight: 500, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
           <i className="ti ti-shield-lock" style={{ color: "var(--accent)" }} />Admin · LIFE OS
         </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
-          <Stat label="Пользователей" value={d.totalUsers} />
-          <Stat label="Активных (7 дней)" value={d.activeUsers} color="var(--positive)" />
-          <Stat label="Неактивных" value={d.inactiveUsers} color="var(--text-2)" />
-          <Stat label="Всего записей" value={d.totalEntries} color="var(--accent)" />
+        <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 20, display: "flex", alignItems: "center", gap: 6 }}>
+          <i className="ti ti-lock" style={{ fontSize: 13 }} />Только агрегированные данные — без текста личных записей.
         </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 24 }}>
+          <Stat label="Пользователей" value={d.totalUsers} />
+          <Stat label="Активны (7 дней)" value={d.activeUsers} color="var(--positive)" />
+          <Stat label="Активны (30 дней)" value={d.active30} />
+          <Stat label="Всего записей" value={d.totalEntries} color="var(--accent)" />
+          <Stat label="Ср. записей / автор" value={d.avgPerWriter} />
+          <Stat label="Вернулись (≥2 дней)" value={d.returning} color="var(--insight)" />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginBottom: 24 }}>
+          <div>
+            <Title>Записи по дням (14 дней)</Title>
+            <div className="card"><Bars series={d.entriesSeries} color="var(--accent)" /></div>
+          </div>
+          <div>
+            <Title>Новые пользователи (14 дней)</Title>
+            <div className="card"><Bars series={d.newUsersSeries} color="#10b981" /></div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 24 }}>
+          <div className="card">
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 8 }}>Голос vs текст</div>
+            <div style={{ height: 8, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden", display: "flex" }}>
+              <div style={{ width: `${voicePct}%`, background: "var(--accent)" }} />
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>🎙 {d.voice} ({voicePct}%) · ✍️ {d.textEntries}</div>
+          </div>
+          <Stat label="Ср. настроение" value={d.avgMood ?? "—"} color="#4f46e5" />
+          <Stat label="Ср. энергия" value={d.avgEnergy ?? "—"} color="var(--energy)" />
+        </div>
+
+        {d.catDist.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <Title>Зачем пользуются — темы записей</Title>
+            <div className="card">
+              {d.catDist.slice(0, 12).map((c) => {
+                const pct = Math.round((c.count / d.totalEntries) * 100);
+                return (
+                  <div key={c.slug} style={{ marginBottom: 9 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
+                      <span>{t.cats[c.slug] || c.slug}</span>
+                      <span style={{ color: "var(--text-3)" }}>{c.count} · {pct}%</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
+                      <div style={{ width: `${Math.round((c.count / maxCat) * 100)}%`, height: "100%", background: CAT_COLOR[c.slug] || "var(--accent)" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {d.topReferrers.length > 0 && (
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>Кто больше всех приглашает</div>
+            <Title>Кто больше всех приглашает</Title>
             <div className="card" style={{ padding: "6px 14px" }}>
               {d.topReferrers.map((r, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "8px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
@@ -55,7 +133,7 @@ export default async function AdminPage() {
           </div>
         )}
 
-        <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>Все пользователи ({d.totalUsers})</div>
+        <Title>Все пользователи ({d.totalUsers})</Title>
         <div className="card" style={{ padding: 0, overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>

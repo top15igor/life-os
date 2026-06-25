@@ -1,5 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 
+const dayStr = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
 export async function getAdminData() {
   const db = supabaseAdmin();
 
@@ -12,25 +14,31 @@ export async function getAdminData() {
   } else {
     users = r1.data;
   }
-  const { data: entries } = await db.from("entries").select("user_id, entry_date");
 
-  const byUser: Record<string, { count: number; last: string }> = {};
-  for (const e of entries || []) {
-    const u = (byUser[e.user_id] ||= { count: 0, last: "" });
+  // Только агрегаты — НИКАКОГО текста записей.
+  const { data: entries } = await db.from("entries").select("user_id, entry_date, source, mood, energy");
+  const ents = entries || [];
+
+  const byUser: Record<string, { count: number; last: string; days: Set<string> }> = {};
+  for (const e of ents) {
+    const u = (byUser[e.user_id] ||= { count: 0, last: "", days: new Set() });
     u.count++;
-    if (e.entry_date && e.entry_date > u.last) u.last = e.entry_date;
+    if (e.entry_date) {
+      u.days.add(e.entry_date);
+      if (e.entry_date > u.last) u.last = e.entry_date;
+    }
   }
 
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const weekAgo = dayStr(Date.now() - 7 * 86400000);
+  const monthAgo = dayStr(Date.now() - 30 * 86400000);
   const nameById: Record<string, string> = {};
   for (const u of users || []) nameById[u.id] = u.name || "—";
 
   const list = (users || []).map((u: any) => {
-    const st = byUser[u.id] || { count: 0, last: "" };
+    const st = byUser[u.id] || { count: 0, last: "", days: new Set() };
     return {
       id: u.id,
       name: u.name || "—",
-      chat_id: u.chat_id,
       joined: (u.created_at || "").slice(0, 10),
       entries: st.count,
       last: st.last || null,
@@ -42,7 +50,45 @@ export async function getAdminData() {
 
   const totalUsers = list.length;
   const activeUsers = list.filter((u) => u.active).length;
-  const totalEntries = (entries || []).length;
+  const active30 = list.filter((u) => u.last && u.last >= monthAgo).length;
+  const totalEntries = ents.length;
+  const writers = list.filter((u) => u.entries > 0).length;
+  const returning = Object.values(byUser).filter((u) => u.days.size >= 2).length;
+  const avgPerWriter = writers ? Math.round((totalEntries / writers) * 10) / 10 : 0;
+
+  // Динамика за 14 дней.
+  const days14: string[] = [];
+  for (let i = 13; i >= 0; i--) days14.push(dayStr(Date.now() - i * 86400000));
+  const entriesByDay: Record<string, number> = {};
+  const usersByDay: Record<string, number> = {};
+  for (const e of ents) if (e.entry_date) entriesByDay[e.entry_date] = (entriesByDay[e.entry_date] || 0) + 1;
+  for (const u of users || []) {
+    const d = (u.created_at || "").slice(0, 10);
+    if (d) usersByDay[d] = (usersByDay[d] || 0) + 1;
+  }
+  const entriesSeries = days14.map((d) => ({ day: d, count: entriesByDay[d] || 0 }));
+  const newUsersSeries = days14.map((d) => ({ day: d, count: usersByDay[d] || 0 }));
+
+  // Голос vs текст.
+  let voice = 0, textEntries = 0;
+  for (const e of ents) ((e.source || "").includes("voice") ? voice++ : textEntries++);
+
+  // Средние (анонимно, по всем).
+  const avg = (arr: number[]) => (arr.length ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null);
+  const avgMood = avg(ents.map((e) => e.mood).filter((x) => x != null) as number[]);
+  const avgEnergy = avg(ents.map((e) => e.energy).filter((x) => x != null) as number[]);
+
+  // Распределение категорий (только slug + счётчик, без текста).
+  let catDist: { slug: string; count: number }[] = [];
+  try {
+    const { data: ec } = await db.from("entry_categories").select("categories(slug)");
+    const cc: Record<string, number> = {};
+    for (const row of ec || []) {
+      const slug = (row as any).categories?.slug;
+      if (slug) cc[slug] = (cc[slug] || 0) + 1;
+    }
+    catDist = Object.entries(cc).map(([slug, count]) => ({ slug, count })).sort((a, b) => b.count - a.count);
+  } catch {}
 
   const refCount: Record<string, number> = {};
   for (const u of users || []) if (u.referred_by) refCount[u.referred_by] = (refCount[u.referred_by] || 0) + 1;
@@ -50,5 +96,10 @@ export async function getAdminData() {
     .map(([id, count]) => ({ name: nameById[id] || id, count }))
     .sort((a, b) => b.count - a.count);
 
-  return { totalUsers, activeUsers, inactiveUsers: totalUsers - activeUsers, totalEntries, list, topReferrers };
+  return {
+    totalUsers, activeUsers, active30, inactiveUsers: totalUsers - activeUsers,
+    totalEntries, writers, returning, avgPerWriter,
+    entriesSeries, newUsersSeries, voice, textEntries, avgMood, avgEnergy, catDist,
+    list, topReferrers,
+  };
 }
