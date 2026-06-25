@@ -1,0 +1,103 @@
+import Sidebar from "@/components/Sidebar";
+import { getLocale } from "@/lib/locale";
+import { getDict } from "@/lib/i18n";
+import { hints } from "@/lib/hints";
+import { guide } from "@/lib/guide";
+import { requireUser } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+
+const SECTIONS: { key: string; icon: string; color: string; label?: string }[] = [
+  { key: "today", icon: "ti-home", color: "var(--accent)" },
+  { key: "diary", icon: "ti-book", color: "var(--accent)" },
+  { key: "health", icon: "ti-heartbeat", color: "#ef4444" },
+  { key: "analytics", icon: "ti-chart-line", color: "#3b82f6" },
+  { key: "insights", icon: "ti-bulb", color: "var(--energy)" },
+  { key: "people", icon: "ti-user-heart", color: "#ec4899" },
+  { key: "projects", icon: "ti-briefcase", color: "#3b82f6" },
+  { key: "biographer", icon: "ti-messages", color: "var(--insight)" },
+  { key: "intelligence", icon: "ti-brain", color: "var(--insight)", label: "Life Intelligence" },
+];
+
+export default async function GuidePage() {
+  await requireUser();
+  const locale = await getLocale();
+  const t = getDict(locale);
+  const h = hints(locale);
+  const g = guide(locale);
+
+  return (
+    <div className="shell">
+      <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
+      <main className="main">
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+          <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />
+          <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{g.title}</h1>
+        </div>
+        <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 26, maxWidth: 620 }}>{g.pitch}</p>
+
+        {/* Что это */}
+        <div className="card" style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.whatTitle}</div>
+          <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>{g.what}</div>
+        </div>
+
+        {/* Как пользоваться */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.howTitle}</div>
+        <div style={{ marginBottom: 26 }}>
+          {g.how.map((step, i) => (
+            <div key={i} style={{ display: "flex", gap: 13, marginBottom: 12, alignItems: "flex-start" }}>
+              <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600 }}>{i + 1}</span>
+              <span style={{ fontSize: 14.5, lineHeight: 1.6, paddingTop: 2 }}>{step}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Команды */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.cmdTitle}</div>
+        <div className="card" style={{ marginBottom: 26, padding: "6px 14px" }}>
+          {g.cmds.map(([cmd, desc], i) => (
+            <div key={cmd} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none", fontSize: 14 }}>
+              <code style={{ background: "var(--surface-2)", padding: "2px 9px", borderRadius: 6, color: "var(--accent)", fontSize: 13, minWidth: 64 }}>{cmd}</code>
+              <span style={{ color: "var(--text-2)" }}>{desc}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Разделы */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.sectionsTitle}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
+          {SECTIONS.map((sec) => (
+            <div key={sec.key} className="card" style={{ display: "flex", gap: 11 }}>
+              <i className={`ti ${sec.icon}`} style={{ fontSize: 20, color: sec.color, flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 3 }}>{sec.label || t.nav[sec.key]}</div>
+                <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{h[sec.key]}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Лайфхаки */}
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-2)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.lifehacksTitle}</div>
+        <div style={{ marginBottom: 26 }}>
+          {g.lifehacks.map((tip, i) => (
+            <div key={i} style={{ display: "flex", gap: 11, marginBottom: 11, alignItems: "flex-start" }}>
+              <i className="ti ti-bulb" style={{ fontSize: 17, color: "var(--energy)", flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 14.5, lineHeight: 1.6 }}>{tip}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Приватность */}
+        <div className="card" style={{ background: "var(--surface-2)", border: "none", display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+          <i className="ti ti-shield-lock" style={{ fontSize: 20, color: "var(--positive)", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 3 }}>{g.privacyTitle}</div>
+            <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.6 }}>{g.privacy}</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

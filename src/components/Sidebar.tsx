@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n";
 
 const NAV = [
   { key: "today", href: "/", icon: "ti-home", ready: true },
+  { key: "guide", href: "/guide", icon: "ti-help", ready: true },
   { key: "diary", href: "/diary", icon: "ti-book", ready: true },
   { key: "health", href: "/health", icon: "ti-heartbeat", ready: true },
   { key: "energy", href: "#", icon: "ti-bolt", ready: false },

@@ -1,0 +1,148 @@
+import type { Locale } from "./i18n";
+
+type Guide = {
+  title: string;
+  pitch: string;
+  whatTitle: string;
+  what: string;
+  howTitle: string;
+  how: string[];
+  cmdTitle: string;
+  cmds: [string, string][];
+  sectionsTitle: string;
+  lifehacksTitle: string;
+  lifehacks: string[];
+  privacyTitle: string;
+  privacy: string;
+};
+
+const G: Record<Locale, Guide> = {
+  ru: {
+    title: "Инструкция",
+    pitch: "LIFE OS — твоя личная операционная система жизни. Ты говоришь — AI сохраняет, понимает и пишет твою Книгу жизни.",
+    whatTitle: "Что это",
+    what: "Это дневник нового поколения. Каждый день ты в пару касаний рассказываешь, что произошло, а AI превращает это в структурированную историю: категории, теги, настроение, инсайты, задачи, люди и проекты — и со временем строит карту твоей жизни.",
+    howTitle: "Как пользоваться",
+    how: [
+      "🎤 Наговори голосовое или напиши текст боту в Telegram — о чём угодно: день, мысли, здоровье, идеи, тренировки, семья.",
+      "🧠 AI распознает речь, разложит по полочкам и выделит главное.",
+      "🌐 Открой веб-версию (кнопка в боте) — там дневник, аналитика, поиск и AI-Биограф.",
+    ],
+    cmdTitle: "Команды бота",
+    cmds: [
+      ["/start", "приветствие и твоя личная ссылка на сайт"],
+      ["/link", "получить ссылку на веб-дневник заново"],
+      ["/invite", "пригласить друга"],
+      ["/demo", "посмотреть приветственный диалог"],
+    ],
+    sectionsTitle: "Разделы",
+    lifehacksTitle: "Лайфхаки",
+    lifehacks: [
+      "Пиши каждый день хотя бы пару строк — привычка и стрик 🔥 важнее объёма.",
+      "Голос быстрее текста: 30 секунд на ходу = полноценная запись.",
+      "Упоминай имена и проекты — так AI строит связи (Life Intelligence) и карту жизни.",
+      "Раз в неделю спроси Биографа: «как прошла моя неделя?» или «расскажи историю проекта».",
+      "Плохой день — тоже запись. Именно из них потом видно, что влияет на настроение.",
+      "Не идеальничай — наговаривай как есть, AI сам причешет формулировки.",
+    ],
+    privacyTitle: "Приватность",
+    privacy: "Дневник видишь только ты — по личной ссылке. Бот отвечает только тебе. Данные хранятся в зашифрованном виде с резервными копиями.",
+  },
+  en: {
+    title: "Guide",
+    pitch: "LIFE OS is your personal operating system for life. You speak — AI saves it, understands it and writes your Book of Life.",
+    whatTitle: "What it is",
+    what: "A next-generation diary. Each day you tell it what happened in a couple of taps, and AI turns it into a structured story: categories, tags, mood, insights, tasks, people and projects — and over time builds a map of your life.",
+    howTitle: "How to use it",
+    how: [
+      "🎤 Send a voice note or text to the Telegram bot — anything: your day, thoughts, health, ideas, workouts, family.",
+      "🧠 AI transcribes it, sorts it out and extracts what matters.",
+      "🌐 Open the web version (button in the bot) — diary, analytics, search and the AI Biographer.",
+    ],
+    cmdTitle: "Bot commands",
+    cmds: [
+      ["/start", "welcome and your personal link"],
+      ["/link", "get your web diary link again"],
+      ["/invite", "invite a friend"],
+      ["/demo", "replay the welcome dialog"],
+    ],
+    sectionsTitle: "Sections",
+    lifehacksTitle: "Tips & tricks",
+    lifehacks: [
+      "Write a few lines every day — the habit and the streak 🔥 matter more than length.",
+      "Voice is faster than typing: 30 seconds on the go = a full entry.",
+      "Mention names and projects — that's how AI builds connections (Life Intelligence) and your life map.",
+      "Once a week, ask the Biographer: “how was my week?” or “tell the story of my project”.",
+      "A bad day is an entry too. Those reveal what actually affects your mood.",
+      "Don't aim for perfect — just talk; AI will polish the wording.",
+    ],
+    privacyTitle: "Privacy",
+    privacy: "Only you can see your diary — via your personal link. The bot replies only to you. Data is stored encrypted with backups.",
+  },
+  uk: {
+    title: "Інструкція",
+    pitch: "LIFE OS — твоя особиста операційна система життя. Ти говориш — AI зберігає, розуміє й пише твою Книгу життя.",
+    whatTitle: "Що це",
+    what: "Щоденник нового покоління. Щодня ти в кілька дотиків розповідаєш, що сталося, а AI перетворює це на структуровану історію: категорії, теги, настрій, інсайти, завдання, люди й проєкти — і з часом будує карту твого життя.",
+    howTitle: "Як користуватися",
+    how: [
+      "🎤 Надішли голосове або текст боту в Telegram — про що завгодно: день, думки, здоров'я, ідеї, тренування, сім'я.",
+      "🧠 AI розпізнає мовлення, розкладе по полицях і виділить головне.",
+      "🌐 Відкрий веб-версію (кнопка в боті) — щоденник, аналітика, пошук і AI-Біограф.",
+    ],
+    cmdTitle: "Команди бота",
+    cmds: [
+      ["/start", "привітання і твоє особисте посилання"],
+      ["/link", "отримати посилання на веб-щоденник знову"],
+      ["/invite", "запросити друга"],
+      ["/demo", "переглянути привітальний діалог"],
+    ],
+    sectionsTitle: "Розділи",
+    lifehacksTitle: "Лайфхаки",
+    lifehacks: [
+      "Пиши щодня хоча б кілька рядків — звичка і стрик 🔥 важливіші за обсяг.",
+      "Голос швидший за текст: 30 секунд на ходу = повноцінний запис.",
+      "Згадуй імена та проєкти — так AI будує зв'язки (Life Intelligence) і карту життя.",
+      "Раз на тиждень запитай Біографа: «як минув мій тиждень?».",
+      "Поганий день — теж запис. Саме з них видно, що впливає на настрій.",
+      "Не намагайся ідеально — говори як є, AI причеше формулювання.",
+    ],
+    privacyTitle: "Приватність",
+    privacy: "Щоденник бачиш лише ти — за особистим посиланням. Бот відповідає тільки тобі. Дані зберігаються зашифрованими з резервними копіями.",
+  },
+  fr: {
+    title: "Guide",
+    pitch: "LIFE OS est ton système d'exploitation personnel pour la vie. Tu parles — l'IA sauvegarde, comprend et écrit ton Livre de vie.",
+    whatTitle: "Qu'est-ce que c'est",
+    what: "Un journal nouvelle génération. Chaque jour tu racontes ta journée en quelques gestes, et l'IA en fait une histoire structurée : catégories, tags, humeur, insights, tâches, personnes et projets — et au fil du temps, une carte de ta vie.",
+    howTitle: "Comment l'utiliser",
+    how: [
+      "🎤 Envoie une note vocale ou un texte au bot Telegram — tout : ta journée, tes pensées, ta santé, tes idées, le sport, la famille.",
+      "🧠 L'IA transcrit, organise et extrait l'essentiel.",
+      "🌐 Ouvre la version web (bouton dans le bot) — journal, analytique, recherche et le Biographe IA.",
+    ],
+    cmdTitle: "Commandes du bot",
+    cmds: [
+      ["/start", "accueil et ton lien personnel"],
+      ["/link", "récupérer ton lien web"],
+      ["/invite", "inviter un ami"],
+      ["/demo", "revoir le dialogue d'accueil"],
+    ],
+    sectionsTitle: "Sections",
+    lifehacksTitle: "Astuces",
+    lifehacks: [
+      "Écris quelques lignes chaque jour — l'habitude et la série 🔥 comptent plus que la longueur.",
+      "La voix est plus rapide : 30 secondes en chemin = une entrée complète.",
+      "Mentionne les noms et les projets — ainsi l'IA crée des liens (Life Intelligence) et ta carte de vie.",
+      "Une fois par semaine, demande au Biographe : « comment s'est passée ma semaine ? ».",
+      "Une mauvaise journée est aussi une entrée. Elles révèlent ce qui influence ton humeur.",
+      "Ne vise pas la perfection — parle simplement, l'IA peaufine.",
+    ],
+    privacyTitle: "Confidentialité",
+    privacy: "Toi seul vois ton journal — via ton lien personnel. Le bot ne répond qu'à toi. Les données sont chiffrées avec des sauvegardes.",
+  },
+};
+
+export function guide(locale: Locale): Guide {
+  return G[locale] || G.ru;
+}
