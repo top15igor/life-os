@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LangSwitcher from "./LangSwitcher";
 import MobileNav from "./MobileNav";
+import InviteButton from "./InviteButton";
 import { NAV } from "@/lib/nav";
 import type { Locale } from "@/lib/i18n";
 
@@ -19,13 +20,17 @@ export default function Sidebar({
 }) {
   const path = usePathname();
   const [isOwner, setIsOwner] = useState(false);
+  const [ref, setRef] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
-      .then((d) => setIsOwner(!!d.isOwner))
+      .then((d) => { setIsOwner(!!d.isOwner); setRef(d.ref || null); })
       .catch(() => {});
   }, []);
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const inviteLink = ref ? `${origin}/welcome?ref=${ref}` : "";
 
   return (
     <>
@@ -47,11 +52,12 @@ export default function Sidebar({
           </Link>
         )}
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          {inviteLink && <InviteButton link={inviteLink} locale={locale} />}
           <LangSwitcher current={locale} />
         </div>
       </aside>
 
-      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} />
+      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} />
     </>
   );
 }
