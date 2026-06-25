@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
+import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
@@ -79,6 +80,13 @@ const CONFIRM: Record<string, any> = {
   en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights" },
   uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти" },
   fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights" },
+};
+
+const FIXED: Record<string, string> = {
+  ru: "✏️ Поправил предыдущую запись:",
+  en: "✏️ Updated your previous entry:",
+  uk: "✏️ Виправив попередній запис:",
+  fr: "✏️ J'ai corrigé l'entrée précédente :",
 };
 
 const MILE: Record<string, any> = {
@@ -304,6 +312,21 @@ export async function POST(req: NextRequest) {
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
         await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
+        return NextResponse.json({ ok: true });
+      }
+    }
+
+    // Похоже на исправление? Правим последнюю запись, а не плодим новую.
+    if (!forceSave && isCorrection(text)) {
+      const amended = await amendLastEntry(user.id, text);
+      if (amended) {
+        const lang = pickLang(msg.from?.language_code);
+        const L = CONFIRM[lang] || CONFIRM.ru;
+        const streak = await getStreak(user.id);
+        const body = `${FIXED[lang] || FIXED.ru}\n\n${formatConfirm(amended.analysis, streak, lang)}`;
+        await sendMessage(chatId, body, {
+          reply_markup: { inline_keyboard: [[{ text: L.book, url: `${origin}/u/${user.token}?next=/entry/${amended.entry.id}` }]] },
+        });
         return NextResponse.json({ ok: true });
       }
     }

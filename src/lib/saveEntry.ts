@@ -29,7 +29,14 @@ export async function saveEntry(opts: {
     .select()
     .single();
   if (error) throw error;
-  const id = entry.id;
+
+  await attachDerived(owner, entry.id, a);
+  return entry;
+}
+
+// Привязать производные данные (категории/теги/люди/задачи/дела/обещания…) к записи.
+export async function attachDerived(owner: string, id: string, a: Analysis) {
+  const db = supabaseAdmin();
 
   if (a.categories?.length) {
     const { data: cs } = await db.from("categories").select("id,slug").in("slug", a.categories);
@@ -46,8 +53,17 @@ export async function saveEntry(opts: {
   if (a.gratitude?.length) await db.from("gratitude").insert(a.gratitude.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.good_deeds?.length) await db.from("good_deeds").insert(a.good_deeds.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.promises?.length) await db.from("promises").insert(a.promises.map((t) => ({ entry_id: id, user_id: owner, text: t, status: "active" })));
+}
 
-  return entry;
+// Удалить все производные данные записи (для пере-разбора при правке или для удаления записи).
+export async function clearDerived(id: string) {
+  const db = supabaseAdmin();
+  for (const tbl of ["entry_categories", "entry_tags", "entry_people", "entry_places", "entry_projects"]) {
+    try { await db.from(tbl).delete().eq("entry_id", id); } catch {}
+  }
+  for (const tbl of ["tasks", "insights", "gratitude", "good_deeds", "promises"]) {
+    try { await db.from(tbl).delete().eq("entry_id", id); } catch {}
+  }
 }
 
 async function linkNames(

@@ -11,10 +11,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const id = String(body?.id || "");
-  const status = String(body?.status || "");
-  if (!id || !["active", "done"].includes(status)) return NextResponse.json({ ok: false }, { status: 400 });
+  if (!id) return NextResponse.json({ ok: false }, { status: 400 });
+  const db = supabaseAdmin();
 
-  const { error } = await supabaseAdmin().from("promises").update({ status }).eq("id", id).eq("user_id", user.id);
+  if (body?.del) {
+    await db.from("promises").delete().eq("id", id).eq("user_id", user.id);
+    return NextResponse.json({ ok: true });
+  }
+
+  const status = String(body?.status || "");
+  if (!["active", "done"].includes(status)) return NextResponse.json({ ok: false }, { status: 400 });
+  const { error } = await db.from("promises").update({ status }).eq("id", id).eq("user_id", user.id);
   if (error) return NextResponse.json({ ok: false }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

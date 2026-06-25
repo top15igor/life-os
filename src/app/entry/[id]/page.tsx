@@ -6,6 +6,7 @@ import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import TaskList from "@/components/TaskList";
 import LifeIntelligence from "@/components/LifeIntelligence";
+import EntryActions from "@/components/EntryActions";
 
 export const dynamic = "force-dynamic";
 
@@ -142,6 +143,10 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             </div>
           </Section>
         )}
+
+        <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+          <EntryActions id={id} locale={locale} />
+        </div>
       </main>
     </div>
   );

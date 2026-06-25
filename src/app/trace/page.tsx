@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import PromiseList from "@/components/PromiseList";
+import TraceDeeds from "@/components/TraceDeeds";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -57,21 +58,7 @@ export default async function TracePage() {
           </div>
 
           <SectionTitle>{s.deeds}</SectionTitle>
-          {deeds.length === 0 ? (
-            <div className="card" style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{s.deedsEmpty}</div>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {deeds.map((d) => (
-                <div key={d.id} className="card" style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                  <i className="ti ti-heart" style={{ fontSize: 17, color: "#ec4899", flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, lineHeight: 1.45 }}>{d.text}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>{new Date(d.created_at).toLocaleDateString(locale === "ru" ? "ru-RU" : locale, { day: "numeric", month: "long" })}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <TraceDeeds deeds={deeds} locale={locale} emptyText={s.deedsEmpty} />
 
           <SectionTitle>{s.promises}</SectionTitle>
           <PromiseList promises={promises} locale={locale} full />
