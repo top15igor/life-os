@@ -33,6 +33,12 @@ export default async function PrivacyPage() {
         <span>{p.note}</span>
       </div>
 
+      <a href="https://github.com/top15igor/life-os" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 15px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, textDecoration: "none", marginBottom: 24 }}>
+        <i className="ti ti-brand-github" style={{ fontSize: 20 }} />
+        <span style={{ flex: 1 }}>github.com/top15igor/life-os</span>
+        <i className="ti ti-external-link" style={{ fontSize: 16, color: "var(--text-3)" }} />
+      </a>
+
       <Link href="/" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {p.back}</Link>
     </div>
   );
