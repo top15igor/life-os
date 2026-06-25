@@ -35,6 +35,7 @@ const WELCOME: Record<string, string[]> = {
     "🎤 Просто отправь мне первое голосовое — расскажи, что произошло сегодня.",
     "Всё остальное я сделаю сам: сохраню, найду главное, выделю инсайты и начну писать твою Книгу жизни.",
     "А потом я смогу ответить на любой твой вопрос о твоей жизни. 📖",
+    "🔒 И главное: твои записи видишь только ты. Команда их не читает, а код открыт — можешь проверить сам. Скачать или удалить всё можно в один клик.",
     "Кстати, всё это красиво видно и в вебе — вот твоя личная ссылка, сохрани её:\n{link}",
   ],
   en: [
@@ -43,6 +44,7 @@ const WELCOME: Record<string, string[]> = {
     "🎤 Just send me your first voice message — tell me how your day went.",
     "I'll do the rest: save it, find what matters, extract insights, and start writing your Book of Life.",
     "And then I'll be able to answer any question about your life. 📖",
+    "🔒 And the key part: only you see your entries. The team doesn't read them, and the code is open — check it yourself. Export or delete everything in one click.",
     "By the way, you can see it all beautifully on the web — here's your personal link, keep it:\n{link}",
   ],
   uk: [
@@ -51,6 +53,7 @@ const WELCOME: Record<string, string[]> = {
     "🎤 Просто надішли мені перше голосове — розкажи, що сталося сьогодні.",
     "Усе інше я зроблю сам: збережу, знайду головне, виділю інсайти й почну писати твою Книгу життя.",
     "А потім я зможу відповісти на будь-яке питання про твоє життя. 📖",
+    "🔒 І головне: твої записи бачиш лише ти. Команда їх не читає, а код відкритий — можеш перевірити сам. Завантажити чи видалити все можна в один клік.",
     "До речі, усе це красиво видно й у вебі — ось твоє особисте посилання, збережи його:\n{link}",
   ],
   fr: [
@@ -59,6 +62,7 @@ const WELCOME: Record<string, string[]> = {
     "🎤 Envoie-moi simplement ton premier message vocal — raconte ta journée.",
     "Je m'occupe du reste : je sauvegarde, je trouve l'essentiel, j'extrais les insights et je commence ton Livre de vie.",
     "Et ensuite, je pourrai répondre à toutes tes questions sur ta vie. 📖",
+    "🔒 Et l'essentiel : toi seul vois tes entrées. L'équipe ne les lit pas, et le code est ouvert — vérifie toi-même. Exporte ou supprime tout en un clic.",
     "Au fait, tu peux tout voir joliment sur le web — voici ton lien personnel, garde-le :\n{link}",
   ],
 };

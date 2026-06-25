@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 
-type Screen = { t: string; s?: string; list?: string[]; cta?: string };
+type Screen = { t: string; s?: string; list?: string[]; cta?: string; trust?: boolean };
 
-const ONB: Record<string, { next: string; privacy: string; skip: string; login: string; screens: Screen[] }> = {
+const ONB: Record<string, { next: string; privacy: string; skip: string; login: string; openCode: string; screens: Screen[] }> = {
   ru: {
     next: "Далее",
     privacy: "Приватность",
     skip: "Пропустить",
     login: "Уже есть аккаунт?",
+    openCode: "Открытый код",
     screens: [
       { t: "Добро пожаловать в LIFE OS", s: "Ваша жизнь заслуживает быть сохранённой." },
       { t: "Вы забудете почти всё, что произошло сегодня.", s: "Но именно из таких дней складывается вся ваша жизнь." },
@@ -20,6 +21,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
       { t: "Со временем LIFE OS понимает вас.", list: ["что вас вдохновляет", "что даёт энергию", "какие привычки работают", "какие проекты важнее всего"] },
       { t: "Это больше, чем дневник.", list: ["Второй мозг", "Книга жизни", "История проектов", "Архив семьи", "Карта здоровья", "Коллекция инсайтов"] },
       { t: "Через десять лет…", s: "Вы проживёте свою историю заново — не по фотографиям, а по настоящим мыслям и решениям." },
+      { t: "Ваши данные — только ваши.", s: "Честно, без мелкого шрифта:", list: ["Дневник видите только вы", "Команда записи не читает", "Код открыт — проверьте сами", "Скачать или удалить всё — в один клик"], trust: true },
       { t: "Начните первую страницу своей книги жизни.", s: "Просто расскажите, как прошёл сегодняшний день.", cta: "🎤 Записать первое сообщение" },
     ],
   },
@@ -28,6 +30,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
     privacy: "Privacy",
     skip: "Skip",
     login: "Already have an account?",
+    openCode: "Open source",
     screens: [
       { t: "Welcome to LIFE OS", s: "Your life deserves to be saved." },
       { t: "You'll forget almost everything that happened today.", s: "Yet your whole life is made of days like this." },
@@ -38,6 +41,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
       { t: "Over time, LIFE OS understands you.", list: ["what inspires you", "what gives you energy", "which habits work", "which projects matter most"] },
       { t: "It's more than a diary.", list: ["A second brain", "A book of life", "A history of projects", "A family archive", "A health map", "A collection of insights"] },
       { t: "Ten years from now…", s: "You'll relive your story — not through photos, but real thoughts and decisions." },
+      { t: "Your data is yours alone.", s: "Honestly, no fine print:", list: ["Only you see your diary", "The team doesn't read entries", "Open source — check it yourself", "Export or delete everything in one click"], trust: true },
       { t: "Start the first page of your life book.", s: "Just tell it how your day went.", cta: "🎤 Record your first message" },
     ],
   },
@@ -46,6 +50,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
     privacy: "Приватність",
     skip: "Пропустити",
     login: "Вже маєш акаунт?",
+    openCode: "Відкритий код",
     screens: [
       { t: "Ласкаво просимо до LIFE OS", s: "Твоє життя варте того, щоб його зберегти." },
       { t: "Ти забудеш майже все, що сталося сьогодні.", s: "Але саме з таких днів складається все твоє життя." },
@@ -56,6 +61,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
       { t: "З часом LIFE OS починає тебе розуміти.", list: ["що тебе надихає", "що дає енергію", "які звички працюють", "які проєкти найважливіші"] },
       { t: "Це більше, ніж щоденник.", list: ["Другий мозок", "Книга життя", "Історія проєктів", "Архів сім'ї", "Карта здоров'я", "Колекція інсайтів"] },
       { t: "За десять років…", s: "Ти проживеш свою історію знову — не за фото, а за справжніми думками й рішеннями." },
+      { t: "Твої дані — лише твої.", s: "Чесно, без дрібного шрифту:", list: ["Щоденник бачиш лише ти", "Команда записи не читає", "Код відкритий — перевір сам", "Завантажити чи видалити все — в один клік"], trust: true },
       { t: "Почни першу сторінку своєї книги життя.", s: "Просто розкажи, як минув сьогоднішній день.", cta: "🎤 Записати перше повідомлення" },
     ],
   },
@@ -64,6 +70,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
     privacy: "Confidentialité",
     skip: "Passer",
     login: "Déjà un compte ?",
+    openCode: "Code ouvert",
     screens: [
       { t: "Bienvenue dans LIFE OS", s: "Ta vie mérite d'être sauvegardée." },
       { t: "Tu oublieras presque tout ce qui s'est passé aujourd'hui.", s: "Pourtant ta vie entière est faite de jours comme celui-ci." },
@@ -74,6 +81,7 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
       { t: "Avec le temps, LIFE OS te comprend.", list: ["ce qui t'inspire", "ce qui te donne de l'énergie", "quelles habitudes fonctionnent", "quels projets comptent le plus"] },
       { t: "C'est plus qu'un journal.", list: ["Un second cerveau", "Un livre de vie", "Une histoire de projets", "Une archive familiale", "Une carte de santé", "Une collection d'insights"] },
       { t: "Dans dix ans…", s: "Tu revivras ton histoire — pas par les photos, mais par de vraies pensées et décisions." },
+      { t: "Tes données n'appartiennent qu'à toi.", s: "Honnêtement, sans petits caractères :", list: ["Toi seul vois ton journal", "L'équipe ne lit pas les entrées", "Code ouvert — vérifie toi-même", "Exporte ou supprime tout en un clic"], trust: true },
       { t: "Commence la première page de ton livre de vie.", s: "Raconte simplement ta journée.", cta: "🎤 Enregistrer ton premier message" },
     ],
   },
@@ -111,6 +119,16 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
                   <span>{x}</span>
                 </div>
               ))}
+            </div>
+          )}
+          {sc.trust && (
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 26, flexWrap: "wrap" }}>
+              <a href="https://github.com/top15igor/life-os" target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 15px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, textDecoration: "none" }}>
+                <i className="ti ti-brand-github" style={{ fontSize: 16 }} />{data.openCode}
+              </a>
+              <a href="/privacy" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 15px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, textDecoration: "none" }}>
+                🔒 {data.privacy}
+              </a>
             </div>
           )}
         </div>
