@@ -49,20 +49,20 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 760px) {
   .shell { flex-direction: column; }
   .sidebar { display: none; }
-  .main { padding: 16px 16px calc(104px + env(safe-area-inset-bottom)); max-width: none; }
+  .main { padding: 16px 16px calc(78px + env(safe-area-inset-bottom)); max-width: none; }
 
   .mobilenav {
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
     background: var(--bg); border-top: 1px solid var(--border);
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); justify-content: space-around;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); justify-content: space-around;
   }
   .mobilenav a, .mobilenav button {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
     background: none; border: none; cursor: pointer; color: var(--text-3);
-    font-size: 10.5px; flex: 1; padding: 4px 2px; min-width: 0; text-decoration: none;
+    font-size: 10px; flex: 1; padding: 2px 2px; min-width: 0; text-decoration: none;
   }
   .mobilenav a span, .mobilenav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mobilenav a i, .mobilenav button i { font-size: 22px; }
+  .mobilenav a i, .mobilenav button i { font-size: 20px; }
   .mobilenav a.active, .mobilenav button.active { color: var(--accent); }
 
   .mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.45); }
