@@ -7,6 +7,17 @@ import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+async function getBotLink(): Promise<string> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return "https://t.me";
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/getMe`, { cache: "no-store" }).then((x) => x.json());
+    return r?.result?.username ? `https://t.me/${r.result.username}` : "https://t.me";
+  } catch {
+    return "https://t.me";
+  }
+}
+
 const SECTIONS: { key: string; icon: string; color: string; label?: string }[] = [
   { key: "today", icon: "ti-home", color: "var(--accent)" },
   { key: "diary", icon: "ti-book", color: "var(--accent)" },
@@ -25,6 +36,7 @@ export default async function GuidePage() {
   const t = getDict(locale);
   const h = hints(locale);
   const g = guide(locale);
+  const botLink = await getBotLink();
 
   return (
     <div className="shell">
@@ -34,7 +46,11 @@ export default async function GuidePage() {
           <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{g.title}</h1>
         </div>
-        <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 26, maxWidth: 620 }}>{g.pitch}</p>
+        <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 16, maxWidth: 620 }}>{g.pitch}</p>
+
+        <a href={botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500, marginBottom: 26 }}>
+          <i className="ti ti-brand-telegram" style={{ fontSize: 18 }} />{g.openBot}
+        </a>
 
         {/* Что это */}
         <div className="card" style={{ marginBottom: 22 }}>

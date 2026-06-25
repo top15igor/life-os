@@ -15,6 +15,16 @@ function pickLang(code?: string): "ru" | "en" | "uk" | "fr" {
   return c === "uk" ? "uk" : c === "en" ? "en" : c === "fr" ? "fr" : "ru";
 }
 
+let botUsernameCache: string | null = null;
+async function botShareLink(origin: string): Promise<string> {
+  if (botUsernameCache) return `https://t.me/${botUsernameCache}`;
+  try {
+    const me = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`).then((r) => r.json());
+    if (me?.result?.username) { botUsernameCache = me.result.username; return `https://t.me/${botUsernameCache}`; }
+  } catch {}
+  return origin;
+}
+
 const WELCOME: Record<string, string[]> = {
   ru: [
     "👋 Привет!\nЧерез год ты почти наверняка не вспомнишь сегодняшний день.",
@@ -58,10 +68,10 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami" },
 };
 
 const MILE: Record<string, any> = {
@@ -190,12 +200,17 @@ export async function POST(req: NextRequest) {
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
+    const bl = await botShareLink(origin);
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(bl)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     await sendMessage(chatId, body, {
       reply_markup: {
-        inline_keyboard: [[
-          { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
-          { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
-        ]],
+        inline_keyboard: [
+          [
+            { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
+            { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
+          ],
+          [{ text: L.share, url: shareUrl }],
+        ],
       },
     });
   } catch (e: any) {

@@ -3,6 +3,7 @@ import type { Locale } from "./i18n";
 type Guide = {
   title: string;
   pitch: string;
+  openBot: string;
   whatTitle: string;
   what: string;
   howTitle: string;
@@ -20,6 +21,7 @@ const G: Record<Locale, Guide> = {
   ru: {
     title: "Инструкция",
     pitch: "LIFE OS — твоя личная операционная система жизни. Ты говоришь — AI сохраняет, понимает и пишет твою Книгу жизни.",
+    openBot: "Открыть бота в Telegram",
     whatTitle: "Что это",
     what: "Это дневник нового поколения. Каждый день ты в пару касаний рассказываешь, что произошло, а AI превращает это в структурированную историю: категории, теги, настроение, инсайты, задачи, люди и проекты — и со временем строит карту твоей жизни.",
     howTitle: "Как пользоваться",
@@ -51,6 +53,7 @@ const G: Record<Locale, Guide> = {
   en: {
     title: "Guide",
     pitch: "LIFE OS is your personal operating system for life. You speak — AI saves it, understands it and writes your Book of Life.",
+    openBot: "Open the bot in Telegram",
     whatTitle: "What it is",
     what: "A next-generation diary. Each day you tell it what happened in a couple of taps, and AI turns it into a structured story: categories, tags, mood, insights, tasks, people and projects — and over time builds a map of your life.",
     howTitle: "How to use it",
@@ -82,6 +85,7 @@ const G: Record<Locale, Guide> = {
   uk: {
     title: "Інструкція",
     pitch: "LIFE OS — твоя особиста операційна система життя. Ти говориш — AI зберігає, розуміє й пише твою Книгу життя.",
+    openBot: "Відкрити бота в Telegram",
     whatTitle: "Що це",
     what: "Щоденник нового покоління. Щодня ти в кілька дотиків розповідаєш, що сталося, а AI перетворює це на структуровану історію: категорії, теги, настрій, інсайти, завдання, люди й проєкти — і з часом будує карту твого життя.",
     howTitle: "Як користуватися",
@@ -113,6 +117,7 @@ const G: Record<Locale, Guide> = {
   fr: {
     title: "Guide",
     pitch: "LIFE OS est ton système d'exploitation personnel pour la vie. Tu parles — l'IA sauvegarde, comprend et écrit ton Livre de vie.",
+    openBot: "Ouvrir le bot dans Telegram",
     whatTitle: "Qu'est-ce que c'est",
     what: "Un journal nouvelle génération. Chaque jour tu racontes ta journée en quelques gestes, et l'IA en fait une histoire structurée : catégories, tags, humeur, insights, tâches, personnes et projets — et au fil du temps, une carte de ta vie.",
     howTitle: "Comment l'utiliser",
