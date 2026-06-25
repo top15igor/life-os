@@ -28,9 +28,9 @@ function Metric({ label, icon, value, suffix, color, href }: any) {
 
 function Section({ title, children, right }: any) {
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-        <div style={{ fontSize: 13, color: "var(--text-2)" }}>{title}</div>
+    <div style={{ marginBottom: 22 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ fontSize: 16, fontWeight: 500, color: "var(--text)", letterSpacing: "-0.01em" }}>{title}</div>
         {right}
       </div>
       {children}
