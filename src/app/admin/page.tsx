@@ -42,6 +42,25 @@ function Title({ children }: any) {
   return <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>{children}</div>;
 }
 
+function TreeNode({ node, depth }: { node: any; depth: number }) {
+  return (
+    <div style={{ marginLeft: depth ? 16 : 0, borderLeft: depth ? "1.5px solid var(--border)" : "none", paddingLeft: depth ? 14 : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
+        {depth > 0 && <span style={{ width: 12, height: 1, background: "var(--border)", marginLeft: -14, flexShrink: 0 }} />}
+        <i className="ti ti-user-circle" style={{ fontSize: 18, color: depth === 0 ? "var(--accent)" : "var(--text-3)", flexShrink: 0 }} />
+        <span style={{ fontSize: 13.5, fontWeight: depth === 0 ? 600 : 500 }}>{node.name}</span>
+        {node.children.length > 0 && (
+          <span style={{ fontSize: 11, color: "var(--accent-text)", background: "var(--accent-bg)", padding: "1px 8px", borderRadius: 99 }}>
+            <i className="ti ti-users" style={{ fontSize: 11, verticalAlign: "-1px", marginRight: 3 }} />{node.children.length}
+          </span>
+        )}
+        <span style={{ fontSize: 11, color: "var(--text-3)" }}>· {node.entries} зап.</span>
+      </div>
+      {node.children.map((c: any) => <TreeNode key={c.id} node={c} depth={depth + 1} />)}
+    </div>
+  );
+}
+
 export default async function AdminPage() {
   const user = await requireUser();
   if (user.id !== OWNER) redirect("/");
@@ -115,6 +134,15 @@ export default async function AdminPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {d.tree.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <Title>🌳 Дерево приглашений — кто кого привёл</Title>
+            <div className="card">
+              {d.tree.map((n: any) => <TreeNode key={n.id} node={n} depth={0} />)}
             </div>
           </div>
         )}

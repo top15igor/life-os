@@ -96,10 +96,26 @@ export async function getAdminData() {
     .map(([id, count]) => ({ name: nameById[id] || id, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Дерево приглашений: кто кого позвал, ветки от корня.
+  const userMap: Record<string, any> = {};
+  for (const u of users || []) userMap[u.id] = u;
+  const childrenOf: Record<string, any[]> = {};
+  for (const u of users || []) {
+    if (u.referred_by && userMap[u.referred_by]) (childrenOf[u.referred_by] ||= []).push(u);
+  }
+  const buildNode = (u: any, depth: number, seen: Set<string>): any => {
+    if (seen.has(u.id) || depth > 12) return { id: u.id, name: u.name || "—", entries: byUser[u.id]?.count || 0, children: [] };
+    seen.add(u.id);
+    const children = (childrenOf[u.id] || []).map((c) => buildNode(c, depth + 1, seen));
+    return { id: u.id, name: u.name || "—", entries: byUser[u.id]?.count || 0, children };
+  };
+  const roots = (users || []).filter((u: any) => !u.referred_by || !userMap[u.referred_by]);
+  const tree = roots.map((u: any) => buildNode(u, 0, new Set<string>())).filter((n: any) => n.children.length > 0);
+
   return {
     totalUsers, activeUsers, active30, inactiveUsers: totalUsers - activeUsers,
     totalEntries, writers, returning, avgPerWriter,
     entriesSeries, newUsersSeries, voice, textEntries, avgMood, avgEnergy, catDist,
-    list, topReferrers,
+    list, topReferrers, tree,
   };
 }
