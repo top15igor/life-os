@@ -4,6 +4,7 @@ import { getToday, cats, tagList, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import QuickAdd from "@/components/QuickAdd";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,12 @@ export default async function TodayPage() {
   const energy = pickLatest(entries, "energy");
   const health = pickLatest(entries, "health");
   const focus = pickLatest(entries, "focus");
+  const QA = {
+    ru: { placeholder: "Что произошло? Напиши пару строк…", button: "Добавить", saving: "Сохраняю…" },
+    en: { placeholder: "What happened? Write a few lines…", button: "Add", saving: "Saving…" },
+    uk: { placeholder: "Що сталося? Напиши кілька рядків…", button: "Додати", saving: "Зберігаю…" },
+    fr: { placeholder: "Que s'est-il passé ? Écris quelques lignes…", button: "Ajouter", saving: "Enregistrement…" },
+  }[locale];
 
   return (
     <div className="shell">
@@ -52,15 +59,7 @@ export default async function TodayPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid var(--border)", borderRadius: 13, padding: "12px 15px", marginBottom: 18 }}>
-          <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: "50%", background: "var(--accent-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <i className="ti ti-microphone" style={{ fontSize: 21, color: "var(--accent)" }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>{t.quickCapture}</div>
-            <div style={{ fontSize: 13, color: "var(--text-3)" }}>{t.quickHint}</div>
-          </div>
-        </div>
+        <QuickAdd placeholder={QA.placeholder} button={QA.button} saving={QA.saving} hint={t.quickHint} />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 9, marginBottom: 22 }}>
           <Metric label={t.mood} icon="ti-mood-smile" value={mood} suffix="/10" color="var(--accent)" />
