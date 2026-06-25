@@ -58,6 +58,9 @@ const TOOL: Anthropic.Tool = {
   },
 };
 
+// Версия схемы overview — при изменении набора блоков старый кэш игнорируется.
+const OVERVIEW_VERSION = 2;
+
 export async function buildLifeOverview(userId: string, fresh = false): Promise<LifeOverview> {
   const db = supabaseAdmin();
   const { data: entries } = await db
@@ -76,13 +79,14 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
   if (!fresh) {
     try {
       const { data: cached } = await db.from("life_overview").select("data, entry_count, day").eq("user_id", userId).maybeSingle();
-      if (cached?.data && cached.entry_count === count && cached.day === today) return cached.data as LifeOverview;
+      if (cached?.data && cached.entry_count === count && cached.day === today && (cached.data as any)._v === OVERVIEW_VERSION) return cached.data as LifeOverview;
     } catch {
       // таблицы кэша может не быть — просто считаем вживую
     }
   }
 
   const save = async (data: LifeOverview) => {
+    (data as any)._v = OVERVIEW_VERSION;
     try {
       await db.from("life_overview").upsert({ user_id: userId, day: today, entry_count: count, data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
     } catch {
