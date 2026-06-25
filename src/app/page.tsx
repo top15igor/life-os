@@ -11,6 +11,8 @@ import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PinPrompt from "@/components/PinPrompt";
+import EnterInBrowser from "@/components/EnterInBrowser";
+import { cookies, headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +45,10 @@ export default async function HomePage() {
     const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash").eq("id", user.id).maybeSingle();
     hasPin = !!pinRow?.pin_hash;
   } catch {}
+
+  const tok = (await cookies()).get("lifeos_token")?.value || "";
+  const hdrs = await headers();
+  const personalLink = tok ? `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || ""}/u/${tok}` : "";
 
   // Контекст дня
   const nd = new Date();
@@ -127,6 +133,7 @@ export default async function HomePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <EnterInBrowser link={personalLink} locale={locale} />
         <PinPrompt hasPin={hasPin} locale={locale} />
         <HomeTabs
           data={data}
