@@ -13,5 +13,5 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Защищаем страницы, кроме /welcome, /login, /u/* (вход по ссылке), /api/* и статики.
-  matcher: ["/((?!welcome|login|u|api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!welcome|login|privacy|u|api|_next/static|_next/image|favicon.ico).*)"],
 };

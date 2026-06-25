@@ -131,6 +131,9 @@ export default async function GuidePage() {
           <div>
             <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 3 }}>{g.privacyTitle}</div>
             <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.6 }}>{g.privacy}</div>
+            <a href="/privacy" style={{ fontSize: 12.5, color: "var(--accent)", display: "inline-block", marginTop: 7 }}>
+              {locale === "en" ? "Read more" : locale === "uk" ? "Детальніше" : locale === "fr" ? "En savoir plus" : "Подробнее"} →
+            </a>
           </div>
         </div>
       </main>

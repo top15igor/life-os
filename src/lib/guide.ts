@@ -58,7 +58,7 @@ const G: Record<Locale, Guide> = {
       "Не идеальничай — наговаривай как есть, AI сам причешет формулировки.",
     ],
     privacyTitle: "Приватность",
-    privacy: "Дневник видишь только ты — по личной ссылке. Бот отвечает только тебе. Данные хранятся в зашифрованном виде с резервными копиями.",
+    privacy: "Дневник виден только тебе. Команда не читает твои записи — для аналитики видны лишь обезличенные цифры. AI обрабатывает текст только ради твоих резюме и ответов и не используется для обучения моделей. Данные шифруются, удалить всё можно в любой момент.",
   },
   en: {
     title: "Guide",
@@ -98,7 +98,7 @@ const G: Record<Locale, Guide> = {
       "Don't aim for perfect — just talk; AI will polish the wording.",
     ],
     privacyTitle: "Privacy",
-    privacy: "Only you can see your diary — via your personal link. The bot replies only to you. Data is stored encrypted with backups.",
+    privacy: "Only you can see your diary. The team doesn't read your entries — analytics show only anonymous numbers. AI processes the text only for your summaries and answers, and isn't used to train models. Data is encrypted; you can delete everything anytime.",
   },
   uk: {
     title: "Інструкція",
@@ -138,7 +138,7 @@ const G: Record<Locale, Guide> = {
       "Не намагайся ідеально — говори як є, AI причеше формулювання.",
     ],
     privacyTitle: "Приватність",
-    privacy: "Щоденник бачиш лише ти — за особистим посиланням. Бот відповідає тільки тобі. Дані зберігаються зашифрованими з резервними копіями.",
+    privacy: "Щоденник бачиш лише ти. Команда не читає твої записи — в аналітиці лише знеособлені цифри. AI обробляє текст тільки заради твоїх резюме й відповідей і не використовується для навчання моделей. Дані шифруються, видалити все можна будь-коли.",
   },
   fr: {
     title: "Guide",
@@ -178,7 +178,7 @@ const G: Record<Locale, Guide> = {
       "Ne vise pas la perfection — parle simplement, l'IA peaufine.",
     ],
     privacyTitle: "Confidentialité",
-    privacy: "Toi seul vois ton journal — via ton lien personnel. Le bot ne répond qu'à toi. Les données sont chiffrées avec des sauvegardes.",
+    privacy: "Toi seul vois ton journal. L'équipe ne lit pas tes entrées — les stats ne montrent que des chiffres anonymes. L'IA traite le texte seulement pour tes résumés et réponses, sans servir à entraîner des modèles. Données chiffrées ; tu peux tout supprimer à tout moment.",
   },
 };
 

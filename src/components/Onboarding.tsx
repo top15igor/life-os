@@ -4,9 +4,10 @@ import { useState } from "react";
 
 type Screen = { t: string; s?: string; list?: string[]; cta?: string };
 
-const ONB: Record<string, { next: string; screens: Screen[] }> = {
+const ONB: Record<string, { next: string; privacy: string; screens: Screen[] }> = {
   ru: {
     next: "Далее",
+    privacy: "Приватность",
     screens: [
       { t: "Добро пожаловать в LIFE OS", s: "Ваша жизнь заслуживает быть сохранённой." },
       { t: "Вы забудете почти всё, что произошло сегодня.", s: "Но именно из таких дней складывается вся ваша жизнь." },
@@ -22,6 +23,7 @@ const ONB: Record<string, { next: string; screens: Screen[] }> = {
   },
   en: {
     next: "Next",
+    privacy: "Privacy",
     screens: [
       { t: "Welcome to LIFE OS", s: "Your life deserves to be saved." },
       { t: "You'll forget almost everything that happened today.", s: "Yet your whole life is made of days like this." },
@@ -37,6 +39,7 @@ const ONB: Record<string, { next: string; screens: Screen[] }> = {
   },
   uk: {
     next: "Далі",
+    privacy: "Приватність",
     screens: [
       { t: "Ласкаво просимо до LIFE OS", s: "Твоє життя варте того, щоб його зберегти." },
       { t: "Ти забудеш майже все, що сталося сьогодні.", s: "Але саме з таких днів складається все твоє життя." },
@@ -52,6 +55,7 @@ const ONB: Record<string, { next: string; screens: Screen[] }> = {
   },
   fr: {
     next: "Suivant",
+    privacy: "Confidentialité",
     screens: [
       { t: "Bienvenue dans LIFE OS", s: "Ta vie mérite d'être sauvegardée." },
       { t: "Tu oublieras presque tout ce qui s'est passé aujourd'hui.", s: "Pourtant ta vie entière est faite de jours comme celui-ci." },
@@ -115,6 +119,7 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
         >
           ← {data.next === "Next" ? "Back" : data.next === "Suivant" ? "Retour" : "Назад"}
         </button>
+        <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>🔒 {data.privacy}</a>
       </div>
     </div>
   );
