@@ -205,7 +205,10 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
 
           <Section title={s.recent}>
             {data.today.length === 0 ? (
-              <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.noEntries}</div>
+              <div className="card" style={{ textAlign: "center", padding: "26px 18px" }}>
+                <i className="ti ti-notebook" style={{ fontSize: 30, color: "var(--text-3)", display: "block", marginBottom: 8 }} />
+                <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{s.noEntries}</div>
+              </div>
             ) : (
               data.today.map((e: any) => (
                 <Link key={e.id} href={`/entry/${e.id}`} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: "1px solid var(--border)" }}>
