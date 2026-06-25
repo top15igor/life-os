@@ -143,36 +143,43 @@ export async function getTodayDeeds(userId: string, todayISO: string): Promise<s
   }
 }
 
-export async function getActivePromises(userId: string, limit = 3): Promise<{ id: string; text: string }[]> {
+export async function getActivePromises(userId: string, limit = 3): Promise<{ id: string; text: string; person?: string }[]> {
   try {
-    const { data } = await supabaseAdmin().from("promises").select("id, text").eq("user_id", userId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);
+    const { data } = await supabaseAdmin().from("promises").select("id, text, person").eq("user_id", userId).eq("status", "active").order("created_at", { ascending: false }).limit(limit);
     return data || [];
   } catch {
     return [];
   }
 }
 
-export async function getAllPromises(userId: string): Promise<{ id: string; text: string; status: string; created_at: string }[]> {
+export async function getAllPromises(userId: string): Promise<{ id: string; text: string; person?: string; status: string; created_at: string }[]> {
   try {
-    const { data } = await supabaseAdmin().from("promises").select("id, text, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(200);
+    const { data } = await supabaseAdmin().from("promises").select("id, text, person, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(200);
     return data || [];
   } catch {
     return [];
   }
 }
 
-export async function getGoodDeeds(userId: string, limit = 100): Promise<{ id: string; text: string; created_at: string }[]> {
+export async function getGoodDeeds(userId: string, limit = 100): Promise<{ id: string; text: string; kind?: string; person?: string; created_at: string }[]> {
   try {
-    const { data } = await supabaseAdmin().from("good_deeds").select("id, text, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit);
+    const { data } = await supabaseAdmin().from("good_deeds").select("id, text, kind, person, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(limit);
     return data || [];
   } catch {
     return [];
   }
 }
 
-export async function getTraceWeek(userId: string): Promise<{ deeds: number; gratitude: number; promisesDone: number }> {
+export async function getTraceWeek(userId: string): Promise<{ deeds: number; gratitude: number; promisesDone: number; peopleHelped: number }> {
   const db = supabaseAdmin();
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  let deeds = 0;
+  let peopleHelped = 0;
+  try {
+    const { data: gd } = await db.from("good_deeds").select("person").eq("user_id", userId).gte("created_at", weekAgo);
+    deeds = (gd || []).length;
+    peopleHelped = new Set((gd || []).map((d: any) => (d.person || "").trim().toLowerCase()).filter(Boolean)).size;
+  } catch {}
   const count = async (q: any) => {
     try {
       const { count } = await q;
@@ -181,12 +188,11 @@ export async function getTraceWeek(userId: string): Promise<{ deeds: number; gra
       return 0;
     }
   };
-  const [deeds, gratitude, promisesDone] = await Promise.all([
-    count(db.from("good_deeds").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", weekAgo)),
+  const [gratitude, promisesDone] = await Promise.all([
     count(db.from("gratitude").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", weekAgo)),
     count(db.from("promises").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("status", "done")),
   ]);
-  return { deeds, gratitude, promisesDone };
+  return { deeds, gratitude, promisesDone, peopleHelped };
 }
 
 export async function getEntryCount(userId: string): Promise<number> {

@@ -12,6 +12,9 @@ export const CATEGORY_SLUGS = [
   "emotions", "problem", "decision", "event",
 ];
 
+// Типы добрых дел (НЕ включают долги/обязательства — это не добро).
+export const DEED_KINDS = ["help", "support", "care", "gift", "knowledge", "volunteer", "family", "community", "other"];
+
 export type Analysis = {
   summary: string;
   focus?: string | null;
@@ -29,8 +32,8 @@ export type Analysis = {
   tasks: string[];
   insights: string[];
   gratitude: string[];
-  good_deeds: string[];
-  promises: string[];
+  good_deeds: { text: string; kind?: string; person?: string }[];
+  promises: { text: string; person?: string }[];
 };
 
 const TOOL: Anthropic.Tool = {
@@ -55,8 +58,31 @@ const TOOL: Anthropic.Tool = {
       tasks: { type: "array", items: { type: "string" } },
       insights: { type: "array", items: { type: "string" } },
       gratitude: { type: "array", items: { type: "string" } },
-      good_deeds: { type: "array", items: { type: "string" }, description: "Добрые дела: что человек сделал хорошего для других (помог, поддержал, позвонил близким, проявил заботу, выполнил обещание, поделился). Только реально упомянутое — НЕ выдумывай." },
-      promises: { type: "array", items: { type: "string" }, description: "Обещания людям, которые человек дал и собирается выполнить (вернуть деньги, отправить, позвонить, помочь). С именем человека, если назван. Только явные обещания." },
+      good_deeds: {
+        type: "array",
+        description: "ТОЛЬКО настоящие добрые дела для других (помощь, поддержка, забота, подарок, знания, волонтёрство). ВАЖНО: возврат долга, оплата, выполнение рабочего обязательства — это НЕ добро, сюда НЕ включай.",
+        items: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Что доброго сделал, коротко от первого лица." },
+            kind: { type: "string", enum: DEED_KINDS, description: "Тип: help/support/care/gift/knowledge/volunteer/family/community/other." },
+            person: { type: "string", description: "Кому помог, если назван." },
+          },
+          required: ["text"],
+        },
+      },
+      promises: {
+        type: "array",
+        description: "Явные обещания людям, которые человек дал и собирается выполнить (позвонить, помочь, отправить, вернуть). Только явные обещания.",
+        items: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Что обещано, коротко." },
+            person: { type: "string", description: "Кому обещано, если назван." },
+          },
+          required: ["text"],
+        },
+      },
     },
     required: ["summary", "categories", "tags", "people", "places", "projects", "tasks", "insights", "gratitude"],
   },
@@ -74,8 +100,8 @@ function prompt(text: string): string {
 - people/places/projects: имена людей, места и проекты, явно упомянутые.
 - tasks: конкретные дела, которые человек собирается сделать.
 - insights: мысли-осознания. gratitude: за что благодарен.
-- good_deeds: добрые дела для других (помог, поддержал, позвонил близким, проявил заботу, выполнил обещание). Только если реально упомянуто — НЕ выдумывай и не морализируй.
-- promises: явные обещания людям, которые человек дал (вернуть деньги, отправить, позвонить, помочь). С именем, если названо.
+- good_deeds: ТОЛЬКО настоящая помощь/забота/поддержка/подарок/знания другим. Для каждого укажи kind и person (если ясно). ВАЖНО: возврат долга, оплата, выполнение обязательства или рабочей задачи — это НЕ доброе дело, НЕ включай их в good_deeds. Не морализируй и не выдумывай.
+- promises: явные обещания людям (позвонить, помочь, отправить, вернуть). Указывай person, если назван. НЕ ДУБЛИРУЙ: если поступок уже совершён (это доброе дело) — не добавляй его ещё и в promises.
 - sleep_hours/weight: только если названы числом.
 
 Запись:

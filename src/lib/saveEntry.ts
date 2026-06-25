@@ -51,8 +51,20 @@ export async function attachDerived(owner: string, id: string, a: Analysis) {
   if (a.tasks?.length) await db.from("tasks").insert(a.tasks.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.insights?.length) await db.from("insights").insert(a.insights.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.gratitude?.length) await db.from("gratitude").insert(a.gratitude.map((t) => ({ entry_id: id, user_id: owner, text: t })));
-  if (a.good_deeds?.length) await db.from("good_deeds").insert(a.good_deeds.map((t) => ({ entry_id: id, user_id: owner, text: t })));
-  if (a.promises?.length) await db.from("promises").insert(a.promises.map((t) => ({ entry_id: id, user_id: owner, text: t, status: "active" })));
+  if (a.good_deeds?.length) {
+    const rows = a.good_deeds
+      .map((d: any) => (typeof d === "string" ? { text: d } : d))
+      .filter((d: any) => d?.text)
+      .map((d: any) => ({ entry_id: id, user_id: owner, text: d.text, kind: d.kind ?? null, person: d.person ?? null }));
+    if (rows.length) await db.from("good_deeds").insert(rows);
+  }
+  if (a.promises?.length) {
+    const rows = a.promises
+      .map((p: any) => (typeof p === "string" ? { text: p } : p))
+      .filter((p: any) => p?.text)
+      .map((p: any) => ({ entry_id: id, user_id: owner, text: p.text, person: p.person ?? null, status: "active" }));
+    if (rows.length) await db.from("promises").insert(rows);
+  }
 }
 
 // Удалить все производные данные записи (для пере-разбора при правке или для удаления записи).
