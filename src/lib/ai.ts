@@ -36,7 +36,7 @@ const TOOL: Anthropic.Tool = {
   input_schema: {
     type: "object",
     properties: {
-      summary: { type: "string", description: "1–2 тёплых живых предложения по сути записи, по-человечески, без канцелярита (не «автор выражает...»)." },
+      summary: { type: "string", description: "1–2 тёплых живых предложения ОТ ПЕРВОГО ЛИЦА (от «я»), как будто автор пишет это сам в свой дневник. Без канцелярита, НЕ упоминай «человек»/«автор» в третьем лице." },
       focus: { type: "string", description: "Главный фокус дня, если ясен." },
       mood: { type: "integer", description: "Настроение 1–10." },
       energy: { type: "integer", description: "Энергия 1–10." },
@@ -62,7 +62,7 @@ function prompt(text: string): string {
 
 Правила:
 - Пиши на ТОМ ЖЕ языке, что и сама запись (русский / украинский / английский / французский). Не выдумывай того, чего нет в тексте.
-- summary: 1–2 тёплых живых предложения по сути записи, по-человечески, без канцелярита (не «автор выражает...»).
+- summary: 1–2 тёплых живых предложения ОТ ПЕРВОГО ЛИЦА (от «я»), как будто это пишешь ты сам в свой дневник. НЕ пиши «человек», «автор» или в третьем лице. По-человечески, без канцелярита.
 - mood/energy/health: 1–10, если упомянуто или ясно из тона; иначе не указывай.
 - categories: только из разрешённого списка (slug).
 - tags: 3–7 коротких тегов своими словами, без символа #.
@@ -114,4 +114,17 @@ export async function analyze(text: string): Promise<Analysis> {
   const block = msg.content.find((b) => b.type === "tool_use");
   if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
   return block.input as Analysis;
+}
+
+// Переписать запись в тёплое резюме ОТ ПЕРВОГО ЛИЦА (для обновления старых записей).
+export async function summarize(text: string): Promise<string> {
+  const m = await client().messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 300,
+    messages: [{ role: "user", content: `Перепиши эту дневниковую запись в 1–2 тёплых живых предложения ОТ ПЕРВОГО ЛИЦА (от «я»), как будто это пишу я сам в свой дневник. НЕ пиши «человек»/«автор» и не используй третье лицо. Без канцелярита, на языке записи. Верни ТОЛЬКО само резюме, без кавычек и префиксов.
+
+Запись:
+"""${text}"""` }],
+  });
+  return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("").trim();
 }
