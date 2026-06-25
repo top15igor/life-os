@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/i18n";
 const NAV = [
   { key: "today", href: "/", icon: "ti-home", ready: true },
   { key: "diary", href: "/diary", icon: "ti-book", ready: true },
-  { key: "health", href: "#", icon: "ti-heartbeat", ready: false },
+  { key: "health", href: "/health", icon: "ti-heartbeat", ready: true },
   { key: "energy", href: "#", icon: "ti-bolt", ready: false },
   { key: "sport", href: "#", icon: "ti-run", ready: false },
   { key: "food", href: "#", icon: "ti-salad", ready: false },
@@ -19,7 +19,7 @@ const NAV = [
   { key: "lifebook", href: "#", icon: "ti-book-2", ready: false },
   { key: "people", href: "/people", icon: "ti-user-heart", ready: true },
   { key: "places", href: "#", icon: "ti-map-pin", ready: false },
-  { key: "analytics", href: "#", icon: "ti-chart-line", ready: false },
+  { key: "analytics", href: "/analytics", icon: "ti-chart-line", ready: true },
 ];
 
 export default function Sidebar({
