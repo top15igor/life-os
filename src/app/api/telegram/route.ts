@@ -1,11 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 
 export const runtime = "nodejs";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function pickLang(code?: string): "ru" | "en" | "uk" | "fr" {
+  const c = (code || "").slice(0, 2);
+  return c === "uk" ? "uk" : c === "en" ? "en" : c === "fr" ? "fr" : "ru";
+}
+
+const WELCOME: Record<string, string[]> = {
+  ru: [
+    "👋 Привет!\nЧерез год ты почти наверняка не вспомнишь сегодняшний день.",
+    "Но именно из таких дней складывается вся твоя жизнь.",
+    "🎤 Просто отправь мне первое голосовое — расскажи, что произошло сегодня.",
+    "Всё остальное я сделаю сам: сохраню, найду главное, выделю инсайты и начну писать твою Книгу жизни.",
+    "А потом я смогу ответить на любой твой вопрос о твоей жизни. 📖",
+    "Кстати, всё это красиво видно и в вебе — вот твоя личная ссылка, сохрани её:\n{link}",
+  ],
+  en: [
+    "👋 Hi!\nA year from now, you'll barely remember today.",
+    "Yet your whole life is made of days like this.",
+    "🎤 Just send me your first voice message — tell me how your day went.",
+    "I'll do the rest: save it, find what matters, extract insights, and start writing your Book of Life.",
+    "And then I'll be able to answer any question about your life. 📖",
+    "By the way, you can see it all beautifully on the web — here's your personal link, keep it:\n{link}",
+  ],
+  uk: [
+    "👋 Привіт!\nЧерез рік ти майже напевно не згадаєш сьогоднішній день.",
+    "Але саме з таких днів складається все твоє життя.",
+    "🎤 Просто надішли мені перше голосове — розкажи, що сталося сьогодні.",
+    "Усе інше я зроблю сам: збережу, знайду головне, виділю інсайти й почну писати твою Книгу життя.",
+    "А потім я зможу відповісти на будь-яке питання про твоє життя. 📖",
+    "До речі, усе це красиво видно й у вебі — ось твоє особисте посилання, збережи його:\n{link}",
+  ],
+  fr: [
+    "👋 Salut !\nDans un an, tu ne te souviendras presque plus d'aujourd'hui.",
+    "Pourtant, toute ta vie est faite de jours comme celui-ci.",
+    "🎤 Envoie-moi simplement ton premier message vocal — raconte ta journée.",
+    "Je m'occupe du reste : je sauvegarde, je trouve l'essentiel, j'extrais les insights et je commence ton Livre de vie.",
+    "Et ensuite, je pourrai répondre à toutes tes questions sur ta vie. 📖",
+    "Au fait, tu peux tout voir joliment sur le web — voici ton lien personnel, garde-le :\n{link}",
+  ],
+};
+
+const RETURN: Record<string, string> = {
+  ru: "С возвращением! 👋\nПросто пришли голосовое или текст — я всё разложу по полочкам.\n\nТвоя личная ссылка на дневник:\n{link}",
+  en: "Welcome back! 👋\nJust send a voice note or text — I'll sort it all out.\n\nYour personal diary link:\n{link}",
+  uk: "З поверненням! 👋\nПросто надішли голосове або текст — я все розкладу.\n\nТвоє особисте посилання на щоденник:\n{link}",
+  fr: "Bon retour ! 👋\nEnvoie une note vocale ou un texte — je m'occupe du reste.\n\nTon lien personnel vers le journal :\n{link}",
+};
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
@@ -33,12 +82,28 @@ export async function POST(req: NextRequest) {
   const link = `${origin}/u/${user.token}`;
 
   if (msg.text === "/start") {
-    await sendMessage(
-      chatId,
-      `Привет${user.name ? ", " + user.name : ""}! Это твой личный дневник <b>LIFE OS</b>.\n\n` +
-        `Твоя личная ссылка на веб-дневник (сохрани её — это твой вход):\n${link}\n\n` +
-        `Просто наговори голосовое или напиши текст — я разложу всё по полочкам.`
-    );
+    const lang = pickLang(msg.from?.language_code);
+    if (user.isNew) {
+      const seq = WELCOME[lang] || WELCOME.ru;
+      for (let i = 0; i < seq.length; i++) {
+        await sendChatAction(chatId, "typing");
+        await sleep(i === 0 ? 400 : 1300);
+        await sendMessage(chatId, seq[i].replace("{link}", link));
+      }
+    } else {
+      await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link));
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (msg.text === "/demo") {
+    const lang = pickLang(msg.from?.language_code);
+    const seq = WELCOME[lang] || WELCOME.ru;
+    for (let i = 0; i < seq.length; i++) {
+      await sendChatAction(chatId, "typing");
+      await sleep(i === 0 ? 400 : 1300);
+      await sendMessage(chatId, seq[i].replace("{link}", link));
+    }
     return NextResponse.json({ ok: true });
   }
 
