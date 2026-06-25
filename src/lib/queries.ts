@@ -133,6 +133,44 @@ export async function getAllTasks(userId: string) {
   return data || [];
 }
 
+export async function getProjectsManaged(userId: string) {
+  const db = supabaseAdmin();
+  const { data: projs } = await db.from("projects").select("id, name").eq("user_id", userId);
+  const projects = projs || [];
+  if (!projects.length) return [];
+  const ids = projects.map((p) => p.id);
+  const { data: links } = await db.from("entry_projects").select("project_id, entries ( id, entry_date, summary, raw_text )").in("project_id", ids);
+  const byProj: Record<string, any[]> = {};
+  for (const l of links || []) {
+    const e = (l as any).entries;
+    if (e) (byProj[(l as any).project_id] ||= []).push(e);
+  }
+  return projects
+    .map((p) => {
+      const es = (byProj[p.id] || []).sort((a: any, b: any) => (b.entry_date || "").localeCompare(a.entry_date || ""));
+      return { id: p.id, name: p.name, count: es.length, lastDate: es[0]?.entry_date || null, entries: es.slice(0, 3) };
+    })
+    .sort((a, b) => b.count - a.count);
+}
+
+export async function getProject(userId: string, id: string) {
+  const db = supabaseAdmin();
+  const { data: proj } = await db.from("projects").select("id, name").eq("id", id).eq("user_id", userId).maybeSingle();
+  if (!proj) return null;
+  const { data: links } = await db.from("entry_projects").select("entries ( id, entry_date, entry_time, summary, raw_text, source )").eq("project_id", id);
+  const entries = (links || []).map((l: any) => l.entries).filter(Boolean).sort((a: any, b: any) => `${b.entry_date} ${b.entry_time || ""}`.localeCompare(`${a.entry_date} ${a.entry_time || ""}`));
+  const entryIds = entries.map((e: any) => e.id);
+  let tasks: any[] = [];
+  let insights: any[] = [];
+  if (entryIds.length) {
+    const { data: tk } = await db.from("tasks").select("id, text, done, entry_id").in("entry_id", entryIds);
+    tasks = (tk || []).sort((a, b) => Number(a.done) - Number(b.done));
+    const { data: ins } = await db.from("insights").select("text, entry_id").in("entry_id", entryIds);
+    insights = ins || [];
+  }
+  return { id: proj.id, name: proj.name, entries, tasks, insights };
+}
+
 export async function getOpenTasks(userId: string, limit = 5) {
   const { data } = await supabaseAdmin()
     .from("tasks")
