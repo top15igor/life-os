@@ -8,6 +8,7 @@ export type Happy = { emoji: string; label: string; why?: string };
 export type Energy = { label: string; strength: number; why?: string };
 export type Chain = { steps: string[] };
 export type Surprise = { text: string; why?: string };
+export type Hypothesis = { text: string; confidence: Conf; observations?: number; why?: string; refs?: string[] };
 export type Balance = {
   growing: { emoji?: string; label: string; text: string }[];
   neglected: { emoji?: string; label: string; text?: string }[];
@@ -25,6 +26,7 @@ export type LifeOverview = {
   story?: string;
   patterns: string[];
   balance?: Balance;
+  hypotheses?: Hypothesis[];
   note?: string;
   entryCount: number;
 };
@@ -52,6 +54,7 @@ const TOOL: Anthropic.Tool = {
           evolution: { type: "array", items: { type: "object", properties: { label: { type: "string" }, direction: { type: "string", enum: ["up", "down", "flat"] }, why: { type: "string" } }, required: ["label", "direction"] } },
         },
       },
+      hypotheses: { type: "array", items: { type: "object", properties: { text: { type: "string" }, confidence: { type: "string", enum: ["low", "medium", "high"] }, observations: { type: "integer" }, why: { type: "string" }, refs: { type: "array", items: { type: "string" } } }, required: ["text", "confidence"] } },
       note: { type: "string", description: "Заполни честно, если данных мало." },
     },
     required: ["happiness", "energyGivers", "energyDrainers", "chains", "patterns"],
@@ -59,7 +62,7 @@ const TOOL: Anthropic.Tool = {
 };
 
 // Версия схемы overview — при изменении набора блоков старый кэш игнорируется.
-const OVERVIEW_VERSION = 2;
+const OVERVIEW_VERSION = 3;
 
 export async function buildLifeOverview(userId: string, fresh = false): Promise<LifeOverview> {
   const db = supabaseAdmin();
@@ -120,6 +123,7 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
 - story: тёплый связный рассказ о последних ~30 днях (главная тема, человек, проект, эмоция, решение, инсайт, победа, урок) — это история, а не отчёт.
 - patterns: 2–5 замеченных закономерностей.
 - balance («зеркало жизни», только по данным): growing — 1–3 сферы жизни, которые сейчас РАСТУТ/развиваются (emoji + label + text: что именно развивается и почему так видно); neglected — 1–4 сферы, которым ДАВНО не уделялось внимания (emoji + label + короткий text); evolution — 2–5 ключевых сфер с направлением (label + direction: up/down/flat + why). Если данных мало — пустые массивы.
+- hypotheses: 1–4 ГИПОТЕЗЫ-предположения о связях в жизни человека, которые он мог бы проверить экспериментом (напр. «возможно, после прогулок дольше 40 минут ты спишь лучше»). Каждая: text (как гипотеза, со словами «возможно/вероятно/есть признаки», НЕ как факт), confidence, observations (на скольких записях основано), why, refs (даты). Строго по данным, без выдумок и без медицинских диагнозов; если мало данных — пустой массив.
 
 ЗАПИСИ:
 ${context}`;
@@ -148,6 +152,7 @@ ${context}`;
       balance: d.balance && (d.balance.growing?.length || d.balance.neglected?.length || d.balance.evolution?.length)
         ? { growing: d.balance.growing || [], neglected: d.balance.neglected || [], evolution: d.balance.evolution || [] }
         : undefined,
+      hypotheses: d.hypotheses?.length ? d.hypotheses : [],
       note: d.note,
       entryCount: count,
     };
