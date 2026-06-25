@@ -8,6 +8,22 @@ import Hint from "./Hint";
 import DictationHints from "./DictationHints";
 import PromiseList from "./PromiseList";
 
+// Какие опциональные блоки показывать при каждом «акценте главной» (undefined = показать все).
+const PRESET_VIS: Record<string, string[] | undefined> = {
+  mindful: undefined,
+  focus: ["habit", "context", "changes", "focus", "stories", "tasks"],
+  trace: ["habit", "trace", "promises", "traceWeek", "context", "gratitude"],
+  balance: ["habit", "context", "metrics", "changes", "gratitude", "trace"],
+  minimal: ["habit", "focus", "gratitude"],
+};
+
+const DAYPART_LINE: Record<string, { morning: string; day: string; evening: string }> = {
+  ru: { morning: "Доброе начало. Сделай день сильным — для себя и для других.", day: "Держи фокус и не забывай о близких.", evening: "Заверши день: сохрани события, заметь добро, поблагодари." },
+  en: { morning: "A fresh start. Make today strong — for yourself and others.", day: "Hold your focus and remember the people close to you.", evening: "Close the day: save the events, notice the good, give thanks." },
+  uk: { morning: "Добрий початок. Зроби день сильним — для себе й для інших.", day: "Тримай фокус і не забувай про близьких.", evening: "Заверши день: збережи події, поміть добро, подякуй." },
+  fr: { morning: "Un bon début. Rends ta journée forte — pour toi et les autres.", day: "Garde ton focus et pense à tes proches.", evening: "Termine la journée : garde les événements, remarque le bien, remercie." },
+};
+
 const HS: Record<string, any> = {
   ru: { tabs: ["Сегодня", "Путь", "Наследие"], focus: "Фокус дня", tasks: "Главные задачи", gratitude: "Благодарность", memory: "Воспоминание", ask: "Спроси свою жизнь", askSub: "AI ответит из всех твоих записей", balance: "Жизненный баланс", recent: "Записи дня", noTasks: "Открытых задач нет 👌", noEntries: "Записей сегодня ещё нет — напиши пару строк выше.", goals: "Цели", projects: "Проекты", lifebook: "Книга жизни", lifebookSub: "AI собирает месяцы в главы", insights: "Главные инсайты", biographer: "AI-Биограф", legacyEmpty: "Наследие наполнится по мере записей.", memYear: (t: string) => `Год назад в этот день: «${t}»`, memMonth: (t: string) => `Месяц назад в этот день: «${t}»` },
   en: { tabs: ["Today", "Path", "Legacy"], focus: "Focus of the day", tasks: "Top tasks", gratitude: "Gratitude", memory: "Memory", ask: "Ask your life", askSub: "AI answers from all your entries", balance: "Life balance", recent: "Today's entries", noTasks: "No open tasks 👌", noEntries: "No entries today yet — write a few lines above.", goals: "Goals", projects: "Projects", lifebook: "Book of Life", lifebookSub: "AI turns months into chapters", insights: "Key insights", biographer: "AI Biographer", legacyEmpty: "Your legacy grows as you write.", memYear: (t: string) => `A year ago today: “${t}”`, memMonth: (t: string) => `A month ago today: “${t}”` },
@@ -97,6 +113,11 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
   const doy = data.dayOfYear || 0;
   const heroLine = heroPool[doy % heroPool.length];
   const quote = quotePool[doy % quotePool.length];
+  const preset = data.preset || "mindful";
+  const daypart = data.daypart || "day";
+  const allowedBlocks = PRESET_VIS[preset];
+  const vis = (k: string) => !allowedBlocks || allowedBlocks.includes(k);
+  const dpLine = (DAYPART_LINE[locale] || DAYPART_LINE.ru)[daypart as "morning" | "day" | "evening"];
 
   const arrow = (d: string) => (d === "up" ? "ti-arrow-up-right" : d === "down" ? "ti-arrow-down-right" : "ti-arrow-right");
   const dirCol = (d: string) => (d === "up" ? "var(--positive)" : d === "down" ? "#ef4444" : "var(--text-3)");
@@ -133,10 +154,11 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
 
           <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
             <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
+            <div style={{ fontSize: 13.5, color: "var(--accent-text)", marginTop: 9, fontWeight: 500, lineHeight: 1.45, maxWidth: 520 }}>{dpLine}</div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
           </div>
 
-          {data.habit && (
+          {vis("habit") && data.habit && (
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -162,6 +184,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </div>
           )}
 
+          {vis("trace") && (
           <Section title={t0.traceToday}>
             {data.todayDeeds && data.todayDeeds.length > 0 ? (
               <div className="card" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -175,14 +198,15 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
               <div className="card" style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5 }}>{t0.traceEmpty}</div>
             )}
           </Section>
+          )}
 
-          {data.promises && data.promises.length > 0 && (
+          {vis("promises") && data.promises && data.promises.length > 0 && (
             <Section title={t0.promised} right={<Link href="/trace" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
               <PromiseList promises={data.promises} locale={locale} />
             </Section>
           )}
 
-          {data.traceWeek && (data.traceWeek.deeds || data.traceWeek.promisesDone || data.traceWeek.gratitude) ? (
+          {vis("traceWeek") && data.traceWeek && (data.traceWeek.deeds || data.traceWeek.promisesDone || data.traceWeek.gratitude) ? (
             <Link href="/trace" className="card" style={{ display: "block", marginBottom: 22, textDecoration: "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--text-2)", marginBottom: 11 }}><i className="ti ti-heart-handshake" style={{ color: "#ec4899" }} />{t0.traceWeekT}</div>
               <div style={{ display: "flex", gap: 20 }}>
@@ -193,19 +217,23 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </Link>
           ) : null}
 
+          {vis("context") && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 20 }}>
             <ContextCard icon="ti-calendar" title={`${data.dayOfYear}${t0.dayYear}`} sub={`${t0.daysLeft}: ${data.daysLeft} ${t0.days}`} />
             {data.experiment && <ContextCard icon="ti-flask-2" title={`${data.experiment.day}${t0.expDay}`} sub={data.experiment.title} href="/lab" />}
             {data.memory && <ContextCard icon="ti-book" title={data.memory.period === "year" ? t0.yearAgo : t0.monthAgo} sub={data.memory.summary} href="/diary" />}
           </div>
+          )}
 
+          {vis("metrics") && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 18 }}>
             <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" href="/analytics" />
             <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" href="/health?tab=energy" />
             <Metric label={metricsLabels.health} icon="ti-heart" value={data.health} suffix="/10" color="var(--health)" href="/health" />
           </div>
+          )}
 
-          {changeChips.length > 0 && (
+          {vis("changes") && changeChips.length > 0 && (
             <Section title={t0.changed}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {changeChips.map((c, i) => <Chip key={i} {...c} />)}
@@ -213,7 +241,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </Section>
           )}
 
-          {data.focus && (
+          {vis("focus") && data.focus && (
             <div className="card" style={{ display: "flex", gap: 11, marginBottom: 22, alignItems: "flex-start" }}>
               <i className="ti ti-target" style={{ fontSize: 20, color: "#3b82f6", flexShrink: 0, marginTop: 1 }} />
               <div style={{ minWidth: 0 }}>
@@ -223,7 +251,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </div>
           )}
 
-          {stories.length > 0 && (
+          {vis("stories") && stories.length > 0 && (
             <Section title={t0.stories} right={<Link href="/projects" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 9 }}>
                 {stories.map((st, i) => (
@@ -239,7 +267,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </Section>
           )}
 
-          {data.openTasks.length > 0 && (
+          {vis("tasks") && data.openTasks.length > 0 && (
             <Section title={s.tasks}>
               <div className="card">
                 {data.openTasks.map((tk: any) => (
@@ -250,7 +278,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 22 }}>
-            {data.gratitude.length > 0 && (
+            {vis("gratitude") && data.gratitude.length > 0 && (
               <div className="card" style={{ background: "#E1F5EE", border: "none" }}>
                 <div style={{ fontSize: 12, color: "#04342C", opacity: 0.7, marginBottom: 6 }}>{s.gratitude}</div>
                 {data.gratitude.map((g: string, k: number) => (<div key={k} style={{ fontSize: 13.5, padding: "3px 0", color: "#04342C" }}>🙏 {g}</div>))}
