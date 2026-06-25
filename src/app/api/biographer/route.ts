@@ -36,6 +36,11 @@ ${list}
       messages: [{ role: "user", content: prompt }],
     });
     const text = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
+    try {
+      await supabaseAdmin().from("biographer_chats").insert({ user_id: user.id, question, answer: text });
+    } catch {
+      // история необязательна — не ломаем ответ, если таблицы ещё нет
+    }
     return NextResponse.json({ ok: true, answer: text });
   } catch (e) {
     console.error(e);

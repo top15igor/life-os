@@ -111,6 +111,16 @@ export async function getOnThisDay(userId: string, todayISO: string): Promise<{ 
   return { period: y ? "year" : "month", summary: (pick.summary || pick.raw_text || "").slice(0, 140) };
 }
 
+export async function getBiographerHistory(userId: string, limit = 30) {
+  const { data } = await supabaseAdmin()
+    .from("biographer_chats")
+    .select("id, question, answer, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
 export async function getOpenTasks(userId: string, limit = 5) {
   const { data } = await supabaseAdmin()
     .from("tasks")

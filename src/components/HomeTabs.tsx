@@ -56,12 +56,21 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
         <div className="fade-up">
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 9, marginBottom: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 10 }}>
             <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" />
             <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" />
             <Metric label={metricsLabels.health} icon="ti-heart" value={data.health} suffix="/10" color="var(--health)" />
-            <Metric label={metricsLabels.focus} icon="ti-target" value={data.focus} color="#3b82f6" />
           </div>
+
+          {data.focus && (
+            <div className="card" style={{ display: "flex", gap: 11, marginBottom: 18, alignItems: "flex-start" }}>
+              <i className="ti ti-target" style={{ fontSize: 20, color: "#3b82f6", flexShrink: 0, marginTop: 1 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 2 }}>{metricsLabels.focus}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{data.focus}</div>
+              </div>
+            </div>
+          )}
 
           {data.openTasks.length > 0 ? (
             <Section title={s.tasks}>
