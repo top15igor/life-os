@@ -42,24 +42,44 @@ function Title({ children }: any) {
   return <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>{children}</div>;
 }
 
+const TREE_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
+
+function Avatar({ name, root, depth }: { name: string; root?: boolean; depth: number }) {
+  const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
+  const bg = root ? "var(--accent)" : TREE_COLORS[depth % TREE_COLORS.length];
+  return <span style={{ width: 30, height: 30, borderRadius: 99, background: bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, flexShrink: 0 }}>{initial}</span>;
+}
+
 function TreeNode({ node, depth }: { node: any; depth: number }) {
+  const kids = node.children?.length || 0;
   return (
-    <div style={{ marginLeft: depth ? 16 : 0, borderLeft: depth ? "1.5px solid var(--border)" : "none", paddingLeft: depth ? 14 : 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
-        {depth > 0 && <span style={{ width: 12, height: 1, background: "var(--border)", marginLeft: -14, flexShrink: 0 }} />}
-        <i className="ti ti-user-circle" style={{ fontSize: 18, color: depth === 0 ? "var(--accent)" : "var(--text-3)", flexShrink: 0 }} />
-        <span style={{ fontSize: 13.5, fontWeight: depth === 0 ? 600 : 500 }}>{node.name}</span>
-        {node.children.length > 0 && (
-          <span style={{ fontSize: 11, color: "var(--accent-text)", background: "var(--accent-bg)", padding: "1px 8px", borderRadius: 99 }}>
-            <i className="ti ti-users" style={{ fontSize: 11, verticalAlign: "-1px", marginRight: 3 }} />{node.children.length}
-          </span>
-        )}
-        <span style={{ fontSize: 11, color: "var(--text-3)" }}>· {node.entries} зап.</span>
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
+        <Avatar name={node.name} root={depth === 0} depth={depth} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: depth === 0 ? 600 : 500 }}>{node.name}</div>
+          <div style={{ fontSize: 11, color: "var(--text-3)" }}>
+            {kids > 0 ? `пригласил ${kids}` : depth === 0 ? "корень" : "приглашён"} · {node.entries ?? 0} зап.
+          </div>
+        </div>
       </div>
-      {node.children.map((c: any) => <TreeNode key={c.id} node={c} depth={depth + 1} />)}
+      {kids > 0 && (
+        <div style={{ marginLeft: 14, paddingLeft: 18, borderLeft: "1.5px solid var(--border)" }}>
+          {node.children.map((c: any, i: number) => <TreeNode key={c.id || i} node={c} depth={depth + 1} />)}
+        </div>
+      )}
     </div>
   );
 }
+
+const EXAMPLE_TREE = {
+  id: "ex0", name: "Ты", entries: 12, children: [
+    { id: "ex1", name: "Алиса", entries: 7, children: [
+      { id: "ex2", name: "Костя", entries: 4, children: [{ id: "ex3", name: "Лена", entries: 2, children: [] }] },
+    ] },
+    { id: "ex4", name: "Дима", entries: 5, children: [] },
+  ],
+};
 
 export default async function AdminPage() {
   const user = await requireUser();
@@ -138,14 +158,23 @@ export default async function AdminPage() {
           </div>
         )}
 
-        {d.tree.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <Title>🌳 Дерево приглашений — кто кого привёл</Title>
+        <div style={{ marginBottom: 24 }}>
+          <Title>🌳 Дерево приглашений — кто кого привёл</Title>
+          {d.tree.length > 0 ? (
             <div className="card">
               {d.tree.map((n: any) => <TreeNode key={n.id} node={n} depth={0} />)}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="card">
+              <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 14 }}>
+                Дерево пока пустое — никто не пришёл по ссылке-приглашению (все зашли в бота напрямую). Как только друг откроет твою ссылку «Пригласить друга» и заведётся — здесь вырастет ветка от тебя. Так это будет выглядеть:
+              </div>
+              <div style={{ opacity: 0.5, pointerEvents: "none" }}>
+                <TreeNode node={EXAMPLE_TREE} depth={0} />
+              </div>
+            </div>
+          )}
+        </div>
 
         {d.topReferrers.length > 0 && (
           <div style={{ marginBottom: 24 }}>
