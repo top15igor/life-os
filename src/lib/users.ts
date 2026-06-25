@@ -6,7 +6,7 @@ const OWNER = "00000000-0000-0000-0000-000000000000";
 export type User = { id: string; token: string; name: string | null; chat_id?: number; isNew?: boolean };
 
 // Находит пользователя по chat_id или создаёт нового (при первом сообщении).
-export async function getOrCreateUser(chatId: number, name?: string): Promise<User> {
+export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string): Promise<User> {
   const db = supabaseAdmin();
 
   const { data: existing } = await db
@@ -25,9 +25,10 @@ export async function getOrCreateUser(chatId: number, name?: string): Promise<Us
 
   const id = chatId === 115629292 ? OWNER : randomUUID();
   const token = randomUUID();
+  const ref = referredBy && /^[0-9a-f-]{36}$/i.test(referredBy) && referredBy !== id ? referredBy : null;
   const { data, error } = await db
     .from("users")
-    .insert({ id, chat_id: chatId, name: name || null, token })
+    .insert({ id, chat_id: chatId, name: name || null, token, referred_by: ref })
     .select("id, token, name")
     .single();
 

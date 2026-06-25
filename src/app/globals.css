@@ -14,21 +14,7 @@
   --insight: #7c3aed;
   --positive: #059669;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f172a;
-    --surface: #131c31;
-    --surface-2: #1e293b;
-    --text: #f1f5f9;
-    --text-2: #94a3b8;
-    --text-3: #64748b;
-    --border: rgba(255,255,255,0.10);
-    --accent: #818cf8;
-    --accent-bg: #1e1b4b;
-    --accent-text: #c7d2fe;
-    --energy: #f59e0b;
-  }
-}
+/* Тема всегда светлая (тёмную можно вернуть позже как переключатель). */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {

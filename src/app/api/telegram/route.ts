@@ -116,10 +116,17 @@ export async function POST(req: NextRequest) {
   const chatId: number = msg.chat.id;
   const origin = req.nextUrl.origin;
 
+  // Реферал: /start ref_<id> — кто пригласил.
+  let referredBy: string | undefined;
+  if (typeof msg.text === "string" && msg.text.startsWith("/start ")) {
+    const payload = msg.text.slice(7).trim();
+    if (payload.startsWith("ref_")) referredBy = payload.slice(4);
+  }
+
   // Каждый пользователь Telegram = аккаунт. Создаём при первом сообщении.
   let user;
   try {
-    user = await getOrCreateUser(chatId, msg.from?.first_name);
+    user = await getOrCreateUser(chatId, msg.from?.first_name, referredBy);
   } catch (e) {
     console.error(e);
     await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
@@ -128,7 +135,7 @@ export async function POST(req: NextRequest) {
 
   const link = `${origin}/u/${user.token}`;
 
-  if (msg.text === "/start") {
+  if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
     const lang = pickLang(msg.from?.language_code);
     if (user.isNew) {
       const seq = WELCOME[lang] || WELCOME.ru;
@@ -156,7 +163,7 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/invite") {
     const me = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`).then((r) => r.json()).catch(() => null);
-    const botLink = me?.result?.username ? `https://t.me/${me.result.username}` : origin;
+    const botLink = me?.result?.username ? `https://t.me/${me.result.username}?start=ref_${user.id}` : origin;
     const I = INVITE[pickLang(msg.from?.language_code)] || INVITE.ru;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
     await sendMessage(chatId, I.text.replace("{bot}", botLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
@@ -201,7 +208,8 @@ export async function POST(req: NextRequest) {
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
     const bl = await botShareLink(origin);
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(bl)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
+    const refLink = bl.startsWith("https://t.me/") ? `${bl}?start=ref_${user.id}` : bl;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     await sendMessage(chatId, body, {
       reply_markup: {
         inline_keyboard: [
