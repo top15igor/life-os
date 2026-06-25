@@ -38,6 +38,7 @@ const SECTIONS: { key: string; icon: string; color: string; label?: string }[] =
   { key: "projects", icon: "ti-briefcase", color: "#3b82f6" },
   { key: "lifebook", icon: "ti-book-2", color: "var(--accent)" },
   { key: "biographer", icon: "ti-messages", color: "var(--insight)" },
+  { key: "profile", icon: "ti-user", color: "#6366f1" },
   { key: "intelligence", icon: "ti-brain", color: "var(--insight)", label: "Life Intelligence" },
 ];
 

@@ -249,7 +249,7 @@ export async function POST(req: NextRequest) {
     try {
       const ans = await askLife(user.id, q);
       await saveChat(user.id, q, ans);
-      await sendMessage(chatId, esc(ans) || "—");
+      await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
     } catch (e) {
       console.error(e);
       await sendMessage(chatId, "Не получилось ответить, попробуй ещё раз.");
@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
-        await sendMessage(chatId, esc(ans) || "—");
+        await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
         return NextResponse.json({ ok: true });
       }
     }

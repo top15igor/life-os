@@ -4,6 +4,15 @@ import { useState } from "react";
 
 type QA = { id: string; question: string; answer: string };
 
+// Простой рендер markdown: **жирный** → bold, остальное как есть (pre-wrap хранит переносы).
+function renderMd(text: string) {
+  return (text || "").split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+    p.startsWith("**") && p.endsWith("**")
+      ? <b key={i} style={{ color: "var(--text)", fontWeight: 600 }}>{p.slice(2, -2)}</b>
+      : <span key={i}>{p}</span>
+  );
+}
+
 const STR: Record<string, any> = {
   ru: { placeholder: "Спроси о своей жизни…", ask: "Спросить", asking: "AI собирает историю…", historyTitle: "Недавние вопросы", suggestions: ["Расскажи историю моего главного проекта", "Как менялось моё здоровье?", "Когда я был счастливее всего?", "Какие решения изменили мою жизнь?"] },
   en: { placeholder: "Ask about your life…", ask: "Ask", asking: "AI is weaving the story…", historyTitle: "Recent questions", suggestions: ["Tell the story of my main project", "How did my health change?", "When was I happiest?", "Which decisions changed my life?"] },
@@ -74,7 +83,7 @@ export default function Biographer({ locale, initialHistory }: { locale: string;
                 <i className="ti ti-quote" style={{ fontSize: 17, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
                 <span>{item.question}</span>
               </div>
-              <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-2)", whiteSpace: "pre-wrap", borderTop: "1px solid var(--border)", paddingTop: 10 }}>{item.answer}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--text-2)", whiteSpace: "pre-wrap", borderTop: "1px solid var(--border)", paddingTop: 10 }}>{renderMd(item.answer)}</div>
             </div>
           ))}
         </>
