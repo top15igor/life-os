@@ -110,3 +110,22 @@ export async function getOnThisDay(userId: string, todayISO: string): Promise<{ 
   const pick = y || data[0];
   return { period: y ? "year" : "month", summary: (pick.summary || pick.raw_text || "").slice(0, 140) };
 }
+
+export async function getGoals(userId: string) {
+  const { data } = await supabaseAdmin()
+    .from("goals")
+    .select("id, title, progress, year, color")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  return data || [];
+}
+
+export async function getMonths(userId: string): Promise<{ month: string; count: number }[]> {
+  const { data } = await supabaseAdmin().from("entries").select("entry_date").eq("user_id", userId);
+  const m: Record<string, number> = {};
+  for (const e of data || []) {
+    const k = (e.entry_date || "").slice(0, 7);
+    if (k) m[k] = (m[k] || 0) + 1;
+  }
+  return Object.entries(m).sort().reverse().map(([month, count]) => ({ month, count }));
+}
