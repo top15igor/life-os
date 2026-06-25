@@ -20,11 +20,11 @@ function Section({ icon, title, color, children }: any) {
   );
 }
 
-function KV({ label, value, top }: { label: string; value: string; top?: boolean }) {
+function KV({ label, value, top, href }: { label: string; value: string; top?: boolean; href?: string }) {
   return (
     <div style={{ display: "flex", gap: 10, fontSize: 12.5, padding: "7px 0", borderTop: top ? "1px solid var(--border)" : "none", alignItems: "baseline" }}>
       <span style={{ color: "var(--text-2)", minWidth: 92 }}>{label}</span>
-      <span>{value}</span>
+      {href && value !== "—" ? <Link href={href} style={{ color: "var(--accent)" }}>{value}</Link> : <span>{value}</span>}
     </div>
   );
 }
@@ -96,9 +96,9 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           <div className="card" style={{ padding: "6px 14px" }}>
             <KV label={t.entry.tags} value={tagList(e).map((tag: string) => `#${tag}`).join("  ") || "—"} />
             <KV label={t.entry.categories} value={catNames.join(", ") || "—"} top />
-            <KV label={t.entry.people} value={people(e).join(", ") || "—"} top />
-            <KV label={t.entry.projects} value={projectNames.join(", ") || "—"} top />
-            <KV label={t.entry.places} value={placeNames.join(", ") || "—"} top />
+            <KV label={t.entry.people} value={people(e).join(", ") || "—"} top href="/people" />
+            <KV label={t.entry.projects} value={projectNames.join(", ") || "—"} top href="/projects" />
+            <KV label={t.entry.places} value={placeNames.join(", ") || "—"} top href="/places" />
           </div>
         </Section>
 

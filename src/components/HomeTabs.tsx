@@ -13,14 +13,17 @@ const HS: Record<string, any> = {
 };
 
 const CAT_COLOR: Record<string, string> = { health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", business: "#3b82f6", finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4", emotions: "#a78bfa" };
+const CAT_HREF: Record<string, string> = { health: "/health", sport: "/sport", food: "/food", family: "/family", insight: "/insights" };
 
-function Metric({ label, icon, value, suffix, color }: any) {
-  return (
-    <div style={{ background: "var(--surface-2)", borderRadius: 11, padding: "11px 13px" }}>
+function Metric({ label, icon, value, suffix, color, href }: any) {
+  const style: any = { background: "var(--surface-2)", borderRadius: 11, padding: "11px 13px", display: "block", textDecoration: "none", color: "var(--text)" };
+  const inner = (
+    <>
       <div style={{ fontSize: 12.5, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 5 }}><i className={`ti ${icon}`} style={{ fontSize: 15, color }} />{label}</div>
       <div style={{ fontSize: 22, fontWeight: 500, marginTop: 3 }}>{value ?? "—"}{value != null && suffix ? <span style={{ fontSize: 12, color: "var(--text-3)" }}>{suffix}</span> : null}</div>
-    </div>
+    </>
   );
+  return href ? <Link href={href} style={style}>{inner}</Link> : <div style={style}>{inner}</div>;
 }
 
 function Section({ title, children, right }: any) {
@@ -57,9 +60,9 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} />
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 9, marginBottom: 10 }}>
-            <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" />
-            <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" />
-            <Metric label={metricsLabels.health} icon="ti-heart" value={data.health} suffix="/10" color="var(--health)" />
+            <Metric label={metricsLabels.mood} icon="ti-mood-smile" value={data.mood} suffix="/10" color="var(--accent)" href="/analytics" />
+            <Metric label={metricsLabels.energy} icon="ti-bolt" value={data.energy} suffix="/10" color="var(--energy)" href="/energy" />
+            <Metric label={metricsLabels.health} icon="ti-heart" value={data.health} suffix="/10" color="var(--health)" href="/health" />
           </div>
 
           {data.focus && (
@@ -130,11 +133,11 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
               <Link href="/goals" className="card" style={{ display: "block", color: "var(--text-2)", fontSize: 14 }}>+ {s.goals}</Link>
             ) : (
               data.goals.map((g: any, i: number) => (
-                <div key={i} className="card" style={{ marginBottom: 8 }}>
+                <Link key={i} href="/goals" className="card" style={{ display: "block", marginBottom: 8 }}>
                   <div style={{ fontSize: 14, marginBottom: 6, display: "flex", alignItems: "center", gap: 7 }}><i className="ti ti-target" style={{ color: "var(--accent)", fontSize: 16 }} />{g.title}</div>
                   <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden", marginBottom: 3 }}><div style={{ width: `${g.progress}%`, height: "100%", background: "var(--accent)" }} /></div>
                   <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{g.progress}%</div>
-                </div>
+                </Link>
               ))
             )}
           </Section>
@@ -144,11 +147,17 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
               <div className="card">
                 {data.balance.map((b: any) => {
                   const max = data.balance[0].count || 1;
-                  return (
-                    <div key={b.slug} style={{ marginBottom: 8 }}>
+                  const href = CAT_HREF[b.slug];
+                  const row = (
+                    <>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}><span>{b.name}</span><span style={{ color: "var(--text-3)" }}>{b.count}</span></div>
                       <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}><div style={{ width: `${Math.round((b.count / max) * 100)}%`, height: "100%", background: CAT_COLOR[b.slug] || "var(--accent)" }} /></div>
-                    </div>
+                    </>
+                  );
+                  return href ? (
+                    <Link key={b.slug} href={href} style={{ display: "block", marginBottom: 8, textDecoration: "none", color: "var(--text)" }}>{row}</Link>
+                  ) : (
+                    <div key={b.slug} style={{ marginBottom: 8 }}>{row}</div>
                   );
                 })}
               </div>
@@ -159,7 +168,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             <Section title={s.projects} right={<Link href="/projects" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
                 {data.projects.map((p: any) => (
-                  <div key={p.name} className="card" style={{ display: "flex", alignItems: "center", gap: 9 }}><i className="ti ti-briefcase" style={{ color: "#3b82f6", fontSize: 18 }} /><div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 500 }}>{p.name}</div><div style={{ fontSize: 11, color: "var(--text-3)" }}>{p.count}</div></div></div>
+                  <Link key={p.name} href="/projects" className="card" style={{ display: "flex", alignItems: "center", gap: 9 }}><i className="ti ti-briefcase" style={{ color: "#3b82f6", fontSize: 18 }} /><div style={{ minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 500 }}>{p.name}</div><div style={{ fontSize: 11, color: "var(--text-3)" }}>{p.count}</div></div></Link>
                 ))}
               </div>
             </Section>

@@ -89,10 +89,10 @@ const MEM: Record<string, any> = {
 };
 
 const INVITE: Record<string, { text: string; share: string }> = {
-  ru: { text: "Я веду личный дневник жизни в LIFE OS 📖\nГоворишь голосом — AI сохраняет, находит инсайты и пишет твою Книгу жизни.\nПопробуй: {bot}", share: "📤 Поделиться" },
-  en: { text: "I keep a personal life diary in LIFE OS 📖\nYou speak — AI saves it, finds insights and writes your Book of Life.\nTry it: {bot}", share: "📤 Share" },
-  uk: { text: "Я веду особистий щоденник життя в LIFE OS 📖\nГовориш голосом — AI зберігає, знаходить інсайти й пише твою Книгу життя.\nСпробуй: {bot}", share: "📤 Поділитися" },
-  fr: { text: "Je tiens un journal de vie dans LIFE OS 📖\nTu parles — l'IA sauvegarde, trouve des insights et écrit ton Livre de vie.\nEssaie : {bot}", share: "📤 Partager" },
+  ru: { text: "Нашёл классную штуку — личный дневник жизни LIFE OS 📖\n\nНаговариваешь голосом, как прошёл день, а AI сам сохраняет, находит инсайты, связывает события и пишет твою «Книгу жизни». Через годы можно будет заново прожить свою историю.\n\nПопробуй, тебе понравится 👉 {bot}", share: "📤 Поделиться" },
+  en: { text: "Found something great — a personal life diary, LIFE OS 📖\n\nYou just say how your day went, and AI saves it, finds insights, connects events and writes your “Book of Life”. Years later you can relive your whole story.\n\nTry it, you'll love it 👉 {bot}", share: "📤 Share" },
+  uk: { text: "Знайшов класну штуку — особистий щоденник життя LIFE OS 📖\n\nНаговорюєш голосом, як минув день, а AI сам зберігає, знаходить інсайти, пов'язує події й пише твою «Книгу життя». Через роки зможеш заново прожити свою історію.\n\nСпробуй, тобі сподобається 👉 {bot}", share: "📤 Поділитися" },
+  fr: { text: "J'ai trouvé un truc génial — un journal de vie personnel, LIFE OS 📖\n\nTu racontes ta journée à la voix, et l'IA sauvegarde, trouve des insights, relie les événements et écrit ton « Livre de vie ». Des années plus tard, tu pourras revivre toute ton histoire.\n\nEssaie, tu vas adorer 👉 {bot}", share: "📤 Partager" },
 };
 
 function milestoneFor(count: number, streak: number, lang: string): string | null {

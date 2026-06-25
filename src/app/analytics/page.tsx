@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import Link from "next/link";
 import TrendChart from "@/components/TrendChart";
 import { getEntries, cats, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
@@ -108,9 +109,9 @@ export default async function AnalyticsPage() {
               <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>—</div>
             ) : (
               topPeople.map(([name, count]) => (
-                <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                <Link key={name} href="/people" style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, padding: "5px 0", borderBottom: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
                   <span>{name}</span><span style={{ color: "var(--text-3)" }}>{count} {s.times}</span>
-                </div>
+                </Link>
               ))
             )}
           </div>
