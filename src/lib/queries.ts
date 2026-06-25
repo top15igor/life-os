@@ -88,3 +88,25 @@ export async function getStreak(userId: string): Promise<number> {
   }
   return streak;
 }
+
+export async function getEntryCount(userId: string): Promise<number> {
+  const { count } = await supabaseAdmin().from("entries").select("*", { count: "exact", head: true }).eq("user_id", userId);
+  return count || 0;
+}
+
+// Запись «в этот день» месяц или год назад (для воспоминаний).
+export async function getOnThisDay(userId: string, todayISO: string): Promise<{ period: "year" | "month"; summary: string } | null> {
+  const d = new Date(todayISO + "T12:00:00");
+  const monthAgo = new Date(d); monthAgo.setMonth(d.getMonth() - 1);
+  const yearAgo = new Date(d); yearAgo.setFullYear(d.getFullYear() - 1);
+  const fmt = (x: Date) => x.toISOString().slice(0, 10);
+  const { data } = await supabaseAdmin()
+    .from("entries")
+    .select("entry_date, summary, raw_text")
+    .eq("user_id", userId)
+    .in("entry_date", [fmt(yearAgo), fmt(monthAgo)]);
+  if (!data?.length) return null;
+  const y = data.find((e: any) => e.entry_date === fmt(yearAgo));
+  const pick = y || data[0];
+  return { period: y ? "year" : "month", summary: (pick.summary || pick.raw_text || "").slice(0, 140) };
+}

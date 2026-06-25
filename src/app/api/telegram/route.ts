@@ -4,7 +4,7 @@ import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
-import { getStreak } from "@/lib/queries";
+import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 
 export const runtime = "nodejs";
 
@@ -64,6 +64,35 @@ const CONFIRM: Record<string, any> = {
   fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander" },
 };
 
+const MILE: Record<string, any> = {
+  ru: { first: "🎉 Это твоя первая запись! Книга жизни началась.", count: (n: number) => `🎉 Уже ${n} записей! Твоя история растёт.`, streak: (n: number) => `🔥 ${n} дней подряд — невероятно, так держать!` },
+  en: { first: "🎉 Your first entry! Your Book of Life has begun.", count: (n: number) => `🎉 Already ${n} entries! Your story is growing.`, streak: (n: number) => `🔥 ${n} days in a row — amazing, keep it up!` },
+  uk: { first: "🎉 Це твій перший запис! Книга життя почалася.", count: (n: number) => `🎉 Уже ${n} записів! Твоя історія росте.`, streak: (n: number) => `🔥 ${n} днів поспіль — неймовірно, так тримати!` },
+  fr: { first: "🎉 Ta première entrée ! Ton Livre de vie a commencé.", count: (n: number) => `🎉 Déjà ${n} entrées ! Ton histoire grandit.`, streak: (n: number) => `🔥 ${n} jours d'affilée — incroyable, continue !` },
+};
+
+const MEM: Record<string, any> = {
+  ru: { year: (t: string) => `⏳ Год назад в этот день ты писал: «${t}»`, month: (t: string) => `⏳ Месяц назад в этот день: «${t}»` },
+  en: { year: (t: string) => `⏳ A year ago today you wrote: “${t}”`, month: (t: string) => `⏳ A month ago today: “${t}”` },
+  uk: { year: (t: string) => `⏳ Рік тому цього дня ти писав: «${t}»`, month: (t: string) => `⏳ Місяць тому цього дня: «${t}»` },
+  fr: { year: (t: string) => `⏳ Il y a un an, ce jour-là tu écrivais : « ${t} »`, month: (t: string) => `⏳ Il y a un mois, ce jour-là : « ${t} »` },
+};
+
+const INVITE: Record<string, { text: string; share: string }> = {
+  ru: { text: "Я веду личный дневник жизни в LIFE OS 📖\nГоворишь голосом — AI сохраняет, находит инсайты и пишет твою Книгу жизни.\nПопробуй: {bot}", share: "📤 Поделиться" },
+  en: { text: "I keep a personal life diary in LIFE OS 📖\nYou speak — AI saves it, finds insights and writes your Book of Life.\nTry it: {bot}", share: "📤 Share" },
+  uk: { text: "Я веду особистий щоденник життя в LIFE OS 📖\nГовориш голосом — AI зберігає, знаходить інсайти й пише твою Книгу життя.\nСпробуй: {bot}", share: "📤 Поділитися" },
+  fr: { text: "Je tiens un journal de vie dans LIFE OS 📖\nTu parles — l'IA sauvegarde, trouve des insights et écrit ton Livre de vie.\nEssaie : {bot}", share: "📤 Partager" },
+};
+
+function milestoneFor(count: number, streak: number, lang: string): string | null {
+  const M = MILE[lang] || MILE.ru;
+  if (count === 1) return M.first;
+  if ([10, 25, 50, 100, 250, 500, 1000].includes(count)) return M.count(count);
+  if ([3, 7, 14, 30, 60, 100, 365].includes(streak)) return M.streak(streak);
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -115,6 +144,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (msg.text === "/invite") {
+    const me = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`).then((r) => r.json()).catch(() => null);
+    const botLink = me?.result?.username ? `https://t.me/${me.result.username}` : origin;
+    const I = INVITE[pickLang(msg.from?.language_code)] || INVITE.ru;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
+    await sendMessage(chatId, I.text.replace("{bot}", botLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
+    return NextResponse.json({ ok: true });
+  }
+
   if (msg.text === "/link") {
     await sendMessage(chatId, `Твоя личная ссылка на дневник:\n${link}`);
     return NextResponse.json({ ok: true });
@@ -145,8 +183,14 @@ export async function POST(req: NextRequest) {
     });
     const lang = pickLang(msg.from?.language_code);
     const streak = await getStreak(user.id);
+    const count = await getEntryCount(user.id);
     const L = CONFIRM[lang] || CONFIRM.ru;
-    await sendMessage(chatId, formatConfirm(analysis, streak, lang), {
+    let body = formatConfirm(analysis, streak, lang);
+    const ms = milestoneFor(count, streak, lang);
+    if (ms) body += `\n\n${ms}`;
+    const mem = await getOnThisDay(user.id, entry.entry_date);
+    if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
+    await sendMessage(chatId, body, {
       reply_markup: {
         inline_keyboard: [[
           { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
