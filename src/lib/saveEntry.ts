@@ -44,6 +44,8 @@ export async function saveEntry(opts: {
   if (a.tasks?.length) await db.from("tasks").insert(a.tasks.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.insights?.length) await db.from("insights").insert(a.insights.map((t) => ({ entry_id: id, user_id: owner, text: t })));
   if (a.gratitude?.length) await db.from("gratitude").insert(a.gratitude.map((t) => ({ entry_id: id, user_id: owner, text: t })));
+  if (a.good_deeds?.length) await db.from("good_deeds").insert(a.good_deeds.map((t) => ({ entry_id: id, user_id: owner, text: t })));
+  if (a.promises?.length) await db.from("promises").insert(a.promises.map((t) => ({ entry_id: id, user_id: owner, text: t, status: "active" })));
 
   return entry;
 }

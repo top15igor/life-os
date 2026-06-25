@@ -29,6 +29,8 @@ export type Analysis = {
   tasks: string[];
   insights: string[];
   gratitude: string[];
+  good_deeds: string[];
+  promises: string[];
 };
 
 const TOOL: Anthropic.Tool = {
@@ -53,6 +55,8 @@ const TOOL: Anthropic.Tool = {
       tasks: { type: "array", items: { type: "string" } },
       insights: { type: "array", items: { type: "string" } },
       gratitude: { type: "array", items: { type: "string" } },
+      good_deeds: { type: "array", items: { type: "string" }, description: "Добрые дела: что человек сделал хорошего для других (помог, поддержал, позвонил близким, проявил заботу, выполнил обещание, поделился). Только реально упомянутое — НЕ выдумывай." },
+      promises: { type: "array", items: { type: "string" }, description: "Обещания людям, которые человек дал и собирается выполнить (вернуть деньги, отправить, позвонить, помочь). С именем человека, если назван. Только явные обещания." },
     },
     required: ["summary", "categories", "tags", "people", "places", "projects", "tasks", "insights", "gratitude"],
   },
@@ -70,6 +74,8 @@ function prompt(text: string): string {
 - people/places/projects: имена людей, места и проекты, явно упомянутые.
 - tasks: конкретные дела, которые человек собирается сделать.
 - insights: мысли-осознания. gratitude: за что благодарен.
+- good_deeds: добрые дела для других (помог, поддержал, позвонил близким, проявил заботу, выполнил обещание). Только если реально упомянуто — НЕ выдумывай и не морализируй.
+- promises: явные обещания людям, которые человек дал (вернуть деньги, отправить, позвонить, помочь). С именем, если названо.
 - sleep_hours/weight: только если названы числом.
 
 Запись:

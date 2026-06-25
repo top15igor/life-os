@@ -69,7 +69,7 @@ function cats(...names: string[]): Record<string, string> {
 const dicts: Record<Locale, Dict> = {
   ru: {
     brand: "LIFE OS",
-    nav: { today: "Сегодня", guide: "Инструкция", diary: "Дневник", tasks: "Задачи", wellness: "Самочувствие", plans: "Цели и задачи", health: "Здоровье", energy: "Энергия", sport: "Спорт", food: "Питание", family: "Семья", projects: "Проекты", insights: "Инсайты", goals: "Цели", lifebook: "Книга жизни", people: "Люди", places: "Места", analytics: "Что заметил AI", lab: "Лаборатория", biographer: "Биограф", profile: "Профиль" },
+    nav: { today: "Сегодня", guide: "Инструкция", diary: "Дневник", tasks: "Задачи", wellness: "Самочувствие", plans: "Цели и задачи", health: "Здоровье", energy: "Энергия", sport: "Спорт", food: "Питание", family: "Семья", projects: "Проекты", insights: "Инсайты", goals: "Цели", lifebook: "Книга жизни", trace: "Мой след", people: "Люди", places: "Места", analytics: "Что заметил AI", lab: "Лаборатория", biographer: "Биограф", profile: "Профиль" },
     greetings: { night: "Доброй ночи", morning: "Доброе утро", day: "Добрый день", evening: "Добрый вечер" },
     entriesWord: "записей",
     quickCapture: "Быстрая запись",
@@ -86,7 +86,7 @@ const dicts: Record<Locale, Dict> = {
   },
   en: {
     brand: "LIFE OS",
-    nav: { today: "Today", guide: "Guide", diary: "Diary", tasks: "Tasks", wellness: "Wellness", plans: "Goals & tasks", health: "Health", energy: "Energy", sport: "Sport", food: "Food", family: "Family", projects: "Projects", insights: "Insights", goals: "Goals", lifebook: "Life Book", people: "People", places: "Places", analytics: "Life Intelligence", lab: "Lab", biographer: "Biographer", profile: "Profile" },
+    nav: { today: "Today", guide: "Guide", diary: "Diary", tasks: "Tasks", wellness: "Wellness", plans: "Goals & tasks", health: "Health", energy: "Energy", sport: "Sport", food: "Food", family: "Family", projects: "Projects", insights: "Insights", goals: "Goals", lifebook: "Life Book", trace: "My Trace", people: "People", places: "Places", analytics: "Life Intelligence", lab: "Lab", biographer: "Biographer", profile: "Profile" },
     greetings: { night: "Good night", morning: "Good morning", day: "Good afternoon", evening: "Good evening" },
     entriesWord: "entries",
     quickCapture: "Quick capture",
@@ -103,7 +103,7 @@ const dicts: Record<Locale, Dict> = {
   },
   uk: {
     brand: "LIFE OS",
-    nav: { today: "Сьогодні", guide: "Інструкція", diary: "Щоденник", tasks: "Завдання", wellness: "Самопочуття", plans: "Цілі та завдання", health: "Здоров'я", energy: "Енергія", sport: "Спорт", food: "Харчування", family: "Сім'я", projects: "Проєкти", insights: "Інсайти", goals: "Цілі", lifebook: "Книга життя", people: "Люди", places: "Місця", analytics: "Що помітив AI", lab: "Лабораторія", biographer: "Біограф", profile: "Профіль" },
+    nav: { today: "Сьогодні", guide: "Інструкція", diary: "Щоденник", tasks: "Завдання", wellness: "Самопочуття", plans: "Цілі та завдання", health: "Здоров'я", energy: "Енергія", sport: "Спорт", food: "Харчування", family: "Сім'я", projects: "Проєкти", insights: "Інсайти", goals: "Цілі", lifebook: "Книга життя", trace: "Мій слід", people: "Люди", places: "Місця", analytics: "Що помітив AI", lab: "Лабораторія", biographer: "Біограф", profile: "Профіль" },
     greetings: { night: "Доброї ночі", morning: "Доброго ранку", day: "Доброго дня", evening: "Доброго вечора" },
     entriesWord: "записів",
     quickCapture: "Швидкий запис",
@@ -120,7 +120,7 @@ const dicts: Record<Locale, Dict> = {
   },
   fr: {
     brand: "LIFE OS",
-    nav: { today: "Aujourd'hui", guide: "Guide", diary: "Journal", tasks: "Tâches", wellness: "Bien-être", plans: "Objectifs & tâches", health: "Santé", energy: "Énergie", sport: "Sport", food: "Alimentation", family: "Famille", projects: "Projets", insights: "Insights", goals: "Objectifs", lifebook: "Livre de vie", people: "Personnes", places: "Lieux", analytics: "Vu par l'IA", lab: "Labo", biographer: "Biographe", profile: "Profil" },
+    nav: { today: "Aujourd'hui", guide: "Guide", diary: "Journal", tasks: "Tâches", wellness: "Bien-être", plans: "Objectifs & tâches", health: "Santé", energy: "Énergie", sport: "Sport", food: "Alimentation", family: "Famille", projects: "Projets", insights: "Insights", goals: "Objectifs", lifebook: "Livre de vie", trace: "Mon empreinte", people: "Personnes", places: "Lieux", analytics: "Vu par l'IA", lab: "Labo", biographer: "Biographe", profile: "Profil" },
     greetings: { night: "Bonne nuit", morning: "Bonjour", day: "Bon après-midi", evening: "Bonsoir" },
     entriesWord: "entrées",
     quickCapture: "Capture rapide",

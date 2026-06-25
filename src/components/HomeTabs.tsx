@@ -5,6 +5,8 @@ import Link from "next/link";
 import QuickAdd from "./QuickAdd";
 import LifeBalance from "./LifeBalance";
 import Hint from "./Hint";
+import DictationHints from "./DictationHints";
+import PromiseList from "./PromiseList";
 
 const HS: Record<string, any> = {
   ru: { tabs: ["Сегодня", "Путь", "Наследие"], focus: "Фокус дня", tasks: "Главные задачи", gratitude: "Благодарность", memory: "Воспоминание", ask: "Спроси свою жизнь", askSub: "AI ответит из всех твоих записей", balance: "Жизненный баланс", recent: "Записи дня", noTasks: "Открытых задач нет 👌", noEntries: "Записей сегодня ещё нет — напиши пару строк выше.", goals: "Цели", projects: "Проекты", lifebook: "Книга жизни", lifebookSub: "AI собирает месяцы в главы", insights: "Главные инсайты", biographer: "AI-Биограф", legacyEmpty: "Наследие наполнится по мере записей.", memYear: (t: string) => `Год назад в этот день: «${t}»`, memMonth: (t: string) => `Месяц назад в этот день: «${t}»` },
@@ -28,10 +30,10 @@ const QUOTES: Record<string, { text: string; author?: string }[]> = {
 };
 
 const T0: Record<string, any> = {
-  ru: { dayYear: "й день года", daysLeft: "до конца года", days: "дн.", expDay: "й день эксперимента", changed: "Что изменилось со вчера", stories: "Незавершённые истории", thought: "Мысль дня", focus: "Фокус дня", up: "Лучше", down: "Хуже", flat: "Так же", mood: "Настроение", sleep: "Сон", idea: "Новая идея", appeared: "Появилась", streakWord: "Серия", exp: "Эксперимент", expGo: "Продолжается", yearAgo: "Год назад в этот день", monthAgo: "Месяц назад в этот день", noStories: "Здесь появятся проекты, цели и идеи, к которым стоит вернуться.", notes: "зап.", totalDays: "дней с записями", keepChain: "Запиши сегодня, чтобы не разорвать цепочку 🔥", chainKept: "Сегодня записано — цепочка продолжается ✓", startChain: "Начни свою серию — запиши сегодняшний день" },
-  en: { dayYear: "th day of the year", daysLeft: "left this year", days: "d", expDay: "th day of experiment", changed: "What changed since yesterday", stories: "Unfinished stories", thought: "Thought of the day", focus: "Focus of the day", up: "Better", down: "Worse", flat: "Same", mood: "Mood", sleep: "Sleep", idea: "New idea", appeared: "Appeared", streakWord: "Streak", exp: "Experiment", expGo: "Ongoing", yearAgo: "A year ago today", monthAgo: "A month ago today", noStories: "Projects, goals and ideas worth returning to will appear here.", notes: "entries", totalDays: "days journaled", keepChain: "Write today to keep your streak 🔥", chainKept: "Logged today — streak continues ✓", startChain: "Start your streak — write today" },
-  uk: { dayYear: "й день року", daysLeft: "до кінця року", days: "дн.", expDay: "й день експерименту", changed: "Що змінилося з учора", stories: "Незавершені історії", thought: "Думка дня", focus: "Фокус дня", up: "Краще", down: "Гірше", flat: "Так само", mood: "Настрій", sleep: "Сон", idea: "Нова ідея", appeared: "З'явилася", streakWord: "Серія", exp: "Експеримент", expGo: "Триває", yearAgo: "Рік тому цього дня", monthAgo: "Місяць тому цього дня", noStories: "Тут з'являться проєкти, цілі та ідеї, до яких варто повернутися.", notes: "зап.", totalDays: "днів із записами", keepChain: "Запиши сьогодні, щоб не розірвати ланцюжок 🔥", chainKept: "Сьогодні записано — ланцюжок триває ✓", startChain: "Почни свою серію — запиши сьогоднішній день" },
-  fr: { dayYear: "e jour de l'année", daysLeft: "avant la fin de l'année", days: "j", expDay: "e jour d'expérience", changed: "Ce qui a changé depuis hier", stories: "Histoires inachevées", thought: "Pensée du jour", focus: "Focus du jour", up: "Mieux", down: "Moins bien", flat: "Pareil", mood: "Humeur", sleep: "Sommeil", idea: "Nouvelle idée", appeared: "Apparue", streakWord: "Série", exp: "Expérience", expGo: "En cours", yearAgo: "Il y a un an aujourd'hui", monthAgo: "Il y a un mois aujourd'hui", noStories: "Les projets, objectifs et idées à reprendre apparaîtront ici.", notes: "entrées", totalDays: "jours notés", keepChain: "Écris aujourd'hui pour garder ta série 🔥", chainKept: "Noté aujourd'hui — la série continue ✓", startChain: "Commence ta série — écris aujourd'hui" },
+  ru: { dayYear: "й день года", daysLeft: "до конца года", days: "дн.", expDay: "й день эксперимента", changed: "Что изменилось со вчера", stories: "Незавершённые истории", thought: "Мысль дня", focus: "Фокус дня", up: "Лучше", down: "Хуже", flat: "Так же", mood: "Настроение", sleep: "Сон", idea: "Новая идея", appeared: "Появилась", streakWord: "Серия", exp: "Эксперимент", expGo: "Продолжается", yearAgo: "Год назад в этот день", monthAgo: "Месяц назад в этот день", noStories: "Здесь появятся проекты, цели и идеи, к которым стоит вернуться.", notes: "зап.", totalDays: "дней с записями", keepChain: "Запиши сегодня, чтобы не разорвать цепочку 🔥", chainKept: "Сегодня записано — цепочка продолжается ✓", startChain: "Начни свою серию — запиши сегодняшний день", traceToday: "Мой след сегодня", traceEmpty: "Сделал сегодня что-то доброе? Расскажи в записи — даже мелочь оставляет след.", promised: "Ты обещал", traceWeekT: "Твой след за неделю", deedsWord: "добрых дел", promisesWord: "обещаний выполнено", gratWord: "благодарности" },
+  en: { dayYear: "th day of the year", daysLeft: "left this year", days: "d", expDay: "th day of experiment", changed: "What changed since yesterday", stories: "Unfinished stories", thought: "Thought of the day", focus: "Focus of the day", up: "Better", down: "Worse", flat: "Same", mood: "Mood", sleep: "Sleep", idea: "New idea", appeared: "Appeared", streakWord: "Streak", exp: "Experiment", expGo: "Ongoing", yearAgo: "A year ago today", monthAgo: "A month ago today", noStories: "Projects, goals and ideas worth returning to will appear here.", notes: "entries", totalDays: "days journaled", keepChain: "Write today to keep your streak 🔥", chainKept: "Logged today — streak continues ✓", startChain: "Start your streak — write today", traceToday: "My trace today", traceEmpty: "Did something kind today? Mention it in an entry — even a small thing leaves a trace.", promised: "You promised", traceWeekT: "Your trace this week", deedsWord: "good deeds", promisesWord: "promises kept", gratWord: "gratitudes" },
+  uk: { dayYear: "й день року", daysLeft: "до кінця року", days: "дн.", expDay: "й день експерименту", changed: "Що змінилося з учора", stories: "Незавершені історії", thought: "Думка дня", focus: "Фокус дня", up: "Краще", down: "Гірше", flat: "Так само", mood: "Настрій", sleep: "Сон", idea: "Нова ідея", appeared: "З'явилася", streakWord: "Серія", exp: "Експеримент", expGo: "Триває", yearAgo: "Рік тому цього дня", monthAgo: "Місяць тому цього дня", noStories: "Тут з'являться проєкти, цілі та ідеї, до яких варто повернутися.", notes: "зап.", totalDays: "днів із записами", keepChain: "Запиши сьогодні, щоб не розірвати ланцюжок 🔥", chainKept: "Сьогодні записано — ланцюжок триває ✓", startChain: "Почни свою серію — запиши сьогоднішній день", traceToday: "Мій слід сьогодні", traceEmpty: "Зробив сьогодні щось добре? Згадай у записі — навіть дрібниця лишає слід.", promised: "Ти обіцяв", traceWeekT: "Твій слід за тиждень", deedsWord: "добрих справ", promisesWord: "обіцянок виконано", gratWord: "подяки" },
+  fr: { dayYear: "e jour de l'année", daysLeft: "avant la fin de l'année", days: "j", expDay: "e jour d'expérience", changed: "Ce qui a changé depuis hier", stories: "Histoires inachevées", thought: "Pensée du jour", focus: "Focus du jour", up: "Mieux", down: "Moins bien", flat: "Pareil", mood: "Humeur", sleep: "Sommeil", idea: "Nouvelle idée", appeared: "Apparue", streakWord: "Série", exp: "Expérience", expGo: "En cours", yearAgo: "Il y a un an aujourd'hui", monthAgo: "Il y a un mois aujourd'hui", noStories: "Les projets, objectifs et idées à reprendre apparaîtront ici.", notes: "entrées", totalDays: "jours notés", keepChain: "Écris aujourd'hui pour garder ta série 🔥", chainKept: "Noté aujourd'hui — la série continue ✓", startChain: "Commence ta série — écris aujourd'hui", traceToday: "Mon empreinte aujourd'hui", traceEmpty: "Tu as fait quelque chose de bien ? Dis-le dans une entrée — même un petit geste laisse une trace.", promised: "Tu as promis", traceWeekT: "Ton empreinte cette semaine", deedsWord: "bonnes actions", promisesWord: "promesses tenues", gratWord: "gratitudes" },
 };
 
 const CAT_COLOR: Record<string, string> = { health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", business: "#3b82f6", finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4", emotions: "#a78bfa" };
@@ -127,6 +129,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
       {tab === 0 && (
         <div className="fade-up">
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
+          <DictationHints locale={locale} />
 
           <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
             <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
@@ -158,6 +161,37 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
               </div>
             </div>
           )}
+
+          <Section title={t0.traceToday}>
+            {data.todayDeeds && data.todayDeeds.length > 0 ? (
+              <div className="card" style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {data.todayDeeds.map((d: string, i: number) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14.5, lineHeight: 1.45 }}>
+                    <i className="ti ti-heart" style={{ fontSize: 16, color: "#ec4899", flexShrink: 0, marginTop: 2 }} />{d}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="card" style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5 }}>{t0.traceEmpty}</div>
+            )}
+          </Section>
+
+          {data.promises && data.promises.length > 0 && (
+            <Section title={t0.promised} right={<Link href="/trace" style={{ fontSize: 12.5, color: "var(--accent)" }}>→</Link>}>
+              <PromiseList promises={data.promises} locale={locale} />
+            </Section>
+          )}
+
+          {data.traceWeek && (data.traceWeek.deeds || data.traceWeek.promisesDone || data.traceWeek.gratitude) ? (
+            <Link href="/trace" className="card" style={{ display: "block", marginBottom: 22, textDecoration: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "var(--text-2)", marginBottom: 11 }}><i className="ti ti-heart-handshake" style={{ color: "#ec4899" }} />{t0.traceWeekT}</div>
+              <div style={{ display: "flex", gap: 20 }}>
+                <div><div style={{ fontSize: 22, fontWeight: 700 }}>{data.traceWeek.deeds}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t0.deedsWord}</div></div>
+                <div><div style={{ fontSize: 22, fontWeight: 700 }}>{data.traceWeek.promisesDone}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t0.promisesWord}</div></div>
+                <div><div style={{ fontSize: 22, fontWeight: 700 }}>{data.traceWeek.gratitude}</div><div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t0.gratWord}</div></div>
+              </div>
+            </Link>
+          ) : null}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 20 }}>
             <ContextCard icon="ti-calendar" title={`${data.dayOfYear}${t0.dayYear}`} sub={`${t0.daysLeft}: ${data.daysLeft} ${t0.days}`} />

@@ -2,7 +2,8 @@ import Sidebar from "@/components/Sidebar";
 import HomeTabs from "@/components/HomeTabs";
 import {
   getToday, getEntries, getGoals, getMonths, getOpenTasks, getRecentGratitude, getInsights,
-  getOnThisDay, getStreak, getHabit, cats, tagList, projects as projectsOf, type Entry,
+  getOnThisDay, getStreak, getHabit, getTodayDeeds, getActivePromises, getTraceWeek,
+  cats, tagList, projects as projectsOf, type Entry,
 } from "@/lib/queries";
 import { getExperiments } from "@/lib/lab";
 import { getLocale } from "@/lib/locale";
@@ -39,6 +40,11 @@ export default async function HomePage() {
     getStreak(user.id),
     getExperiments(user.id),
     getHabit(user.id, todayISO),
+  ]);
+  const [todayDeeds, promises, traceWeek] = await Promise.all([
+    getTodayDeeds(user.id, todayISO),
+    getActivePromises(user.id, 3),
+    getTraceWeek(user.id),
   ]);
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
@@ -121,6 +127,9 @@ export default async function HomePage() {
     daysLeft,
     streak,
     habit,
+    todayDeeds,
+    promises,
+    traceWeek,
     experiment: activeExp ? { title: activeExp.title, day: expDay, duration: activeExp.duration_days } : null,
     changes,
   };
