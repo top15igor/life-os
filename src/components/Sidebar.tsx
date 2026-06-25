@@ -13,7 +13,7 @@ const NAV = [
   { key: "sport", href: "#", icon: "ti-run", ready: false },
   { key: "food", href: "#", icon: "ti-salad", ready: false },
   { key: "family", href: "#", icon: "ti-users", ready: false },
-  { key: "projects", href: "#", icon: "ti-briefcase", ready: false },
+  { key: "projects", href: "/projects", icon: "ti-briefcase", ready: true },
   { key: "insights", href: "/insights", icon: "ti-bulb", ready: true },
   { key: "goals", href: "#", icon: "ti-target", ready: false },
   { key: "lifebook", href: "#", icon: "ti-book-2", ready: false },

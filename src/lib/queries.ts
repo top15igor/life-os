@@ -5,13 +5,13 @@ const LIST_SELECT = `
   mood, energy, health, focus, importance, sleep_hours, weight,
   entry_categories ( categories ( name, slug, color ) ),
   entry_tags ( tags ( name ) ),
-  entry_people ( people ( name ) )
+  entry_people ( people ( name ) ),
+  entry_projects ( projects ( name ) )
 `;
 
 const DETAIL_SELECT = `
   ${LIST_SELECT},
   entry_places ( places ( name ) ),
-  entry_projects ( projects ( name ) ),
   tasks ( id, text, done ),
   insights ( text ),
   gratitude ( text )
@@ -55,6 +55,9 @@ export function tagList(e: Entry): string[] {
 }
 export function people(e: Entry): string[] {
   return (e.entry_people || []).map((x: any) => x.people?.name).filter(Boolean);
+}
+export function projects(e: Entry): string[] {
+  return (e.entry_projects || []).map((x: any) => x.projects?.name).filter(Boolean);
 }
 
 export async function getInsights(userId: string) {
