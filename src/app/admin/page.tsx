@@ -188,15 +188,15 @@ export default async function AdminPage() {
           )}
         </div>
 
-        {d.usage && (d.usage.total > 0 || d.usage.byKind.length > 0) && (
-          <div style={{ marginBottom: 24 }}>
-            <Title>💰 Расход AI (примерно)</Title>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 10 }}>
-              <Stat label="Всего" value={`$${(d.usage.total / 100).toFixed(2)}`} color="var(--accent)" />
-              <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
-              <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
-            </div>
-            {d.usage.byKind.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <Title>💰 Расход AI (примерно)</Title>
+          {d.usage && d.usage.byKind.length > 0 ? (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 10 }}>
+                <Stat label="Всего" value={`$${(d.usage.total / 100).toFixed(2)}`} color="var(--accent)" />
+                <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
+                <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
+              </div>
               <div className="card" style={{ padding: "4px 14px" }}>
                 {d.usage.byKind.map((k: any, i: number) => (
                   <div key={k.kind} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
@@ -205,10 +205,14 @@ export default async function AdminPage() {
                   </div>
                 ))}
               </div>
-            )}
-            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 8 }}>Оценка по токенам моделей (голос — приблизительно). Работает после запуска usage.sql.</div>
-          </div>
-        )}
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 8 }}>Оценка по токенам моделей (голос — приблизительно).</div>
+            </>
+          ) : (
+            <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5, lineHeight: 1.6 }}>
+              Пока пусто. Запусти <b style={{ color: "var(--text)" }}>usage.sql</b> в Supabase, затем сделай новую запись или задай вопрос — расход начнёт считаться здесь. Старые записи (до включения учёта) не учитываются.
+            </div>
+          )}
+        </div>
 
         {d.topReferrers.length > 0 && (
           <div style={{ marginBottom: 24 }}>
