@@ -2,7 +2,7 @@ import { supabaseAdmin } from "./supabaseAdmin";
 
 const LIST_SELECT = `
   id, entry_date, entry_time, source, raw_text, summary,
-  mood, energy, health, focus, importance,
+  mood, energy, health, focus, importance, sleep_hours, weight,
   entry_categories ( categories ( name, slug, color ) ),
   entry_tags ( tags ( name ) ),
   entry_people ( people ( name ) )
@@ -55,4 +55,14 @@ export function tagList(e: Entry): string[] {
 }
 export function people(e: Entry): string[] {
   return (e.entry_people || []).map((x: any) => x.people?.name).filter(Boolean);
+}
+
+export async function getInsights(userId: string) {
+  const { data } = await supabaseAdmin()
+    .from("insights")
+    .select("text, created_at, entry_id, entries ( entry_date )")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  return data || [];
 }

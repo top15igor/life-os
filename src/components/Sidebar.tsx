@@ -14,10 +14,10 @@ const NAV = [
   { key: "food", href: "#", icon: "ti-salad", ready: false },
   { key: "family", href: "#", icon: "ti-users", ready: false },
   { key: "projects", href: "#", icon: "ti-briefcase", ready: false },
-  { key: "insights", href: "#", icon: "ti-bulb", ready: false },
+  { key: "insights", href: "/insights", icon: "ti-bulb", ready: true },
   { key: "goals", href: "#", icon: "ti-target", ready: false },
   { key: "lifebook", href: "#", icon: "ti-book-2", ready: false },
-  { key: "people", href: "#", icon: "ti-user-heart", ready: false },
+  { key: "people", href: "/people", icon: "ti-user-heart", ready: true },
   { key: "places", href: "#", icon: "ti-map-pin", ready: false },
   { key: "analytics", href: "#", icon: "ti-chart-line", ready: false },
 ];
