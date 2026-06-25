@@ -7,11 +7,11 @@ export function middleware(req: NextRequest) {
   if (token) return NextResponse.next();
 
   const url = req.nextUrl.clone();
-  url.pathname = "/login";
+  url.pathname = "/welcome";
   return NextResponse.redirect(url);
 }
 
 export const config = {
-  // Защищаем страницы, кроме /login, /u/* (вход по ссылке), /api/* и статики.
-  matcher: ["/((?!login|u|api|_next/static|_next/image|favicon.ico).*)"],
+  // Защищаем страницы, кроме /welcome, /login, /u/* (вход по ссылке), /api/* и статики.
+  matcher: ["/((?!welcome|login|u|api|_next/static|_next/image|favicon.ico).*)"],
 };
