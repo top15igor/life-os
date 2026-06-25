@@ -9,6 +9,8 @@ import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import PinPrompt from "@/components/PinPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,12 @@ export default async function HomePage() {
     getExperiments(user.id),
   ]);
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
+
+  let hasPin = false;
+  try {
+    const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash").eq("id", user.id).maybeSingle();
+    hasPin = !!pinRow?.pin_hash;
+  } catch {}
 
   // Контекст дня
   const nd = new Date();
@@ -119,6 +127,7 @@ export default async function HomePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <PinPrompt hasPin={hasPin} locale={locale} />
         <HomeTabs
           data={data}
           locale={locale}

@@ -4,10 +4,11 @@ import { useState } from "react";
 
 type Screen = { t: string; s?: string; list?: string[]; cta?: string };
 
-const ONB: Record<string, { next: string; privacy: string; screens: Screen[] }> = {
+const ONB: Record<string, { next: string; privacy: string; skip: string; screens: Screen[] }> = {
   ru: {
     next: "Далее",
     privacy: "Приватность",
+    skip: "Пропустить",
     screens: [
       { t: "Добро пожаловать в LIFE OS", s: "Ваша жизнь заслуживает быть сохранённой." },
       { t: "Вы забудете почти всё, что произошло сегодня.", s: "Но именно из таких дней складывается вся ваша жизнь." },
@@ -24,6 +25,7 @@ const ONB: Record<string, { next: string; privacy: string; screens: Screen[] }> 
   en: {
     next: "Next",
     privacy: "Privacy",
+    skip: "Skip",
     screens: [
       { t: "Welcome to LIFE OS", s: "Your life deserves to be saved." },
       { t: "You'll forget almost everything that happened today.", s: "Yet your whole life is made of days like this." },
@@ -40,6 +42,7 @@ const ONB: Record<string, { next: string; privacy: string; screens: Screen[] }> 
   uk: {
     next: "Далі",
     privacy: "Приватність",
+    skip: "Пропустити",
     screens: [
       { t: "Ласкаво просимо до LIFE OS", s: "Твоє життя варте того, щоб його зберегти." },
       { t: "Ти забудеш майже все, що сталося сьогодні.", s: "Але саме з таких днів складається все твоє життя." },
@@ -56,6 +59,7 @@ const ONB: Record<string, { next: string; privacy: string; screens: Screen[] }> 
   fr: {
     next: "Suivant",
     privacy: "Confidentialité",
+    skip: "Passer",
     screens: [
       { t: "Bienvenue dans LIFE OS", s: "Ta vie mérite d'être sauvegardée." },
       { t: "Tu oublieras presque tout ce qui s'est passé aujourd'hui.", s: "Pourtant ta vie entière est faite de jours comme celui-ci." },
@@ -80,10 +84,15 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", padding: "26px 22px", maxWidth: 600, margin: "0 auto" }}>
-      <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-        {screens.map((_, k) => (
-          <span key={k} style={{ width: k === i ? 20 : 6, height: 6, borderRadius: 99, background: k === i ? "var(--accent)" : "var(--border)", transition: "all .3s" }} />
-        ))}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {screens.map((_, k) => (
+            <span key={k} style={{ width: k === i ? 20 : 6, height: 6, borderRadius: 99, background: k === i ? "var(--accent)" : "var(--border)", transition: "all .3s" }} />
+          ))}
+        </div>
+        {!last && (
+          <button onClick={() => setI(screens.length - 1)} style={{ position: "absolute", right: 0, background: "none", border: "none", color: "var(--text-3)", fontSize: 13, cursor: "pointer", padding: 4 }}>{data.skip} →</button>
+        )}
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
