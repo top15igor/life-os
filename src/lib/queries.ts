@@ -69,3 +69,22 @@ export async function getInsights(userId: string) {
     .limit(200);
   return data || [];
 }
+
+// Сколько дней подряд (включая последний день с записью) велся дневник.
+export async function getStreak(userId: string): Promise<number> {
+  const { data } = await supabaseAdmin()
+    .from("entries")
+    .select("entry_date")
+    .eq("user_id", userId)
+    .order("entry_date", { ascending: false })
+    .limit(180);
+  if (!data?.length) return 0;
+  const days = Array.from(new Set(data.map((d: any) => d.entry_date)));
+  let streak = 1;
+  for (let i = 1; i < days.length; i++) {
+    const diff = Math.round((new Date(days[i - 1] + "T00:00:00").getTime() - new Date(days[i] + "T00:00:00").getTime()) / 86400000);
+    if (diff === 1) streak++;
+    else break;
+  }
+  return streak;
+}

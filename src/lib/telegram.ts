@@ -16,11 +16,11 @@ export async function sendChatAction(chatId: number, action = "typing"): Promise
   });
 }
 
-// Отправить сообщение пользователю.
-export async function sendMessage(chatId: number, text: string): Promise<void> {
+// Отправить сообщение пользователю (extra — доп. поля, напр. reply_markup с кнопками).
+export async function sendMessage(chatId: number, text: string, extra?: Record<string, any>): Promise<void> {
   await fetch(`${API}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
   });
 }

@@ -12,7 +12,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     return NextResponse.redirect(new URL("/login?e=1", req.url));
   }
 
-  const res = NextResponse.redirect(new URL("/", req.url));
+  const next = req.nextUrl.searchParams.get("next");
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const res = NextResponse.redirect(new URL(dest, req.url));
   res.cookies.set("lifeos_token", token, {
     httpOnly: true,
     secure: true,

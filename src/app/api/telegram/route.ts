@@ -4,6 +4,7 @@ import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
+import { getStreak } from "@/lib/queries";
 
 export const runtime = "nodejs";
 
@@ -54,6 +55,13 @@ const RETURN: Record<string, string> = {
   en: "Welcome back! 👋\nJust send a voice note or text — I'll sort it all out.\n\nYour personal diary link:\n{link}",
   uk: "З поверненням! 👋\nПросто надішли голосове або текст — я все розкладу.\n\nТвоє особисте посилання на щоденник:\n{link}",
   fr: "Bon retour ! 👋\nEnvoie une note vocale ou un texte — je m'occupe du reste.\n\nTon lien personnel vers le journal :\n{link}",
+};
+
+const CONFIRM: Record<string, any> = {
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander" },
 };
 
 export async function POST(req: NextRequest) {
@@ -129,13 +137,23 @@ export async function POST(req: NextRequest) {
     }
 
     const analysis = await analyze(text);
-    await saveEntry({
+    const entry = await saveEntry({
       userId: user.id,
       raw_text: text,
       source: isVoice ? "telegram_voice" : "telegram_text",
       analysis,
     });
-    await sendMessage(chatId, formatConfirm(analysis));
+    const lang = pickLang(msg.from?.language_code);
+    const streak = await getStreak(user.id);
+    const L = CONFIRM[lang] || CONFIRM.ru;
+    await sendMessage(chatId, formatConfirm(analysis, streak, lang), {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
+          { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
+        ]],
+      },
+    });
   } catch (e: any) {
     console.error(e);
     await sendMessage(chatId, "Упс, что-то пошло не так при сохранении. Попробуй ещё раз.");
@@ -144,12 +162,13 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-function formatConfirm(a: Analysis): string {
-  const lines = ["✅ <b>Запись сохранена</b>", "", a.summary];
+function formatConfirm(a: Analysis, streak: number, lang: string): string {
+  const L = CONFIRM[lang] || CONFIRM.ru;
+  const lines = [`✅ <b>${L.saved}</b>`, "", a.summary];
   const extra: string[] = [];
-  if (a.insights?.length) extra.push(`💡 ${a.insights.length} инсайт(ов)`);
-  if (a.tasks?.length) extra.push(`🎯 ${a.tasks.length} задач(и)`);
-  if (a.tags?.length) extra.push(`#️⃣ ${a.tags.length} тег(ов)`);
+  if (a.insights?.length) extra.push(`💡 ${a.insights.length} ${L.insights}`);
+  if (a.tasks?.length) extra.push(`🎯 ${a.tasks.length} ${L.tasks}`);
+  if (a.tags?.length) extra.push(`#️⃣ ${a.tags.length} ${L.tags}`);
   if (extra.length) lines.push("", extra.join("\n"));
   const m = [
     a.mood != null ? `Mood ${a.mood}` : null,
@@ -157,5 +176,6 @@ function formatConfirm(a: Analysis): string {
     a.health != null ? `Health ${a.health}` : null,
   ].filter(Boolean);
   if (m.length) lines.push("", m.join(" · "));
+  if (streak >= 2) lines.push("", `🔥 ${streak} ${L.streakWord}`);
   return lines.join("\n");
 }
