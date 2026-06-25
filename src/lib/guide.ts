@@ -6,6 +6,9 @@ type Guide = {
   openBot: string;
   whatTitle: string;
   what: string;
+  whyTitle: string;
+  whyLead: string;
+  why: [string, string][];
   howTitle: string;
   how: string[];
   assistantTitle: string;
@@ -26,6 +29,14 @@ const G: Record<Locale, Guide> = {
     openBot: "Открыть бота в Telegram",
     whatTitle: "Что это",
     what: "Это дневник нового поколения. Каждый день ты в пару касаний рассказываешь, что произошло, а AI превращает это в структурированную историю: категории, теги, настроение, инсайты, задачи, люди и проекты — и со временем строит карту твоей жизни.",
+    whyTitle: "Чем мы отличаемся от ChatGPT",
+    whyLead: "Мы не «умнее» ChatGPT — внутри тот же класс AI. Мы делаем то, ради чего его никто не открывает: без усилий записываем и понимаем именно твою жизнь.",
+    why: [
+      ["Запись без усилий", "Просто голосовое в Telegram, который и так открыт. ChatGPT нужно открыть и продумать запрос — так каждый день делать не будешь, а привычка решает всё."],
+      ["Помнит твою жизнь", "Всё копится в структурированный архив: категории, настроение, люди, проекты, годы. Чаты ChatGPT разрозненны и забываются."],
+      ["Понимает во времени", "«Когда я был счастливее всего?», «что влияло на здоровье?» — ответ из всей твоей истории. У ChatGPT её просто нет."],
+      ["Это про тебя, а не про вопросы", "Дашборд, Биограф, Книга жизни, Зеркало жизни — целый продукт об одном: понять и сохранить твою жизнь."],
+    ],
     howTitle: "Как пользоваться",
     how: [
       "🎤 Наговори голосовое или напиши текст боту в Telegram — о чём угодно: день, мысли, здоровье, идеи, тренировки, семья.",
@@ -71,6 +82,14 @@ const G: Record<Locale, Guide> = {
     openBot: "Open the bot in Telegram",
     whatTitle: "What it is",
     what: "A next-generation diary. Each day you tell it what happened in a couple of taps, and AI turns it into a structured story: categories, tags, mood, insights, tasks, people and projects — and over time builds a map of your life.",
+    whyTitle: "How we're different from ChatGPT",
+    whyLead: "We're not “smarter” than ChatGPT — same class of AI inside. We do what no one opens it for: effortlessly capture and understand your own life.",
+    why: [
+      ["Capture with zero effort", "Just a voice note in Telegram you already have open. ChatGPT needs you to open it and craft a prompt — you won't do that every day, and the habit is everything."],
+      ["Remembers your life", "Everything builds into a structured archive: categories, mood, people, projects, years. ChatGPT chats are scattered and forgotten."],
+      ["Understands over time", "“When was I happiest?”, “what affected my health?” — answered from your whole history. ChatGPT simply doesn't have it."],
+      ["About you, not questions", "Dashboard, Biographer, Book of Life, Life Mirror — a whole product about one thing: understanding and keeping your life."],
+    ],
     howTitle: "How to use it",
     how: [
       "🎤 Send a voice note or text to the Telegram bot — anything: your day, thoughts, health, ideas, workouts, family.",
@@ -116,6 +135,14 @@ const G: Record<Locale, Guide> = {
     openBot: "Відкрити бота в Telegram",
     whatTitle: "Що це",
     what: "Щоденник нового покоління. Щодня ти в кілька дотиків розповідаєш, що сталося, а AI перетворює це на структуровану історію: категорії, теги, настрій, інсайти, завдання, люди й проєкти — і з часом будує карту твого життя.",
+    whyTitle: "Чим ми відрізняємось від ChatGPT",
+    whyLead: "Ми не «розумніші» за ChatGPT — усередині той самий клас AI. Ми робимо те, заради чого його ніхто не відкриває: без зусиль записуємо й розуміємо саме твоє життя.",
+    why: [
+      ["Запис без зусиль", "Просто голосове в Telegram, який і так відкритий. ChatGPT треба відкрити й продумати запит — щодня так не робитимеш, а звичка вирішує все."],
+      ["Пам'ятає твоє життя", "Усе накопичується у структурований архів: категорії, настрій, люди, проєкти, роки. Чати ChatGPT розрізнені й забуваються."],
+      ["Розуміє у часі", "«Коли я був найщасливішим?», «що впливало на здоров'я?» — відповідь з усієї твоєї історії. У ChatGPT її просто немає."],
+      ["Про тебе, а не про питання", "Дашборд, Біограф, Книга життя, Дзеркало життя — цілий продукт про одне: зрозуміти й зберегти твоє життя."],
+    ],
     howTitle: "Як користуватися",
     how: [
       "🎤 Надішли голосове або текст боту в Telegram — про що завгодно: день, думки, здоров'я, ідеї, тренування, сім'я.",
@@ -161,6 +188,14 @@ const G: Record<Locale, Guide> = {
     openBot: "Ouvrir le bot dans Telegram",
     whatTitle: "Qu'est-ce que c'est",
     what: "Un journal nouvelle génération. Chaque jour tu racontes ta journée en quelques gestes, et l'IA en fait une histoire structurée : catégories, tags, humeur, insights, tâches, personnes et projets — et au fil du temps, une carte de ta vie.",
+    whyTitle: "En quoi nous différons de ChatGPT",
+    whyLead: "On n'est pas « plus intelligents » que ChatGPT — même classe d'IA à l'intérieur. On fait ce pour quoi personne ne l'ouvre : capturer et comprendre ta propre vie sans effort.",
+    why: [
+      ["Capture sans effort", "Juste une note vocale dans Telegram déjà ouvert. ChatGPT demande de l'ouvrir et de formuler — tu ne le feras pas chaque jour, et l'habitude fait tout."],
+      ["Se souvient de ta vie", "Tout s'accumule en archive structurée : catégories, humeur, personnes, projets, années. Les chats ChatGPT sont éparpillés et oubliés."],
+      ["Comprend dans le temps", "« Quand étais-je le plus heureux ? », « qu'est-ce qui affectait ma santé ? » — répondu depuis toute ton histoire. ChatGPT ne l'a pas."],
+      ["Sur toi, pas des questions", "Tableau de bord, Biographe, Livre de vie, Miroir de vie — un produit entier pour une chose : comprendre et garder ta vie."],
+    ],
     howTitle: "Comment l'utiliser",
     how: [
       "🎤 Envoie une note vocale ou un texte au bot Telegram — tout : ta journée, tes pensées, ta santé, tes idées, le sport, la famille.",

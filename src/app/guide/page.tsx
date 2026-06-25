@@ -70,6 +70,21 @@ export default async function GuidePage() {
           <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>{g.what}</div>
         </div>
 
+        {/* Чем отличаемся от ChatGPT */}
+        <SectionTitle>{g.whyTitle}</SectionTitle>
+        <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{g.whyLead}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
+          {g.why.map(([lead, text], i) => (
+            <div key={i} className="card" style={{ display: "flex", gap: 11 }}>
+              <i className="ti ti-circle-check" style={{ fontSize: 19, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{lead}</div>
+                <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.55 }}>{text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Как пользоваться */}
         <SectionTitle>{g.howTitle}</SectionTitle>
         <div style={{ marginBottom: 26 }}>
