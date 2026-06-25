@@ -57,17 +57,32 @@ a { color: inherit; text-decoration: none; }
 .main { flex: 1; min-width: 0; padding: 24px 28px; max-width: 880px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 17px; }
 .tag { font-size: 12px; padding: 3px 9px; border-radius: 7px; }
+.mobilenav { display: none; }
+.mobile-drawer-backdrop { display: none; }
 
 @media (max-width: 760px) {
   .shell { flex-direction: column; }
-  .sidebar {
-    width: auto; height: auto; position: sticky; top: 0; z-index: 10;
-    flex-direction: row; overflow-x: auto; border-right: none;
-    border-bottom: 1px solid var(--border); padding: 9px 8px;
+  .sidebar { display: none; }
+  .main { padding: 16px 16px 84px; max-width: none; }
+
+  .mobilenav {
+    display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); justify-content: space-around;
   }
-  .brand { display: none; }
-  .navlink { padding: 7px 9px; }
-  .navlink .navlabel { display: none; }
-  .navlink.active .navlabel { display: inline; }
-  .main { padding: 16px; max-width: none; }
+  .mobilenav a, .mobilenav button {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer; color: var(--text-3);
+    font-size: 10.5px; flex: 1; padding: 4px 2px; min-width: 0; text-decoration: none;
+  }
+  .mobilenav a span, .mobilenav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobilenav a i, .mobilenav button i { font-size: 22px; }
+  .mobilenav a.active, .mobilenav button.active { color: var(--accent); }
+
+  .mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.45); }
+  .mobile-drawer {
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--surface);
+    border-radius: 18px 18px 0 0; padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
+    max-height: 78vh; overflow-y: auto;
+  }
 }
