@@ -2,7 +2,7 @@ import Sidebar from "@/components/Sidebar";
 import HomeTabs from "@/components/HomeTabs";
 import {
   getToday, getEntries, getGoals, getMonths, getOpenTasks, getRecentGratitude, getInsights,
-  getOnThisDay, getStreak, cats, tagList, projects as projectsOf, type Entry,
+  getOnThisDay, getStreak, getHabit, cats, tagList, projects as projectsOf, type Entry,
 } from "@/lib/queries";
 import { getExperiments } from "@/lib/lab";
 import { getLocale } from "@/lib/locale";
@@ -27,8 +27,9 @@ export default async function HomePage() {
   const t = getDict(locale);
   const h = hints(locale);
 
+  const todayISO = new Date().toISOString().slice(0, 10);
   const { date, entries: todayEntries } = await getToday(user.id);
-  const [allEntries, goals, months, openTasks, gratitude, insights, streak, experiments] = await Promise.all([
+  const [allEntries, goals, months, openTasks, gratitude, insights, streak, experiments, habit] = await Promise.all([
     getEntries(user.id, 200),
     getGoals(user.id),
     getMonths(user.id),
@@ -37,6 +38,7 @@ export default async function HomePage() {
     getInsights(user.id),
     getStreak(user.id),
     getExperiments(user.id),
+    getHabit(user.id, todayISO),
   ]);
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
@@ -118,6 +120,7 @@ export default async function HomePage() {
     dayOfYear,
     daysLeft,
     streak,
+    habit,
     experiment: activeExp ? { title: activeExp.title, day: expDay, duration: activeExp.duration_days } : null,
     changes,
   };

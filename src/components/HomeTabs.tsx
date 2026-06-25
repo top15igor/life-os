@@ -28,10 +28,10 @@ const QUOTES: Record<string, { text: string; author?: string }[]> = {
 };
 
 const T0: Record<string, any> = {
-  ru: { dayYear: "й день года", daysLeft: "до конца года", days: "дн.", expDay: "й день эксперимента", changed: "Что изменилось со вчера", stories: "Незавершённые истории", thought: "Мысль дня", focus: "Фокус дня", up: "Лучше", down: "Хуже", flat: "Так же", mood: "Настроение", sleep: "Сон", idea: "Новая идея", appeared: "Появилась", streakWord: "Серия", exp: "Эксперимент", expGo: "Продолжается", yearAgo: "Год назад в этот день", monthAgo: "Месяц назад в этот день", noStories: "Здесь появятся проекты, цели и идеи, к которым стоит вернуться.", notes: "зап." },
-  en: { dayYear: "th day of the year", daysLeft: "left this year", days: "d", expDay: "th day of experiment", changed: "What changed since yesterday", stories: "Unfinished stories", thought: "Thought of the day", focus: "Focus of the day", up: "Better", down: "Worse", flat: "Same", mood: "Mood", sleep: "Sleep", idea: "New idea", appeared: "Appeared", streakWord: "Streak", exp: "Experiment", expGo: "Ongoing", yearAgo: "A year ago today", monthAgo: "A month ago today", noStories: "Projects, goals and ideas worth returning to will appear here.", notes: "entries" },
-  uk: { dayYear: "й день року", daysLeft: "до кінця року", days: "дн.", expDay: "й день експерименту", changed: "Що змінилося з учора", stories: "Незавершені історії", thought: "Думка дня", focus: "Фокус дня", up: "Краще", down: "Гірше", flat: "Так само", mood: "Настрій", sleep: "Сон", idea: "Нова ідея", appeared: "З'явилася", streakWord: "Серія", exp: "Експеримент", expGo: "Триває", yearAgo: "Рік тому цього дня", monthAgo: "Місяць тому цього дня", noStories: "Тут з'являться проєкти, цілі та ідеї, до яких варто повернутися.", notes: "зап." },
-  fr: { dayYear: "e jour de l'année", daysLeft: "avant la fin de l'année", days: "j", expDay: "e jour d'expérience", changed: "Ce qui a changé depuis hier", stories: "Histoires inachevées", thought: "Pensée du jour", focus: "Focus du jour", up: "Mieux", down: "Moins bien", flat: "Pareil", mood: "Humeur", sleep: "Sommeil", idea: "Nouvelle idée", appeared: "Apparue", streakWord: "Série", exp: "Expérience", expGo: "En cours", yearAgo: "Il y a un an aujourd'hui", monthAgo: "Il y a un mois aujourd'hui", noStories: "Les projets, objectifs et idées à reprendre apparaîtront ici.", notes: "entrées" },
+  ru: { dayYear: "й день года", daysLeft: "до конца года", days: "дн.", expDay: "й день эксперимента", changed: "Что изменилось со вчера", stories: "Незавершённые истории", thought: "Мысль дня", focus: "Фокус дня", up: "Лучше", down: "Хуже", flat: "Так же", mood: "Настроение", sleep: "Сон", idea: "Новая идея", appeared: "Появилась", streakWord: "Серия", exp: "Эксперимент", expGo: "Продолжается", yearAgo: "Год назад в этот день", monthAgo: "Месяц назад в этот день", noStories: "Здесь появятся проекты, цели и идеи, к которым стоит вернуться.", notes: "зап.", totalDays: "дней с записями", keepChain: "Запиши сегодня, чтобы не разорвать цепочку 🔥", chainKept: "Сегодня записано — цепочка продолжается ✓", startChain: "Начни свою серию — запиши сегодняшний день" },
+  en: { dayYear: "th day of the year", daysLeft: "left this year", days: "d", expDay: "th day of experiment", changed: "What changed since yesterday", stories: "Unfinished stories", thought: "Thought of the day", focus: "Focus of the day", up: "Better", down: "Worse", flat: "Same", mood: "Mood", sleep: "Sleep", idea: "New idea", appeared: "Appeared", streakWord: "Streak", exp: "Experiment", expGo: "Ongoing", yearAgo: "A year ago today", monthAgo: "A month ago today", noStories: "Projects, goals and ideas worth returning to will appear here.", notes: "entries", totalDays: "days journaled", keepChain: "Write today to keep your streak 🔥", chainKept: "Logged today — streak continues ✓", startChain: "Start your streak — write today" },
+  uk: { dayYear: "й день року", daysLeft: "до кінця року", days: "дн.", expDay: "й день експерименту", changed: "Що змінилося з учора", stories: "Незавершені історії", thought: "Думка дня", focus: "Фокус дня", up: "Краще", down: "Гірше", flat: "Так само", mood: "Настрій", sleep: "Сон", idea: "Нова ідея", appeared: "З'явилася", streakWord: "Серія", exp: "Експеримент", expGo: "Триває", yearAgo: "Рік тому цього дня", monthAgo: "Місяць тому цього дня", noStories: "Тут з'являться проєкти, цілі та ідеї, до яких варто повернутися.", notes: "зап.", totalDays: "днів із записами", keepChain: "Запиши сьогодні, щоб не розірвати ланцюжок 🔥", chainKept: "Сьогодні записано — ланцюжок триває ✓", startChain: "Почни свою серію — запиши сьогоднішній день" },
+  fr: { dayYear: "e jour de l'année", daysLeft: "avant la fin de l'année", days: "j", expDay: "e jour d'expérience", changed: "Ce qui a changé depuis hier", stories: "Histoires inachevées", thought: "Pensée du jour", focus: "Focus du jour", up: "Mieux", down: "Moins bien", flat: "Pareil", mood: "Humeur", sleep: "Sommeil", idea: "Nouvelle idée", appeared: "Apparue", streakWord: "Série", exp: "Expérience", expGo: "En cours", yearAgo: "Il y a un an aujourd'hui", monthAgo: "Il y a un mois aujourd'hui", noStories: "Les projets, objectifs et idées à reprendre apparaîtront ici.", notes: "entrées", totalDays: "jours notés", keepChain: "Écris aujourd'hui pour garder ta série 🔥", chainKept: "Noté aujourd'hui — la série continue ✓", startChain: "Commence ta série — écris aujourd'hui" },
 };
 
 const CAT_COLOR: Record<string, string> = { health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", business: "#3b82f6", finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4", emotions: "#a78bfa" };
@@ -132,6 +132,32 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
           </div>
+
+          {data.habit && (
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span style={{ fontSize: 24, lineHeight: 1, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
+                  <div>
+                    <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1 }}>{data.habit.streak}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{t0.streakWord} · {t0.days}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", textAlign: "right" }}>{data.habit.totalDays} {t0.totalDays}</div>
+              </div>
+              <div style={{ display: "flex", gap: 5, marginBottom: 11, flexWrap: "wrap" }}>
+                {data.habit.chain.map((d: any, i: number) => {
+                  const isToday = i === data.habit.chain.length - 1;
+                  return (
+                    <span key={i} title={d.date} style={{ width: 15, height: 15, borderRadius: 5, flexShrink: 0, background: d.active ? "#f97316" : "var(--surface-2)", border: isToday ? "2px solid var(--accent)" : "1px solid var(--border)", boxSizing: "border-box" }} />
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 500, color: data.habit.wroteToday ? "var(--positive)" : "var(--text-2)" }}>
+                {data.habit.totalDays === 0 ? t0.startChain : data.habit.wroteToday ? t0.chainKept : t0.keepChain}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 20 }}>
             <ContextCard icon="ti-calendar" title={`${data.dayOfYear}${t0.dayYear}`} sub={`${t0.daysLeft}: ${data.daysLeft} ${t0.days}`} />

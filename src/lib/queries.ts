@@ -92,6 +92,47 @@ export async function getStreak(userId: string): Promise<number> {
   return streak;
 }
 
+// Привычка письма: написал ли сегодня, текущий стрик, цепочка последних N дней, всего дней.
+export async function getHabit(
+  userId: string,
+  todayISO: string,
+  days = 14,
+): Promise<{ wroteToday: boolean; streak: number; chain: { date: string; active: boolean }[]; totalDays: number }> {
+  const { data } = await supabaseAdmin()
+    .from("entries")
+    .select("entry_date")
+    .eq("user_id", userId)
+    .order("entry_date", { ascending: false })
+    .limit(500);
+  const set = new Set<string>((data || []).map((d: any) => d.entry_date));
+  const totalDays = set.size;
+  const wroteToday = set.has(todayISO);
+
+  const dayMs = 86400000;
+  const todayT = new Date(todayISO + "T00:00:00Z").getTime();
+  const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+  // Стрик: от сегодня (если есть запись) или от вчера, и назад без пропусков.
+  let streak = 0;
+  const start = wroteToday ? 0 : set.has(iso(todayT - dayMs)) ? 1 : -1;
+  if (start >= 0) {
+    let i = start;
+    while (set.has(iso(todayT - i * dayMs))) {
+      streak++;
+      i++;
+    }
+  }
+
+  // Цепочка последних N дней (от старых к новым).
+  const chain: { date: string; active: boolean }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = iso(todayT - i * dayMs);
+    chain.push({ date: d, active: set.has(d) });
+  }
+
+  return { wroteToday, streak, chain, totalDays };
+}
+
 export async function getEntryCount(userId: string): Promise<number> {
   const { count } = await supabaseAdmin().from("entries").select("*", { count: "exact", head: true }).eq("user_id", userId);
   return count || 0;
