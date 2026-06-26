@@ -33,6 +33,7 @@ const STR: Record<string, any> = {
     open: "Открыть", close: "Свернуть", building: "AI пишет главу…", rebuild: "Пересобрать",
     editChapter: "Редактировать", addMyText: "Добавить свой текст", editMyText: "Изменить свой текст", resetAi: "Вернуть текст AI", saveEdit: "Сохранить", cancelEdit: "Отмена", myVersion: "твоя правка", myStory: "Моя история", editPh: "Пиши свою версию этой главы…", storyPh: "Допиши свою историю к этой главе…",
     configBook: "Настроить состав", doneConfig: "Готово", configHint: "Спрячь ненужные главы (глазок) или поменяй порядок (стрелки) — это твоя книга.",
+    addPhoto: "Фото из памяти", pickerTitle: "Выбери фото для главы", pickerSub: "Из «Визуальной памяти»", noPhotos: "В «Визуальной памяти» пока нет фото — пришли фото боту или загрузи в разделе «Память».", toMemory: "Открыть «Память»", pickerDone: "Готово",
     addMore: "Добавь записей, чтобы наполнить главу", empty: "Книга начнётся, когда появятся записи за этот период.",
     monthsOpen: "Открыть месяц",
     full: "Получить полную книгу", fullSub: "Цифровая версия, печать в твёрдой обложке или подарочный комплект для семьи.",
@@ -70,6 +71,7 @@ const STR: Record<string, any> = {
     open: "Open", close: "Collapse", building: "AI is writing the chapter…", rebuild: "Rebuild",
     editChapter: "Edit", addMyText: "Add your text", editMyText: "Edit your text", resetAi: "Restore AI text", saveEdit: "Save", cancelEdit: "Cancel", myVersion: "your edit", myStory: "My story", editPh: "Write your version of this chapter…", storyPh: "Add your own story to this chapter…",
     configBook: "Customize", doneConfig: "Done", configHint: "Hide chapters you don't need (eye) or reorder them (arrows) — it's your book.",
+    addPhoto: "Photo from memory", pickerTitle: "Pick a photo for this chapter", pickerSub: "From Visual Memory", noPhotos: "No photos in Visual Memory yet — send a photo to the bot or upload in the «Memory» section.", toMemory: "Open Memory", pickerDone: "Done",
     addMore: "Add entries to fill this chapter", empty: "The book begins once you have entries for this period.",
     monthsOpen: "Open month",
     full: "Get the full book", fullSub: "Digital, hardcover print, or a gift set for the family.",
@@ -128,7 +130,7 @@ function Bar({ pct }: { pct: number }) {
   );
 }
 
-export default function BookOfLife({ book, meta, years, year, locale, userName }: any) {
+export default function BookOfLife({ book, meta, years, year, locale, userName, memories = [] }: any) {
   const s = STR[locale] || STR.ru;
   const router = useRouter();
   const isLife = year === 0;
@@ -185,6 +187,16 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
       if (i < 0 || j < 0 || j >= o.length) return o;
       const n = [...o]; [n[i], n[j]] = [n[j], n[i]]; saveLayout(hiddenCh, n); return n;
     });
+  }
+
+  // фото в главах (urls из «Визуальной памяти»)
+  const [photos, setPhotos] = useState<Record<string, string[]>>(meta.photos || {});
+  const [pickerKey, setPickerKey] = useState<string | null>(null);
+  function savePhotos(key: string, urls: string[]) {
+    fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, photoKey: key, photos: urls }) }).catch(() => {});
+  }
+  function togglePhoto(key: string, url: string) {
+    setPhotos((p) => { const cur = p[key] || []; const next = cur.includes(url) ? cur.filter((u) => u !== url) : [...cur, url]; const n = { ...p, [key]: next }; if (!next.length) delete n[key]; savePhotos(key, next); return n; });
   }
 
   function startEdit(key: string, initial: string) { setEditKey(key); setEditDraft(initial || ""); }
@@ -469,6 +481,13 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
                 ) : (
                   ch.readiness < 8 && edits[ch.key] == null && editKey !== ch.key ? <Muted text={s.addMore} /> : <>{ch.readiness >= 8 && dataChapter(ch.key)}{chapterEditor(ch.key, "data")}</>
                 )}
+                {/* фото главы */}
+                {editKey !== ch.key && (
+                  <>
+                    <PhotoStrip urls={photos[ch.key] || []} onRemove={(u) => togglePhoto(ch.key, u)} />
+                    <button onClick={() => setPickerKey(ch.key)} style={{ ...ghostBtn, marginTop: 12 }}><i className="ti ti-photo-plus" style={{ fontSize: 14 }} />{s.addPhoto}</button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -489,15 +508,19 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
         <Reader
           book={book} meta={m} year={year} locale={locale} userName={userName} s={s} isLife={isLife}
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
-          loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh}
+          loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh} photos={photos}
           onClose={() => setReader(false)}
         />, document.body)}
+
+      {pickerKey && mounted && createPortal(
+        <PhotoPicker memories={memories} selected={photos[pickerKey] || []} onToggle={(u: string) => togglePhoto(pickerKey, u)} onClose={() => setPickerKey(null)} s={s} />,
+        document.body)}
     </div>
   );
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], onClose }: any) {
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, onClose }: any) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -565,6 +588,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             <span><b>{book.stats.places}</b> {s.overviewStrip.places}</span>
           </div>
           {ai.overview ? aiBody("overview") : aiLoading === "overview" ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi("overview")} s={s} />}
+          <PhotoStrip urls={photos.overview || []} />
         </Page>}
 
         {/* 12 месяцев */}
@@ -587,14 +611,16 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         {/* data-главы */}
         {[["family", "ti-users"], ["health", "ti-heartbeat"], ["work", "ti-briefcase"], ["travel", "ti-plane"], ["trace", "ti-heart-handshake"]].filter(([k]) => !hidden.includes(k)).map(([k]) => {
           const node = dataChapter(k);
-          if (!node) return null;
-          return <Page key={k} title={titleOf(k)}>{node}</Page>;
+          const ph = photos[k] || [];
+          if (!node && !ph.length) return null;
+          return <Page key={k} title={titleOf(k)}>{node}<PhotoStrip urls={ph} /></Page>;
         })}
 
         {/* AI-разделы */}
         {["self", "people", "lessons"].filter((k) => !hidden.includes(k)).map((k) => (
           <Page key={k} title={titleOf(k)}>
             {ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />}
+            <PhotoStrip urls={photos[k] || []} />
           </Page>
         ))}
 
@@ -698,5 +724,54 @@ function chip(active: boolean): any {
   return { fontSize: 13, fontWeight: 500, padding: "6px 13px", borderRadius: 99, border: active ? "1px solid var(--accent)" : "1px solid var(--border)", background: active ? "var(--accent-bg)" : "var(--surface)", color: active ? "var(--accent-text)" : "var(--text-2)", cursor: "pointer" };
 }
 const btnPrimary: any = { display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 600, cursor: "pointer" };
+function PhotoStrip({ urls, onRemove }: { urls: string[]; onRemove?: (u: string) => void }) {
+  if (!urls?.length) return null;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+      {urls.map((u) => (
+        <div key={u} style={{ position: "relative" }}>
+          <a href={u} target="_blank" rel="noreferrer"><img src={u} alt="" style={{ width: 92, height: 92, objectFit: "cover", borderRadius: 10, display: "block" }} /></a>
+          {onRemove && <button onClick={(e) => { e.preventDefault(); onRemove(u); }} aria-label="remove" style={{ position: "absolute", top: -7, right: -7, width: 21, height: 21, borderRadius: "50%", border: "2px solid var(--surface)", background: "rgba(0,0,0,0.7)", color: "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PhotoPicker({ memories, selected, onToggle, onClose, s }: any) {
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: "18px 18px 0 0", width: "100%", maxWidth: 620, maxHeight: "82vh", overflowY: "auto", padding: "18px 16px 24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>{s.pickerTitle}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{s.pickerSub}</div>
+          </div>
+          <button onClick={onClose} style={ghostBtn}>{s.pickerDone}</button>
+        </div>
+        {memories.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "26px 14px", color: "var(--text-2)", fontSize: 13.5, lineHeight: 1.6 }}>
+            <i className="ti ti-photo-off" style={{ fontSize: 30, color: "var(--text-3)", display: "block", marginBottom: 8 }} />
+            {s.noPhotos}
+            <div style={{ marginTop: 10 }}><a href="/memory" style={{ color: "var(--accent)", fontSize: 13 }}>{s.toMemory} →</a></div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8, marginTop: 12 }}>
+            {memories.map((m: any) => {
+              const on = selected.includes(m.url);
+              return (
+                <button key={m.id} onClick={() => onToggle(m.url)} title={m.title} style={{ position: "relative", padding: 0, border: on ? "3px solid var(--accent)" : "3px solid transparent", borderRadius: 12, cursor: "pointer", background: "none", aspectRatio: "1", overflow: "hidden" }}>
+                  <img src={m.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  {on && <span style={{ position: "absolute", top: 5, right: 5, width: 20, height: 20, borderRadius: "50%", background: "var(--accent)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><i className="ti ti-check" style={{ fontSize: 13 }} /></span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const ghostBtn: any = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" };
 const cfgBtn = (dis: boolean): any => ({ background: "none", border: "none", cursor: dis ? "default" : "pointer", color: "var(--text-3)", padding: 4, opacity: dis ? 0.35 : 1, display: "inline-flex" });

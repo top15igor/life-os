@@ -177,13 +177,13 @@ export async function getBookSummary(userId: string, year: number): Promise<{ ye
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
 export type BookLayout = { hidden: string[]; order: string[] };
-export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout };
+export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout; photos: Record<string, string[]> };
 
 export async function getBookMeta(userId: string, year: number): Promise<BookMeta> {
-  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {}, layout: { hidden: [], order: [] } };
+  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {}, layout: { hidden: [], order: [] }, photos: {} };
   const norm = (l: any): BookLayout => ({ hidden: Array.isArray(l?.hidden) ? l.hidden : [], order: Array.isArray(l?.order) ? l.order : [] });
   try {
-    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits, layout").eq("user_id", userId).eq("year", year).maybeSingle();
+    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits, layout, photos").eq("user_id", userId).eq("year", year).maybeSingle();
     if (!data) return empty;
     return {
       dedication: data.dedication || "",
@@ -194,6 +194,7 @@ export async function getBookMeta(userId: string, year: number): Promise<BookMet
       sections: data.sections || {},
       edits: data.edits || {},
       layout: norm(data.layout),
+      photos: (data.photos && typeof data.photos === "object") ? data.photos : {},
     };
   } catch {
     // Если колонки layout/edits ещё нет — пробуем без них (graceful).
@@ -213,6 +214,20 @@ export async function saveChapterEdit(userId: string, year: number, key: string,
     if (body && body.trim()) edits[key] = body.slice(0, 8000);
     else delete edits[key];
     await supabaseAdmin().from("book_meta").upsert({ user_id: userId, year, edits, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Фото, прикреплённые к главе (urls из «Визуальной памяти»). Пустой массив = убрать.
+export async function saveChapterPhotos(userId: string, year: number, key: string, urls: string[]): Promise<boolean> {
+  try {
+    const cur = await getBookMeta(userId, year);
+    const photos = { ...(cur.photos || {}) };
+    const clean = (Array.isArray(urls) ? urls : []).filter((u) => typeof u === "string" && u).slice(0, 12);
+    if (clean.length) photos[key] = clean; else delete photos[key];
+    await supabaseAdmin().from("book_meta").upsert({ user_id: userId, year, photos, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
     return true;
   } catch {
     return false;

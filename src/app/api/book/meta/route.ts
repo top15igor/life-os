@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { saveBookMeta, saveChapterEdit, type BookMeta } from "@/lib/book";
+import { saveBookMeta, saveChapterEdit, saveChapterPhotos, type BookMeta } from "@/lib/book";
 
 export const runtime = "nodejs";
 
@@ -15,6 +15,12 @@ export async function POST(req: NextRequest) {
   // Правка/дописывание главы пользователем (отдельно от мета-полей).
   if (typeof body.editKey === "string" && body.editKey) {
     const ok = await saveChapterEdit(user.id, year, body.editKey, String(body.editBody || ""));
+    return NextResponse.json({ ok });
+  }
+
+  // Фото главы (urls из «Визуальной памяти»).
+  if (typeof body.photoKey === "string" && body.photoKey) {
+    const ok = await saveChapterPhotos(user.id, year, body.photoKey, Array.isArray(body.photos) ? body.photos : []);
     return NextResponse.json({ ok });
   }
 
