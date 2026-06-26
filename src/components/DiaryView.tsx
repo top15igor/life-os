@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { dateLabel } from "@/lib/i18n";
+import { dateLabel, intlOf } from "@/lib/i18n";
 
 const CAT_COLOR: Record<string, string> = {
   health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", business: "#3b82f6",
@@ -19,15 +19,31 @@ const STR: Record<string, any> = {
 
 const selStyle: any = { fontSize: 12.5, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", color: "var(--text)", background: "var(--surface)", cursor: "pointer", maxWidth: 200 };
 const iconBtn: any = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--text-2)" };
+const navBtn: any = { width: 30, height: 30, borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--text-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 };
+const segBtn = (active: boolean): any => ({ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "1px solid " + (active ? "var(--accent)" : "var(--border)"), background: active ? "var(--accent-bg)" : "var(--surface)", color: active ? "var(--accent-text)" : "var(--text-2)", cursor: "pointer" });
+
+const CAL: Record<string, any> = {
+  ru: { month: "Месяц", week: "Неделя", today: "Сегодня", dayEmpty: "Записей за этот день нет.", allMonth: "Показать всё за месяц", allWeek: "Показать всё за неделю" },
+  en: { month: "Month", week: "Week", today: "Today", dayEmpty: "No entries for this day.", allMonth: "Show all for the month", allWeek: "Show all for the week" },
+  uk: { month: "Місяць", week: "Тиждень", today: "Сьогодні", dayEmpty: "Записів за цей день немає.", allMonth: "Показати все за місяць", allWeek: "Показати все за тиждень" },
+  fr: { month: "Mois", week: "Semaine", today: "Aujourd'hui", dayEmpty: "Aucune entrée ce jour.", allMonth: "Tout afficher pour le mois", allWeek: "Tout afficher pour la semaine" },
+};
+
+const toISO = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parseISO = (iso: string) => { const [y, m, dd] = iso.split("-").map(Number); return new Date(y, m - 1, dd, 12); };
+const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const startOfWeek = (d: Date) => addDays(d, -((d.getDay() + 6) % 7)); // понедельник
 
 export default function DiaryView({ entries: initialEntries, t, locale, initial }: any) {
   const s = STR[locale] || STR.ru;
   const [entries, setEntries] = useState<any[]>(initialEntries);
-  const [period, setPeriod] = useState("");
   const [category, setCategory] = useState(initial?.category || "");
   const [tag, setTag] = useState(initial?.tag || "");
   const [person, setPerson] = useState(initial?.person || "");
   const [mood, setMood] = useState("");
+  const [calMode, setCalMode] = useState<"month" | "week">("month");
+  const [cursor, setCursor] = useState<Date>(() => new Date());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<any | null>(null); // запись в режиме правки
   const [draft, setDraft] = useState("");
@@ -47,11 +63,13 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
   const peopleList = [...peopleSet].sort();
 
   const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const c = CAL[locale] || CAL.ru;
+  const intl = intlOf(locale);
+  const weekdays = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(intl, { weekday: "short" }).format(addDays(startOfWeek(parseISO("2024-01-06")), i)));
 
-  const filtered = entries.filter((e: any) => {
-    if (category && !e.cats.some((c: any) => c.slug === category)) return false;
+  // Фильтры содержимого (без даты) — для самих записей и для подсветки дней в календаре.
+  const baseFiltered = entries.filter((e: any) => {
+    if (category && !e.cats.some((c2: any) => c2.slug === category)) return false;
     if (tag && !e.tags.includes(tag)) return false;
     if (person && !e.people.includes(person)) return false;
     if (mood) {
@@ -60,16 +78,28 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
       if (mood === "mid" && (e.mood < 5 || e.mood > 7)) return false;
       if (mood === "low" && e.mood > 4) return false;
     }
-    if (period === "today" && e.date !== today) return false;
-    if (period === "week" && e.date < weekAgo) return false;
-    if (period === "month" && e.date < monthAgo) return false;
     return true;
   });
 
+  const countByDate: Record<string, number> = {};
+  for (const e of baseFiltered) countByDate[e.date] = (countByDate[e.date] || 0) + 1;
+
+  const monthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+  const weekStart = startOfWeek(cursor), weekEnd = addDays(weekStart, 6);
+  const inVisible = (d: string) => (calMode === "week" ? d >= toISO(weekStart) && d <= toISO(weekEnd) : d.slice(0, 7) === monthKey);
+
+  const cells: Date[] = [];
+  if (calMode === "week") { for (let i = 0; i < 7; i++) cells.push(addDays(weekStart, i)); }
+  else { const gs = startOfWeek(new Date(cursor.getFullYear(), cursor.getMonth(), 1, 12)); for (let i = 0; i < 42; i++) cells.push(addDays(gs, i)); }
+  const calTitle = calMode === "week"
+    ? `${new Intl.DateTimeFormat(intl, { day: "numeric", month: "short" }).format(weekStart)} – ${new Intl.DateTimeFormat(intl, { day: "numeric", month: "short" }).format(weekEnd)}`
+    : new Intl.DateTimeFormat(intl, { month: "long", year: "numeric" }).format(cursor);
+
+  const visible = baseFiltered.filter((e: any) => (selectedDay ? e.date === selectedDay : inVisible(e.date)));
   const byDate: Record<string, any[]> = {};
-  for (const e of filtered) (byDate[e.date] ||= []).push(e);
+  for (const e of visible) (byDate[e.date] ||= []).push(e);
   const dates = Object.keys(byDate).sort().reverse();
-  const anyFilter = period || category || tag || person || mood;
+  const anyFilter = category || tag || person || mood;
 
   async function del(e: any) {
     if (busyId) return;
@@ -119,12 +149,6 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
   return (
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, alignItems: "center" }}>
-        <select value={period} onChange={(e) => setPeriod(e.target.value)} style={selStyle}>
-          <option value="">{t.filters.date}</option>
-          <option value="today">{s.today}</option>
-          <option value="week">{s.week}</option>
-          <option value="month">{s.month}</option>
-        </select>
         <select value={category} onChange={(e) => setCategory(e.target.value)} style={selStyle}>
           <option value="">{t.filters.category}</option>
           {catOpts.map((c) => (<option key={c.slug} value={c.slug}>{c.name}</option>))}

@@ -27,6 +27,12 @@ const PT: Record<string, { month: (m: string) => string; year: (y: string) => st
   fr: { month: (m) => `Mon ${m}`, year: (y) => `Mon année ${y}`, all: "Toute ma vie" },
 };
 
+// Транслитерация имени в латиницу для красивого предлагаемого адреса (Игорь → igor).
+const TRANSLIT: Record<string, string> = { а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "", э: "e", ю: "yu", я: "ya", і: "i", ї: "yi", є: "ye", ґ: "g", " ": "-" };
+function slugifyName(name: string): string {
+  return (name || "").toLowerCase().split("").map((c) => (c in TRANSLIT ? TRANSLIT[c] : c)).join("").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, 30);
+}
+
 export default async function SharePage() {
   const user = await requireUser();
   const locale = await getLocale();
@@ -68,7 +74,7 @@ export default async function SharePage() {
   const refLink = `${proto}://${host}/i/${await getInviteCode(user.id)}`;
 
   const pubConfig = await getPublicConfig(user.id);
-  const suggestedSlug = (user.name || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) || user.id.slice(0, 8);
+  const suggestedSlug = slugifyName(user.name) || user.id.slice(0, 8);
 
   return (
     <div className="shell">
