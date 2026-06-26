@@ -1,11 +1,12 @@
 import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
 import Link from "next/link";
-import { getEntries, getDreams, places as placesOf, type Entry } from "@/lib/queries";
+import { getEntries, getDreams, getEntityMeta, places as placesOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
+import EntityManager from "@/components/EntityManager";
 
 export const dynamic = "force-dynamic";
 
