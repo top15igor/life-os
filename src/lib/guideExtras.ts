@@ -40,6 +40,8 @@ const E: Record<Locale, Extras> = {
     tipsL: "Подсказки",
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     changelog: [
+      { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
+      { t: "Визуальная память", d: "Фото и документы (чек, гарантия, важный момент) → AI понимает смысл и сохраняет в архив с категориями. Можно прислать фото боту или загрузить на сайте и добавить заметку голосом или текстом.", tag: "new" },
       { t: "Книга жизни → «Моя жизнь, [год]»", d: "Вкладка превратилась в настоящую книгу-летопись: статистика года, оглавление, AI-главы, режим «Вся жизнь» (автобиография), ридер и экспорт в PDF.", tag: "new" },
       { t: "Честная наполненность книги", d: "Книга текущего года больше не показывает «почти готова» в середине года: видно «наполнено» (собранный материал) и «год прожит на X%» — книга дополняется вместе с тобой.", tag: "improved" },
       { t: "Карта жизни без дублей", d: "В «Что заметил AI» тег и одноимённая категория (#здоровье и Здоровье) теперь объединяются в одну тему — без повторов.", tag: "improved" },
@@ -135,6 +137,8 @@ const E: Record<Locale, Extras> = {
     tipsL: "Tips",
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     changelog: [
+      { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
+      { t: "Visual Memory", d: "Photos and documents (a receipt, warranty, a meaningful moment) → AI understands the meaning and saves them to a categorized archive. Send a photo to the bot or upload on the site and add a note by voice or text.", tag: "new" },
       { t: "Book of Life → “My life, [year]”", d: "The tab became a real chronicle book: year stats, contents, AI chapters, a “Whole life” autobiography mode, a reader and PDF export.", tag: "new" },
       { t: "Honest book fill", d: "The current-year book no longer claims it's “almost ready” mid-year: it shows how much is “filled” (material gathered) and “the year is X% lived” — the book keeps filling with you.", tag: "improved" },
       { t: "Life map without duplicates", d: "In “Life Intelligence” a tag and the matching category (#health and Health) now merge into one theme — no more repeats.", tag: "improved" },

@@ -34,10 +34,22 @@ const STR: Record<string, any> = {
     editChapter: "Редактировать", addMyText: "Добавить свой текст", editMyText: "Изменить свой текст", resetAi: "Вернуть текст AI", saveEdit: "Сохранить", cancelEdit: "Отмена", myVersion: "твоя правка", myStory: "Моя история", editPh: "Пиши свою версию этой главы…", storyPh: "Допиши свою историю к этой главе…",
     configBook: "Настроить состав", doneConfig: "Готово", configHint: "Спрячь ненужные главы (глазок) или поменяй порядок (стрелки) — это твоя книга.",
     addPhoto: "Фото из памяти", pickerTitle: "Выбери фото для главы", pickerSub: "Из «Визуальной памяти»", noPhotos: "В «Визуальной памяти» пока нет фото — пришли фото боту или загрузи в разделе «Память».", toMemory: "Открыть «Память»", pickerDone: "Готово",
+    howTitle: "Как создать свою книгу", guideOutro: "Книга растёт вместе с тобой — вернись и доработай в любой момент. Ничего не «портится»: AI-главы всегда можно пересобрать, правки и фото остаются твоими.",
+    guide: [
+      ["ti-microphone", "Наполняй дневник", "Чем больше записей боту (голос или текст) — тем богаче книга. Полоски у глав показывают, сколько материала уже собрано."],
+      ["ti-sparkles", "Собери главы", "Раскрой главу и нажми «Собрать» — AI напишет её из твоих записей. Не нравится — «Пересобрать»."],
+      ["ti-pencil", "Сделай текст своим", "«Редактировать» — поправь слова AI или допиши свою историю. Правка не теряется при пересборке (бейдж «твоя правка»)."],
+      ["ti-users", "Почисти людей и места", "На страницах «Люди» и «Места»: переименуй («соседка» → имя), объедини дубли, скрой лишних — книга обновится сама."],
+      ["ti-adjustments-horizontal", "Настрой состав", "Кнопка «Настроить состав» у Оглавления: спрячь ненужные главы (глазок) и поменяй порядок (стрелки)."],
+      ["ti-photo", "Добавь фото", "В главе — «Фото из памяти»: выбери снимки из «Визуальной памяти», они встанут в книгу."],
+      ["ti-mail-heart", "Напиши личное", "Посвящение, Письмо себе и Письмо близким — внизу страницы. Это сердце книги."],
+      ["ti-book-2", "Читай и печатай", "«Читать книгу» → пролистай целиком → «Скачать / Печать (PDF)». Выбери тип книги и кому она."],
+    ],
     addMore: "Добавь записей, чтобы наполнить главу", empty: "Книга начнётся, когда появятся записи за этот период.",
     monthsOpen: "Открыть месяц",
     full: "Получить полную книгу", fullSub: "Цифровая версия, печать в твёрдой обложке или подарочный комплект для семьи.",
-    order: "Оставить заявку", ordered: "Заявка отправлена ✓ — мы свяжемся.", ordering: "Отправляю…",
+    order: "Оставить заявку", ordered: "Заявка отправлена ✓ — мы свяжемся с тобой.", ordering: "Отправляю…",
+    includes: "Что входит", orderNote: "Деньги сейчас НЕ списываются. Это предварительная заявка — она придёт команде LIFE OS, мы свяжемся с тобой, уточним детали (адрес, оформление) и поможем оплатить и напечатать.",
     soon: "печать скоро", tiersNote: "Цены — предварительные, на этапе тестирования.",
     readTitle: "Моя жизнь", by: "Автор", print: "Скачать / Печать (PDF)", closeReader: "Закрыть",
     buildAll: "Собрать все главы", reading: "Читать книгу",
@@ -72,10 +84,22 @@ const STR: Record<string, any> = {
     editChapter: "Edit", addMyText: "Add your text", editMyText: "Edit your text", resetAi: "Restore AI text", saveEdit: "Save", cancelEdit: "Cancel", myVersion: "your edit", myStory: "My story", editPh: "Write your version of this chapter…", storyPh: "Add your own story to this chapter…",
     configBook: "Customize", doneConfig: "Done", configHint: "Hide chapters you don't need (eye) or reorder them (arrows) — it's your book.",
     addPhoto: "Photo from memory", pickerTitle: "Pick a photo for this chapter", pickerSub: "From Visual Memory", noPhotos: "No photos in Visual Memory yet — send a photo to the bot or upload in the «Memory» section.", toMemory: "Open Memory", pickerDone: "Done",
+    howTitle: "How to create your book", guideOutro: "Your book grows with you — come back and refine it anytime. Nothing «breaks»: AI chapters can always be rebuilt, your edits and photos stay yours.",
+    guide: [
+      ["ti-microphone", "Fill your diary", "The more entries you send the bot (voice or text), the richer the book. The bars show how much material each chapter has."],
+      ["ti-sparkles", "Build the chapters", "Open a chapter and tap «Build» — AI writes it from your entries. Don't like it? «Rebuild»."],
+      ["ti-pencil", "Make the text yours", "«Edit» — fix the AI's words or add your own story. Your edit survives rebuilds («your edit» badge)."],
+      ["ti-users", "Clean up people & places", "On the «People» and «Places» pages: rename, merge duplicates, hide extras — the book updates itself."],
+      ["ti-adjustments-horizontal", "Customize contents", "The «Customize» button by the Contents: hide chapters (eye) and reorder them (arrows)."],
+      ["ti-photo", "Add photos", "In a chapter — «Photo from memory»: pick shots from Visual Memory and they join the book."],
+      ["ti-mail-heart", "Write something personal", "Dedication, Letter to yourself, Letter to loved ones — at the bottom. The heart of the book."],
+      ["ti-book-2", "Read & print", "«Read the book» → flip through it → «Download / Print (PDF)». Choose the book type and recipient."],
+    ],
     addMore: "Add entries to fill this chapter", empty: "The book begins once you have entries for this period.",
     monthsOpen: "Open month",
     full: "Get the full book", fullSub: "Digital, hardcover print, or a gift set for the family.",
-    order: "Request it", ordered: "Request sent ✓ — we'll reach out.", ordering: "Sending…",
+    order: "Request it", ordered: "Request sent ✓ — we'll reach out to you.", ordering: "Sending…",
+    includes: "What's included", orderNote: "You are NOT charged now. This is a preliminary request — it reaches the LIFE OS team, we'll contact you, confirm the details (address, finishing) and help you pay and print.",
     soon: "print coming soon", tiersNote: "Prices are preliminary, in testing.",
     readTitle: "My life", by: "By", print: "Download / Print (PDF)", closeReader: "Close",
     buildAll: "Build all chapters", reading: "Read the book",
@@ -89,10 +113,42 @@ STR.uk = STR.ru;
 STR.fr = STR.en;
 
 const TIERS = [
-  { id: "digital", name: "Digital", price: "19–29 €", icon: "ti-device-tablet", desc: { ru: "Цифровая книга + PDF", en: "Digital book + PDF" } },
-  { id: "classic", name: "Classic", price: "69–99 €", icon: "ti-book", desc: { ru: "Печать, мягкая обложка", en: "Softcover print" } },
-  { id: "gift", name: "Gift", price: "119–159 €", icon: "ti-gift", desc: { ru: "Твёрдая обложка, подарочная", en: "Hardcover gift edition" } },
-  { id: "family", name: "Family", price: "179–299 €", icon: "ti-users", desc: { ru: "Семейный комплект", en: "Family set" } },
+  {
+    id: "digital", name: "Digital", price: "19–29 €", icon: "ti-device-tablet",
+    desc: { ru: "Цифровая книга + PDF", en: "Digital book + PDF" },
+    tagline: { ru: "Сразу у тебя — на телефоне и в PDF", en: "Instantly yours — on your phone and as PDF" },
+    features: {
+      ru: ["Вся книга в красивом PDF", "Можно распечатать где угодно", "Все главы, фото и письма", "Обновляется, пока ты пишешь", "Готова за пару минут"],
+      en: ["The whole book as a polished PDF", "Print it anywhere you like", "All chapters, photos and letters", "Updates as you keep writing", "Ready in a couple of minutes"],
+    },
+  },
+  {
+    id: "classic", name: "Classic", price: "69–99 €", icon: "ti-book",
+    desc: { ru: "Печать, мягкая обложка", en: "Softcover print" },
+    tagline: { ru: "Настоящая книга в руках", en: "A real book in your hands" },
+    features: {
+      ru: ["Печатная книга, мягкая обложка", "Качественная бумага и вёрстка", "Цветные фото", "Доставка почтой", "Цифровая версия в подарок"],
+      en: ["Printed softcover book", "Quality paper and layout", "Color photos", "Delivered by mail", "Digital version included"],
+    },
+  },
+  {
+    id: "gift", name: "Gift", price: "119–159 €", icon: "ti-gift",
+    desc: { ru: "Твёрдая обложка, подарочная", en: "Hardcover gift edition" },
+    tagline: { ru: "Чтобы подарить близкому человеку", en: "To give to someone you love" },
+    features: {
+      ru: ["Премиум твёрдая обложка", "Подарочное оформление и коробка", "Персональное посвящение на обложке", "Плотная бумага, тиснение", "Цифровая версия в подарок"],
+      en: ["Premium hardcover", "Gift wrapping and box", "Personal dedication on the cover", "Thick paper, embossing", "Digital version included"],
+    },
+  },
+  {
+    id: "family", name: "Family", price: "179–299 €", icon: "ti-users",
+    desc: { ru: "Семейный комплект", en: "Family set" },
+    tagline: { ru: "Несколько книг для всей семьи", en: "Several books for the whole family" },
+    features: {
+      ru: ["Несколько экземпляров", "Для родителей, детей, партнёра", "Общая семейная летопись", "Лучшая цена за экземпляр", "Все — в твёрдой обложке"],
+      en: ["Several copies", "For parents, children, partner", "A shared family chronicle", "Best price per copy", "All in hardcover"],
+    },
+  },
 ];
 
 // Склонение чисел для RU/UK: forms = [1, 2-4, 5+]
@@ -192,6 +248,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
   // фото в главах (urls из «Визуальной памяти»)
   const [photos, setPhotos] = useState<Record<string, string[]>>(meta.photos || {});
   const [pickerKey, setPickerKey] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   function savePhotos(key: string, urls: string[]) {
     fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, photoKey: key, photos: urls }) }).catch(() => {});
   }
@@ -396,6 +453,29 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           </div>
           {s.recipientDesc?.[m.recipient] && <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginTop: 10 }}>{s.recipientDesc[m.recipient]}</div>}
         </div>
+      </div>
+
+      {/* КАК СОЗДАТЬ КНИГУ */}
+      <div className="card" style={{ marginBottom: 18, padding: 0, overflow: "hidden" }}>
+        <button onClick={() => setHelpOpen((v) => !v)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "13px 15px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
+          <i className="ti ti-help-circle" style={{ fontSize: 19, color: "var(--accent)" }} />
+          <span style={{ fontSize: 14.5, fontWeight: 600, flex: 1 }}>{s.howTitle}</span>
+          <i className={`ti ti-chevron-${helpOpen ? "up" : "down"}`} style={{ fontSize: 17, color: "var(--text-3)" }} />
+        </button>
+        {helpOpen && (
+          <div style={{ padding: "2px 15px 16px" }}>
+            {s.guide.map(([icon, t2, d]: any, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 12, padding: "9px 0", borderTop: "1px solid var(--border)" }}>
+                <span style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, background: "var(--accent-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${icon}`} style={{ fontSize: 16, color: "var(--accent)" }} /></span>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 2 }}>{i + 1}. {t2}</div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{d}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ fontSize: 12.5, color: "var(--text-3)", fontStyle: "italic", marginTop: 10, lineHeight: 1.5 }}>{s.guideOutro}</div>
+          </div>
+        )}
       </div>
 
       {/* ПОСВЯЩЕНИЕ */}
