@@ -81,14 +81,20 @@ export default async function GuidePage() {
           <i className="ti ti-brand-telegram" style={{ fontSize: 18 }} />{g.openBot}
         </a>
 
-        {/* Содержание */}
-        <div className="card" style={{ marginBottom: 26 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
-            <i className="ti ti-list-search" style={{ fontSize: 16, color: "var(--accent)" }} />{tocLabel}
+        {/* Содержание — как в книге */}
+        <div className="card" style={{ marginBottom: 26, padding: "18px 18px 10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, paddingBottom: 12, marginBottom: 4, borderBottom: "1px solid var(--border)" }}>
+            <i className="ti ti-book" style={{ fontSize: 18, color: "var(--accent)" }} />
+            <span style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: 18, fontWeight: 600, letterSpacing: "0.01em" }}>{tocLabel}</span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {TOC.map((it) => (
-              <a key={it.id} href={`#${it.id}`} style={{ fontSize: 13, padding: "6px 13px", borderRadius: 999, background: "var(--surface-2)", color: "var(--accent)", textDecoration: "none" }}>{it.label}</a>
+          <div className="toc-book">
+            {TOC.map((it, i) => (
+              <a key={it.id} href={`#${it.id}`}>
+                <span className="toc-num">{String(i + 1).padStart(2, "0")}</span>
+                <span className="toc-t">{it.label}</span>
+                <span className="toc-dots" />
+                <i className="ti ti-chevron-right toc-arrow" />
+              </a>
             ))}
           </div>
         </div>

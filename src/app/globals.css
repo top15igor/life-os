@@ -18,6 +18,15 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
+
+/* Оглавление «как в книге»: номер · название · точечная линия · стрелка */
+.toc-book a { display: flex; align-items: baseline; padding: 10px 8px; text-decoration: none; color: var(--text); border-radius: 9px; transition: background .15s; }
+.toc-book a:hover { background: var(--surface-2); }
+.toc-book a:hover .toc-arrow { color: var(--accent); transform: translateX(2px); }
+.toc-book .toc-num { width: 30px; flex-shrink: 0; font-size: 12.5px; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.toc-book .toc-t { font-size: 14.5px; font-weight: 500; }
+.toc-book .toc-dots { flex: 1; border-bottom: 1px dotted var(--border); margin: 0 9px; transform: translateY(-3px); min-width: 16px; }
+.toc-book .toc-arrow { font-size: 15px; color: var(--text-3); flex-shrink: 0; align-self: center; transition: color .15s, transform .15s; }
 body {
   background: var(--bg);
   color: var(--text);
