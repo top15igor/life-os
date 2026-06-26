@@ -11,6 +11,9 @@ const STR: Record<string, any> = {
   ru: {
     almost: "Твоя книга за", growing: "растёт", pastReady: "готова к сборке", filledLabel: "наполнено",
     yearProgressLine: (p: number) => `Год прожит на ${p}% — книга наполняется вместе с тобой и будет дополняться до конца года.`,
+    lifeCaption: "пишется всю жизнь",
+    lifeProgressLine: (n: string) => `Автобиография пишется всю жизнь — у неё нет «готово». Пока записано: ${n}. Чем больше записей, тем живее и полнее книга.`,
+    statHas: "есть материал", statSome: "немного материала", statEmpty: "пока пусто",
     lifeBook: "История моей жизни", allLife: "Вся жизнь",
     lifeSubtitle: "Автобиография всей моей жизни — написанная мной самим, при жизни, и оставленная следующим поколениям. Не просто факты обо мне, а моя жизнь, прожитая рядом со мной: мои решения, мой голос, мои уроки.",
     found: "LIFE OS собрал из твоих записей",
@@ -41,6 +44,9 @@ const STR: Record<string, any> = {
   en: {
     almost: "Your book of", growing: "is growing", pastReady: "is ready to assemble", filledLabel: "filled",
     yearProgressLine: (p: number) => `The year is ${p}% lived — the book grows with you and keeps filling until December.`,
+    lifeCaption: "written for a lifetime",
+    lifeProgressLine: (n: string) => `An autobiography is written across a whole life — it has no “done”. So far recorded: ${n}. The more you write, the richer and fuller the book.`,
+    statHas: "has material", statSome: "some material", statEmpty: "empty so far",
     lifeBook: "The Story of My Life", allLife: "Whole life",
     lifeSubtitle: "The autobiography of my whole life — written by me, in my own words, while I lived it, and left for the generations to come. Not just facts about me, but my life lived alongside me: my decisions, my voice, my lessons.",
     found: "LIFE OS gathered from your entries",
@@ -243,13 +249,22 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
-            <Ring pct={book.readiness} size={68} />
-            <span style={{ fontSize: 11, color: "var(--text-3)" }}>{s.filledLabel}</span>
+            {isLife ? (
+              <i className="ti ti-infinity" style={{ fontSize: 44, color: "var(--accent)" }} />
+            ) : (
+              <Ring pct={book.readiness} size={68} />
+            )}
+            <span style={{ fontSize: 11, color: "var(--text-3)" }}>{isLife ? s.lifeCaption : s.filledLabel}</span>
           </div>
         </div>
         {book.stage === "current" && !isLife && (
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "rgba(255,255,255,0.5)", borderRadius: 10, padding: "9px 12px" }}>
             <i className="ti ti-calendar-stats" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />{s.yearProgressLine(book.yearProgress)}
+          </div>
+        )}
+        {isLife && (
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "rgba(255,255,255,0.5)", borderRadius: 10, padding: "9px 12px" }}>
+            <i className="ti ti-infinity" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />{s.lifeProgressLine(`${st.entries} ${word(st.entries, "entries", s.entries)}`)}
           </div>
         )}
         <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginTop: 14, maxWidth: 560 }}>{isLife ? s.lifeSubtitle : s.giftLine}</div>
@@ -292,10 +307,17 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
               <i className={`ti ${ch.icon}`} style={{ fontSize: 19, color: "var(--accent)", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 500 }}>{titleOf(ch.key)}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
-                  <Bar pct={ch.readiness} />
-                  <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0, width: 32, textAlign: "right" }}>{ch.readiness}%</span>
-                </div>
+                {isLife ? (
+                  (() => {
+                    const stt = ch.readiness >= 25 ? { t: s.statHas, c: "var(--positive)", bg: "#dcfce7" } : ch.readiness > 0 ? { t: s.statSome, c: "var(--accent-text)", bg: "var(--accent-bg)" } : { t: s.statEmpty, c: "var(--text-3)", bg: "var(--surface-2)" };
+                    return <div style={{ marginTop: 6 }}><span style={{ fontSize: 11.5, fontWeight: 500, padding: "3px 10px", borderRadius: 99, background: stt.bg, color: stt.c }}>{stt.t}</span></div>;
+                  })()
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
+                    <Bar pct={ch.readiness} />
+                    <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0, width: 32, textAlign: "right" }}>{ch.readiness}%</span>
+                  </div>
+                )}
               </div>
               <span style={{ fontSize: 12.5, color: "var(--accent)", flexShrink: 0 }}>{open ? s.close : s.open}</span>
             </div>
