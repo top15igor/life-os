@@ -21,6 +21,8 @@ export type Extras = {
   examplesL: string;
   tipsL: string;
   badges: { new: string; improved: string; soon: string };
+  showAll: string;
+  collapse: string;
   changelog: ChangeItem[];
   features: Feature[];
 };
@@ -39,6 +41,7 @@ const E: Record<Locale, Extras> = {
     examplesL: "Примеры",
     tipsL: "Подсказки",
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
+    showAll: "Показать все", collapse: "Свернуть",
     changelog: [
       { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
       { t: "Визуальная память", d: "Фото и документы (чек, гарантия, важный момент) → AI понимает смысл и сохраняет в архив с категориями. Можно прислать фото боту или загрузить на сайте и добавить заметку голосом или текстом.", tag: "new" },
@@ -138,6 +141,7 @@ const E: Record<Locale, Extras> = {
     examplesL: "Examples",
     tipsL: "Tips",
     badges: { new: "New", improved: "Improved", soon: "Soon" },
+    showAll: "Show all", collapse: "Collapse",
     changelog: [
       { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
       { t: "Visual Memory", d: "Photos and documents (a receipt, warranty, a meaningful moment) → AI understands the meaning and saves them to a categorized archive. Send a photo to the bot or upload on the site and add a note by voice or text.", tag: "new" },

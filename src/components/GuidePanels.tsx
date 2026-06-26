@@ -24,10 +24,42 @@ function SectionTitle({ children }: { children: any }) {
   );
 }
 
+// Список доработок: показываем 5 последних, остальное под кнопкой «Показать все».
+function ChangeList({ items, ex, soon }: { items: ChangeItem[]; ex: Extras; soon?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const LIMIT = 5;
+  const shown = open ? items : items.slice(0, LIMIT);
+  return (
+    <>
+      {shown.map((c, i) => {
+        const tag = soon ? "soon" : c.tag;
+        return (
+          <div key={i} style={{ padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+              <Badge tag={tag} label={ex.badges[tag]} />
+              <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.t}</span>
+            </div>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.d}</div>
+          </div>
+        );
+      })}
+      {items.length > LIMIT && (
+        <button onClick={() => setOpen((o) => !o)} style={{ marginTop: 11, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: "1px solid var(--border)", borderRadius: 9, padding: "8px", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+          {open ? ex.collapse : `${ex.showAll} (${items.length})`}<i className={`ti ti-chevron-${open ? "up" : "down"}`} style={{ fontSize: 15 }} />
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: ChangeItem[] }) {
   const [active, setActive] = useState<Feature | null>(null);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const FEAT_LIMIT = 6;
+  const shownFeatures = featuresOpen ? ex.features : ex.features.slice(0, FEAT_LIMIT);
 
   useEffect(() => {
     if (!active) return;
@@ -49,30 +81,14 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
             <i className="ti ti-rocket" style={{ fontSize: 18, color: "var(--positive)" }} />{ex.thisMonth}
           </div>
-          {ex.changelog.map((c, i) => (
-            <div key={i} style={{ padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
-                <Badge tag={c.tag} label={ex.badges[c.tag]} />
-                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.t}</span>
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.d}</div>
-            </div>
-          ))}
+          <ChangeList items={ex.changelog} ex={ex} />
         </div>
 
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
             <i className="ti ti-clock-hour-4" style={{ fontSize: 18, color: "var(--accent)" }} />{ex.upcoming}
           </div>
-          {upcoming.map((c, i) => (
-            <div key={i} style={{ padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
-                <Badge tag="soon" label={ex.badges.soon} />
-                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.t}</span>
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.d}</div>
-            </div>
-          ))}
+          <ChangeList items={upcoming} ex={ex} soon />
         </div>
       </div>
 
@@ -80,8 +96,8 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
       <SectionTitle>{ex.featuresTitle}</SectionTitle>
       <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.featuresLead}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
-        {ex.features.map((f) => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 12 }}>
+        {shownFeatures.map((f) => (
           <button key={f.key} onClick={() => setActive(f)} className="card" style={{ textAlign: "left", cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)" }}>
             <i className={`ti ${f.icon}`} style={{ fontSize: 22, color: f.color, flexShrink: 0, marginTop: 1 }} />
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -94,6 +110,11 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
           </button>
         ))}
       </div>
+      {ex.features.length > FEAT_LIMIT && (
+        <button onClick={() => setFeaturesOpen((o) => !o)} style={{ marginBottom: 26, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: "1px solid var(--border)", borderRadius: 9, padding: "9px", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+          {featuresOpen ? ex.collapse : `${ex.showAll} (${ex.features.length})`}<i className={`ti ti-chevron-${featuresOpen ? "up" : "down"}`} style={{ fontSize: 15 }} />
+        </button>
+      )}
 
       {/* ===== Модалка ===== */}
       {active && mounted && createPortal(
