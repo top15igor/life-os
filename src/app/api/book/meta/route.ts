@@ -18,6 +18,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok });
   }
 
+  // Состав книги: какие главы скрыты и их порядок.
+  if (body.layout && typeof body.layout === "object") {
+    const hidden = Array.isArray(body.layout.hidden) ? body.layout.hidden.filter((x: any) => typeof x === "string").slice(0, 40) : [];
+    const order = Array.isArray(body.layout.order) ? body.layout.order.filter((x: any) => typeof x === "string").slice(0, 40) : [];
+    const ok = await saveBookMeta(user.id, year, { layout: { hidden, order } } as any);
+    return NextResponse.json({ ok });
+  }
+
   const patch: Partial<BookMeta> = {};
   const fields: (keyof BookMeta)[] = ["dedication", "letter_self", "letter_close", "recipient", "book_type"];
   for (const f of fields) {

@@ -176,12 +176,14 @@ export async function getBookSummary(userId: string, year: number): Promise<{ ye
 }
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
-export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string> };
+export type BookLayout = { hidden: string[]; order: string[] };
+export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout };
 
 export async function getBookMeta(userId: string, year: number): Promise<BookMeta> {
-  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {} };
+  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {}, layout: { hidden: [], order: [] } };
+  const norm = (l: any): BookLayout => ({ hidden: Array.isArray(l?.hidden) ? l.hidden : [], order: Array.isArray(l?.order) ? l.order : [] });
   try {
-    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits").eq("user_id", userId).eq("year", year).maybeSingle();
+    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits, layout").eq("user_id", userId).eq("year", year).maybeSingle();
     if (!data) return empty;
     return {
       dedication: data.dedication || "",
@@ -191,9 +193,15 @@ export async function getBookMeta(userId: string, year: number): Promise<BookMet
       book_type: data.book_type || "year",
       sections: data.sections || {},
       edits: data.edits || {},
+      layout: norm(data.layout),
     };
   } catch {
-    return empty;
+    // Если колонки layout/edits ещё нет — пробуем без них (graceful).
+    try {
+      const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections").eq("user_id", userId).eq("year", year).maybeSingle();
+      if (!data) return empty;
+      return { ...empty, dedication: data.dedication || "", letter_self: data.letter_self || "", letter_close: data.letter_close || "", recipient: data.recipient || "self", book_type: data.book_type || "year", sections: data.sections || {} };
+    } catch { return empty; }
   }
 }
 

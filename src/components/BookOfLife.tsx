@@ -32,6 +32,7 @@ const STR: Record<string, any> = {
     save: "Сохранить", saved: "Сохранено ✓", saving: "Сохраняю…",
     open: "Открыть", close: "Свернуть", building: "AI пишет главу…", rebuild: "Пересобрать",
     editChapter: "Редактировать", addMyText: "Добавить свой текст", editMyText: "Изменить свой текст", resetAi: "Вернуть текст AI", saveEdit: "Сохранить", cancelEdit: "Отмена", myVersion: "твоя правка", myStory: "Моя история", editPh: "Пиши свою версию этой главы…", storyPh: "Допиши свою историю к этой главе…",
+    configBook: "Настроить состав", doneConfig: "Готово", configHint: "Спрячь ненужные главы (глазок) или поменяй порядок (стрелки) — это твоя книга.",
     addMore: "Добавь записей, чтобы наполнить главу", empty: "Книга начнётся, когда появятся записи за этот период.",
     monthsOpen: "Открыть месяц",
     full: "Получить полную книгу", fullSub: "Цифровая версия, печать в твёрдой обложке или подарочный комплект для семьи.",
@@ -68,6 +69,7 @@ const STR: Record<string, any> = {
     save: "Save", saved: "Saved ✓", saving: "Saving…",
     open: "Open", close: "Collapse", building: "AI is writing the chapter…", rebuild: "Rebuild",
     editChapter: "Edit", addMyText: "Add your text", editMyText: "Edit your text", resetAi: "Restore AI text", saveEdit: "Save", cancelEdit: "Cancel", myVersion: "your edit", myStory: "My story", editPh: "Write your version of this chapter…", storyPh: "Add your own story to this chapter…",
+    configBook: "Customize", doneConfig: "Done", configHint: "Hide chapters you don't need (eye) or reorder them (arrows) — it's your book.",
     addMore: "Add entries to fill this chapter", empty: "The book begins once you have entries for this period.",
     monthsOpen: "Open month",
     full: "Get the full book", fullSub: "Digital, hardcover print, or a gift set for the family.",
@@ -160,6 +162,30 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [editBusy, setEditBusy] = useState(false);
+
+  // состав книги: скрытые главы + порядок
+  const allKeys: string[] = book.chapters.map((c: any) => c.key);
+  const [hiddenCh, setHiddenCh] = useState<string[]>(() => (meta.layout?.hidden || []).filter((k: string) => allKeys.includes(k)));
+  const [chOrder, setChOrder] = useState<string[]>(() => {
+    const saved = (meta.layout?.order || []).filter((k: string) => allKeys.includes(k));
+    return [...saved, ...allKeys.filter((k) => !saved.includes(k))];
+  });
+  const [configMode, setConfigMode] = useState(false);
+  const orderedChapters = chOrder.map((k) => book.chapters.find((c: any) => c.key === k)).filter(Boolean);
+
+  function saveLayout(hidden: string[], order: string[]) {
+    fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, layout: { hidden, order } }) }).catch(() => {});
+  }
+  function toggleHide(key: string) {
+    setHiddenCh((h) => { const n = h.includes(key) ? h.filter((x) => x !== key) : [...h, key]; saveLayout(n, chOrder); return n; });
+  }
+  function moveChapter(key: string, dir: -1 | 1) {
+    setChOrder((o) => {
+      const i = o.indexOf(key), j = i + dir;
+      if (i < 0 || j < 0 || j >= o.length) return o;
+      const n = [...o]; [n[i], n[j]] = [n[j], n[i]]; saveLayout(hiddenCh, n); return n;
+    });
+  }
 
   function startEdit(key: string, initial: string) { setEditKey(key); setEditDraft(initial || ""); }
   async function saveEdit(key: string) {
@@ -364,15 +390,23 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
       <Field label={s.dedication} value={m.dedication} ph={s.dedicationPh} onSave={(v) => saveMeta({ dedication: v }, "ded")} saved={savedFlag === "ded"} saving={savingFlag} s={s} icon="ti-quote" />
 
       {/* ОГЛАВЛЕНИЕ */}
-      <div style={{ fontSize: 16, fontWeight: 500, margin: "22px 0 10px" }}>{s.contents}</div>
-      {book.chapters.map((ch: any) => {
-        const open = openKey === ch.key;
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "22px 0 10px" }}>
+        <div style={{ fontSize: 16, fontWeight: 500 }}>{s.contents}</div>
+        <button onClick={() => { setConfigMode((v) => !v); setOpenKey(null); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer", padding: 4 }}>
+          <i className={`ti ${configMode ? "ti-check" : "ti-adjustments-horizontal"}`} style={{ fontSize: 15 }} />{configMode ? s.doneConfig : s.configBook}
+        </button>
+      </div>
+      {configMode && <div style={{ fontSize: 12.5, color: "var(--text-3)", margin: "0 2px 10px", lineHeight: 1.5 }}>{s.configHint}</div>}
+      {(configMode ? orderedChapters : orderedChapters.filter((c: any) => !hiddenCh.includes(c.key))).map((ch: any, chIdx: number) => {
+        const open = openKey === ch.key && !configMode;
+        const isHidden = hiddenCh.includes(ch.key);
         return (
-          <div key={ch.key} className="card" style={{ marginBottom: 10 }}>
+          <div key={ch.key} className="card" style={{ marginBottom: 10, opacity: configMode && isHidden ? 0.5 : 1 }}>
             <div onClick={() => {
+              if (configMode) return;
               const willOpen = !open; setOpenKey(willOpen ? ch.key : null);
               if (willOpen && ch.kind === "ai" && ai[ch.key] === undefined) loadAi(ch.key);
-            }} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            }} style={{ display: "flex", alignItems: "center", gap: 12, cursor: configMode ? "default" : "pointer" }}>
               <i className={`ti ${ch.icon}`} style={{ fontSize: 19, color: "var(--accent)", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 500 }}>{titleOf(ch.key)}</div>
@@ -388,7 +422,15 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: 12.5, color: "var(--accent)", flexShrink: 0 }}>{open ? s.close : s.open}</span>
+              {configMode ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                  <button onClick={(e) => { e.stopPropagation(); moveChapter(ch.key, -1); }} disabled={chIdx === 0} style={cfgBtn(chIdx === 0)}><i className="ti ti-chevron-up" style={{ fontSize: 16 }} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); moveChapter(ch.key, 1); }} disabled={chIdx === orderedChapters.length - 1} style={cfgBtn(chIdx === orderedChapters.length - 1)}><i className="ti ti-chevron-down" style={{ fontSize: 16 }} /></button>
+                  <button onClick={(e) => { e.stopPropagation(); toggleHide(ch.key); }} style={cfgBtn(false)}><i className={`ti ${isHidden ? "ti-eye" : "ti-eye-off"}`} style={{ fontSize: 16, color: isHidden ? "var(--accent)" : "var(--text-3)" }} /></button>
+                </div>
+              ) : (
+                <span style={{ fontSize: 12.5, color: "var(--accent)", flexShrink: 0 }}>{open ? s.close : s.open}</span>
+              )}
             </div>
 
             {open && (
@@ -447,7 +489,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
         <Reader
           book={book} meta={m} year={year} locale={locale} userName={userName} s={s} isLife={isLife}
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
-          loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading}
+          loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh}
           onClose={() => setReader(false)}
         />, document.body)}
     </div>
@@ -455,7 +497,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, onClose }: any) {
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], onClose }: any) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -515,7 +557,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         {cover}
 
         {/* Год в одном взгляде */}
-        <Page title={titleOf("overview")}>
+        {!hidden.includes("overview") && <Page title={titleOf("overview")}>
           <div className="book-strip">
             <span><b>{book.stats.entries}</b> {s.overviewStrip.entries}</span>
             <span><b>{book.stats.days}</b> {s.overviewStrip.days}</span>
@@ -523,10 +565,10 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             <span><b>{book.stats.places}</b> {s.overviewStrip.places}</span>
           </div>
           {ai.overview ? aiBody("overview") : aiLoading === "overview" ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi("overview")} s={s} />}
-        </Page>
+        </Page>}
 
         {/* 12 месяцев */}
-        {book.months.length > 0 && (
+        {!hidden.includes("months") && book.months.length > 0 && (
           <Page title={titleOf("months")}>
             {book.months.map((mm: any) => {
               const mc = months[mm.month];
@@ -543,14 +585,14 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         )}
 
         {/* data-главы */}
-        {[["family", "ti-users"], ["health", "ti-heartbeat"], ["work", "ti-briefcase"], ["travel", "ti-plane"], ["trace", "ti-heart-handshake"]].map(([k]) => {
+        {[["family", "ti-users"], ["health", "ti-heartbeat"], ["work", "ti-briefcase"], ["travel", "ti-plane"], ["trace", "ti-heart-handshake"]].filter(([k]) => !hidden.includes(k)).map(([k]) => {
           const node = dataChapter(k);
           if (!node) return null;
           return <Page key={k} title={titleOf(k)}>{node}</Page>;
         })}
 
         {/* AI-разделы */}
-        {["self", "people", "lessons"].map((k) => (
+        {["self", "people", "lessons"].filter((k) => !hidden.includes(k)).map((k) => (
           <Page key={k} title={titleOf(k)}>
             {ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />}
           </Page>
@@ -657,3 +699,4 @@ function chip(active: boolean): any {
 }
 const btnPrimary: any = { display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 600, cursor: "pointer" };
 const ghostBtn: any = { display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" };
+const cfgBtn = (dis: boolean): any => ({ background: "none", border: "none", cursor: dis ? "default" : "pointer", color: "var(--text-3)", padding: 4, opacity: dis ? 0.35 : 1, display: "inline-flex" });
