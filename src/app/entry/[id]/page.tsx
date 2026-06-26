@@ -145,7 +145,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         )}
 
         <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
-          <EntryActions id={id} locale={locale} />
+          <EntryActions id={id} locale={locale} rawText={e.raw_text || ""} />
         </div>
       </main>
     </div>
