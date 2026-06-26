@@ -9,14 +9,15 @@ import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import PageHead from "@/components/PageHead";
 import { hints } from "@/lib/hints";
+import { getHealthFocus, type HealthTrend } from "@/lib/health";
 
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { health: "Здоровье", sleep: "Сон", weight: "Вес", su: "ч", wu: "кг", trend: "Динамика по дням", perDay: "среднее за день", from: "от", noData: "нет данных", entries: "Записи о здоровье", empty: "Записей о здоровье пока нет — упоминай самочувствие, сон, тренировки, и они появятся здесь.", noTrend: "Динамика появится, когда в записях будет хотя бы пара оценок здоровья, энергии или настроения." },
-  en: { health: "Health", sleep: "Sleep", weight: "Weight", su: "h", wu: "kg", trend: "Daily dynamics", perDay: "daily average", from: "on", noData: "no data", entries: "Health entries", empty: "No health entries yet — mention wellbeing, sleep, workouts and they'll show here.", noTrend: "The chart appears once your entries have a few health, energy or mood ratings." },
-  uk: { health: "Здоров'я", sleep: "Сон", weight: "Вага", su: "год", wu: "кг", trend: "Динаміка по днях", perDay: "середнє за день", from: "від", noData: "немає даних", entries: "Записи про здоров'я", empty: "Записів про здоров'я поки немає — згадуй самопочуття, сон, тренування.", noTrend: "Динаміка з'явиться, коли в записах буде хоча б кілька оцінок." },
-  fr: { health: "Santé", sleep: "Sommeil", weight: "Poids", su: "h", wu: "kg", trend: "Dynamique quotidienne", perDay: "moyenne par jour", from: "le", noData: "pas de données", entries: "Entrées santé", empty: "Pas encore d'entrées santé — mentionne bien-être, sommeil, sport.", noTrend: "La courbe apparaît dès que tes entrées ont quelques évaluations." },
+  ru: { health: "Здоровье", sleep: "Сон", weight: "Вес", su: "ч", wu: "кг", trend: "Динамика по дням", perDay: "среднее за день", from: "от", noData: "нет данных", entries: "Записи о здоровье", empty: "Записей о здоровье пока нет — упоминай самочувствие, сон, тренировки, и они появятся здесь.", noTrend: "Динамика появится, когда в записях будет хотя бы пара оценок здоровья, энергии или настроения.", nowTitle: "Здоровье сейчас", goalsTitle: "Цели по здоровью" },
+  en: { health: "Health", sleep: "Sleep", weight: "Weight", su: "h", wu: "kg", trend: "Daily dynamics", perDay: "daily average", from: "on", noData: "no data", entries: "Health entries", empty: "No health entries yet — mention wellbeing, sleep, workouts and they'll show here.", noTrend: "The chart appears once your entries have a few health, energy or mood ratings.", nowTitle: "Health right now", goalsTitle: "Health goals" },
+  uk: { health: "Здоров'я", sleep: "Сон", weight: "Вага", su: "год", wu: "кг", trend: "Динаміка по днях", perDay: "середнє за день", from: "від", noData: "немає даних", entries: "Записи про здоров'я", empty: "Записів про здоров'я поки немає — згадуй самопочуття, сон, тренування.", noTrend: "Динаміка з'явиться, коли в записах буде хоча б кілька оцінок.", nowTitle: "Здоров'я зараз", goalsTitle: "Цілі щодо здоров'я" },
+  fr: { health: "Santé", sleep: "Sommeil", weight: "Poids", su: "h", wu: "kg", trend: "Dynamique quotidienne", perDay: "moyenne par jour", from: "le", noData: "pas de données", entries: "Entrées santé", empty: "Pas encore d'entrées santé — mentionne bien-être, sommeil, sport.", noTrend: "La courbe apparaît dès que tes entrées ont quelques évaluations.", nowTitle: "Santé en ce moment", goalsTitle: "Objectifs santé" },
 };
 
 // Короткая дата для подписи оси: «26.06».
@@ -92,6 +93,50 @@ function Dot({ c, label }: { c: string; label: string }) {
   );
 }
 
+const TREND: Record<HealthTrend, any> = {
+  worsening: { ru: "становится хуже", en: "getting worse", uk: "стає гірше", fr: "s'aggrave", color: "#ef4444", icon: "ti-trending-down" },
+  stable: { ru: "без изменений", en: "stable", uk: "без змін", fr: "stable", color: "#64748b", icon: "ti-minus" },
+  improving: { ru: "идёт на улучшение", en: "improving", uk: "покращується", fr: "s'améliore", color: "#10b981", icon: "ti-trending-up" },
+};
+
+function HealthNow({ focus, s, locale }: any) {
+  if (!focus || (!focus.concern && (!focus.goals || focus.goals.length === 0))) return null;
+  const c = focus.concern;
+  const tr = c ? TREND[c.trend as HealthTrend] || TREND.stable : null;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      {c && (
+        <div className="card" style={{ borderLeft: `3px solid ${tr.color}`, marginBottom: focus.goals.length ? 10 : 0 }}>
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+            <i className="ti ti-activity-heartbeat" style={{ fontSize: 14, color: "#ef4444" }} />{s.nowTitle}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 15.5, fontWeight: 600 }}>{c.text}</span>
+            <span style={{ fontSize: 12, color: tr.color, background: `${tr.color}1a`, padding: "2px 9px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <i className={`ti ${tr.icon}`} style={{ fontSize: 13 }} />{tr[locale] || tr.ru}
+            </span>
+          </div>
+          {c.note && <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5, marginTop: 7 }}>{c.note}</div>}
+        </div>
+      )}
+      {focus.goals.length > 0 && (
+        <div className="card">
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
+            <i className="ti ti-target" style={{ fontSize: 14, color: "var(--accent)" }} />{s.goalsTitle}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+            {focus.goals.map((g: string, i: number) => (
+              <Link key={i} href="/goals?tab=tasks" style={{ fontSize: 12.5, color: "var(--text)", background: "var(--surface-2)", padding: "5px 11px", borderRadius: 8, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <i className="ti ti-flag-3" style={{ fontSize: 13, color: "var(--accent)" }} />{g}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default async function WellnessPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams;
   const tab = ["health", "energy", "sport", "food"].includes(sp.tab || "") ? sp.tab! : "health";
@@ -112,6 +157,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const mHealth = lastVal(all, "health");
   const mSleep = lastVal(all, "sleep_hours", true);
   const mWeight = lastVal(all, "weight");
+  const focus = tab === "health" ? await getHealthFocus(user.id) : null;
 
   const healthEntries = all.filter((e: Entry) => cats(e).some((c: any) => ["health", "sport", "food"].includes(c.slug)));
   const sportEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "sport"));
@@ -133,6 +179,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
 
         {tab === "health" && (
           <>
+            <HealthNow focus={focus} s={s} locale={locale} />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 9, marginBottom: 20 }}>
               <MetricCard label={s.health} icon="ti-heart" color="#ef4444" value={mHealth.value} suffix="/10" dateStr={mHealth.date} prev={mHealth.prev} locale={locale} s={s} kind="good" />
               <MetricCard label={s.sleep} icon="ti-moon" color="#4f46e5" value={mSleep.value} suffix={s.su} dateStr={mSleep.date} prev={mSleep.prev} locale={locale} s={s} kind="good" />

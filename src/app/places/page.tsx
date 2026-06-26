@@ -36,23 +36,32 @@ export default async function PlacesPage() {
 
   // Мечты о путешествиях — отдельная секция «Куда хочу».
   const travelDreams = dreams.filter((d) => d.sphere === "travel");
-  const travelText = travelDreams.map((d) => (d.text || "").toLowerCase()).join(" | ");
+  const dreamLower = travelDreams.map((d) => (d.text || "").toLowerCase());
+  const inDreams = (name: string) => { const k = name.toLowerCase().slice(0, 5); return k.length >= 3 && dreamLower.some((t) => t.includes(k)); };
 
-  // Реальные места, где бывал. Имена, попавшие из мечты-направления, исключаем —
-  // они показываются ниже в «Куда хочу», а не как «где был».
-  const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[] }>();
+  // Контекст упоминания места: поездка vs мечта (по тексту записи).
+  const VISIT_RE = /(\bбыл|побыва|съезд|поехал|ездил|посети|вернул|прилет|отдыха|переехал|гостил|жил в|visited|went to|came back|trip to)/i;
+  const WISH_RE = /(мечт|хочу|хотел|объезд|когда-нибудь|планиру|поехать бы|съездить бы|dream|want to go|wish to)/i;
+
+  // Собираем места с накопленным текстом их записей.
+  const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[]; text: string }>();
   for (const e of entries) {
+    const etext = `${e.summary || ""} ${e.raw_text || ""}`.toLowerCase();
     for (const name of placesOf(e)) {
-      if (travelText.includes(name.toLowerCase())) continue;
-      const m = map.get(name) || { name, count: 0, lastDate: e.entry_date, entries: [] };
+      const m = map.get(name) || { name, count: 0, lastDate: e.entry_date, entries: [], text: "" };
       m.count++;
       m.entries.push(e);
+      m.text += " " + etext;
       if (e.entry_date > m.lastDate) m.lastDate = e.entry_date;
       map.set(name, m);
     }
   }
-  const visited = [...map.values()].sort((a, b) => b.count - a.count);
-  const nothing = visited.length === 0 && travelDreams.length === 0;
+  const allPlaces = [...map.values()];
+  // «Был» = есть маркер поездки ИЛИ нейтральное упоминание (без маркера мечты).
+  const visited = allPlaces.filter((p) => VISIT_RE.test(p.text) || !WISH_RE.test(p.text)).sort((a, b) => b.count - a.count);
+  // «Хочу» = маркер мечты и нет маркера поездки, и ещё не показано как мечта в карте желаний.
+  const wishPlaces = allPlaces.filter((p) => !VISIT_RE.test(p.text) && WISH_RE.test(p.text) && !inDreams(p.name)).sort((a, b) => b.count - a.count);
+  const nothing = visited.length === 0 && travelDreams.length === 0 && wishPlaces.length === 0;
 
   return (
     <div className="shell">
@@ -94,7 +103,7 @@ export default async function PlacesPage() {
             )}
 
             {/* КУДА ХОЧУ */}
-            {travelDreams.length > 0 && (
+            {(travelDreams.length > 0 || wishPlaces.length > 0) && (
               <>
                 <SectionTitle icon="ti-plane" color="#854F0B">{s.wish}</SectionTitle>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
@@ -104,6 +113,12 @@ export default async function PlacesPage() {
                         {d.emoji || "✈️"}
                       </span>
                       <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{d.text}</div>
+                    </Link>
+                  ))}
+                  {wishPlaces.map((p) => (
+                    <Link key={p.name} href={`/entry/${p.entries[0].id}`} className="card" style={{ display: "flex", alignItems: "center", gap: 11, background: "#FAEEDA66", borderColor: "#85500b33" }}>
+                      <span style={{ width: 36, height: 36, borderRadius: 9, background: "#FAEEDA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>✈️</span>
+                      <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{p.name}</div>
                     </Link>
                   ))}
                 </div>

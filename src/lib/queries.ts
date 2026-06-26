@@ -213,6 +213,24 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
   }
 }
 
+// Мета сущностей (люди/места) по имени: id + hidden. Для управления (rename/merge/hide).
+// Грациозно деградирует, если колонки hidden ещё нет (вернёт hidden:false).
+export async function getEntityMeta(userId: string, kind: "people" | "places"): Promise<Record<string, { id: number; hidden: boolean }>> {
+  const out: Record<string, { id: number; hidden: boolean }> = {};
+  try {
+    const { data, error } = await supabaseAdmin().from(kind).select("id, name, hidden").eq("user_id", userId);
+    if (error) throw error;
+    for (const r of data || []) out[r.name] = { id: r.id, hidden: !!r.hidden };
+    return out;
+  } catch {
+    try {
+      const { data } = await supabaseAdmin().from(kind).select("id, name").eq("user_id", userId);
+      for (const r of data || []) out[r.name] = { id: r.id, hidden: false };
+    } catch {}
+    return out;
+  }
+}
+
 export async function getEntryCount(userId: string): Promise<number> {
   const { count } = await supabaseAdmin().from("entries").select("*", { count: "exact", head: true }).eq("user_id", userId);
   return count || 0;

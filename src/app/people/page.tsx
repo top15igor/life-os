@@ -1,10 +1,10 @@
 import Sidebar from "@/components/Sidebar";
-import Link from "next/link";
-import { getEntries, people as peopleOf, type Entry } from "@/lib/queries";
+import { getEntries, getEntityMeta, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import PageHead from "@/components/PageHead";
+import EntityManager from "@/components/EntityManager";
 import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +16,13 @@ const STR = {
   fr: { mentions: "mentions", empty: "Pas encore de personnes — elles apparaîtront quand tu les mentionnes.", last: "dernier" },
 };
 
-const COLORS = ["#4f46e5", "#ec4899", "#10b981", "#f59e0b", "#0ea5e9", "#8b5cf6"];
-
 export default async function PeoplePage() {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale];
   const h = hints(locale);
-  const entries = await getEntries(user.id, 300);
+  const [entries, metas] = await Promise.all([getEntries(user.id, 300), getEntityMeta(user.id, "people")]);
 
   const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[] }>();
   for (const e of entries) {
@@ -37,37 +35,23 @@ export default async function PeoplePage() {
     }
   }
   const list = [...map.values()].sort((a, b) => b.count - a.count);
+  const items = list.map((p) => ({
+    id: metas[p.name]?.id,
+    name: p.name,
+    hidden: metas[p.name]?.hidden || false,
+    meta: `${p.count} ${s.mentions} · ${s.last} ${dateLabel(locale, p.lastDate)}`,
+    entries: p.entries.map((e: any) => ({ id: e.id, text: e.summary || e.raw_text || "" })),
+  }));
 
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <PageHead icon="ti-user-heart" color="#ec4899" title={t.nav.people} hint={h.people} />
-        {list.length === 0 ? (
+        {items.length === 0 ? (
           <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
-            {list.map((p, idx) => (
-              <div key={p.name} className="card">
-                <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 8 }}>
-                  <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--surface-2)", color: COLORS[idx % COLORS.length], display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 500, fontSize: 15 }}>
-                    {p.name.trim().slice(0, 1).toUpperCase()}
-                  </span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                    <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{p.count} {s.mentions} · {s.last} {dateLabel(locale, p.lastDate)}</div>
-                  </div>
-                </div>
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                  {p.entries.slice(0, 3).map((e: any) => (
-                    <Link key={e.id} href={`/entry/${e.id}`} style={{ display: "block", fontSize: 12.5, color: "var(--text-2)", padding: "3px 0", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      · {e.summary || e.raw_text}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <EntityManager kind="people" locale={locale} items={items} />
         )}
       </main>
     </div>

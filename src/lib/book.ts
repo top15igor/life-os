@@ -57,8 +57,18 @@ export async function getBookData(userId: string, year: number) {
   const months = Object.entries(monthsMap).sort().map(([month, count]) => ({ month, count }));
 
   const voice = rows.filter((e: any) => e.source === "telegram_voice").length;
-  const people = topNames(rows, namesOf("entry_people", "people"), 12);
-  const places = topNames(rows, namesOf("entry_places", "places"), 10);
+  // Скрытые пользователем люди/места исключаем из книги (graceful, если колонки hidden ещё нет).
+  let hiddenPeople = new Set<string>(), hiddenPlaces = new Set<string>();
+  try {
+    const [hp, hpl] = await Promise.all([
+      db.from("people").select("name").eq("user_id", userId).eq("hidden", true),
+      db.from("places").select("name").eq("user_id", userId).eq("hidden", true),
+    ]);
+    hiddenPeople = new Set((hp.data || []).map((r: any) => r.name));
+    hiddenPlaces = new Set((hpl.data || []).map((r: any) => r.name));
+  } catch {}
+  const people = topNames(rows, namesOf("entry_people", "people"), 20).filter((p) => !hiddenPeople.has(p.name)).slice(0, 12);
+  const places = topNames(rows, namesOf("entry_places", "places"), 16).filter((p) => !hiddenPlaces.has(p.name)).slice(0, 10);
   const projects = topNames(rows, namesOf("entry_projects", "projects"), 8);
 
   const catCount: Record<string, number> = {};
