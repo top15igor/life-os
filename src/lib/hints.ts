@@ -21,7 +21,7 @@ const H: Record<Locale, Record<string, string>> = {
     sport: "Все записи про спорт и тренировки.",
     food: "Записи про питание и еду.",
     family: "Моменты и события с семьёй.",
-    places: "Места из твоих записей — где ты бывал.",
+    places: "Места, где ты бывал, и куда мечтаешь съездить.",
     profile: "Твой личный кабинет: личная ссылка, язык, приватность, выход и удаление аккаунта.",
   },
   en: {
@@ -44,7 +44,7 @@ const H: Record<Locale, Record<string, string>> = {
     sport: "All your entries about sport and workouts.",
     food: "Entries about food and nutrition.",
     family: "Moments and events with your family.",
-    places: "Places from your entries — where you've been.",
+    places: "Places you've been, and where you dream to go.",
     profile: "Your account: personal link, language, privacy, log out and delete account.",
   },
   uk: {
@@ -67,7 +67,7 @@ const H: Record<Locale, Record<string, string>> = {
     sport: "Усі записи про спорт і тренування.",
     food: "Записи про харчування та їжу.",
     family: "Моменти й події з сім'єю.",
-    places: "Місця з твоїх записів — де ти бував.",
+    places: "Місця, де ти бував, і куди мрієш поїхати.",
     profile: "Твій особистий кабінет: посилання, мова, приватність, вихід і видалення акаунта.",
   },
   fr: {
@@ -90,7 +90,7 @@ const H: Record<Locale, Record<string, string>> = {
     sport: "Toutes tes entrées sur le sport.",
     food: "Entrées sur l'alimentation.",
     family: "Moments et événements en famille.",
-    places: "Les lieux de tes entrées — où tu es allé.",
+    places: "Les lieux où tu es allé, et où tu rêves d'aller.",
     profile: "Ton compte : lien personnel, langue, confidentialité, déconnexion et suppression.",
   },
 };

@@ -57,7 +57,7 @@ const TOOL: Anthropic.Tool = {
       categories: { type: "array", items: { type: "string", enum: CATEGORY_SLUGS } },
       tags: { type: "array", items: { type: "string" }, description: "3–7 коротких тегов без #." },
       people: { type: "array", items: { type: "string" } },
-      places: { type: "array", items: { type: "string" } },
+      places: { type: "array", items: { type: "string" }, description: "Только реальные места, где человек был/живёт/побывал. НЕ места-мечты (желаемые направления идут в dreams)." },
       projects: { type: "array", items: { type: "string" } },
       tasks: { type: "array", items: { type: "string" } },
       insights: { type: "array", items: { type: "string" } },
@@ -114,7 +114,8 @@ function prompt(text: string): string {
 - mood/energy/health: 1–10, если упомянуто или ясно из тона; иначе не указывай.
 - categories: только из разрешённого списка (slug).
 - tags: 3–7 коротких тегов своими словами, без символа #.
-- people/places/projects: имена людей, места и проекты, явно упомянутые.
+- people/projects: имена людей и проекты, явно упомянутые.
+- places: ТОЛЬКО реальные места, где человек был / живёт / находился / побывал / ездил (физическое присутствие). НЕ включай желаемые направления и мечты («хочу/мечтаю съездить в…», «когда-нибудь в…») — они идут в dreams со sphere=travel, а НЕ в places.
 - tasks: конкретные дела, которые человек собирается сделать.
 - insights: мысли-осознания. gratitude: за что благодарен.
 - good_deeds: ТОЛЬКО настоящая помощь/забота/поддержка/подарок/знания другим. Для каждого укажи kind и person (если ясно). ВАЖНО: возврат долга, оплата, выполнение обязательства или рабочей задачи — это НЕ доброе дело, НЕ включай их в good_deeds. Не морализируй и не выдумывай.
