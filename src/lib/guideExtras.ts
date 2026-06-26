@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Дневник стал календарём", d: "Вместо длинной ленты — календарь по месяцам и неделям: дни с записями подсвечены, выбираешь день и видишь только его записи. Так удобнее находить нужную дату.", tag: "new" },
       { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
       { t: "Визуальная память", d: "Фото и документы (чек, гарантия, важный момент) → AI понимает смысл и сохраняет в архив с категориями. Можно прислать фото боту или загрузить на сайте и добавить заметку голосом или текстом.", tag: "new" },
       { t: "Книга жизни → «Моя жизнь, [год]»", d: "Вкладка превратилась в настоящую книгу-летопись: статистика года, оглавление, AI-главы, режим «Вся жизнь» (автобиография), ридер и экспорт в PDF.", tag: "new" },
@@ -144,6 +145,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Diary is now a calendar", d: "Instead of an endless feed — a month/week calendar: days with entries are highlighted, pick a day to see just its entries. Easier to find a specific date.", tag: "new" },
       { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
       { t: "Visual Memory", d: "Photos and documents (a receipt, warranty, a meaningful moment) → AI understands the meaning and saves them to a categorized archive. Send a photo to the bot or upload on the site and add a note by voice or text.", tag: "new" },
       { t: "Book of Life → “My life, [year]”", d: "The tab became a real chronicle book: year stats, contents, AI chapters, a “Whole life” autobiography mode, a reader and PDF export.", tag: "new" },
