@@ -18,5 +18,14 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "guide", href: "/guide", icon: "ti-help" },
 ];
 
+// Смысловые блоки бокового меню (порядок по умолчанию).
+export const NAV_GROUPS: { id: string; keys: string[] }[] = [
+  { id: "main", keys: ["today", "diary", "wellness"] },
+  { id: "life", keys: ["plans", "trace", "family", "projects"] },
+  { id: "memory", keys: ["lifebook", "memory", "people", "places"] },
+  { id: "ai", keys: ["analytics", "biographer", "lab"] },
+  { id: "more", keys: ["share", "guide", "profile"] },
+];
+
 // Главные разделы для нижнего таб-бара на мобильном.
 export const MOBILE_PRIMARY = ["today", "diary", "wellness", "biographer"];
