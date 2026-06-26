@@ -7,6 +7,7 @@ import LifeBalance from "./LifeBalance";
 import Hint from "./Hint";
 import DictationHints from "./DictationHints";
 import PromiseList from "./PromiseList";
+import HomeEditor from "./HomeEditor";
 
 // Какие опциональные блоки показывать при каждом «акценте главной» (undefined = показать все).
 const PRESET_VIS: Record<string, string[] | undefined> = {
@@ -16,6 +17,9 @@ const PRESET_VIS: Record<string, string[] | undefined> = {
   balance: ["habit", "context", "metrics", "changes", "gratitude", "trace"],
   minimal: ["habit", "focus", "gratitude"],
 };
+
+const DEFAULT_BLOCKS = ["habit", "trace", "promises", "focus", "context", "gratitude"];
+const GEAR_LABEL: Record<string, string> = { ru: "Настроить", en: "Customize", uk: "Налаштувати", fr: "Personnaliser" };
 
 const DAYPART_LINE: Record<string, { morning: string; day: string; evening: string; night: string }> = {
   ru: { morning: "Доброе начало. Сделай день сильным — для себя и для других.", day: "Держи фокус и не забывай о близких.", evening: "Заверши день: сохрани события, заметь добро, поблагодари.", night: "Поздний час. Если есть что сохранить за день — я рядом." },
@@ -113,11 +117,24 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
   const doy = data.dayOfYear || 0;
   const heroLine = heroPool[doy % heroPool.length];
   const quote = quotePool[doy % quotePool.length];
-  const preset = data.preset || "mindful";
   const daypart = data.daypart || "day";
-  const allowedBlocks = preset === "custom" ? (data.blocks && data.blocks.length ? data.blocks : undefined) : PRESET_VIS[preset];
+  const [curPreset, setCurPreset] = useState<string>(data.preset || "mindful");
+  const [curBlocks, setCurBlocks] = useState<string[]>(data.blocks && data.blocks.length ? data.blocks : DEFAULT_BLOCKS);
+  const [editOpen, setEditOpen] = useState(false);
+  const allowedBlocks = curPreset === "custom" ? (curBlocks.length ? curBlocks : undefined) : PRESET_VIS[curPreset];
   const vis = (k: string) => !allowedBlocks || allowedBlocks.includes(k);
   const dpLine = (DAYPART_LINE[locale] || DAYPART_LINE.ru)[daypart as "morning" | "day" | "evening" | "night"];
+
+  async function persistHome(p: string, bl: string[]) {
+    try { await fetch("/api/home-preset", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(p === "custom" ? { preset: p, blocks: bl } : { preset: p }) }); } catch {}
+  }
+  function choosePreset(p: string) { setCurPreset(p); persistHome(p, curBlocks); }
+  function toggleBlock(k: string) {
+    const next = curBlocks.includes(k) ? curBlocks.filter((x) => x !== k) : [...curBlocks, k];
+    setCurBlocks(next);
+    setCurPreset("custom");
+    persistHome("custom", next);
+  }
 
   const arrow = (d: string) => (d === "up" ? "ti-arrow-up-right" : d === "down" ? "ti-arrow-down-right" : "ti-arrow-right");
   const dirCol = (d: string) => (d === "up" ? "var(--positive)" : d === "down" ? "#ef4444" : "var(--text-3)");
@@ -140,11 +157,20 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
         <div style={{ fontSize: 13, color: "var(--text-2)" }}>{data.dateLine}</div>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 18, background: "var(--surface-2)", borderRadius: 12, padding: 4, width: "fit-content" }}>
-        {s.tabs.map((label: string, i: number) => (
-          <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 18 }}>
+        <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", borderRadius: 12, padding: 4 }}>
+          {s.tabs.map((label: string, i: number) => (
+            <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
+          ))}
+        </div>
+        {tab === 0 && (
+          <button onClick={() => setEditOpen(true)} title={GEAR_LABEL[locale] || GEAR_LABEL.ru} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
+            <i className="ti ti-adjustments" style={{ fontSize: 16 }} /><span>{GEAR_LABEL[locale] || GEAR_LABEL.ru}</span>
+          </button>
+        )}
       </div>
+
+      {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
 
       {tab === 0 && (
         <div className="fade-up">
