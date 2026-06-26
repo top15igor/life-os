@@ -126,9 +126,9 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
               const isCol = collapsed.includes(g.id);
               return (
                 <div key={g.id} style={{ marginBottom: 4 }}>
-                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "7px 6px 4px", color: "var(--text-3)" }}>
-                    <span style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>{gl[g.id] || g.id}</span>
-                    <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 13, marginLeft: "auto" }} />
+                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 6px 4px", color: "#41495a" }}>
+                    <span style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
+                    <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 14, marginLeft: "auto", color: "var(--text-3)" }} />
                   </button>
                   {!isCol && keys.map((k) => NavLink(k))}
                 </div>
@@ -145,7 +145,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         )}
 
         {!editing && ready && (
-          <button onClick={() => setEditing(true)} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "7px 10px", background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 12.5, borderRadius: 8 }}>
+          <button onClick={() => setEditing(true)} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "7px 10px", background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", fontSize: 12.5, borderRadius: 8 }}>
             <i className="ti ti-adjustments-horizontal" style={{ fontSize: 16 }} />{el.customize}
           </button>
         )}
