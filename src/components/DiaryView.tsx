@@ -175,7 +175,7 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
       </div>
 
       {/* КАЛЕНДАРЬ */}
-      <div className="card" style={{ marginBottom: 16, padding: "12px 14px" }}>
+      <div className="card" style={{ marginBottom: 16, padding: "12px 14px", maxWidth: 460 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           <button aria-label="prev" onClick={() => { setCursor(calMode === "week" ? addDays(cursor, -7) : new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1, 12)); setSelectedDay(null); }} style={navBtn}><i className="ti ti-chevron-left" style={{ fontSize: 18 }} /></button>
           <div style={{ flex: 1, textAlign: "center", fontSize: 14.5, fontWeight: 600, textTransform: calMode === "month" ? "capitalize" : "none", minWidth: 120 }}>{calTitle}</div>
@@ -198,11 +198,11 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
             const isSel = iso === selectedDay;
             return (
               <button key={i} onClick={() => { if (!inMonth) return; setSelectedDay(isSel ? null : iso); }} disabled={!inMonth}
-                style={{ aspectRatio: calMode === "week" ? "1 / 1.25" : "1", borderRadius: 10, cursor: inMonth ? "pointer" : "default", border: isToday && !isSel ? "1.5px solid var(--accent)" : "1.5px solid transparent", background: isSel ? "var(--accent)" : cnt ? "var(--accent-bg)" : "transparent", color: isSel ? "#fff" : inMonth ? "var(--text)" : "var(--text-3)", opacity: inMonth ? 1 : 0.35, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: cnt ? 600 : 400 }}>{day.getDate()}</span>
+                style={{ height: calMode === "week" ? 50 : 38, borderRadius: 8, cursor: inMonth ? "pointer" : "default", border: isToday && !isSel ? "1.5px solid var(--accent)" : "1.5px solid transparent", background: isSel ? "var(--accent)" : cnt ? "var(--accent-bg)" : "transparent", color: isSel ? "#fff" : inMonth ? "var(--text)" : "var(--text-3)", opacity: inMonth ? 1 : 0.35, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, padding: 0 }}>
+                <span style={{ fontSize: 12.5, fontWeight: cnt ? 600 : 400, lineHeight: 1 }}>{day.getDate()}</span>
                 {cnt > 0 && (calMode === "week"
                   ? <span style={{ fontSize: 10, fontWeight: 600, color: isSel ? "#fff" : "var(--accent)" }}>{cnt}</span>
-                  : <span style={{ width: 5, height: 5, borderRadius: "50%", background: isSel ? "#fff" : "var(--accent)" }} />)}
+                  : <span style={{ width: 4, height: 4, borderRadius: "50%", background: isSel ? "#fff" : "var(--accent)" }} />)}
               </button>
             );
           })}
