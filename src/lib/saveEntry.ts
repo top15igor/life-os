@@ -65,6 +65,13 @@ export async function attachDerived(owner: string, id: string, a: Analysis) {
       .map((p: any) => ({ entry_id: id, user_id: owner, text: p.text, person: p.person ?? null, status: "active" }));
     if (rows.length) await db.from("promises").insert(rows);
   }
+  if (a.dreams?.length) {
+    const rows = a.dreams
+      .map((d: any) => (typeof d === "string" ? { text: d } : d))
+      .filter((d: any) => d?.text)
+      .map((d: any) => ({ entry_id: id, user_id: owner, text: d.text, sphere: d.sphere ?? "other", emoji: d.emoji ?? null, status: "dream" }));
+    if (rows.length) await db.from("dreams").insert(rows);
+  }
 }
 
 // Удалить все производные данные записи (для пере-разбора при правке или для удаления записи).

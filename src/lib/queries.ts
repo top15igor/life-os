@@ -195,6 +195,15 @@ export async function getTraceWeek(userId: string): Promise<{ deeds: number; gra
   return { deeds, gratitude, promisesDone, peopleHelped };
 }
 
+export async function getDreams(userId: string): Promise<{ id: string; sphere: string; text: string; emoji?: string; image_url?: string; status: string; created_at: string }[]> {
+  try {
+    const { data } = await supabaseAdmin().from("dreams").select("id, sphere, text, emoji, image_url, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getEntryCount(userId: string): Promise<number> {
   const { count } = await supabaseAdmin().from("entries").select("*", { count: "exact", head: true }).eq("user_id", userId);
   return count || 0;

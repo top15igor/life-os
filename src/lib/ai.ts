@@ -15,6 +15,9 @@ export const CATEGORY_SLUGS = [
 // Типы добрых дел (НЕ включают долги/обязательства — это не добро).
 export const DEED_KINDS = ["help", "support", "care", "gift", "knowledge", "volunteer", "family", "community", "other"];
 
+// Сферы мечты для «Карты желаний».
+export const DREAM_SPHERES = ["home", "transport", "body", "travel", "family", "business", "money", "growth", "other"];
+
 export type Analysis = {
   summary: string;
   focus?: string | null;
@@ -34,6 +37,7 @@ export type Analysis = {
   gratitude: string[];
   good_deeds: { text: string; kind?: string; person?: string }[];
   promises: { text: string; person?: string }[];
+  dreams: { text: string; sphere?: string; emoji?: string }[];
 };
 
 const TOOL: Anthropic.Tool = {
@@ -83,6 +87,19 @@ const TOOL: Anthropic.Tool = {
           required: ["text"],
         },
       },
+      dreams: {
+        type: "array",
+        description: "Мечты и желания на будущее («мечтаю…», «хочу когда-нибудь…», «когда-нибудь хочу…»). НЕ задачи на сегодня и НЕ рабочие цели. Для каждой укажи sphere и один подходящий emoji.",
+        items: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Мечта коротко." },
+            sphere: { type: "string", enum: DREAM_SPHERES, description: "home/transport/body/travel/family/business/money/growth/other." },
+            emoji: { type: "string", description: "Один подходящий эмодзи." },
+          },
+          required: ["text"],
+        },
+      },
     },
     required: ["summary", "categories", "tags", "people", "places", "projects", "tasks", "insights", "gratitude"],
   },
@@ -102,6 +119,7 @@ function prompt(text: string): string {
 - insights: мысли-осознания. gratitude: за что благодарен.
 - good_deeds: ТОЛЬКО настоящая помощь/забота/поддержка/подарок/знания другим. Для каждого укажи kind и person (если ясно). ВАЖНО: возврат долга, оплата, выполнение обязательства или рабочей задачи — это НЕ доброе дело, НЕ включай их в good_deeds. Не морализируй и не выдумывай.
 - promises: явные обещания людям (позвонить, помочь, отправить, вернуть). Указывай person, если назван. НЕ ДУБЛИРУЙ: если поступок уже совершён (это доброе дело) — не добавляй его ещё и в promises.
+- dreams: мечты/желания на будущее («мечтаю…», «хочу когда-нибудь…», «когда-нибудь…»). Для каждой укажи sphere (из списка) и emoji. НЕ путай с задачами на сегодня и рабочими целями.
 - sleep_hours/weight: только если названы числом.
 
 Запись:

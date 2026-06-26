@@ -4,7 +4,8 @@ import PageHead from "@/components/PageHead";
 import SubTabs from "@/components/SubTabs";
 import GoalsManager from "@/components/GoalsManager";
 import TasksList from "@/components/TasksList";
-import { getGoals, getAllTasks, getInsights } from "@/lib/queries";
+import DreamsBoard from "@/components/DreamsBoard";
+import { getGoals, getAllTasks, getInsights, getDreams } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -13,15 +14,15 @@ import { requireUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 const STR = {
-  ru: { from: "из записи от", empty: "Инсайтов пока нет — они появятся из твоих записей." },
-  en: { from: "from entry on", empty: "No insights yet — they'll appear from your entries." },
-  uk: { from: "із запису від", empty: "Інсайтів поки немає — з'являться з твоїх записів." },
-  fr: { from: "de l'entrée du", empty: "Pas encore d'insights — ils apparaîtront depuis tes entrées." },
+  ru: { from: "из записи от", empty: "Инсайтов пока нет — они появятся из твоих записей.", dreams: "Мечты" },
+  en: { from: "from entry on", empty: "No insights yet — they'll appear from your entries.", dreams: "Dreams" },
+  uk: { from: "із запису від", empty: "Інсайтів поки немає — з'являться з твоїх записів.", dreams: "Мрії" },
+  fr: { from: "de l'entrée du", empty: "Pas encore d'insights — ils apparaîtront depuis tes entrées.", dreams: "Rêves" },
 };
 
 export default async function PlansPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams;
-  const tab = ["goals", "tasks", "ideas"].includes(sp.tab || "") ? sp.tab! : "goals";
+  const tab = ["goals", "tasks", "ideas", "dreams"].includes(sp.tab || "") ? sp.tab! : "goals";
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
@@ -31,10 +32,12 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const goals = tab === "goals" ? await getGoals(user.id) : [];
   const tasks = tab === "tasks" ? await getAllTasks(user.id) : [];
   const insights = tab === "ideas" ? await getInsights(user.id) : [];
+  const dreams = tab === "dreams" ? await getDreams(user.id) : [];
 
   const tabs = [
     { key: "goals", label: t.nav.goals },
     { key: "tasks", label: t.nav.tasks },
+    { key: "dreams", label: s.dreams },
     { key: "ideas", label: t.nav.insights },
   ];
 
@@ -47,6 +50,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
 
         {tab === "goals" && <GoalsManager initial={goals as any} locale={locale} />}
         {tab === "tasks" && <TasksList tasks={tasks as any} locale={locale} />}
+        {tab === "dreams" && <DreamsBoard initial={dreams as any} locale={locale} />}
         {tab === "ideas" && (
           insights.length === 0 ? (
             <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
