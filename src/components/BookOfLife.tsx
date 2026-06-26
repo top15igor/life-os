@@ -47,7 +47,8 @@ const STR: Record<string, any> = {
     ],
     addMore: "Добавь записей, чтобы наполнить главу", empty: "Книга начнётся, когда появятся записи за этот период.",
     monthsOpen: "Открыть месяц",
-    full: "Получить полную книгу", fullSub: "Цифровая версия, печать в твёрдой обложке или подарочный комплект для семьи.",
+    full: "Заказать настоящую книгу", fullSub: "PDF — это файл в телефоне. Настоящая книга — это вещь: её ставят на полку, перечитывают и дарят. Реликвия, которая переживёт телефоны и аккаунты.",
+    whyTitle: "Зачем книга, если PDF бесплатный?", whyReasons: ["PDF не подаришь — а книгу в коробке дарят на день рождения, юбилей, рождение ребёнка.", "Настоящая книга стоит на полке, её берут в руки и перечитывают всей семьёй.", "Бумага — это наследие: не зависит от телефона, аккаунта и того, что сервис когда-нибудь закроется.", "Печатать сотню страниц дома — морока. Мы сделаем красиво и качественно за тебя."],
     order: "Оставить заявку", ordered: "Заявка отправлена ✓ — мы свяжемся с тобой.", ordering: "Отправляю…",
     includes: "Что входит", orderNote: "Деньги сейчас НЕ списываются. Это предварительная заявка — она придёт команде LIFE OS, мы свяжемся с тобой, уточним детали (адрес, оформление) и поможем оплатить и напечатать.",
     soon: "печать скоро", tiersNote: "Цены — предварительные, на этапе тестирования.",
@@ -97,7 +98,8 @@ const STR: Record<string, any> = {
     ],
     addMore: "Add entries to fill this chapter", empty: "The book begins once you have entries for this period.",
     monthsOpen: "Open month",
-    full: "Get the full book", fullSub: "Digital, hardcover print, or a gift set for the family.",
+    full: "Order a real book", fullSub: "A PDF is a file on your phone. A real book is an object: it sits on a shelf, gets reread and given as a gift. An heirloom that outlives phones and accounts.",
+    whyTitle: "Why a book if the PDF is free?", whyReasons: ["You can't gift a PDF — but a book in a box is given for birthdays, anniversaries, a new baby.", "A real book sits on the shelf, held in hands and reread by the whole family.", "Paper is a legacy: it doesn't depend on a phone, an account, or whether a service shuts down one day.", "Printing a hundred pages at home is a hassle. We make it beautifully and properly for you."],
     order: "Request it", ordered: "Request sent ✓ — we'll reach out to you.", ordering: "Sending…",
     includes: "What's included", orderNote: "You are NOT charged now. This is a preliminary request — it reaches the LIFE OS team, we'll contact you, confirm the details (address, finishing) and help you pay and print.",
     soon: "print coming soon", tiersNote: "Prices are preliminary, in testing.",
@@ -730,7 +732,19 @@ function FullBook({ s, locale, year, bookType, recipient }: any) {
   return (
     <div style={{ marginTop: 26, borderRadius: 18, padding: "22px", background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div style={{ fontSize: 17, fontWeight: 600 }}>{s.full}</div>
-      <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 5, marginBottom: 16, lineHeight: 1.5 }}>{s.fullSub}</div>
+      <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 5, marginBottom: 14, lineHeight: 1.55 }}>{s.fullSub}</div>
+
+      {/* Зачем книга, если PDF бесплатный */}
+      {s.whyReasons && (
+        <div style={{ background: "var(--surface-2)", borderRadius: 13, padding: "13px 15px", marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 9, display: "flex", gap: 7, alignItems: "center" }}><i className="ti ti-help-circle" style={{ fontSize: 16, color: "var(--accent)" }} />{s.whyTitle}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {s.whyReasons.map((r: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5, color: "var(--text-2)" }}><i className="ti ti-point-filled" style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0, marginTop: 3 }} />{r}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 14 }}>
         {TIERS.map((t) => (
