@@ -79,11 +79,19 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
   const today = new Date().toISOString().slice(0, 10);
   const base: LifeOverview = { happiness: [], energyGivers: [], energyDrainers: [], chains: [], patterns: [], entryCount: count };
 
-  // Кэш на день: если за сегодня уже считали при том же числе записей — отдаём мгновенно.
+  // Умный кэш (вместо «пересчитывать каждый день / на каждую запись»): полный
+  // проход sonnet над всем архивом — самая дорогая операция, поэтому пересобираем
+  // только когда данных реально прибавилось или кэш устарел.
   if (!fresh) {
     try {
       const { data: cached } = await db.from("life_overview").select("data, entry_count, day").eq("user_id", userId).maybeSingle();
-      if (cached?.data && cached.entry_count === count && cached.day === today && (cached.data as any)._v === OVERVIEW_VERSION) return cached.data as LifeOverview;
+      if (cached?.data && (cached.data as any)._v === OVERVIEW_VERSION) {
+        const added = count - (cached.entry_count ?? 0);
+        const ageDays = Math.max(0, Math.floor((Date.parse(today) - Date.parse(cached.day || today)) / 86400000));
+        // Свежо, если: нет новых записей и кэшу < 14 дней; ИЛИ записей прибавилось мало (<5) и кэшу < 3 дней.
+        const isFresh = (added <= 0 && ageDays < 14) || (added < 5 && ageDays < 3);
+        if (isFresh) return cached.data as LifeOverview;
+      }
     } catch {
       // таблицы кэша может не быть — просто считаем вживую
     }
@@ -104,7 +112,8 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
     return empty;
   }
 
-  const context = list.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 600)}`).join("\n");
+  // Резюме (короче raw_text) достаточно для наблюдений о паттернах и темах — экономит входные токены.
+  const context = list.map((e) => `${e.entry_date}: ${(e.summary || e.raw_text || "").slice(0, 400)}`).join("\n");
 
   const prompt = `Ты — Life Intelligence в дневнике LIFE OS. Перед тобой ВСЕ записи пользователя. Найди интересные, тёплые наблюдения о его жизни — то, что помогает человеку лучше понять себя.
 

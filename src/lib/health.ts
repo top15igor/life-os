@@ -45,10 +45,17 @@ export async function getHealthFocus(userId: string, fresh = false): Promise<Hea
 
   if (count === 0) return { goals: [], note: "Пока нет записей о здоровье — расскажи боту о самочувствии, и здесь появится главное.", entryCount: 0 };
 
+  // Умный кэш: пересобираем дорогой sonnet-проход только когда записей о здоровье
+  // реально прибавилось или кэш устарел — а не на каждый новый день/каждую запись.
   if (!fresh) {
     try {
       const { data: cached } = await db.from("health_focus").select("data, entry_count, day").eq("user_id", userId).maybeSingle();
-      if (cached?.data && cached.entry_count === count && cached.day === today && (cached.data as any)._v === HEALTH_VERSION) return cached.data as HealthFocus;
+      if (cached?.data && (cached.data as any)._v === HEALTH_VERSION) {
+        const added = count - (cached.entry_count ?? 0);
+        const ageDays = Math.max(0, Math.floor((Date.parse(today) - Date.parse(cached.day || today)) / 86400000));
+        const isFresh = (added <= 0 && ageDays < 14) || (added < 3 && ageDays < 3);
+        if (isFresh) return cached.data as HealthFocus;
+      }
     } catch {
       // нет таблицы кэша — считаем вживую
     }
