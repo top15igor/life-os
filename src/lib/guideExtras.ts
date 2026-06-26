@@ -42,6 +42,7 @@ const E: Record<Locale, Extras> = {
     changelog: [
       { t: "Книга жизни → «Моя жизнь, [год]»", d: "Вкладка превратилась в настоящую книгу-летопись: статистика года, оглавление, AI-главы, режим «Вся жизнь» (автобиография), ридер и экспорт в PDF.", tag: "new" },
       { t: "Честная наполненность книги", d: "Книга текущего года больше не показывает «почти готова» в середине года: видно «наполнено» (собранный материал) и «год прожит на X%» — книга дополняется вместе с тобой.", tag: "improved" },
+      { t: "Карта жизни без дублей", d: "В «Что заметил AI» тег и одноимённая категория (#здоровье и Здоровье) теперь объединяются в одну тему — без повторов.", tag: "improved" },
       { t: "Виджет книги на главной", d: "Сразу видно, как наполняется твоя книга за год: готовность в % и сколько записей уже стали её страницами.", tag: "new" },
       { t: "Мечты / Карта желаний", d: "Доска желаний по сферам жизни с фото или эмодзи и статусами Мечтаю → В процессе → Сбылось ✨. AI сам достаёт мечты из записей.", tag: "new" },
       { t: "«Что заметил AI» — свежие рекорды", d: "Аналитика показывает твои актуальные максимумы (вес, дистанции, отжимания) с датами, а не зависает на старых числах.", tag: "improved" },
@@ -135,6 +136,7 @@ const E: Record<Locale, Extras> = {
     changelog: [
       { t: "Book of Life → “My life, [year]”", d: "The tab became a real chronicle book: year stats, contents, AI chapters, a “Whole life” autobiography mode, a reader and PDF export.", tag: "new" },
       { t: "Honest book fill", d: "The current-year book no longer claims it's “almost ready” mid-year: it shows how much is “filled” (material gathered) and “the year is X% lived” — the book keeps filling with you.", tag: "improved" },
+      { t: "Life map without duplicates", d: "In “Life Intelligence” a tag and the matching category (#health and Health) now merge into one theme — no more repeats.", tag: "improved" },
       { t: "Book widget on the home screen", d: "See your book filling up in real time: readiness % and how many entries already became its pages.", tag: "new" },
       { t: "Dreams / Wish board", d: "A board of dreams by life area with photos or emoji and statuses Dreaming → In progress → Came true ✨. AI pulls dreams from your entries.", tag: "new" },
       { t: "“Life Intelligence” — fresh records", d: "Analytics now shows your current maximums (weight, distances, push-ups) with dates instead of getting stuck on old numbers.", tag: "improved" },

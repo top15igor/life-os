@@ -33,15 +33,25 @@ export default async function AnalyticsPage() {
   const entries = await getEntries(user.id, 200);
 
   // Карта жизни: главные темы из категорий, проектов и тегов.
+  // Тег, совпадающий с категорией (#здоровье ≡ Здоровье), вливается в неё — без дублей.
+  const norm = (x: string) => x.toLowerCase().replace(/^#/, "").replace(/ё/g, "е").trim();
+  const catByName: Record<string, string> = {};
+  for (const [slug, name] of Object.entries(t.cats)) { catByName[norm(slug)] = slug; catByName[norm(name)] = slug; }
+
   const items: Record<string, MapItem> = {};
   const bump = (key: string, item: MapItem) => {
     if (items[key]) items[key].count += item.count;
     else items[key] = item;
   };
+  const bumpCat = (slug: string) => bump("c:" + slug, { label: t.cats[slug] || slug, count: 1, href: `/diary?category=${slug}`, color: CAT_COLOR[slug] || "var(--accent)" });
   for (const e of entries as Entry[]) {
-    for (const c of cats(e)) bump("c:" + c.slug, { label: t.cats[c.slug] || c.slug, count: 1, href: `/diary?category=${c.slug}`, color: CAT_COLOR[c.slug] || "var(--accent)" });
+    for (const c of cats(e)) bumpCat(c.slug);
     for (const p of projectsOf(e)) bump("p:" + p, { label: p, count: 1, href: "/projects", color: "#3b82f6" });
-    for (const tg of tagList(e)) bump("t:" + tg, { label: "#" + tg, count: 1, href: `/diary?tag=${encodeURIComponent(tg)}`, color: "var(--accent)" });
+    for (const tg of tagList(e)) {
+      const catSlug = catByName[norm(tg)];
+      if (catSlug) bumpCat(catSlug); // тег = категория → объединяем
+      else bump("t:" + tg, { label: "#" + tg, count: 1, href: `/diary?tag=${encodeURIComponent(tg)}`, color: "var(--accent)" });
+    }
   }
   const mapItems = Object.values(items).sort((a, b) => b.count - a.count).slice(0, 16);
   const maxCount = mapItems[0]?.count || 1;
