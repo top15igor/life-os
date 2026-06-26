@@ -24,7 +24,6 @@ export default function PageHead({
             onClick={() => setOpen((o) => !o)}
             onMouseEnter={() => setOpen(true)}
             onMouseLeave={() => setOpen(false)}
-            title={hint}
             aria-label="info"
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", display: "inline-flex", padding: 2, lineHeight: 1 }}
           >
