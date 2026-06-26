@@ -1,8 +1,8 @@
 -- ============================================================
---  LIFE OS — кэш блока «Здоровье сейчас» на вкладке Самочувствие.
---  Чтобы главная проблема + цели считались AI раз в день, а не на каждый заход.
---  Запусти в Supabase: SQL Editor → New query → вставь → Run.
---  (Код работает и без таблицы — просто будет считать вживую каждый раз.)
+--  LIFE OS - cache for the "Health now" block on the Wellness tab.
+--  So the main issue + goals are computed by AI once a day, not every visit.
+--  Run in Supabase: SQL Editor -> New query -> paste -> Run.
+--  (Works without the table too - it just recomputes live each time.)
 -- ============================================================
 
 create table if not exists health_focus (
