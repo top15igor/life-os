@@ -49,16 +49,6 @@ export default async function ProfilePage() {
             </div>
           </div>
 
-          {/* Приватность — главная плашка */}
-          <div className="card" style={{ display: "flex", gap: 13, marginBottom: 16, background: "var(--surface-2)", border: "none" }}>
-            <i className="ti ti-lock" style={{ fontSize: 24, color: "var(--positive)", flexShrink: 0, marginTop: 1 }} />
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{s.privateT}</div>
-              <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55 }}>{s.privateS}</div>
-              <Link href="/privacy" style={{ fontSize: 12.5, color: "var(--accent)", display: "inline-block", marginTop: 8 }}>{s.privacy} →</Link>
-            </div>
-          </div>
-
           {/* Личная ссылка */}
           <div className="card" style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{s.yourLink}</div>
