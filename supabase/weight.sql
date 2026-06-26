@@ -1,6 +1,6 @@
 -- ============================================================
---  LIFE OS — трекер веса: замеры по датам + цель.
---  Запусти в Supabase: SQL Editor → New query → вставь → Run.
+--  LIFE OS - weight tracker: measurements by date + goal.
+--  Run in Supabase: SQL Editor -> New query -> paste -> Run.
 -- ============================================================
 
 create table if not exists weight_log (
