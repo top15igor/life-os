@@ -14,7 +14,7 @@ const STR: Record<string, any> = {
   fr: { title: "Page publique", sub: "Une vitrine de tes réussites via un lien — comme un profil Strava. Seuls les chiffres et ce que tu actives sortent. Aucun contenu du journal ici.", enable: "Activer la page publique", slugLabel: "Adresse de la page", bioLabel: "À propos (optionnel)", bioPh: "Ex. : « Vivre en pleine conscience, courir le matin »", showLabel: "Quoi afficher", b_voice: "Vocaux", b_deeds: "Bonnes actions", b_dreams: "Rêves réalisés", b_streak: "Série", save: "Enregistrer", saving: "Enregistrement…", saved: "Enregistré ✓", taken: "Cette adresse est prise, choisis-en une autre", badSlug: "Adresse : 3–30 caractères, latin, chiffres, tiret", yourLink: "Ton lien", copy: "Copier", copied: "Copié ✓", open: "Ouvrir", offHint: "Page désactivée — personne ne la voit." },
 };
 
-const BLOCKS = ["voice", "deeds", "dreams", "streak"] as const;
+const BLOCKS = ["deeds", "dreams", "streak"] as const;
 
 export default function PublicProfileEditor({ initial, host, suggestedSlug, locale }: { initial: Config; host: string; suggestedSlug: string; locale: string }) {
   const L = STR[locale] || STR.ru;

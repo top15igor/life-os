@@ -5,9 +5,9 @@ import { getLocale } from "@/lib/locale";
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { lblEntries: "Записи", lblDays: "Дни с записями", lblVoice: "Голосовые", lblDeeds: "Добрые дела", lblDreams: "Мечты сбылись", lblStreak: "Дней подряд", since: "В LIFE OS с", tagline: "Записываю свою жизнь во времени", cta: "Завести свой дневник", ctaSub: "Бесплатно. Наговариваешь день голосом — AI всё раскладывает.", notFound: "Такой страницы нет или она скрыта.", months: ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"] },
+  ru: { lblEntries: "Записи", lblDays: "Дней в дневнике", lblVoice: "Голосовые", lblDeeds: "Добрые дела", lblDreams: "Мечты сбылись", lblStreak: "Дней подряд", since: "В LIFE OS с", tagline: "Записываю свою жизнь во времени", cta: "Завести свой дневник", ctaSub: "Бесплатно. Наговариваешь день голосом — AI всё раскладывает.", notFound: "Такой страницы нет или она скрыта.", months: ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"] },
   en: { lblEntries: "Entries", lblDays: "Days journaled", lblVoice: "Voice notes", lblDeeds: "Good deeds", lblDreams: "Dreams come true", lblStreak: "Day streak", since: "On LIFE OS since", tagline: "Capturing my life over time", cta: "Start your own diary", ctaSub: "Free. Just talk through your day — AI sorts it all out.", notFound: "No such page, or it's hidden.", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] },
-  uk: { lblEntries: "Записи", lblDays: "Днів із записами", lblVoice: "Голосові", lblDeeds: "Добрі справи", lblDreams: "Мрії збулися", lblStreak: "Днів поспіль", since: "У LIFE OS з", tagline: "Записую своє життя у часі", cta: "Завести свій щоденник", ctaSub: "Безкоштовно. Наговорюєш день голосом — AI усе розкладає.", notFound: "Такої сторінки немає або вона прихована.", months: ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"] },
+  uk: { lblEntries: "Записи", lblDays: "Днів у щоденнику", lblVoice: "Голосові", lblDeeds: "Добрі справи", lblDreams: "Мрії збулися", lblStreak: "Днів поспіль", since: "У LIFE OS з", tagline: "Записую своє життя у часі", cta: "Завести свій щоденник", ctaSub: "Безкоштовно. Наговорюєш день голосом — AI усе розкладає.", notFound: "Такої сторінки немає або вона прихована.", months: ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"] },
   fr: { lblEntries: "Entrées", lblDays: "Jours journalisés", lblVoice: "Vocaux", lblDeeds: "Bonnes actions", lblDreams: "Rêves réalisés", lblStreak: "Jours d'affilée", since: "Sur LIFE OS depuis", tagline: "Je capture ma vie dans le temps", cta: "Créer ton journal", ctaSub: "Gratuit. Raconte ta journée à la voix — l'IA range tout.", notFound: "Cette page n'existe pas ou est masquée.", months: ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."] },
 };
 
@@ -39,9 +39,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const sinceStr = st.memberSince ? (() => { const [y, m] = st.memberSince!.split("-"); return `${s.since} ${s.months[Number(m) - 1]} ${y}`; })() : "";
   const initial = (prof.name || "?").trim().charAt(0).toUpperCase() || "?";
 
-  // Тайлы: записи и дни всегда; остальное — по выбранным блокам и если > 0.
+  // Тайлы: записи и дни всегда (постоянство); ниже — смысловые жизненные блоки.
   const extra: { n: number; label: string }[] = [];
-  if (blocks.has("voice") && st.voice > 0) extra.push({ n: st.voice, label: s.lblVoice });
   if (blocks.has("deeds") && st.deeds > 0) extra.push({ n: st.deeds, label: s.lblDeeds });
   if (blocks.has("dreams") && st.dreamsDone > 0) extra.push({ n: st.dreamsDone, label: s.lblDreams });
   if (blocks.has("streak") && st.streak > 1) extra.push({ n: st.streak, label: s.lblStreak });

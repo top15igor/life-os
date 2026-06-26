@@ -6,7 +6,7 @@ import { DEFAULT_BLOCKS } from "@/lib/public";
 export const runtime = "nodejs";
 
 const SLUG_RE = /^[a-z0-9-]{3,30}$/;
-const ALLOWED = new Set(["voice", "deeds", "dreams", "streak"]);
+const ALLOWED = new Set(["deeds", "dreams", "streak"]);
 
 // Сохранить настройки публичной страницы. Slug уникален; страница выключена по умолчанию.
 export async function POST(req: NextRequest) {

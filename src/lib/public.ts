@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { getEntries, getGoodDeeds, getDreams, getStreak } from "./queries";
 
-export const DEFAULT_BLOCKS = ["voice", "deeds", "dreams", "streak"];
+export const DEFAULT_BLOCKS = ["deeds", "dreams", "streak"];
 export type PublicConfig = { slug: string; enabled: boolean; bio: string; blocks: string[] };
 export type PublicStats = { entries: number; days: number; voice: number; deeds: number; dreamsDone: number; streak: number; memberSince: string | null };
 
