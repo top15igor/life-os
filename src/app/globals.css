@@ -61,7 +61,7 @@ a { color: inherit; text-decoration: none; }
   }
   .mobilenav a, .mobilenav button {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    background: none; border: none; cursor: pointer; color: var(--text-2); font-weight: 500;
+    background: none; border: none; cursor: pointer; color: #4b5563; font-weight: 500;
     font-size: 10.5px; flex: 1; padding: 3px 2px; min-width: 0; text-decoration: none;
   }
   .mobilenav a span, .mobilenav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
