@@ -13,6 +13,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "analytics", href: "/analytics", icon: "ti-sparkles" },
   { key: "lab", href: "/lab", icon: "ti-flask-2" },
   { key: "biographer", href: "/biographer", icon: "ti-messages" },
+  { key: "share", href: "/share", icon: "ti-share-2" },
   { key: "profile", href: "/profile", icon: "ti-user" },
   { key: "guide", href: "/guide", icon: "ti-help" },
 ];
