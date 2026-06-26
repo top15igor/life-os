@@ -716,11 +716,13 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
 function FullBook({ s, locale, year, bookType, recipient }: any) {
   const [sel, setSel] = useState("gift");
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
+  const ru = locale === "ru" || locale === "uk";
+  const pick = (o: any) => (ru ? o.ru : o.en) || o.en || o.ru;
+  const cur = TIERS.find((t) => t.id === sel);
 
   async function order() {
     setState("sending");
-    const tier = TIERS.find((t) => t.id === sel);
-    const text = `Хочу книгу LIFE OS.\nТариф: ${tier?.name} (${tier?.price})\nТип: ${bookType}\nКому: ${recipient}\nПериод: ${year || "вся жизнь"}`;
+    const text = `Хочу книгу LIFE OS.\nТариф: ${cur?.name} (${cur?.price})\nТип: ${bookType}\nКому: ${recipient}\nПериод: ${year || "вся жизнь"}`;
     await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: "book_order", text }) }).catch(() => {});
     setState("done");
   }
@@ -729,16 +731,42 @@ function FullBook({ s, locale, year, bookType, recipient }: any) {
     <div style={{ marginTop: 26, borderRadius: 18, padding: "22px", background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div style={{ fontSize: 17, fontWeight: 600 }}>{s.full}</div>
       <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 5, marginBottom: 16, lineHeight: 1.5 }}>{s.fullSub}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 16 }}>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 14 }}>
         {TIERS.map((t) => (
           <button key={t.id} onClick={() => setSel(t.id)} style={{ textAlign: "left", border: sel === t.id ? "2px solid var(--accent)" : "1px solid var(--border)", borderRadius: 13, padding: "13px 14px", background: sel === t.id ? "var(--accent-bg)" : "var(--surface)", cursor: "pointer" }}>
             <i className={`ti ${t.icon}`} style={{ fontSize: 20, color: "var(--accent)" }} />
             <div style={{ fontSize: 14, fontWeight: 600, marginTop: 6 }}>{t.name}</div>
             <div style={{ fontSize: 13, color: "var(--accent-text)", fontWeight: 600, marginTop: 2 }}>{t.price}</div>
-            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>{(t.desc as any)[locale] || t.desc.en}</div>
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>{pick(t.desc)}</div>
           </button>
         ))}
       </div>
+
+      {/* Состав выбранного тарифа */}
+      {cur && (
+        <div style={{ background: "var(--surface-2)", borderRadius: 13, padding: "14px 16px", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            <span style={{ fontSize: 14.5, fontWeight: 600 }}>{cur.name}</span>
+            <span style={{ fontSize: 13, color: "var(--accent-text)", fontWeight: 600 }}>{cur.price}</span>
+            <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>· {pick(cur.tagline)}</span>
+          </div>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 8 }}>{s.includes}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {pick(cur.features).map((f: string, i: number) => (
+              <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13.5, lineHeight: 1.5 }}>
+                <i className="ti ti-check" style={{ fontSize: 16, color: "var(--positive)", flexShrink: 0, marginTop: 1 }} />{f}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Пояснение: куда идёт заявка и что оплаты сейчас нет */}
+      <div style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 14, background: "var(--accent-bg)", borderRadius: 11, padding: "11px 13px" }}>
+        <i className="ti ti-info-circle" style={{ fontSize: 16, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />{s.orderNote}
+      </div>
+
       {state === "done" ? (
         <div style={{ fontSize: 14, color: "var(--positive)", fontWeight: 500 }}>{s.ordered}</div>
       ) : (

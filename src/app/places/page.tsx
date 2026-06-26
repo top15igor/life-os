@@ -41,8 +41,10 @@ export default async function PlacesPage() {
   const inDreams = (name: string) => { const k = name.toLowerCase().slice(0, 5); return k.length >= 3 && dreamLower.some((t) => t.includes(k)); };
 
   // Контекст упоминания места: поездка vs мечта (по тексту записи).
-  const VISIT_RE = /(\bбыл|побыва|съезд|поехал|ездил|посети|вернул|прилет|отдыха|переехал|гостил|жил в|visited|went to|came back|trip to)/i;
-  const WISH_RE = /(мечт|хочу|хотел|объезд|когда-нибудь|планиру|поехать бы|съездить бы|dream|want to go|wish to)/i;
+  // ВАЖНО: в VISIT только однозначно «совершённые» формы. «съездить/поехать» — это намерение,
+  // их тут НЕ ловим (иначе мечта «мечтаю съездить» попадёт в «был»).
+  const VISIT_RE = /(\bбыл[аи]?\b|побыва|съездил|съездили|поехал|ездил|посети|вернул|прилет|отдыхал|переехал|гостил|\bжил\b|жил[аи]? в|летал в|visited|went to|came back|trip to|was in)/i;
+  const WISH_RE = /(мечт|хочу|хотел|объезд|когда-нибудь|планиру|поехать|съездить|побывать|dream|want to go|wish to|would love)/i;
 
   // Собираем места с накопленным текстом их записей.
   const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[]; text: string }>();
@@ -58,10 +60,10 @@ export default async function PlacesPage() {
     }
   }
   const allPlaces = [...map.values()];
-  // «Был» = есть маркер поездки ИЛИ нейтральное упоминание (без маркера мечты).
-  const visited = allPlaces.filter((p) => VISIT_RE.test(p.text) || !WISH_RE.test(p.text)).sort((a, b) => b.count - a.count);
-  // «Хочу» = маркер мечты и нет маркера поездки, и ещё не показано как мечта в карте желаний.
-  const wishPlaces = allPlaces.filter((p) => !VISIT_RE.test(p.text) && WISH_RE.test(p.text) && !inDreams(p.name)).sort((a, b) => b.count - a.count);
+  // «Был» = есть ЯВНЫЙ признак поездки и нет признака мечты (строго, чтобы не врать «бывал»).
+  const visited = allPlaces.filter((p) => VISIT_RE.test(p.text) && !WISH_RE.test(p.text)).sort((a, b) => b.count - a.count);
+  // «Хочу» = признак мечты и НЕ был, и ещё не показано как мечта в карте желаний.
+  const wishPlaces = allPlaces.filter((p) => WISH_RE.test(p.text) && !VISIT_RE.test(p.text) && !inDreams(p.name)).sort((a, b) => b.count - a.count);
   const nothing = visited.length === 0 && travelDreams.length === 0 && wishPlaces.length === 0;
   const visitedItems = visited.map((p) => ({
     id: metas[p.name]?.id,
