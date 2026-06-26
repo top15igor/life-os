@@ -3,6 +3,7 @@ import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
+import { createMemoryFromImage } from "@/lib/memory";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
@@ -87,6 +88,13 @@ const FIXED: Record<string, string> = {
   en: "✏️ Updated your previous entry:",
   uk: "✏️ Виправив попередній запис:",
   fr: "✏️ J'ai corrigé l'entrée précédente :",
+};
+
+const MEM_MSG: Record<string, { recognizing: string; saved: string; open: string; failed: string }> = {
+  ru: { recognizing: "📸 Распознаю фото…", saved: "Сохранил в Визуальную память:", open: "📂 Открыть память", failed: "Не получилось разобрать фото, попробуй ещё раз." },
+  en: { recognizing: "📸 Reading the photo…", saved: "Saved to Visual Memory:", open: "📂 Open memory", failed: "Couldn't read the photo, try again." },
+  uk: { recognizing: "📸 Розпізнаю фото…", saved: "Зберіг у Візуальну пам'ять:", open: "📂 Відкрити пам'ять", failed: "Не вдалося розібрати фото, спробуй ще раз." },
+  fr: { recognizing: "📸 Je lis la photo…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie." },
 };
 
 const MILE: Record<string, any> = {
@@ -276,6 +284,28 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // 📸 Фото/документ → «Визуальная память» (AI понимает смысл и извлекает данные)
+    if (msg.photo && Array.isArray(msg.photo) && msg.photo.length) {
+      const lang = pickLang(msg.from?.language_code);
+      const L = MEM_MSG[lang] || MEM_MSG.ru;
+      await sendMessage(chatId, L.recognizing);
+      try {
+        const ph = msg.photo[msg.photo.length - 1];
+        const fileUrl = await getFileUrl(ph.file_id);
+        const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
+        const { memory, vision } = await createMemoryFromImage(user.id, buf, "image/jpeg");
+        let body = `📸 ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
+        if (vision.summary) body += `\n${esc(vision.summary)}`;
+        if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 6).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
+        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/memory` }]] } } : undefined;
+        await sendMessage(chatId, body, extra);
+      } catch (e) {
+        console.error("photo", e);
+        await sendMessage(chatId, L.failed);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     let text: string | undefined = msg.text;
     const isVoice = Boolean(msg.voice || msg.audio);
 

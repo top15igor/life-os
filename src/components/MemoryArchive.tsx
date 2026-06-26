@@ -1,0 +1,140 @@
+"use client";
+
+import { useState, useRef } from "react";
+
+type Memory = { id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; mem_date: string | null; image_url: string | null; status: string; created_at: string };
+
+const CATS = [
+  { key: "moment", icon: "ti-photo-heart", c: "#993556", bg: "#FBEAF0" },
+  { key: "document", icon: "ti-file-text", c: "#185FA5", bg: "#E6F1FB" },
+  { key: "thing", icon: "ti-package", c: "#854F0B", bg: "#FAEEDA" },
+  { key: "person", icon: "ti-users", c: "#534AB7", bg: "#EEEDFE" },
+  { key: "place", icon: "ti-map-pin", c: "#0F6E56", bg: "#E1F5EE" },
+  { key: "project", icon: "ti-briefcase", c: "#185FA5", bg: "#E6F1FB" },
+  { key: "info", icon: "ti-info-circle", c: "#5F5E5A", bg: "#F1EFE8" },
+  { key: "other", icon: "ti-photo", c: "#5F5E5A", bg: "#F1EFE8" },
+];
+const catMeta = (k: string) => CATS.find((x) => x.key === k) || CATS[7];
+
+const STR: Record<string, any> = {
+  ru: { add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
+  en: { add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
+  uk: { add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
+  fr: { add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie simplement la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
+};
+
+function resizeImage(file: File, max = 1568): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > max || height > max) {
+        if (width > height) { height = Math.round((height * max) / width); width = max; }
+        else { width = Math.round((width * max) / height); height = max; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d")?.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((b) => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error("blob")); }, "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+    img.src = url;
+  });
+}
+
+export default function MemoryArchive({ initial, locale }: { initial: Memory[]; locale: string }) {
+  const s = STR[locale] || STR.ru;
+  const [items, setItems] = useState<Memory[]>(initial);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  async function onFile(f: File) {
+    setBusy(true);
+    try {
+      const blob = await resizeImage(f);
+      const fd = new FormData();
+      fd.append("image", blob, "photo.jpg");
+      const res = await fetch("/api/memory-upload", { method: "POST", body: fd });
+      const j = await res.json().catch(() => null);
+      if (res.ok && j?.ok && j.memory) setItems((p) => [j.memory, ...p]);
+    } catch {}
+    setBusy(false);
+  }
+  async function del(id: string) {
+    setItems((p) => p.filter((x) => x.id !== id));
+    try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "delete", id }) }); } catch {}
+  }
+
+  const dateStr = (iso: string | null) => {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleDateString(locale === "ru" ? "ru-RU" : locale, { day: "numeric", month: "long", year: "numeric" }); } catch { return ""; }
+  };
+
+  const used = CATS.filter((c) => items.some((m) => m.category === c.key));
+
+  const Card = (m: Memory) => {
+    const cm = catMeta(m.category);
+    return (
+      <div key={m.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
+        {m.image_url ? (
+          <a href={m.image_url} target="_blank" rel="noreferrer" style={{ display: "block", height: 150, background: `center/cover no-repeat url(${m.image_url})` }} />
+        ) : (
+          <div style={{ height: 110, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} /></div>
+        )}
+        <div style={{ padding: "12px 13px 13px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4, flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: cm.c, background: cm.bg, padding: "2px 8px", borderRadius: 999 }}><i className={`ti ${cm.icon}`} style={{ fontSize: 12 }} />{s.catNames[m.category]}</span>
+            {m.mem_date && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dateStr(m.mem_date)}</span>}
+            {m.status === "review" && <span style={{ fontSize: 11, color: "#854F0B", background: "#FAEEDA", padding: "2px 7px", borderRadius: 999 }}>{s.review}</span>}
+          </div>
+          <div style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{m.title}</div>
+          {m.summary && <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 3 }}>{m.summary}</div>}
+          {m.fields?.length > 0 && (
+            <div style={{ marginTop: 9, borderTop: "1px solid var(--border)", paddingTop: 8, display: "grid", gap: 4 }}>
+              {m.fields.slice(0, 6).map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, fontSize: 12 }}>
+                  <span style={{ color: "var(--text-3)", flexShrink: 0 }}>{f.label}</span>
+                  <span style={{ marginLeft: "auto", textAlign: "right", color: "var(--text)" }}>{f.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => del(m.id)} style={{ marginTop: 10, background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: 12, padding: 0, display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-trash" style={{ fontSize: 14 }} /></button>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+
+      <div style={{ marginBottom: 18 }}>
+        <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", justifyContent: "center", padding: "13px", borderRadius: 13, border: "1px dashed var(--border)", background: "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", fontSize: 14.5, fontWeight: 500, cursor: busy ? "default" : "pointer" }}>
+          {busy ? <><i className="ti ti-loader-2" style={{ fontSize: 17 }} />{s.analyzing}</> : <><i className="ti ti-camera" style={{ fontSize: 18 }} />{s.add}</>}
+        </button>
+        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginTop: 8, textAlign: "center" }}>{s.sub}</div>
+      </div>
+
+      {items.length === 0 && !busy ? (
+        <div className="card" style={{ textAlign: "center", padding: "30px 20px" }}>
+          <i className="ti ti-photo" style={{ fontSize: 32, color: "var(--accent)", display: "block", marginBottom: 9 }} />
+          <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 420, margin: "0 auto" }}>{s.empty}</div>
+        </div>
+      ) : (
+        used.map((c) => (
+          <div key={c.key} style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 11px" }}>
+              <span style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${c.icon}`} style={{ fontSize: 16, color: c.c }} /></span>
+              <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.catNames[c.key]}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+              {items.filter((m) => m.category === c.key).map(Card)}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
