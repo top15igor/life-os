@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const T: Record<string, any> = {
-  ru: { youNow: "Ты сейчас здесь", month: "/мес", choose: "Оформить", sending: "Отправляю…", sent: "Заявка отправлена ✓", popular: "Популярный", usage: "Записей в этом месяце", note: "Оплату подключим позже — пока оставь заявку, и мы свяжемся вручную.", soft: "Лимиты мягкие: это «честный потолок» от перегруза, а не жёсткая отсечка." },
-  en: { youNow: "You're here now", month: "/mo", choose: "Choose", sending: "Sending…", sent: "Request sent ✓", popular: "Popular", usage: "Entries this month", note: "Payments come later — for now leave a request and we'll reach out.", soft: "Limits are soft: a fair ceiling against overload, not a hard cutoff." },
-  uk: { youNow: "Ти зараз тут", month: "/міс", choose: "Оформити", sending: "Надсилаю…", sent: "Заявку надіслано ✓", popular: "Популярний", usage: "Записів цього місяця", note: "Оплату підключимо пізніше — поки залиш заявку, і ми зв'яжемося.", soft: "Ліміти м'які: чесна стеля від перевантаження, а не жорстка відсічка." },
-  fr: { youNow: "Tu es ici", month: "/mois", choose: "Choisir", sending: "Envoi…", sent: "Demande envoyée ✓", popular: "Populaire", usage: "Entrées ce mois-ci", note: "Le paiement viendra plus tard — laisse une demande, on te recontacte.", soft: "Limites souples : un plafond juste contre la surcharge, pas un blocage." },
+  ru: { youNow: "Ты сейчас здесь", month: "/мес", choose: "Оформить", sending: "Отправляю…", sent: "Заявка отправлена ✓", popular: "Популярный", usage: "Записей в этом месяце", note: "Оплату подключим позже — пока оставь заявку, и мы свяжемся вручную.", soft: "Лимиты мягкие: это «честный потолок» от перегруза, а не жёсткая отсечка.", bookTitle: "Хочешь печатную «Книгу жизни»?", bookSub: "Твоя жизнь в твёрдой обложке — чтобы подарить близким. Это разовый заказ, отдельно от подписки.", bookCta: "Заказать книгу" },
+  en: { youNow: "You're here now", month: "/mo", choose: "Choose", sending: "Sending…", sent: "Request sent ✓", popular: "Popular", usage: "Entries this month", note: "Payments come later — for now leave a request and we'll reach out.", soft: "Limits are soft: a fair ceiling against overload, not a hard cutoff.", bookTitle: "Want a printed Book of Life?", bookSub: "Your life in a hardcover — to gift your loved ones. A one-time order, separate from the subscription.", bookCta: "Order the book" },
+  uk: { youNow: "Ти зараз тут", month: "/міс", choose: "Оформити", sending: "Надсилаю…", sent: "Заявку надіслано ✓", popular: "Популярний", usage: "Записів цього місяця", note: "Оплату підключимо пізніше — поки залиш заявку, і ми зв'яжемося.", soft: "Ліміти м'які: чесна стеля від перевантаження, а не жорстка відсічка.", bookTitle: "Хочеш друковану «Книгу життя»?", bookSub: "Твоє життя у твердій обкладинці — щоб подарувати близьким. Це разове замовлення, окремо від підписки.", bookCta: "Замовити книгу" },
+  fr: { youNow: "Tu es ici", month: "/mois", choose: "Choisir", sending: "Envoi…", sent: "Demande envoyée ✓", popular: "Populaire", usage: "Entrées ce mois-ci", note: "Le paiement viendra plus tard — laisse une demande, on te recontacte.", soft: "Limites souples : un plafond juste contre la surcharge, pas un blocage.", bookTitle: "Envie d'un Livre de vie imprimé ?", bookSub: "Ta vie en couverture rigide — à offrir à tes proches. Une commande unique, séparée de l'abonnement.", bookCta: "Commander le livre" },
 };
 
 const PLANS: Record<string, any[]> = {
@@ -90,6 +91,18 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
           );
         })}
       </div>
+
+      {/* Печатная книга — разовый заказ, отдельно от подписки */}
+      <Link href="/lifebook" className="card" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, textDecoration: "none", color: "var(--text)", background: "linear-gradient(135deg, var(--accent-bg), #fff7ed)", border: "1px solid var(--border)" }}>
+        <span style={{ width: 44, height: 44, borderRadius: 11, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600 }}>{s.bookTitle}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 2 }}>{s.bookSub}</div>
+        </div>
+        <span style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: "var(--accent)" }}>{s.bookCta}<i className="ti ti-arrow-right" style={{ fontSize: 16 }} /></span>
+      </Link>
 
       <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 14, lineHeight: 1.5 }}>
         <div>{s.soft}</div>
