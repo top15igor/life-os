@@ -126,7 +126,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
               const isCol = collapsed.includes(g.id);
               return (
                 <div key={g.id} style={{ marginBottom: 4 }}>
-                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 6px 4px", color: "#41495a" }}>
+                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 6px 4px", color: "#374151" }}>
                     <span style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
                     <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 14, marginLeft: "auto", color: "var(--text-3)" }} />
                   </button>
