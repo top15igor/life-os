@@ -7,3 +7,6 @@ out/
 .DS_Store
 *.log
 .vercel
+
+# TS incremental build cache
+*.tsbuildinfo
