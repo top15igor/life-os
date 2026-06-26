@@ -10,7 +10,8 @@ import { intlOf } from "@/lib/i18n";
 const STR: Record<string, any> = {
   ru: {
     almost: "Твоя книга за", almostTail: "год почти готова",
-    lifeBook: "История моей жизни", lifeBookTail: "вся жизнь в одной книге",
+    lifeBook: "История моей жизни", allLife: "Вся жизнь",
+    lifeSubtitle: "Автобиография всей моей жизни — написанная мной самим, при жизни, и оставленная следующим поколениям. Не просто факты обо мне, а моя жизнь, прожитая рядом со мной: мои решения, мой голос, мои уроки.",
     found: "LIFE OS собрал из твоих записей",
     entries: "записей", days: "дней", peopleW: "людей", places: "мест", voice: "голосовых",
     ready: "готовность", openBook: "Открыть книгу", build: "Собрать мою книгу",
@@ -33,11 +34,13 @@ const STR: Record<string, any> = {
     buildAll: "Собрать все главы", reading: "Читать книгу",
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
+    chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
     dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты" },
   },
   en: {
     almost: "Your book of", almostTail: "is almost ready",
-    lifeBook: "The Story of My Life", lifeBookTail: "a whole life in one book",
+    lifeBook: "The Story of My Life", allLife: "Whole life",
+    lifeSubtitle: "The autobiography of my whole life — written by me, in my own words, while I lived it, and left for the generations to come. Not just facts about me, but my life lived alongside me: my decisions, my voice, my lessons.",
     found: "LIFE OS gathered from your entries",
     entries: "entries", days: "days", peopleW: "people", places: "places", voice: "voice notes",
     ready: "ready", openBook: "Open the book", build: "Build my book",
@@ -60,6 +63,7 @@ const STR: Record<string, any> = {
     buildAll: "Build all chapters", reading: "Read the book",
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
+    chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
     dataLabels: { peopleYear: "People of this period", placesYear: "Places", projects: "Projects & work", deeds: "Good deeds", promises: "Promises kept", gratitude: "Gratitudes", mood: "Mood", energy: "Energy", health: "Health", avg: "on average", highlights: "Bright moments" },
   },
 };
@@ -72,6 +76,21 @@ const TIERS = [
   { id: "gift", name: "Gift", price: "119–159 €", icon: "ti-gift", desc: { ru: "Твёрдая обложка, подарочная", en: "Hardcover gift edition" } },
   { id: "family", name: "Family", price: "179–299 €", icon: "ti-users", desc: { ru: "Семейный комплект", en: "Family set" } },
 ];
+
+// Склонение чисел для RU/UK: forms = [1, 2-4, 5+]
+const RUFORMS: Record<string, [string, string, string]> = {
+  entries: ["запись", "записи", "записей"],
+  days: ["день", "дня", "дней"],
+  people: ["человек", "человека", "человек"],
+  places: ["место", "места", "мест"],
+  voice: ["голосовое", "голосовых", "голосовых"],
+};
+function plRu(n: number, f: [string, string, string]): string {
+  const n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return f[0];
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return f[1];
+  return f[2];
+}
 
 function Ring({ pct, size = 64 }: { pct: number; size?: number }) {
   const r = (size - 8) / 2;
@@ -142,7 +161,11 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
   }
 
   const st = book.stats;
-  const titleOf = (k: string) => s.chapTitles[k] || k;
+  const titleOf = (k: string) => (isLife && s.chapTitlesLife?.[k]) || s.chapTitles[k] || k;
+
+  // Слово с правильным склонением (RU/UK) или статичное (EN/FR).
+  const ru = locale === "ru" || locale === "uk";
+  const word = (n: number, key: string, fallback: string) => (ru && RUFORMS[key] ? plRu(n, RUFORMS[key]) : fallback);
 
   // ===== деривативный (детерминированный) контент для data-глав =====
   function dataChapter(key: string) {
@@ -203,7 +226,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
         {years.map((y: any) => (
           <button key={y.year} onClick={() => router.push(`/lifebook?year=${y.year}`)} style={chip(year === y.year)}>{y.year}<span style={{ opacity: 0.6, fontSize: 11, marginLeft: 5 }}>{y.count}</span></button>
         ))}
-        <button onClick={() => router.push(`/lifebook?year=0`)} style={chip(isLife)}>{s.lifeBook}</button>
+        <button onClick={() => router.push(`/lifebook?year=0`)} style={chip(isLife)}>{s.allLife}</button>
       </div>
 
       {/* ГЕРОЙ */}
@@ -214,12 +237,12 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
               {isLife ? s.lifeBook : `${s.almost} ${year} ${s.almostTail}`}
             </div>
             <div style={{ fontSize: 13, color: "var(--accent-text)", marginTop: 6 }}>
-              {s.found}: <b>{st.entries}</b> {s.entries} · <b>{st.days}</b> {s.days} · <b>{st.people}</b> {s.peopleW} · <b>{st.places}</b> {s.places}{st.voice ? <> · <b>{st.voice}</b> {s.voice}</> : null}
+              {s.found}: <b>{st.entries}</b> {word(st.entries, "entries", s.entries)} · <b>{st.days}</b> {word(st.days, "days", s.days)} · <b>{st.people}</b> {word(st.people, "people", s.peopleW)} · <b>{st.places}</b> {word(st.places, "places", s.places)}{st.voice ? <> · <b>{st.voice}</b> {word(st.voice, "voice", s.voice)}</> : null}
             </div>
           </div>
           <Ring pct={book.readiness} size={68} />
         </div>
-        <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginTop: 14, maxWidth: 560 }}>{s.giftLine}</div>
+        <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginTop: 14, maxWidth: 560 }}>{isLife ? s.lifeSubtitle : s.giftLine}</div>
         <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
           <button onClick={() => setReader(true)} style={btnPrimary}>
             <i className="ti ti-book-2" style={{ fontSize: 17 }} />{book.readiness > 0 ? s.openBook : s.build}
@@ -365,9 +388,13 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   const cover = (
     <div className="book-page book-cover">
       <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: "var(--accent)", marginBottom: 18 }}>LIFE OS</div>
-      <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15 }}>{s.readTitle},<br />{isLife ? "" : year}</div>
-      {isLife && <div className="serif" style={{ fontSize: 22, marginTop: 8, color: "var(--text-2)" }}>{s.lifeBook}</div>}
-      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: "var(--text-2)", marginTop: 36, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
+      {isLife ? (
+        <div className="serif" style={{ fontSize: 38, fontWeight: 600, lineHeight: 1.15, maxWidth: 460 }}>{s.lifeBook}</div>
+      ) : (
+        <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15 }}>{s.readTitle},<br />{year}</div>
+      )}
+      {isLife && <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: "var(--text-2)", marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.lifeSubtitle}</div>}
+      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: "var(--text-2)", marginTop: 28, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
       <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 40 }}>{s.by}: {userName || "—"}</div>
     </div>
   );

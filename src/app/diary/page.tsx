@@ -23,6 +23,7 @@ export default async function DiaryPage({ searchParams }: { searchParams: Promis
     time: (e.entry_time || "").slice(0, 5),
     source: e.source,
     summary: e.summary || e.raw_text,
+    rawText: e.raw_text || "",
     mood: e.mood,
     energy: e.energy,
     health: e.health,

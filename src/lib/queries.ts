@@ -206,7 +206,7 @@ export async function getDreams(userId: string): Promise<{ id: string; sphere: s
 
 export async function getMemories(userId: string): Promise<{ id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; mem_date: string | null; image_url: string | null; status: string; created_at: string }[]> {
   try {
-    const { data } = await supabaseAdmin().from("memories").select("id, category, title, summary, fields, mem_date, image_url, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
+    const { data } = await supabaseAdmin().from("memories").select("id, category, title, summary, fields, mem_date, image_url, status, note, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
     return data || [];
   } catch {
     return [];
