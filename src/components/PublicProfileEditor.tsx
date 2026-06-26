@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Config = { slug: string; enabled: boolean; bio: string; blocks: string[] };
+
+const SLUG_OK = /^[a-z0-9-]{3,30}$/;
 
 const STR: Record<string, any> = {
   ru: { title: "Публичная страница", sub: "Витрина твоих успехов по ссылке — как профиль в Strava. Уходят только цифры и то, что ты включишь. Содержимого дневника тут нет.", enable: "Включить публичную страницу", slugLabel: "Адрес страницы", bioLabel: "О себе (необязательно)", bioPh: "Например: «Веду жизнь осознанно, бегаю по утрам»", showLabel: "Что показывать", b_voice: "Голосовые", b_deeds: "Добрые дела", b_dreams: "Сбывшиеся мечты", b_streak: "Серию", save: "Сохранить", saving: "Сохраняю…", saved: "Сохранено ✓", taken: "Этот адрес занят, выбери другой", badSlug: "Адрес: 3–30 символов, латиница, цифры, дефис", yourLink: "Твоя ссылка", copy: "Копировать", copied: "Скопировано ✓", open: "Открыть", offHint: "Страница выключена — её никто не видит." },
@@ -22,6 +25,7 @@ export default function PublicProfileEditor({ initial, host, suggestedSlug, loca
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
   const cleanSlug = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
   const link = `${host}/p/${slug}`;
@@ -35,7 +39,7 @@ export default function PublicProfileEditor({ initial, host, suggestedSlug, loca
     const r = await fetch("/api/public-profile", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ enabled, slug, bio, blocks }) });
     setBusy(false);
     const j = await r.json().catch(() => null);
-    if (r.ok && j?.ok) { setMsg({ ok: true, text: L.saved }); setTimeout(() => setMsg(null), 2500); }
+    if (r.ok && j?.ok) { setMsg({ ok: true, text: L.saved }); setTimeout(() => setMsg(null), 2500); router.refresh(); }
     else if (j?.error === "slug_taken") setMsg({ ok: false, text: L.taken });
     else if (j?.error === "bad_slug") setMsg({ ok: false, text: L.badSlug });
     else setMsg({ ok: false, text: "—" });
@@ -89,8 +93,8 @@ export default function PublicProfileEditor({ initial, host, suggestedSlug, loca
         {msg && <span style={{ fontSize: 12.5, color: msg.ok ? "#10b981" : "#ef4444" }}>{msg.text}</span>}
       </div>
 
-      {/* ссылка (если включено и сохранён slug) */}
-      {enabled && initial.enabled && initial.slug && (
+      {/* ссылка — показываем сразу, как включено и адрес корректен (после Сохранить она гарантированно живая) */}
+      {enabled && SLUG_OK.test(slug) && (
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
           <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 6 }}>{L.yourLink}</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
