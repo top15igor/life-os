@@ -11,24 +11,24 @@ const T: Record<string, any> = {
 
 const PLANS: Record<string, any[]> = {
   ru: [
-    { key: "free", name: "Старт", price: "0", tagline: "Чтобы начать вести жизнь", features: ["До 30 записей в месяц", "Голос и текст в Telegram", "Лента, теги, поиск", "Базовая аналитика"], cta: false },
-    { key: "pro", name: "Pro", price: "9.99", tagline: "Полный дневник жизни", popular: true, features: ["Записи без счётчика (≈300/мес)", "Все AI-разделы: «Что заметил AI», Биограф", "Книга жизни, Мечты, Здоровье и вес", "Экспорт всех данных", "Поддержка"], cta: true },
-    { key: "premium", name: "Премиум", price: "19.99", tagline: "Для тех, кто всерьёз", features: ["Всё из Pro", "Книга жизни в печать (PDF/типография)", "Ранний доступ к новым фичам", "Приоритетная поддержка"], cta: true },
+    { key: "free", name: "Старт", price: "0", tagline: "Попробовать и привыкнуть", features: ["До 30 записей в месяц", "Голос и текст в Telegram", "Лента, поиск, теги, настроение", "Базовые графики самочувствия"], cta: false },
+    { key: "pro", name: "Pro", price: "9.99", tagline: "Весь дневник, без ограничений", popular: true, features: ["Записи без лимита (честный потолок ~300/мес)", "AI «Что заметил AI»: паттерны, инсайты, зеркало жизни", "AI-Биограф: вопросы о своей жизни", "Книга жизни, Карта мечты, трекер веса", "Экспорт всех данных · поддержка"], cta: true },
+    { key: "premium", name: "Премиум", price: "19.99", tagline: "Для семьи и печатной книги", features: ["Всё из Pro, без потолка записей", "📖 Печатная «Книга жизни» (типография + доставка)", "Семейный доступ (скоро)", "Ранний доступ к новым функциям", "Приоритетная поддержка"], cta: true },
   ],
   en: [
-    { key: "free", name: "Start", price: "0", tagline: "To begin journaling life", features: ["Up to 30 entries/month", "Voice & text in Telegram", "Feed, tags, search", "Basic analytics"], cta: false },
-    { key: "pro", name: "Pro", price: "9.99", tagline: "Your full life diary", popular: true, features: ["Entries without a meter (≈300/mo)", "All AI sections: Insights, Biographer", "Life Book, Dreams, Health & weight", "Export all data", "Support"], cta: true },
-    { key: "premium", name: "Premium", price: "19.99", tagline: "For those who are serious", features: ["Everything in Pro", "Life Book print-ready (PDF/press)", "Early access to new features", "Priority support"], cta: true },
+    { key: "free", name: "Start", price: "0", tagline: "Try it and build the habit", features: ["Up to 30 entries/month", "Voice & text in Telegram", "Feed, search, tags, mood", "Basic wellbeing charts"], cta: false },
+    { key: "pro", name: "Pro", price: "9.99", tagline: "The whole diary, no limits", popular: true, features: ["Unlimited entries (fair cap ~300/mo)", "AI Insights: patterns, mirror of life", "AI Biographer: ask about your life", "Life Book, Dream Map, weight tracker", "Export all data · support"], cta: true },
+    { key: "premium", name: "Premium", price: "19.99", tagline: "For family & a printed book", features: ["Everything in Pro, no entry cap", "📖 Printed Life Book (press + delivery)", "Family access (soon)", "Early access to new features", "Priority support"], cta: true },
   ],
   uk: [
-    { key: "free", name: "Старт", price: "0", tagline: "Щоб почати вести життя", features: ["До 30 записів на місяць", "Голос і текст у Telegram", "Стрічка, теги, пошук", "Базова аналітика"], cta: false },
-    { key: "pro", name: "Pro", price: "9.99", tagline: "Повний щоденник життя", popular: true, features: ["Записи без лічильника (≈300/міс)", "Усі AI-розділи: Інсайти, Біограф", "Книга життя, Мрії, Здоров'я і вага", "Експорт усіх даних", "Підтримка"], cta: true },
-    { key: "premium", name: "Преміум", price: "19.99", tagline: "Для тих, хто серйозно", features: ["Усе з Pro", "Книга життя у друк (PDF/типографія)", "Ранній доступ до нових фіч", "Пріоритетна підтримка"], cta: true },
+    { key: "free", name: "Старт", price: "0", tagline: "Спробувати і звикнути", features: ["До 30 записів на місяць", "Голос і текст у Telegram", "Стрічка, пошук, теги, настрій", "Базові графіки самопочуття"], cta: false },
+    { key: "pro", name: "Pro", price: "9.99", tagline: "Весь щоденник, без обмежень", popular: true, features: ["Записи без ліміту (чесна стеля ~300/міс)", "AI-Інсайти: патерни, дзеркало життя", "AI-Біограф: питання про своє життя", "Книга життя, Карта мрії, трекер ваги", "Експорт усіх даних · підтримка"], cta: true },
+    { key: "premium", name: "Преміум", price: "19.99", tagline: "Для сім'ї та друкованої книги", features: ["Усе з Pro, без стелі записів", "📖 Друкована «Книга життя» (типографія + доставка)", "Сімейний доступ (скоро)", "Ранній доступ до нових функцій", "Пріоритетна підтримка"], cta: true },
   ],
   fr: [
-    { key: "free", name: "Start", price: "0", tagline: "Pour commencer à journaliser", features: ["Jusqu'à 30 entrées/mois", "Voix & texte sur Telegram", "Fil, tags, recherche", "Analyses de base"], cta: false },
-    { key: "pro", name: "Pro", price: "9.99", tagline: "Ton journal de vie complet", popular: true, features: ["Entrées sans compteur (≈300/mois)", "Toutes les sections IA : Insights, Biographe", "Livre de vie, Rêves, Santé & poids", "Export de toutes les données", "Support"], cta: true },
-    { key: "premium", name: "Premium", price: "19.99", tagline: "Pour celles et ceux qui sont sérieux", features: ["Tout de Pro", "Livre de vie prêt à imprimer (PDF)", "Accès anticipé aux nouveautés", "Support prioritaire"], cta: true },
+    { key: "free", name: "Start", price: "0", tagline: "Essayer et prendre l'habitude", features: ["Jusqu'à 30 entrées/mois", "Voix & texte sur Telegram", "Fil, recherche, tags, humeur", "Graphiques de bien-être de base"], cta: false },
+    { key: "pro", name: "Pro", price: "9.99", tagline: "Tout le journal, sans limites", popular: true, features: ["Entrées illimitées (plafond juste ~300/mois)", "IA Insights : tendances, miroir de vie", "Biographe IA : questions sur ta vie", "Livre de vie, Carte des rêves, suivi du poids", "Export de toutes les données · support"], cta: true },
+    { key: "premium", name: "Premium", price: "19.99", tagline: "Pour la famille & un livre imprimé", features: ["Tout de Pro, sans plafond d'entrées", "📖 Livre de vie imprimé (presse + livraison)", "Accès famille (bientôt)", "Accès anticipé aux nouveautés", "Support prioritaire"], cta: true },
   ],
 };
 
