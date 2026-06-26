@@ -1,6 +1,8 @@
 import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
 import ShareCard from "@/components/ShareCard";
+import PublicProfileEditor from "@/components/PublicProfileEditor";
+import { getPublicConfig } from "@/lib/public";
 import { getEntries, getGoodDeeds, getDreams, getStreak } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -64,12 +66,16 @@ export default async function SharePage() {
   const proto = hdrs.get("x-forwarded-proto") || "https";
   const refLink = `${proto}://${host}/welcome?ref=${user.id}`;
 
+  const pubConfig = await getPublicConfig(user.id);
+  const suggestedSlug = (user.name || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) || user.id.slice(0, 8);
+
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <PageHead icon="ti-share-2" color="#4f46e5" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <ShareCard periods={periods} streak={streak} host={host} refLink={refLink} locale={locale} />
+        <PublicProfileEditor initial={pubConfig} host={host} suggestedSlug={suggestedSlug} locale={locale} />
       </main>
     </div>
   );
