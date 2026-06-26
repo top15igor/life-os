@@ -3,7 +3,6 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import LangSwitcher from "@/components/LangSwitcher";
 import { CopyLink, ProfileButtons, PinSettings } from "@/components/ProfileActions";
-import HomePresetPicker from "@/components/HomePresetPicker";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -12,10 +11,10 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { title: "Профиль", privateT: "Это твой личный кабинет", privateS: "Дневник виден только тебе — по этой личной ссылке. Никто другой его не видит, и в публичном доступе его нет.", yourLink: "Твоя личная ссылка", linkHint: "Сохрани её — по ней ты входишь в свой дневник на любом устройстве.", language: "Язык", privacy: "Подробнее о приватности", yourData: "Твои данные", exportBtn: "Скачать мои данные", exportHint: "Все твои записи в одном файле — забери в любой момент. А код LIFE OS открыт: можешь сам проверить, что мы делаем с данными.", openCode: "Открытый код на GitHub", accent: "Акцент главной", security: "Безопасность", danger: "Управление аккаунтом", plan: "Тариф", planSub: "Сейчас ты на «Старт». Больше живёшь в дневнике — больше он даёт.", planBtn: "Смотреть тарифы" },
-  en: { title: "Profile", privateT: "This is your private space", privateS: "Your diary is visible only to you — via this personal link. No one else can see it, and it's not public.", yourLink: "Your personal link", linkHint: "Save it — it's how you sign in to your diary on any device.", language: "Language", privacy: "More about privacy", yourData: "Your data", exportBtn: "Download my data", exportHint: "All your entries in one file — take them anytime. And the LIFE OS code is open: check for yourself what we do with data.", openCode: "Open source on GitHub", accent: "Home accent", security: "Security", danger: "Account", plan: "Plan", planSub: "You're on Start. The more you live in your diary, the more it gives back.", planBtn: "See plans" },
-  uk: { title: "Профіль", privateT: "Це твій особистий кабінет", privateS: "Щоденник бачиш лише ти — за цим особистим посиланням. Ніхто інший його не бачить, і в публічному доступі його немає.", yourLink: "Твоє особисте посилання", linkHint: "Збережи його — за ним ти входиш у щоденник на будь-якому пристрої.", language: "Мова", privacy: "Докладніше про приватність", yourData: "Твої дані", exportBtn: "Завантажити мої дані", exportHint: "Усі твої записи в одному файлі — забери будь-коли. А код LIFE OS відкритий: можеш сам перевірити, що ми робимо з даними.", openCode: "Відкритий код на GitHub", accent: "Акцент головної", security: "Безпека", danger: "Керування акаунтом", plan: "Тариф", planSub: "Зараз ти на «Старт». Більше живеш у щоденнику — більше він дає.", planBtn: "Дивитися тарифи" },
-  fr: { title: "Profil", privateT: "C'est ton espace privé", privateS: "Ton journal n'est visible que par toi — via ce lien personnel. Personne d'autre ne le voit, il n'est pas public.", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil.", language: "Langue", privacy: "En savoir plus sur la confidentialité", yourData: "Tes données", exportBtn: "Télécharger mes données", exportHint: "Toutes tes entrées en un fichier — récupère-les quand tu veux. Et le code de LIFE OS est ouvert : vérifie toi-même ce qu'on fait des données.", openCode: "Code source sur GitHub", accent: "Accent de l'accueil", security: "Sécurité", danger: "Compte", plan: "Forfait", planSub: "Tu es sur Start. Plus tu vis dans ton journal, plus il te rend.", planBtn: "Voir les forfaits" },
+  ru: { title: "Профиль", privateT: "Это твой личный кабинет", privateS: "Дневник виден только тебе — по этой личной ссылке. Никто другой его не видит, и в публичном доступе его нет.", yourLink: "Твоя личная ссылка", linkHint: "Сохрани её — по ней ты входишь в свой дневник на любом устройстве.", language: "Язык", privacy: "Подробнее о приватности", yourData: "Твои данные", exportBtn: "Скачать мои данные", exportHint: "Все твои записи в одном файле — забери в любой момент. А код LIFE OS открыт: можешь сам проверить, что мы делаем с данными.", openCode: "Открытый код на GitHub", accent: "Акцент главной", security: "Безопасность", danger: "Управление аккаунтом", plan: "Тариф", planSub: "Сейчас ты на «Старт». Больше живёшь в дневнике — больше он даёт.", planBtn: "Смотреть тарифы", secLead: "Твоя жизнь — закрыта и под защитой", sec: ["Только ты видишь свои записи — вход лишь по твоей личной ссылке. Других пользователей в дневник мы не пускаем.", "Люди их не читают: ни другие пользователи, ни наша команда. Для статистики мы видим только обезличенные цифры — без текста записей.", "Текст видит только AI — и лишь чтобы готовить твои же резюме, ответы и Книгу жизни. На обучение моделей он не идёт.", "Данные передаются и хранятся в зашифрованном виде; доступ — по секретным ключам, которых нет в открытом коде.", "Ты полный владелец: в любой момент можешь скачать всё или удалить аккаунт без следа.", "Код LIFE OS открыт — можешь сам проверить, что именно происходит с данными."] },
+  en: { title: "Profile", privateT: "This is your private space", privateS: "Your diary is visible only to you — via this personal link. No one else can see it, and it's not public.", yourLink: "Your personal link", linkHint: "Save it — it's how you sign in to your diary on any device.", language: "Language", privacy: "More about privacy", yourData: "Your data", exportBtn: "Download my data", exportHint: "All your entries in one file — take them anytime. And the LIFE OS code is open: check for yourself what we do with data.", openCode: "Open source on GitHub", accent: "Home accent", security: "Security", danger: "Account", plan: "Plan", planSub: "You're on Start. The more you live in your diary, the more it gives back.", planBtn: "See plans", secLead: "Your life is private and protected", sec: ["Only you can see your entries — access is via your personal link. No other users are allowed into your diary.", "People don't read them: not other users, not our team. For statistics we see only anonymized numbers — no entry text.", "Only the AI sees the text — and only to prepare your own summaries, answers and Book of Life. It's never used to train models.", "Data is transferred and stored encrypted; access is via secret keys that are not in the open-source code.", "You fully own it: download everything or delete your account, without a trace, anytime.", "The LIFE OS code is open — check for yourself exactly what happens with your data."] },
+  uk: { title: "Профіль", privateT: "Це твій особистий кабінет", privateS: "Щоденник бачиш лише ти — за цим особистим посиланням. Ніхто інший його не бачить, і в публічному доступі його немає.", yourLink: "Твоє особисте посилання", linkHint: "Збережи його — за ним ти входиш у щоденник на будь-якому пристрої.", language: "Мова", privacy: "Докладніше про приватність", yourData: "Твої дані", exportBtn: "Завантажити мої дані", exportHint: "Усі твої записи в одному файлі — забери будь-коли. А код LIFE OS відкритий: можеш сам перевірити, що ми робимо з даними.", openCode: "Відкритий код на GitHub", accent: "Акцент головної", security: "Безпека", danger: "Керування акаунтом", plan: "Тариф", planSub: "Зараз ти на «Старт». Більше живеш у щоденнику — більше він дає.", planBtn: "Дивитися тарифи", secLead: "Твоє життя — закрите й під захистом", sec: ["Лише ти бачиш свої записи — вхід тільки за твоїм особистим посиланням. Інших користувачів у щоденник ми не пускаємо.", "Люди їх не читають: ні інші користувачі, ні наша команда. Для статистики ми бачимо лише знеособлені цифри — без тексту записів.", "Текст бачить лише AI — і тільки щоб готувати твої ж резюме, відповіді та Книгу життя. На навчання моделей він не йде.", "Дані передаються і зберігаються у зашифрованому вигляді; доступ — за секретними ключами, яких немає у відкритому коді.", "Ти повний власник: будь-коли можеш завантажити все або видалити акаунт без сліду.", "Код LIFE OS відкритий — можеш сам перевірити, що саме відбувається з даними."] },
+  fr: { title: "Profil", privateT: "C'est ton espace privé", privateS: "Ton journal n'est visible que par toi — via ce lien personnel. Personne d'autre ne le voit, il n'est pas public.", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil.", language: "Langue", privacy: "En savoir plus sur la confidentialité", yourData: "Tes données", exportBtn: "Télécharger mes données", exportHint: "Toutes tes entrées en un fichier — récupère-les quand tu veux. Et le code de LIFE OS est ouvert : vérifie toi-même ce qu'on fait des données.", openCode: "Code source sur GitHub", accent: "Accent de l'accueil", security: "Sécurité", danger: "Compte", plan: "Forfait", planSub: "Tu es sur Start. Plus tu vis dans ton journal, plus il te rend.", planBtn: "Voir les forfaits", secLead: "Ta vie est privée et protégée", sec: ["Toi seul vois tes entrées — l'accès se fait via ton lien personnel. Aucun autre utilisateur n'entre dans ton journal.", "Les gens ne les lisent pas : ni les autres utilisateurs, ni notre équipe. Pour les stats, on ne voit que des chiffres anonymes — sans le texte.", "Seule l'IA voit le texte — et uniquement pour préparer tes résumés, réponses et Livre de vie. Jamais pour entraîner des modèles.", "Les données sont transférées et stockées chiffrées ; l'accès se fait via des clés secrètes absentes du code ouvert.", "Tu en es le propriétaire : télécharge tout ou supprime ton compte, sans trace, à tout moment.", "Le code de LIFE OS est ouvert — vérifie toi-même ce qui se passe avec tes données."] },
 };
 
 export default async function ProfilePage() {
@@ -32,15 +31,9 @@ export default async function ProfilePage() {
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   let hasPin = false;
-  let homePreset = "mindful";
-  let homeBlocks: string[] = [];
   try {
-    const { data } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("pin_hash").eq("id", user.id).maybeSingle();
     hasPin = !!data?.pin_hash;
-    if (data?.home_preset) homePreset = data.home_preset;
-    if (data?.home_blocks) {
-      try { homeBlocks = JSON.parse(data.home_blocks); } catch { homeBlocks = String(data.home_blocks).split(",").map((x: string) => x.trim()).filter(Boolean); }
-    }
   } catch {}
 
   return (
@@ -89,10 +82,6 @@ export default async function ProfilePage() {
             <LangSwitcher current={locale} />
           </div>
 
-          {/* Акцент главной */}
-          <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.accent}</div>
-          <HomePresetPicker current={homePreset} locale={locale} currentBlocks={homeBlocks} />
-
           {/* Твои данные */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.yourData}</div>
           <div className="card">
@@ -107,6 +96,20 @@ export default async function ProfilePage() {
 
           {/* Безопасность */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.security}</div>
+          <div className="card" style={{ marginBottom: 12, background: "var(--surface-2)", border: "none" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 11 }}>
+              <i className="ti ti-shield-lock" style={{ fontSize: 22, color: "var(--positive)", flexShrink: 0 }} />
+              <span style={{ fontSize: 14.5, fontWeight: 600 }}>{s.secLead}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+              {s.sec.map((p: string, i: number) => (
+                <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>
+                  <i className="ti ti-circle-check" style={{ fontSize: 16, color: "var(--positive)", flexShrink: 0, marginTop: 1 }} />{p}
+                </div>
+              ))}
+            </div>
+            <Link href="/privacy" style={{ fontSize: 12.5, color: "var(--accent)", display: "inline-block", marginTop: 11 }}>{s.privacy} →</Link>
+          </div>
           <PinSettings locale={locale} hasPin={hasPin} />
 
           {/* Управление */}
