@@ -8,6 +8,7 @@ import Hint from "./Hint";
 import DictationHints from "./DictationHints";
 import PromiseList from "./PromiseList";
 import HomeEditor from "./HomeEditor";
+import AwarenessCard from "./AwarenessCard";
 
 // Какие опциональные блоки показывать при каждом «акценте главной» (undefined = показать все).
 const PRESET_VIS: Record<string, string[] | undefined> = {
@@ -177,11 +178,15 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
           <DictationHints locale={locale} />
 
-          <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
-            <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
-            <div style={{ fontSize: 13.5, color: "var(--accent-text)", marginTop: 9, fontWeight: 500, lineHeight: 1.45, maxWidth: 520 }}>{dpLine}</div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
-          </div>
+          {curPreset === "mindful" ? (
+            <AwarenessCard locale={locale} totalDays={data.habit?.totalDays || 0} />
+          ) : (
+            <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
+              <div style={{ fontSize: 13.5, color: "var(--accent-text)", marginTop: 9, fontWeight: 500, lineHeight: 1.45, maxWidth: 520 }}>{dpLine}</div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
+            </div>
+          )}
 
           {vis("habit") && data.habit && (
             <div className="card" style={{ marginBottom: 16 }}>
