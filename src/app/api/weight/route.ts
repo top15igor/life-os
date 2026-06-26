@@ -21,13 +21,15 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// Удалить замер за дату.
+// Убрать замер за дату полностью: и из лога веса, и вес, который AI вытащил из записи.
 export async function DELETE(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const body = await req.json().catch(() => null);
   const day = String(body?.day || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return NextResponse.json({ ok: false }, { status: 400 });
-  await supabaseAdmin().from("weight_log").delete().eq("user_id", user.id).eq("day", day);
+  const db = supabaseAdmin();
+  await db.from("weight_log").delete().eq("user_id", user.id).eq("day", day);
+  await db.from("entries").update({ weight: null }).eq("user_id", user.id).eq("entry_date", day).not("weight", "is", null);
   return NextResponse.json({ ok: true });
 }

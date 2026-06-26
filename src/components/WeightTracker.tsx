@@ -7,10 +7,10 @@ type Point = { day: string; kg: number };
 type Goal = { target_kg: number | null; target_date: string | null; start_kg: number | null; start_date: string | null };
 
 const STR: Record<string, any> = {
-  ru: { title: "Вес", current: "Текущий вес", noData: "Веса пока нет", on: "от", add: "Записать вес", goalSet: "Задать цель", goalEdit: "Изменить цель", goal: "Цель", to: "к", left: "осталось", reached: "Цель достигнута!", pace: "нужно ≈", perWeek: "кг/нед", date: "Дата", kg: "кг", save: "Сохранить", cancel: "Отмена", targetKg: "Целевой вес, кг", targetDate: "Желаемая дата", gain: "набрать", lose: "сбросить", days: "дн.", chartHint: "Каждая точка — замер" },
-  en: { title: "Weight", current: "Current weight", noData: "No weight yet", on: "on", add: "Log weight", goalSet: "Set a goal", goalEdit: "Edit goal", goal: "Goal", to: "by", left: "to go", reached: "Goal reached!", pace: "need ≈", perWeek: "kg/wk", date: "Date", kg: "kg", save: "Save", cancel: "Cancel", targetKg: "Target weight, kg", targetDate: "Target date", gain: "to gain", lose: "to lose", days: "days", chartHint: "Each dot is a measurement" },
-  uk: { title: "Вага", current: "Поточна вага", noData: "Ваги поки немає", on: "від", add: "Записати вагу", goalSet: "Задати ціль", goalEdit: "Змінити ціль", goal: "Ціль", to: "до", left: "залишилось", reached: "Ціль досягнута!", pace: "треба ≈", perWeek: "кг/тиж", date: "Дата", kg: "кг", save: "Зберегти", cancel: "Скасувати", targetKg: "Цільова вага, кг", targetDate: "Бажана дата", gain: "набрати", lose: "скинути", days: "дн.", chartHint: "Кожна точка — замір" },
-  fr: { title: "Poids", current: "Poids actuel", noData: "Pas encore de poids", on: "le", add: "Noter le poids", goalSet: "Définir un objectif", goalEdit: "Modifier l'objectif", goal: "Objectif", to: "pour le", left: "restant", reached: "Objectif atteint !", pace: "besoin ≈", perWeek: "kg/sem", date: "Date", kg: "kg", save: "Enregistrer", cancel: "Annuler", targetKg: "Poids cible, kg", targetDate: "Date cible", gain: "à prendre", lose: "à perdre", days: "j", chartHint: "Chaque point est une mesure" },
+  ru: { title: "Вес", current: "Текущий вес", noData: "Веса пока нет", on: "от", add: "Записать вес", goalSet: "Задать цель", goalEdit: "Изменить цель", goal: "Цель", to: "к", left: "осталось", reached: "Цель достигнута!", pace: "нужно ≈", perWeek: "кг/нед", date: "Дата", kg: "кг", save: "Сохранить", cancel: "Отмена", targetKg: "Целевой вес, кг", targetDate: "Желаемая дата", gain: "набрать", lose: "сбросить", days: "дн.", chartHint: "Каждая точка — замер · нажми, чтобы убрать", delConfirm: "Убрать замер за {d}?" },
+  en: { title: "Weight", current: "Current weight", noData: "No weight yet", on: "on", add: "Log weight", goalSet: "Set a goal", goalEdit: "Edit goal", goal: "Goal", to: "by", left: "to go", reached: "Goal reached!", pace: "need ≈", perWeek: "kg/wk", date: "Date", kg: "kg", save: "Save", cancel: "Cancel", targetKg: "Target weight, kg", targetDate: "Target date", gain: "to gain", lose: "to lose", days: "days", chartHint: "Each dot is a measurement · tap to remove", delConfirm: "Remove the measurement on {d}?" },
+  uk: { title: "Вага", current: "Поточна вага", noData: "Ваги поки немає", on: "від", add: "Записати вагу", goalSet: "Задати ціль", goalEdit: "Змінити ціль", goal: "Ціль", to: "до", left: "залишилось", reached: "Ціль досягнута!", pace: "треба ≈", perWeek: "кг/тиж", date: "Дата", kg: "кг", save: "Зберегти", cancel: "Скасувати", targetKg: "Цільова вага, кг", targetDate: "Бажана дата", gain: "набрати", lose: "скинути", days: "дн.", chartHint: "Кожна точка — замір · натисни, щоб прибрати", delConfirm: "Прибрати замір за {d}?" },
+  fr: { title: "Poids", current: "Poids actuel", noData: "Pas encore de poids", on: "le", add: "Noter le poids", goalSet: "Définir un objectif", goalEdit: "Modifier l'objectif", goal: "Objectif", to: "pour le", left: "restant", reached: "Objectif atteint !", pace: "besoin ≈", perWeek: "kg/sem", date: "Date", kg: "kg", save: "Enregistrer", cancel: "Annuler", targetKg: "Poids cible, kg", targetDate: "Date cible", gain: "à prendre", lose: "à perdre", days: "j", chartHint: "Chaque point est une mesure · touchez pour retirer", delConfirm: "Retirer la mesure du {d} ?" },
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -20,7 +20,7 @@ function fmt(locale: string, d: string) {
 }
 
 // Точный график веса: масштаб по диапазону значений (а не от нуля).
-function WeightChart({ points, target }: { points: Point[]; target: number | null }) {
+function WeightChart({ points, target, onDelete }: { points: Point[]; target: number | null; onDelete?: (day: string) => void }) {
   const W = 640, H = 150, padL = 30, padR = 12, padT = 12, padB = 24;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const vals = points.map((p) => p.kg).concat(target != null ? [target] : []);
@@ -49,7 +49,12 @@ function WeightChart({ points, target }: { points: Point[]; target: number | nul
         <line x1={padL} y1={yAt(target)} x2={W - padR} y2={yAt(target)} stroke="#10b981" strokeWidth={1.5} strokeDasharray="5 4" />
       )}
       {n > 1 && <polyline points={line} fill="none" stroke="#0ea5e9" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
-      {points.map((p, i) => <circle key={i} cx={xAt(i)} cy={yAt(p.kg)} r={3} fill="#0ea5e9" />)}
+      {points.map((p, i) => (
+        <g key={i} onClick={onDelete ? () => onDelete(p.day) : undefined} style={onDelete ? { cursor: "pointer" } : undefined}>
+          {onDelete && <circle cx={xAt(i)} cy={yAt(p.kg)} r={11} fill="transparent" />}
+          <circle cx={xAt(i)} cy={yAt(p.kg)} r={3} fill="#0ea5e9" />
+        </g>
+      ))}
       {points.map((p, i) => {
         const step = n <= 7 ? 1 : Math.ceil(n / 7);
         if (i % step !== 0 && i !== n - 1) return null;
@@ -90,6 +95,14 @@ export default function WeightTracker({ data, locale }: { data: { points: Point[
     const r = await fetch("/api/weight-goal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ target_kg: v, target_date: tDate || null }) });
     setBusy(false);
     if (r.ok) { setGoalOpen(false); router.refresh(); }
+  }
+
+  async function delPoint(d: string) {
+    if (busy || !window.confirm(s.delConfirm.replace("{d}", fmt(locale, d)))) return;
+    setBusy(true);
+    const r = await fetch("/api/weight", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ day: d }) });
+    setBusy(false);
+    if (r.ok) router.refresh();
   }
 
   // Прогресс к цели.
@@ -158,8 +171,8 @@ export default function WeightTracker({ data, locale }: { data: { points: Point[
               </div>
               <button onClick={() => { setGoalOpen((o) => !o); setAddOpen(false); }} style={{ ...btnGhost, padding: "5px 11px", fontSize: 12.5 }}>{s.goalEdit}</button>
             </div>
-            <div style={{ height: 8, background: "var(--surface-2)", borderRadius: 6, marginTop: 9, overflow: "hidden" }}>
-              <div style={{ width: `${progress.pct}%`, height: "100%", background: progress.reached ? "#10b981" : "#0ea5e9", borderRadius: 6, transition: "width .3s" }} />
+            <div style={{ height: 9, background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 6, marginTop: 9, overflow: "hidden" }}>
+              <div style={{ width: `max(${progress.pct}%, ${progress.pct > 0 ? 6 : 0}px)`, height: "100%", background: progress.reached ? "#10b981" : "#0ea5e9", borderRadius: 6, transition: "width .3s" }} />
             </div>
             <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 7 }}>
               {progress.reached ? (
@@ -200,7 +213,7 @@ export default function WeightTracker({ data, locale }: { data: { points: Point[
       {/* График веса */}
       {points.length >= 2 && (
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-          <WeightChart points={points} target={goal?.target_kg ?? null} />
+          <WeightChart points={points} target={goal?.target_kg ?? null} onDelete={delPoint} />
           <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>{s.chartHint}</div>
         </div>
       )}
