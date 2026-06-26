@@ -10,6 +10,8 @@ import { requireUser } from "@/lib/auth";
 import PageHead from "@/components/PageHead";
 import { hints } from "@/lib/hints";
 import { getHealthFocus, type HealthTrend } from "@/lib/health";
+import { getWeightData } from "@/lib/weight";
+import WeightTracker from "@/components/WeightTracker";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +26,6 @@ const STR: Record<string, any> = {
 function shortDay(d: string) {
   const [, m, day] = d.split("-");
   return `${day}.${m}`;
-}
-
-// Последнее (и предыдущее) реальное значение метрики. entries идут от новых к старым.
-// positiveOnly — для сна: 0 ч это не «спал ноль», а отсутствие данных.
-function lastVal(entries: Entry[], key: string, positiveOnly = false) {
-  const seq: { v: number; date: string }[] = [];
-  for (const e of entries) {
-    const v = (e as any)[key];
-    if (v != null && (!positiveOnly || v > 0)) seq.push({ v, date: e.entry_date });
-  }
-  return { value: seq[0]?.v ?? null, date: seq[0]?.date ?? null, prev: seq[1]?.v ?? null };
 }
 
 // Тренд по ДНЯМ: среднее значение за каждый день (а не по каждой записи).
@@ -55,42 +46,6 @@ function dailyTrend(entries: Entry[], keys: { name: string; color: string; key: 
   const labels = days.map(shortDay);
   const hasData = series.some((sr) => sr.values.some((v) => v != null));
   return { series, labels, hasData };
-}
-
-function MetricCard({ label, icon, color, value, suffix, dateStr, prev, locale, s, kind }: any) {
-  // kind: "good" — рост хорошо (зелёный ↑, красный ↓); "neutral" — без оценки (вес, показываем ±разницу).
-  let badge: any = null;
-  if (value != null && prev != null && value !== prev) {
-    const up = value > prev;
-    if (kind === "neutral") {
-      const diff = Math.round((value - prev) * 10) / 10;
-      badge = <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{diff > 0 ? "+" : ""}{diff} {suffix}</span>;
-    } else {
-      badge = <span style={{ fontSize: 12, color: up ? "#10b981" : "#ef4444" }}>{up ? "↑" : "↓"}</span>;
-    }
-  }
-  return (
-    <div style={{ background: "var(--surface-2)", borderRadius: 11, padding: "11px 13px" }}>
-      <div style={{ fontSize: 12.5, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 5 }}>
-        <i className={`ti ${icon}`} style={{ fontSize: 15, color }} />{label}
-      </div>
-      <div style={{ fontSize: 21, fontWeight: 500, marginTop: 3, display: "flex", alignItems: "baseline", gap: 7 }}>
-        <span>{value ?? "—"}{value != null && suffix ? <span style={{ fontSize: 12, color: "var(--text-3)" }}> {suffix}</span> : null}</span>
-        {badge}
-      </div>
-      <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 2 }}>
-        {value != null && dateStr ? `${s.from} ${dateLabel(locale, dateStr)}` : s.noData}
-      </div>
-    </div>
-  );
-}
-
-function Dot({ c, label }: { c: string; label: string }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-      <span style={{ width: 9, height: 9, borderRadius: 2, background: c }} />{label}
-    </span>
-  );
 }
 
 const TREND: Record<HealthTrend, any> = {
@@ -147,17 +102,9 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const h = hints(locale);
   const all = await getEntries(user.id, 300);
 
-  const health = dailyTrend(all, [
-    { name: "health", color: "#ef4444", key: "health" },
-    { name: "energy", color: "#f59e0b", key: "energy" },
-    { name: "mood", color: "#4f46e5", key: "mood" },
-  ]);
   const energy = dailyTrend(all, [{ name: "energy", color: "#f59e0b", key: "energy" }]);
-
-  const mHealth = lastVal(all, "health");
-  const mSleep = lastVal(all, "sleep_hours", true);
-  const mWeight = lastVal(all, "weight");
   const focus = tab === "health" ? await getHealthFocus(user.id) : null;
+  const weight = tab === "health" ? await getWeightData(user.id) : null;
 
   const healthEntries = all.filter((e: Entry) => cats(e).some((c: any) => ["health", "sport", "food"].includes(c.slug)));
   const sportEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "sport"));
@@ -180,23 +127,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
         {tab === "health" && (
           <>
             <HealthNow focus={focus} s={s} locale={locale} />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 9, marginBottom: 20 }}>
-              <MetricCard label={s.health} icon="ti-heart" color="#ef4444" value={mHealth.value} suffix="/10" dateStr={mHealth.date} prev={mHealth.prev} locale={locale} s={s} kind="good" />
-              <MetricCard label={s.sleep} icon="ti-moon" color="#4f46e5" value={mSleep.value} suffix={s.su} dateStr={mSleep.date} prev={mSleep.prev} locale={locale} s={s} kind="good" />
-              <MetricCard label={s.weight} icon="ti-scale" color="#0ea5e9" value={mWeight.value} suffix={s.wu} dateStr={mWeight.date} prev={mWeight.prev} locale={locale} s={s} kind="neutral" />
-            </div>
-
-            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 4 }}>{s.trend} <span style={{ color: "var(--text-3)" }}>· {s.perDay}</span></div>
-            <div style={{ display: "flex", gap: 14, fontSize: 11.5, color: "var(--text-2)", marginBottom: 6 }}>
-              <Dot c="#ef4444" label={t.health} /><Dot c="#f59e0b" label={t.energy} /><Dot c="#4f46e5" label={t.mood} />
-            </div>
-            {health.hasData ? (
-              <div className="card" style={{ marginBottom: 20, padding: 10 }}>
-                <TrendChart series={health.series} max={10} labels={health.labels} />
-              </div>
-            ) : (
-              <div className="card" style={{ marginBottom: 20, color: "var(--text-2)", fontSize: 13 }}>{s.noTrend}</div>
-            )}
+            {weight && <WeightTracker data={weight} locale={locale} />}
 
             <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 8 }}>{s.entries}</div>
             {healthEntries.length === 0 ? (
