@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPublicBySlug, getPublicStats } from "@/lib/public";
+import { getInviteCode } from "@/lib/users";
 import { getLocale } from "@/lib/locale";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   }
 
   const st = await getPublicStats(prof.userId);
+  const inviteCode = await getInviteCode(prof.userId);
   const blocks = new Set(prof.blocks);
   const sinceStr = st.memberSince ? (() => { const [y, m] = st.memberSince!.split("-"); return `${s.since} ${s.months[Number(m) - 1]} ${y}`; })() : "";
   const initial = (prof.name || "?").trim().charAt(0).toUpperCase() || "?";
@@ -73,7 +75,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
 
           {/* CTA */}
-          <Link href={`/welcome?ref=${prof.userId}`} style={{ display: "block", background: "var(--accent)", color: "#fff", textAlign: "center", padding: "14px", borderRadius: 13, fontSize: 15.5, fontWeight: 600, textDecoration: "none" }}>
+          <Link href={`/i/${inviteCode}`} style={{ display: "block", background: "var(--accent)", color: "#fff", textAlign: "center", padding: "14px", borderRadius: 13, fontSize: 15.5, fontWeight: 600, textDecoration: "none" }}>
             {s.cta}
           </Link>
           <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--text-3)", marginTop: 8 }}>{s.ctaSub}</div>
