@@ -94,23 +94,47 @@ export async function getBookData(userId: string, year: number) {
     mood: avg("mood"), energy: avg("energy"), health: avg("health"),
   };
 
-  // Готовность глав 0..100 — насколько глава наполнена данными.
+  // Этап книги + прогресс года (честно объясняет, почему книга не «готова» в середине года).
+  const now = new Date();
+  const curYear = now.getFullYear();
+  let stage: "current" | "past" | "life" = "current";
+  let yearProgress = 100;
+  if (!year) {
+    stage = "life";
+    yearProgress = 100;
+  } else if (year < curYear) {
+    stage = "past";
+    yearProgress = 100;
+  } else if (year > curYear) {
+    stage = "current";
+    yearProgress = 0;
+  } else {
+    stage = "current";
+    const start = new Date(curYear, 0, 1).getTime();
+    const end = new Date(curYear + 1, 0, 1).getTime();
+    yearProgress = Math.round(((now.getTime() - start) / (end - start)) * 100);
+  }
+
+  // Наполненность глав 0..100 — сколько в главе СОБРАНО материала (не «завершённость»).
+  // Пороги = «насыщенная глава за полный год», чтобы числа были реалистичными.
   const pct = (n: number, full: number) => Math.max(0, Math.min(100, Math.round((n / full) * 100)));
   const chapters = [
-    { key: "overview", title: "Год в одном взгляде", icon: "ti-eye", kind: "ai", readiness: pct(stats.entries, 20) },
+    { key: "overview", title: "Год в одном взгляде", icon: "ti-eye", kind: "ai", readiness: pct(stats.entries, 80) },
     { key: "months", title: "Двенадцать глав года", icon: "ti-calendar-month", kind: "months", readiness: pct(stats.months, year ? 12 : Math.max(1, stats.months)) },
-    { key: "family", title: "Семья и близкие", icon: "ti-users", kind: "data", readiness: pct(has("family"), 8) },
-    { key: "health", title: "Здоровье и спорт", icon: "ti-heartbeat", kind: "data", readiness: pct(has("health", "sport", "food"), 12) },
-    { key: "work", title: "Работа и проекты", icon: "ti-briefcase", kind: "data", readiness: pct(has("business") + stats.projects * 2, 10) },
-    { key: "travel", title: "Путешествия и места", icon: "ti-plane", kind: "data", readiness: pct(has("travel") + stats.places, 6) },
-    { key: "trace", title: "Мой след", icon: "ti-heart-handshake", kind: "data", readiness: pct(stats.deeds + stats.promisesDone + stats.gratitude, 10) },
-    { key: "self", title: "Что я понял о себе", icon: "ti-bulb", kind: "ai", readiness: pct(stats.insights || stats.entries, 12) },
-    { key: "people", title: "Люди, которым я благодарен", icon: "ti-user-heart", kind: "ai", readiness: pct(stats.people + stats.gratitude, 8) },
-    { key: "lessons", title: "Главные уроки года", icon: "ti-school", kind: "ai", readiness: pct(stats.insights || stats.entries, 12) },
+    { key: "family", title: "Семья и близкие", icon: "ti-users", kind: "data", readiness: pct(has("family"), 14) },
+    { key: "health", title: "Здоровье и спорт", icon: "ti-heartbeat", kind: "data", readiness: pct(has("health", "sport", "food"), 20) },
+    { key: "work", title: "Работа и проекты", icon: "ti-briefcase", kind: "data", readiness: pct(has("business") + stats.projects * 2, 16) },
+    { key: "travel", title: "Путешествия и места", icon: "ti-plane", kind: "data", readiness: pct(has("travel") + stats.places, 8) },
+    { key: "trace", title: "Мой след", icon: "ti-heart-handshake", kind: "data", readiness: pct(stats.deeds + stats.promisesDone + stats.gratitude, 16) },
+    { key: "self", title: "Что я понял о себе", icon: "ti-bulb", kind: "ai", readiness: pct(stats.insights || stats.entries, 60) },
+    { key: "people", title: "Люди, которым я благодарен", icon: "ti-user-heart", kind: "ai", readiness: pct(stats.people + stats.gratitude, 14) },
+    { key: "lessons", title: "Главные уроки года", icon: "ti-school", kind: "ai", readiness: pct(stats.insights || stats.entries, 60) },
   ];
-  const readiness = chapters.length ? Math.round(chapters.reduce((s, c) => s + c.readiness, 0) / chapters.length) : 0;
+  const filled = chapters.length ? Math.round(chapters.reduce((s, c) => s + c.readiness, 0) / chapters.length) : 0;
+  // «Наполнено» книги за текущий год не может опережать прожитую часть года (честная верхняя граница).
+  const readiness = stage === "current" && year ? Math.min(filled, yearProgress) : filled;
 
-  return { year, stats, months, people, places, projects, highlights, chapters, readiness };
+  return { year, stats, months, people, places, projects, highlights, chapters, readiness, stage, yearProgress };
 }
 
 // Лёгкая сводка для виджета на главной (без тяжёлых джойнов).
@@ -123,10 +147,16 @@ export async function getBookSummary(userId: string, year: number): Promise<{ ye
   const rows = data || [];
   const entries = count ?? rows.length;
   const months = new Set(rows.map((e: any) => (e.entry_date || "").slice(0, 7))).size;
-  // Приблизительная готовность: записи (до 200) + охваченные месяцы (из 12).
-  const byEntries = Math.min(100, Math.round((entries / 200) * 100));
+  // Приблизительная наполненность: записи (до 250) + охваченные месяцы (из 12).
+  const byEntries = Math.min(100, Math.round((entries / 250) * 100));
   const byMonths = year ? Math.round((months / 12) * 100) : (months ? 100 : 0);
-  const readiness = Math.round(byEntries * 0.6 + byMonths * 0.4);
+  let readiness = Math.round(byEntries * 0.6 + byMonths * 0.4);
+  // Не опережать прожитую часть текущего года (честная верхняя граница).
+  const now = new Date();
+  if (year === now.getFullYear()) {
+    const yp = Math.round(((now.getTime() - new Date(year, 0, 1).getTime()) / (new Date(year + 1, 0, 1).getTime() - new Date(year, 0, 1).getTime())) * 100);
+    readiness = Math.min(readiness, yp);
+  }
   let people = 0;
   try {
     const { count: pc } = await db.from("people").select("*", { count: "exact", head: true }).eq("user_id", userId);

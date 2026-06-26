@@ -9,7 +9,8 @@ import { intlOf } from "@/lib/i18n";
 
 const STR: Record<string, any> = {
   ru: {
-    almost: "Твоя книга за", almostTail: "год почти готова",
+    almost: "Твоя книга за", growing: "растёт", pastReady: "готова к сборке", filledLabel: "наполнено",
+    yearProgressLine: (p: number) => `Год прожит на ${p}% — книга наполняется вместе с тобой и будет дополняться до конца года.`,
     lifeBook: "История моей жизни", allLife: "Вся жизнь",
     lifeSubtitle: "Автобиография всей моей жизни — написанная мной самим, при жизни, и оставленная следующим поколениям. Не просто факты обо мне, а моя жизнь, прожитая рядом со мной: мои решения, мой голос, мои уроки.",
     found: "LIFE OS собрал из твоих записей",
@@ -38,7 +39,8 @@ const STR: Record<string, any> = {
     dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты" },
   },
   en: {
-    almost: "Your book of", almostTail: "is almost ready",
+    almost: "Your book of", growing: "is growing", pastReady: "is ready to assemble", filledLabel: "filled",
+    yearProgressLine: (p: number) => `The year is ${p}% lived — the book grows with you and keeps filling until December.`,
     lifeBook: "The Story of My Life", allLife: "Whole life",
     lifeSubtitle: "The autobiography of my whole life — written by me, in my own words, while I lived it, and left for the generations to come. Not just facts about me, but my life lived alongside me: my decisions, my voice, my lessons.",
     found: "LIFE OS gathered from your entries",
@@ -234,14 +236,22 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
-              {isLife ? s.lifeBook : `${s.almost} ${year} ${s.almostTail}`}
+              {isLife ? s.lifeBook : `${s.almost} ${year} ${book.stage === "past" ? s.pastReady : s.growing}`}
             </div>
             <div style={{ fontSize: 13, color: "var(--accent-text)", marginTop: 6 }}>
               {s.found}: <b>{st.entries}</b> {word(st.entries, "entries", s.entries)} · <b>{st.days}</b> {word(st.days, "days", s.days)} · <b>{st.people}</b> {word(st.people, "people", s.peopleW)} · <b>{st.places}</b> {word(st.places, "places", s.places)}{st.voice ? <> · <b>{st.voice}</b> {word(st.voice, "voice", s.voice)}</> : null}
             </div>
           </div>
-          <Ring pct={book.readiness} size={68} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            <Ring pct={book.readiness} size={68} />
+            <span style={{ fontSize: 11, color: "var(--text-3)" }}>{s.filledLabel}</span>
+          </div>
         </div>
+        {book.stage === "current" && !isLife && (
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "rgba(255,255,255,0.5)", borderRadius: 10, padding: "9px 12px" }}>
+            <i className="ti ti-calendar-stats" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />{s.yearProgressLine(book.yearProgress)}
+          </div>
+        )}
         <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginTop: 14, maxWidth: 560 }}>{isLife ? s.lifeSubtitle : s.giftLine}</div>
         <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
           <button onClick={() => setReader(true)} style={btnPrimary}>
