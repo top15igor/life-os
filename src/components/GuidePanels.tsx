@@ -1,0 +1,155 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import type { Extras, Feature, ChangeItem } from "@/lib/guideExtras";
+
+const BADGE_STYLE: Record<string, { bg: string; col: string }> = {
+  new: { bg: "var(--accent-bg)", col: "var(--accent-text)" },
+  improved: { bg: "#dcfce7", col: "#166534" },
+  soon: { bg: "var(--surface-2)", col: "var(--text-2)" },
+};
+
+function Badge({ tag, label }: { tag: string; label: string }) {
+  const st = BADGE_STYLE[tag] || BADGE_STYLE.soon;
+  return <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 99, background: st.bg, color: st.col, flexShrink: 0 }}>{label}</span>;
+}
+
+function SectionTitle({ children }: { children: any }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12, marginTop: 6 }}>
+      <span style={{ width: 4, height: 19, borderRadius: 2, background: "var(--accent)" }} />
+      <span style={{ fontSize: 17, fontWeight: 600, color: "var(--text)", letterSpacing: "-0.01em" }}>{children}</span>
+    </div>
+  );
+}
+
+export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: ChangeItem[] }) {
+  const [active, setActive] = useState<Feature | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!active) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setActive(null); };
+    window.addEventListener("keydown", onEsc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onEsc); document.body.style.overflow = prev; };
+  }, [active]);
+
+  return (
+    <div>
+      {/* ===== Что нового ===== */}
+      <SectionTitle>{ex.whatsNew}</SectionTitle>
+      <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.whatsNewLead}</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 26 }}>
+        <div className="card">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+            <i className="ti ti-rocket" style={{ fontSize: 18, color: "var(--positive)" }} />{ex.thisMonth}
+          </div>
+          {ex.changelog.map((c, i) => (
+            <div key={i} style={{ padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+                <Badge tag={c.tag} label={ex.badges[c.tag]} />
+                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.t}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.d}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="card">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+            <i className="ti ti-clock-hour-4" style={{ fontSize: 18, color: "var(--accent)" }} />{ex.upcoming}
+          </div>
+          {upcoming.map((c, i) => (
+            <div key={i} style={{ padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3 }}>
+                <Badge tag="soon" label={ex.badges.soon} />
+                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.t}</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5 }}>{c.d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== Возможности (активные карточки) ===== */}
+      <SectionTitle>{ex.featuresTitle}</SectionTitle>
+      <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.featuresLead}</div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
+        {ex.features.map((f) => (
+          <button key={f.key} onClick={() => setActive(f)} className="card" style={{ textAlign: "left", cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)" }}>
+            <i className={`ti ${f.icon}`} style={{ fontSize: 22, color: f.color, flexShrink: 0, marginTop: 1 }} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 14.5, fontWeight: 600 }}>{f.title}</span>
+                <span style={{ fontSize: 12, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>{ex.open}<i className="ti ti-chevron-right" style={{ fontSize: 14 }} /></span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 4 }}>{f.short}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ===== Модалка ===== */}
+      {active && mounted && createPortal(
+        <div onClick={() => setActive(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0", overflowY: "auto" }}>
+          <div onClick={(e) => e.stopPropagation()} className="fade-up" style={{ background: "var(--bg)", width: "min(560px, 100%)", maxHeight: "92vh", overflowY: "auto", borderRadius: "20px 20px 0 0", boxShadow: "0 -10px 50px rgba(0,0,0,0.25)", margin: "auto auto 0", padding: 0 }}>
+            {/* шапка */}
+            <div style={{ position: "sticky", top: 0, background: "var(--bg)", padding: "18px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", gap: 12, zIndex: 1 }}>
+              <i className={`ti ${active.icon}`} style={{ fontSize: 26, color: active.color, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 18, fontWeight: 600 }}>{active.title}</div>
+                <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.45, marginTop: 2 }}>{active.short}</div>
+              </div>
+              <button onClick={() => setActive(null)} aria-label="close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}><i className="ti ti-x" style={{ fontSize: 22 }} /></button>
+            </div>
+
+            {/* тело */}
+            <div style={{ padding: "16px 20px 28px" }}>
+              {active.sections.map((sec, i) => (
+                <div key={i} style={{ marginBottom: 18 }}>
+                  {sec.h && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 9 }}>{sec.h}</div>}
+                  {sec.p && <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>{sec.p}</div>}
+
+                  {sec.steps && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                      {sec.steps.map((st, k) => (
+                        <div key={k} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                          <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 600 }}>{k + 1}</span>
+                          <span style={{ fontSize: 14, lineHeight: 1.55, paddingTop: 2 }}>{st}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {sec.examples && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                      {sec.examples.map((ex2, k) => (
+                        <div key={k} style={{ fontSize: 13.5, lineHeight: 1.5, padding: "9px 12px", borderRadius: 10, background: "var(--surface-2)", borderLeft: "3px solid var(--accent)", color: "var(--text)" }}>{ex2}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {sec.tips && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {sec.tips.map((tp, k) => (
+                        <div key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13.5, lineHeight: 1.55 }}>
+                          <i className="ti ti-bulb" style={{ fontSize: 16, color: "var(--energy)", flexShrink: 0, marginTop: 2 }} />{tp}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => setActive(null)} style={{ width: "100%", padding: "12px", borderRadius: 12, background: "var(--accent)", color: "#fff", border: "none", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>{ex.close}</button>
+            </div>
+          </div>
+        </div>, document.body)}
+    </div>
+  );
+}

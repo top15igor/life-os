@@ -3,6 +3,8 @@ import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { guide } from "@/lib/guide";
+import { guideExtras, upcoming } from "@/lib/guideExtras";
+import GuidePanels from "@/components/GuidePanels";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,8 @@ export default async function GuidePage() {
   const t = getDict(locale);
   const h = hints(locale);
   const g = guide(locale);
+  const ex = guideExtras(locale);
+  const upcomingList = upcoming(locale);
   const botLink = await getBotLink();
 
   return (
@@ -63,6 +67,9 @@ export default async function GuidePage() {
         <a href={botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500, marginBottom: 26 }}>
           <i className="ti ti-brand-telegram" style={{ fontSize: 18 }} />{g.openBot}
         </a>
+
+        {/* Что нового + Возможности (интерактив) */}
+        <GuidePanels ex={ex} upcoming={upcomingList} />
 
         {/* Что это */}
         <SectionTitle>{g.whatTitle}</SectionTitle>
