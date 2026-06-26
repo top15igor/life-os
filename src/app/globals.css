@@ -17,6 +17,7 @@
 /* Тема всегда светлая (тёмную можно вернуть позже как переключатель). */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
