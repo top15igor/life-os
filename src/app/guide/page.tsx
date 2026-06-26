@@ -5,6 +5,7 @@ import { hints } from "@/lib/hints";
 import { guide } from "@/lib/guide";
 import { guideExtras, upcoming } from "@/lib/guideExtras";
 import GuidePanels from "@/components/GuidePanels";
+import GuideToc from "@/components/GuideToc";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +71,7 @@ export default async function GuidePage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
+      <GuideToc items={TOC} />
       <main className="main">
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
           <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />

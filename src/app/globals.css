@@ -27,6 +27,18 @@ html { scroll-behavior: smooth; }
 .toc-book .toc-t { font-size: 14.5px; font-weight: 500; }
 .toc-book .toc-dots { flex: 1; border-bottom: 1px dotted var(--border); margin: 0 9px; transform: translateY(-3px); min-width: 16px; }
 .toc-book .toc-arrow { font-size: 15px; color: var(--text-3); flex-shrink: 0; align-self: center; transition: color .15s, transform .15s; }
+
+/* Плавающая навигация Инструкции (десктоп): точки справа, активный раздел подсвечен */
+.guide-toc-rail { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 20; display: flex; flex-direction: column; gap: 1px; }
+.guide-toc-rail a { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 5px 4px; text-decoration: none; color: var(--text-3); }
+.guide-toc-rail a .lbl { font-size: 12.5px; text-align: right; white-space: nowrap; max-width: 170px; overflow: hidden; text-overflow: ellipsis; opacity: 0; transform: translateX(6px); transition: opacity .2s, transform .2s; }
+.guide-toc-rail a .dot { width: 18px; height: 2px; border-radius: 2px; background: var(--border); flex-shrink: 0; transition: width .2s, background .2s; }
+.guide-toc-rail:hover a .lbl { opacity: 1; transform: none; }
+.guide-toc-rail a:hover { color: var(--text); }
+.guide-toc-rail a.active { color: var(--accent); }
+.guide-toc-rail a.active .lbl { opacity: 1; transform: none; font-weight: 600; }
+.guide-toc-rail a.active .dot { width: 28px; background: var(--accent); }
+@media (max-width: 1180px) { .guide-toc-rail { display: none; } }
 body {
   background: var(--bg);
   color: var(--text);
