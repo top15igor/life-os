@@ -1,5 +1,5 @@
 import Sidebar from "@/components/Sidebar";
-import HomeTabs from "@/components/HomeTabs";
+import HomeSwitch from "@/components/HomeSwitch";
 import {
   getToday, getEntries, getGoals, getMonths, getOpenTasks, getRecentGratitude, getInsights,
   getOnThisDay, getStreak, getHabit, getTodayDeeds, getActivePromises, getTraceWeek,
@@ -160,7 +160,7 @@ export default async function HomePage() {
       <main className="main">
         <EnterInBrowser link={personalLink} locale={locale} />
         <PinPrompt hasPin={hasPin} locale={locale} />
-        <HomeTabs
+        <HomeSwitch
           data={data}
           locale={locale}
           nav={t.nav}
