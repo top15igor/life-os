@@ -166,12 +166,12 @@ export async function getBookSummary(userId: string, year: number): Promise<{ ye
 }
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
-export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any> };
+export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string> };
 
 export async function getBookMeta(userId: string, year: number): Promise<BookMeta> {
-  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {} };
+  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {} };
   try {
-    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections").eq("user_id", userId).eq("year", year).maybeSingle();
+    const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits").eq("user_id", userId).eq("year", year).maybeSingle();
     if (!data) return empty;
     return {
       dedication: data.dedication || "",
@@ -180,9 +180,24 @@ export async function getBookMeta(userId: string, year: number): Promise<BookMet
       recipient: data.recipient || "self",
       book_type: data.book_type || "year",
       sections: data.sections || {},
+      edits: data.edits || {},
     };
   } catch {
     return empty;
+  }
+}
+
+// Правка главы пользователем (его текст для главы key). Пустая строка = убрать правку (вернуть версию AI).
+export async function saveChapterEdit(userId: string, year: number, key: string, body: string): Promise<boolean> {
+  try {
+    const cur = await getBookMeta(userId, year);
+    const edits = { ...(cur.edits || {}) };
+    if (body && body.trim()) edits[key] = body.slice(0, 8000);
+    else delete edits[key];
+    await supabaseAdmin().from("book_meta").upsert({ user_id: userId, year, edits, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
+    return true;
+  } catch {
+    return false;
   }
 }
 

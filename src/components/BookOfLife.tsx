@@ -31,6 +31,7 @@ const STR: Record<string, any> = {
     letterClose: "Письмо близким", letterClosePh: "Слова тем, кто дорог. Их прочитают однажды.",
     save: "Сохранить", saved: "Сохранено ✓", saving: "Сохраняю…",
     open: "Открыть", close: "Свернуть", building: "AI пишет главу…", rebuild: "Пересобрать",
+    editChapter: "Редактировать", addMyText: "Добавить свой текст", editMyText: "Изменить свой текст", resetAi: "Вернуть текст AI", saveEdit: "Сохранить", cancelEdit: "Отмена", myVersion: "твоя правка", myStory: "Моя история", editPh: "Пиши свою версию этой главы…", storyPh: "Допиши свою историю к этой главе…",
     addMore: "Добавь записей, чтобы наполнить главу", empty: "Книга начнётся, когда появятся записи за этот период.",
     monthsOpen: "Открыть месяц",
     full: "Получить полную книгу", fullSub: "Цифровая версия, печать в твёрдой обложке или подарочный комплект для семьи.",
@@ -66,6 +67,7 @@ const STR: Record<string, any> = {
     letterClose: "Letter to loved ones", letterClosePh: "Words for those you love. They'll read them one day.",
     save: "Save", saved: "Saved ✓", saving: "Saving…",
     open: "Open", close: "Collapse", building: "AI is writing the chapter…", rebuild: "Rebuild",
+    editChapter: "Edit", addMyText: "Add your text", editMyText: "Edit your text", resetAi: "Restore AI text", saveEdit: "Save", cancelEdit: "Cancel", myVersion: "your edit", myStory: "My story", editPh: "Write your version of this chapter…", storyPh: "Add your own story to this chapter…",
     addMore: "Add entries to fill this chapter", empty: "The book begins once you have entries for this period.",
     monthsOpen: "Open month",
     full: "Get the full book", fullSub: "Digital, hardcover print, or a gift set for the family.",
@@ -153,6 +155,60 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [reader, setReader] = useState(false);
 
+  // правки глав пользователем (его текст вместо/в дополнение к AI)
+  const [edits, setEdits] = useState<Record<string, string>>(meta.edits || {});
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
+
+  function startEdit(key: string, initial: string) { setEditKey(key); setEditDraft(initial || ""); }
+  async function saveEdit(key: string) {
+    const body = editDraft;
+    setEditBusy(true);
+    setEdits((c) => { const n = { ...c }; if (body.trim()) n[key] = body; else delete n[key]; return n; });
+    setEditKey(null);
+    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, editKey: key, editBody: body }) }).catch(() => {});
+    setEditBusy(false);
+  }
+  async function clearEdit(key: string) {
+    setEdits((c) => { const n = { ...c }; delete n[key]; return n; });
+    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, editKey: key, editBody: "" }) }).catch(() => {});
+  }
+
+  // редактор главы: кнопки + textarea (для AI-глав правит текст, для глав-данных добавляет «Мою историю»)
+  function chapterEditor(key: string, kind: "ai" | "data", extra?: any) {
+    if (editKey === key) {
+      return (
+        <div style={{ marginTop: 12 }}>
+          <textarea value={editDraft} onChange={(e) => setEditDraft(e.target.value)} placeholder={kind === "ai" ? s.editPh : s.storyPh} rows={kind === "ai" ? 9 : 4} autoFocus disabled={editBusy}
+            style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14.5, lineHeight: 1.7, resize: "vertical", fontFamily: "inherit" }} />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+            <button onClick={() => setEditKey(null)} style={{ background: "none", border: "none", color: "var(--text-2)", fontSize: 13.5, cursor: "pointer", padding: "8px 12px" }}>{s.cancelEdit}</button>
+            <button onClick={() => saveEdit(key)} disabled={editBusy} style={{ padding: "8px 18px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13.5, fontWeight: 500, cursor: "pointer", opacity: editBusy ? 0.6 : 1 }}>{s.saveEdit}</button>
+          </div>
+        </div>
+      );
+    }
+    const has = edits[key] != null;
+    return (
+      <>
+        {kind === "data" && has && (
+          <div style={{ marginTop: 12, background: "var(--accent-bg)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, color: "var(--accent-text)", marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}><i className="ti ti-pencil" style={{ fontSize: 12 }} />{s.myStory}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{edits[key]}</div>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          <button onClick={() => startEdit(key, kind === "ai" ? (has ? edits[key] : ai[key]?.body || "") : (edits[key] || ""))} style={ghostBtn}>
+            <i className="ti ti-pencil" style={{ fontSize: 13 }} />{kind === "ai" ? s.editChapter : has ? s.editMyText : s.addMyText}
+          </button>
+          {kind === "ai" && has && <button onClick={() => clearEdit(key)} style={ghostBtn}><i className="ti ti-arrow-back-up" style={{ fontSize: 13 }} />{s.resetAi}</button>}
+          {extra}
+        </div>
+      </>
+    );
+  }
+
   async function loadAi(type: string, fresh = false) {
     setAiLoading(type);
     const r = await fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type, year, fresh }) }).then((x) => x.json()).catch(() => null);
@@ -210,18 +266,25 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
 
   function aiBody(type: string) {
     const sec = ai[type];
-    if (!sec) return null;
-    const lines = String(sec.body || "").split("\n").filter((l: string) => l.trim());
+    const edited = edits[type];
+    if (!sec && edited == null) return null;
+    const bodyText = edited != null ? edited : (sec?.body || "");
+    const lines = String(bodyText).split("\n").filter((l: string) => l.trim());
     const isList = lines.length > 1 && lines.filter((l) => /^[—\-•]/.test(l.trim())).length >= lines.length - 1;
     return (
       <div className="fade-up">
-        {sec.title && <div style={{ fontSize: 16, fontWeight: 500, fontFamily: "var(--font-serif, Georgia, serif)", marginBottom: 8 }}>{sec.title}</div>}
+        {(sec?.title || edited != null) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+            {sec?.title && <div style={{ fontSize: 16, fontWeight: 500, fontFamily: "var(--font-serif, Georgia, serif)" }}>{sec.title}</div>}
+            {edited != null && <span style={{ fontSize: 11, color: "var(--accent-text)", background: "var(--accent-bg)", padding: "2px 8px", borderRadius: 99, display: "inline-flex", alignItems: "center", gap: 4 }}><i className="ti ti-pencil" style={{ fontSize: 11 }} />{s.myVersion}</span>}
+          </div>
+        )}
         {isList ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
             {lines.map((l, i) => <div key={i} style={{ fontSize: 14.5, lineHeight: 1.6, display: "flex", gap: 8 }}><span style={{ color: "var(--accent)" }}>—</span>{l.replace(/^[—\-•]\s*/, "")}</div>)}
           </div>
         ) : (
-          <div style={{ fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{sec.body}</div>
+          <div style={{ fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{bodyText}</div>
         )}
       </div>
     );
@@ -332,10 +395,10 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
               <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                 {ch.kind === "ai" ? (
                   aiLoading === ch.key ? <Loading text={s.building} /> :
-                  ai[ch.key] ? (
+                  (ai[ch.key] || edits[ch.key] != null) ? (
                     <>
-                      {aiBody(ch.key)}
-                      <button onClick={() => loadAi(ch.key, true)} style={ghostBtn}><i className="ti ti-refresh" style={{ fontSize: 13 }} />{s.rebuild}</button>
+                      {editKey !== ch.key && aiBody(ch.key)}
+                      {chapterEditor(ch.key, "ai", editKey !== ch.key && edits[ch.key] == null && ai[ch.key] ? <button onClick={() => loadAi(ch.key, true)} style={ghostBtn}><i className="ti ti-refresh" style={{ fontSize: 13 }} />{s.rebuild}</button> : null)}
                     </>
                   ) : ch.readiness < 10 ? <Muted text={s.addMore} /> : <button onClick={() => loadAi(ch.key)} style={ghostBtn}><i className="ti ti-sparkles" style={{ fontSize: 13 }} />{s.build}</button>
                 ) : ch.kind === "months" ? (
@@ -362,7 +425,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName }
                     </div>
                   )
                 ) : (
-                  ch.readiness < 8 ? <Muted text={s.addMore} /> : dataChapter(ch.key)
+                  ch.readiness < 8 && edits[ch.key] == null && editKey !== ch.key ? <Muted text={s.addMore} /> : <>{ch.readiness >= 8 && dataChapter(ch.key)}{chapterEditor(ch.key, "data")}</>
                 )}
               </div>
             )}
