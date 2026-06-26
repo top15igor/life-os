@@ -107,14 +107,25 @@ export default async function AdminPage() {
           <i className="ti ti-lock" style={{ fontSize: 13 }} />Только агрегированные данные — без текста личных записей.
         </div>
 
-        <Link href="/admin/architecture" className="card" style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
-          <i className="ti ti-blueprint" style={{ fontSize: 24, color: "var(--accent)" }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Архитектура проекта</div>
-            <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Стек, база данных, инфраструктура — для программиста и инвестора</div>
-          </div>
-          <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
-        </Link>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 24 }}>
+          <Link href="/admin/architecture" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+            <i className="ti ti-blueprint" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Архитектура проекта</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Стек, база данных, инфраструктура — для программиста и инвестора</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
+          </Link>
+
+          <Link href="/admin/marketing" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+            <i className="ti ti-speakerphone" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Маркетинг</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>50 идей продвижения в Instagram и не только — подари книгу близким</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
+          </Link>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 24 }}>
           <Stat label="Пользователей" value={d.totalUsers} />
