@@ -9,17 +9,18 @@ import DictationHints from "./DictationHints";
 import PromiseList from "./PromiseList";
 import HomeEditor from "./HomeEditor";
 import AwarenessCard from "./AwarenessCard";
+import BookWidget from "./BookWidget";
 
 // Какие опциональные блоки показывать при каждом «акценте главной» (undefined = показать все).
 const PRESET_VIS: Record<string, string[] | undefined> = {
   mindful: undefined,
-  focus: ["habit", "context", "changes", "focus", "stories", "tasks"],
-  trace: ["habit", "trace", "promises", "traceWeek", "context", "gratitude"],
-  balance: ["habit", "context", "metrics", "changes", "gratitude", "trace"],
-  minimal: ["habit", "focus", "gratitude"],
+  focus: ["book", "habit", "context", "changes", "focus", "stories", "tasks"],
+  trace: ["book", "habit", "trace", "promises", "traceWeek", "context", "gratitude"],
+  balance: ["book", "habit", "context", "metrics", "changes", "gratitude", "trace"],
+  minimal: ["book", "habit", "focus", "gratitude"],
 };
 
-const DEFAULT_BLOCKS = ["habit", "trace", "promises", "focus", "context", "gratitude"];
+const DEFAULT_BLOCKS = ["book", "habit", "trace", "promises", "focus", "context", "gratitude"];
 const GEAR_LABEL: Record<string, string> = { ru: "Настроить", en: "Customize", uk: "Налаштувати", fr: "Personnaliser" };
 
 const DAYPART_LINE: Record<string, { morning: string; day: string; evening: string; night: string }> = {
@@ -187,6 +188,8 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
             </div>
           )}
+
+          {vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
 
           {vis("habit") && data.habit && (
             <div className="card" style={{ marginBottom: 16 }}>

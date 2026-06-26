@@ -6,6 +6,7 @@ import {
   cats, tagList, projects as projectsOf, type Entry,
 } from "@/lib/queries";
 import { getExperiments } from "@/lib/lab";
+import { getBookSummary } from "@/lib/book";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -41,10 +42,11 @@ export default async function HomePage() {
     getExperiments(user.id),
     getHabit(user.id, todayISO),
   ]);
-  const [todayDeeds, promises, traceWeek] = await Promise.all([
+  const [todayDeeds, promises, traceWeek, bookSummary] = await Promise.all([
     getTodayDeeds(user.id, todayISO),
     getActivePromises(user.id, 3),
     getTraceWeek(user.id),
+    getBookSummary(user.id, new Date().getFullYear()),
   ]);
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
@@ -140,6 +142,7 @@ export default async function HomePage() {
     todayDeeds,
     promises,
     traceWeek,
+    book: bookSummary,
     preset,
     blocks,
     daypart,

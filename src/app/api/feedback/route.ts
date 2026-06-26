@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const owner = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
   if (owner) {
-    const label = kind === "idea" ? "💡 Идея" : kind === "bug" ? "🐞 Проблема" : "💬 Отзыв";
+    const label = kind === "idea" ? "💡 Идея" : kind === "bug" ? "🐞 Проблема" : kind === "book_order" ? "📖 Заявка на КНИГУ" : "💬 Отзыв";
     try {
       await sendMessage(owner, `${label} от ${user.name || "—"}:\n\n${text}`);
     } catch {}
