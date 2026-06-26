@@ -33,7 +33,7 @@ export default async function PlacesPage() {
   const t = getDict(locale);
   const h = hints(locale);
   const s = STR[locale] || STR.ru;
-  const [entries, dreams] = await Promise.all([getEntries(user.id, 300), getDreams(user.id)]);
+  const [entries, dreams, metas] = await Promise.all([getEntries(user.id, 300), getDreams(user.id), getEntityMeta(user.id, "places")]);
 
   // Мечты о путешествиях — отдельная секция «Куда хочу».
   const travelDreams = dreams.filter((d) => d.sphere === "travel");
@@ -63,6 +63,13 @@ export default async function PlacesPage() {
   // «Хочу» = маркер мечты и нет маркера поездки, и ещё не показано как мечта в карте желаний.
   const wishPlaces = allPlaces.filter((p) => !VISIT_RE.test(p.text) && WISH_RE.test(p.text) && !inDreams(p.name)).sort((a, b) => b.count - a.count);
   const nothing = visited.length === 0 && travelDreams.length === 0 && wishPlaces.length === 0;
+  const visitedItems = visited.map((p) => ({
+    id: metas[p.name]?.id,
+    name: p.name,
+    hidden: metas[p.name]?.hidden || false,
+    meta: `${p.count} ${s.mentions} · ${s.last} ${dateLabel(locale, p.lastDate)}`,
+    entries: p.entries.map((e: any) => ({ id: e.id, text: e.summary || e.raw_text || "" })),
+  }));
 
   return (
     <div className="shell">
@@ -79,28 +86,7 @@ export default async function PlacesPage() {
             {visited.length === 0 ? (
               <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5 }}>{s.beenEmpty}</div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
-                {visited.map((p, idx) => (
-                  <div key={p.name} className="card">
-                    <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 8 }}>
-                      <span style={{ width: 36, height: 36, borderRadius: 9, background: "var(--surface-2)", color: COLORS[idx % COLORS.length], display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <i className="ti ti-map-pin" style={{ fontSize: 18 }} />
-                      </span>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-                        <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{p.count} {s.mentions} · {s.last} {dateLabel(locale, p.lastDate)}</div>
-                      </div>
-                    </div>
-                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-                      {p.entries.slice(0, 3).map((e: any) => (
-                        <Link key={e.id} href={`/entry/${e.id}`} style={{ display: "block", fontSize: 12.5, color: "var(--text-2)", padding: "3px 0", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          · {e.summary || e.raw_text}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <EntityManager kind="places" locale={locale} items={visitedItems} />
             )}
 
             {/* КУДА ХОЧУ */}
