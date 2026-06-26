@@ -168,18 +168,62 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
           {peopleList.map((p) => (<option key={p} value={p}>{p}</option>))}
         </select>
         {anyFilter && (
-          <button onClick={() => { setPeriod(""); setCategory(""); setTag(""); setPerson(""); setMood(""); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "none", background: "var(--surface-2)", color: "var(--text-2)", cursor: "pointer" }}>
+          <button onClick={() => { setCategory(""); setTag(""); setPerson(""); setMood(""); }} style={{ fontSize: 12.5, padding: "6px 11px", borderRadius: 8, border: "none", background: "var(--surface-2)", color: "var(--text-2)", cursor: "pointer" }}>
             <i className="ti ti-x" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.reset}
           </button>
         )}
       </div>
 
+      {/* КАЛЕНДАРЬ */}
+      <div className="card" style={{ marginBottom: 16, padding: "12px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          <button aria-label="prev" onClick={() => { setCursor(calMode === "week" ? addDays(cursor, -7) : new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1, 12)); setSelectedDay(null); }} style={navBtn}><i className="ti ti-chevron-left" style={{ fontSize: 18 }} /></button>
+          <div style={{ flex: 1, textAlign: "center", fontSize: 14.5, fontWeight: 600, textTransform: calMode === "month" ? "capitalize" : "none", minWidth: 120 }}>{calTitle}</div>
+          <button aria-label="next" onClick={() => { setCursor(calMode === "week" ? addDays(cursor, 7) : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1, 12)); setSelectedDay(null); }} style={navBtn}><i className="ti ti-chevron-right" style={{ fontSize: 18 }} /></button>
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={() => { setCalMode("month"); setSelectedDay(null); }} style={segBtn(calMode === "month")}>{c.month}</button>
+            <button onClick={() => { setCalMode("week"); setSelectedDay(null); }} style={segBtn(calMode === "week")}>{c.week}</button>
+          </div>
+          <button onClick={() => { setCursor(new Date()); setSelectedDay(today); }} style={segBtn(false)}>{c.today}</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 5 }}>
+          {weekdays.map((w, i) => <div key={i} style={{ textAlign: "center", fontSize: 11, color: "var(--text-3)", textTransform: "capitalize" }}>{w}</div>)}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
+          {cells.map((day, i) => {
+            const iso = toISO(day);
+            const inMonth = calMode === "week" || day.getMonth() === cursor.getMonth();
+            const cnt = countByDate[iso] || 0;
+            const isToday = iso === today;
+            const isSel = iso === selectedDay;
+            return (
+              <button key={i} onClick={() => { if (!inMonth) return; setSelectedDay(isSel ? null : iso); }} disabled={!inMonth}
+                style={{ aspectRatio: calMode === "week" ? "1 / 1.25" : "1", borderRadius: 10, cursor: inMonth ? "pointer" : "default", border: isToday && !isSel ? "1.5px solid var(--accent)" : "1.5px solid transparent", background: isSel ? "var(--accent)" : cnt ? "var(--accent-bg)" : "transparent", color: isSel ? "#fff" : inMonth ? "var(--text)" : "var(--text-3)", opacity: inMonth ? 1 : 0.35, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: cnt ? 600 : 400 }}>{day.getDate()}</span>
+                {cnt > 0 && (calMode === "week"
+                  ? <span style={{ fontSize: 10, fontWeight: 600, color: isSel ? "#fff" : "var(--accent)" }}>{cnt}</span>
+                  : <span style={{ width: 5, height: 5, borderRadius: "50%", background: isSel ? "#fff" : "var(--accent)" }} />)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {selectedDay && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 15.5, fontWeight: 600, textTransform: "capitalize" }}>{dateLabel(locale, selectedDay)}</div>
+          <button onClick={() => setSelectedDay(null)} style={{ fontSize: 12.5, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <i className="ti ti-arrow-left" style={{ fontSize: 14 }} />{calMode === "week" ? c.allWeek : c.allMonth}
+          </button>
+        </div>
+      )}
+
       {dates.length === 0 ? (
-        <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
+        <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{selectedDay ? c.dayEmpty : s.empty}</div>
       ) : (
         dates.map((d) => (
           <div key={d} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 12.5, color: "var(--text-2)", fontWeight: 500, marginBottom: 8 }}>{dateLabel(locale, d)}</div>
+            {!selectedDay && <div style={{ fontSize: 12.5, color: "var(--text-2)", fontWeight: 500, marginBottom: 8, textTransform: "capitalize" }}>{dateLabel(locale, d)}</div>}
             {byDate[d].map((e: any) => (
               <div key={e.id} className="card" style={{ position: "relative", marginBottom: 9, opacity: busyId === e.id ? 0.5 : 1, transition: "opacity .15s" }}>
                 <Link href={`/entry/${e.id}`} style={{ display: "block" }}>
