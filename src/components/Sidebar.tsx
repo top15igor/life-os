@@ -21,17 +21,17 @@ export default function Sidebar({
 }) {
   const path = usePathname();
   const [isOwner, setIsOwner] = useState(false);
-  const [ref, setRef] = useState<string | null>(null);
+  const [refCode, setRefCode] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
-      .then((d) => { setIsOwner(!!d.isOwner); setRef(d.ref || null); })
+      .then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.refCode || d.ref || null); })
       .catch(() => {});
   }, []);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const inviteLink = ref ? `${origin}/welcome?ref=${ref}` : "";
+  const inviteLink = refCode ? `${origin}/i/${refCode}` : "";
 
   return (
     <>

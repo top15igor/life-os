@@ -5,6 +5,47 @@ const OWNER = "00000000-0000-0000-0000-000000000000";
 
 export type User = { id: string; token: string; name: string | null; chat_id?: number; isNew?: boolean };
 
+// ===== Короткий код-приглашение (для аккуратных реф-ссылок /i/<code>) =====
+const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // без похожих 0/o/1/l
+function genCode(): string {
+  let s = "";
+  for (let i = 0; i < 6; i++) s += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  return s;
+}
+
+// Возвращает короткий код пользователя; генерирует и сохраняет при отсутствии.
+// Фолбэк (если колонки ref_code ещё нет) — сам userId, старый формат продолжит работать.
+export async function getInviteCode(userId: string): Promise<string> {
+  const db = supabaseAdmin();
+  try {
+    const { data } = await db.from("users").select("ref_code").eq("id", userId).maybeSingle();
+    if (data?.ref_code) return data.ref_code;
+    for (let i = 0; i < 6; i++) {
+      const code = genCode();
+      const { error } = await db.from("users").update({ ref_code: code }).eq("id", userId);
+      if (!error) {
+        const { data: chk } = await db.from("users").select("ref_code").eq("id", userId).maybeSingle();
+        if (chk?.ref_code) return chk.ref_code;
+      }
+    }
+  } catch {}
+  return userId;
+}
+
+// Преобразует код ИЛИ legacy-UUID из ссылки в id пригласившего.
+export async function resolveRefToId(raw?: string | null): Promise<string | null> {
+  if (!raw) return null;
+  const db = supabaseAdmin();
+  if (/^[a-z0-9]{4,12}$/i.test(raw)) {
+    try {
+      const { data } = await db.from("users").select("id").eq("ref_code", raw).maybeSingle();
+      if (data?.id) return data.id;
+    } catch {}
+  }
+  if (/^[0-9a-f-]{36}$/i.test(raw)) return raw; // legacy: ссылка со старым ?ref=<UUID>
+  return null;
+}
+
 // Находит пользователя по chat_id или создаёт нового (при первом сообщении).
 export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string): Promise<User> {
   const db = supabaseAdmin();
@@ -28,7 +69,8 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
 
   const id = chatId === 115629292 ? OWNER : randomUUID();
   const token = randomUUID();
-  const ref = referredBy && /^[0-9a-f-]{36}$/i.test(referredBy) && referredBy !== id ? referredBy : null;
+  let ref = await resolveRefToId(referredBy);
+  if (ref === id) ref = null;
   const { data, error } = await db
     .from("users")
     .insert({ id, chat_id: chatId, name: name || null, token, referred_by: ref, lang: lang || null })

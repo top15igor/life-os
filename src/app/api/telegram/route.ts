@@ -5,7 +5,7 @@ import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage } from "@/lib/memory";
 import { saveEntry } from "@/lib/saveEntry";
-import { getOrCreateUser } from "@/lib/users";
+import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -173,7 +173,7 @@ function openBtn(lang: string, link: string) {
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
   const I = INVITE[lang] || INVITE.ru;
-  const inviteLink = `${origin}/welcome?ref=${userId}`;
+  const inviteLink = `${origin}/i/${await getInviteCode(userId)}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
 }
@@ -381,7 +381,7 @@ export async function POST(req: NextRequest) {
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
-    const refLink = `${origin}/welcome?ref=${user.id}`;
+    const refLink = `${origin}/i/${await getInviteCode(user.id)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     await sendMessage(chatId, body, {
       reply_markup: {

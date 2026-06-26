@@ -7,6 +7,7 @@ import { getEntries, getGoodDeeds, getDreams, getStreak } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import { getInviteCode } from "@/lib/users";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export default async function SharePage() {
   const hdrs = await headers();
   const host = hdrs.get("host") || "mylifebookai.vercel.app";
   const proto = hdrs.get("x-forwarded-proto") || "https";
-  const refLink = `${proto}://${host}/welcome?ref=${user.id}`;
+  const refLink = `${proto}://${host}/i/${await getInviteCode(user.id)}`;
 
   const pubConfig = await getPublicConfig(user.id);
   const suggestedSlug = (user.name || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30) || user.id.slice(0, 8);
