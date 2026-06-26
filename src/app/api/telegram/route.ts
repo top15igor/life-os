@@ -333,20 +333,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // По смыслу: это вопрос к ассистенту или запись в дневник?
-    // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
-    if (!forceSave && (!isVoice || text.length < 160)) {
-      const intent = await classifyIntent(text, user.id);
-      if (intent === "question") {
-        await sendChatAction(chatId, "typing");
-        const ans = await askLife(user.id, text);
-        await saveChat(user.id, text, ans);
-        await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
-        return NextResponse.json({ ok: true });
-      }
-    }
-
-    // Похоже на исправление? Правим последнюю запись, а не плодим новую.
+    // Похоже на исправление предыдущей записи? Правим её, а НЕ плодим новую
+    // и НЕ отвечаем как на вопрос. ВАЖНО: проверяем ДО classifyIntent — иначе
+    // фразы вроде «ты неправильно записал…» классификатор принимает за вопрос,
+    // уводит в askLife, и запись в базе не меняется (бот «поговорил», но не исправил).
     if (!forceSave && isCorrection(text)) {
       const amended = await amendLastEntry(user.id, text);
       if (amended) {
@@ -357,6 +347,20 @@ export async function POST(req: NextRequest) {
         await sendMessage(chatId, body, {
           reply_markup: { inline_keyboard: [[{ text: L.book, url: `${origin}/u/${user.token}?next=/entry/${amended.entry.id}` }]] },
         });
+        return NextResponse.json({ ok: true });
+      }
+      // нет сегодняшней записи для правки → проваливаемся дальше (вопрос/новая запись)
+    }
+
+    // По смыслу: это вопрос к ассистенту или запись в дневник?
+    // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
+    if (!forceSave && (!isVoice || text.length < 160)) {
+      const intent = await classifyIntent(text, user.id);
+      if (intent === "question") {
+        await sendChatAction(chatId, "typing");
+        const ans = await askLife(user.id, text);
+        await saveChat(user.id, text, ans);
+        await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
         return NextResponse.json({ ok: true });
       }
     }
