@@ -27,6 +27,17 @@ export type AssistantStrings = {
   fullGuide: string; // «Открыть полную инструкцию»
   close: string;
   greet: string; // приветствие вверху
+  // Блок «Оставить пожелание» (идёт владельцу в Telegram через /api/feedback)
+  fbTitle: string;
+  fbSub: string;
+  fbIdea: string;
+  fbSync: string;
+  fbOther: string;
+  fbPh: string;
+  fbSend: string;
+  fbSending: string;
+  fbThanks: string;
+  fbError: string;
 };
 
 const S: Record<Locale, AssistantStrings> = {
@@ -47,6 +58,16 @@ const S: Record<Locale, AssistantStrings> = {
     fullGuide: "Полная инструкция",
     close: "Закрыть",
     greet: "Привет! Помогу сориентироваться.",
+    fbTitle: "Оставить пожелание",
+    fbSub: "Хочешь доработку, синхронизацию с сервисом или другое — напиши, я прочитаю лично.",
+    fbIdea: "💡 Доработка",
+    fbSync: "🔗 Синхронизация",
+    fbOther: "💬 Другое",
+    fbPh: "Что добавить или улучшить?",
+    fbSend: "Отправить",
+    fbSending: "Отправляю…",
+    fbThanks: "Спасибо! 🙏 Я прочитаю это лично.",
+    fbError: "Не отправилось. Попробуй ещё раз.",
   },
   en: {
     bubble: "Helper",
@@ -65,6 +86,16 @@ const S: Record<Locale, AssistantStrings> = {
     fullGuide: "Full guide",
     close: "Close",
     greet: "Hi! Let me help you find your way.",
+    fbTitle: "Send a wish",
+    fbSub: "Want a feature, a sync with a service, or anything else — write to me, I read it personally.",
+    fbIdea: "💡 Feature",
+    fbSync: "🔗 Integration",
+    fbOther: "💬 Other",
+    fbPh: "What to add or improve?",
+    fbSend: "Send",
+    fbSending: "Sending…",
+    fbThanks: "Thank you! 🙏 I'll read it personally.",
+    fbError: "Didn't send. Try again.",
   },
   uk: {} as AssistantStrings,
   fr: {} as AssistantStrings,
@@ -86,6 +117,16 @@ S.uk = {
   fullGuide: "Повна інструкція",
   close: "Закрити",
   greet: "Привіт! Допоможу зорієнтуватися.",
+  fbTitle: "Залишити побажання",
+  fbSub: "Хочеш доробку, синхронізацію із сервісом чи інше — напиши, я прочитаю особисто.",
+  fbIdea: "💡 Доробка",
+  fbSync: "🔗 Синхронізація",
+  fbOther: "💬 Інше",
+  fbPh: "Що додати або покращити?",
+  fbSend: "Надіслати",
+  fbSending: "Надсилаю…",
+  fbThanks: "Дякую! 🙏 Я прочитаю це особисто.",
+  fbError: "Не надіслалося. Спробуй ще раз.",
 };
 S.fr = {
   bubble: "Aide",
@@ -104,6 +145,16 @@ S.fr = {
   fullGuide: "Guide complet",
   close: "Fermer",
   greet: "Bonjour ! Je vous aide à vous repérer.",
+  fbTitle: "Faire un vœu",
+  fbSub: "Une fonctionnalité, une synchro avec un service ou autre — écris-moi, je lis tout personnellement.",
+  fbIdea: "💡 Amélioration",
+  fbSync: "🔗 Intégration",
+  fbOther: "💬 Autre",
+  fbPh: "Quoi ajouter ou améliorer ?",
+  fbSend: "Envoyer",
+  fbSending: "Envoi…",
+  fbThanks: "Merci ! 🙏 Je le lirai personnellement.",
+  fbError: "Échec de l'envoi. Réessayez.",
 };
 
 export function assistantStrings(locale: Locale): AssistantStrings {

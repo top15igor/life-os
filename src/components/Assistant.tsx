@@ -28,6 +28,9 @@ export default function Assistant() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(false);
+  const [fbKind, setFbKind] = useState("idea");
+  const [fbText, setFbText] = useState("");
+  const [fbState, setFbState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -40,6 +43,8 @@ export default function Assistant() {
     setAnswer(null);
     setErr(false);
     setQuery("");
+    setFbState("idle");
+    setFbText("");
   }, [path]);
 
   const t = useMemo(() => getDict(locale), [locale]);
@@ -73,6 +78,24 @@ export default function Assistant() {
   function go(href: string) {
     setOpen(false);
     router.push(href);
+  }
+
+  async function sendWish() {
+    const text = fbText.trim();
+    if (!text || fbState === "sending") return;
+    setFbState("sending");
+    try {
+      const r = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: fbKind, text }),
+      });
+      const d = await r.json().catch(() => null);
+      if (d?.ok) { setFbState("done"); setFbText(""); }
+      else setFbState("error");
+    } catch {
+      setFbState("error");
+    }
   }
 
   async function ask() {
@@ -197,6 +220,38 @@ export default function Assistant() {
                 )}
                 {err && <div className="asst-err">{s.askError}</div>}
                 {!answer && !err && <div className="asst-hint">{s.askHint}</div>}
+              </div>
+
+              {/* Оставить пожелание (идёт владельцу в Telegram) */}
+              <div className="asst-card">
+                <div className="asst-lbl"><i className="ti ti-message-circle-heart" style={{ marginRight: 5, color: "var(--accent)" }} />{s.fbTitle}</div>
+                {fbState === "done" ? (
+                  <div className="asst-fbdone"><i className="ti ti-circle-check" />{s.fbThanks}</div>
+                ) : (
+                  <>
+                    <div className="asst-fbsub">{s.fbSub}</div>
+                    <div className="asst-fbchips">
+                      {[["idea", s.fbIdea], ["sync", s.fbSync], ["other", s.fbOther]].map(([k, label]) => (
+                        <button
+                          key={k}
+                          className={`asst-fbchip${fbKind === k ? " on" : ""}`}
+                          onClick={() => setFbKind(k)}
+                        >{label}</button>
+                      ))}
+                    </div>
+                    <textarea
+                      className="asst-ta"
+                      value={fbText}
+                      onChange={(e) => setFbText(e.target.value)}
+                      placeholder={s.fbPh}
+                      rows={2}
+                    />
+                    <button className="asst-ask" onClick={sendWish} disabled={fbState === "sending" || !fbText.trim()}>
+                      {fbState === "sending" ? s.fbSending : s.fbSend}
+                    </button>
+                    {fbState === "error" && <div className="asst-err">{s.fbError}</div>}
+                  </>
+                )}
               </div>
 
               {/* Полная инструкция */}
