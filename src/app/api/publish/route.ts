@@ -29,8 +29,10 @@ export async function POST(req: NextRequest) {
     const text = String(body?.text || "").trim().slice(0, 2000);
     const privacy = body?.privacy === "link" ? "link" : "public";
     if (!text) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
+    const row: any = { user_id: user.id, entry_id: id, title, text, privacy };
+    if (body?.path_id !== undefined) row.path_id = body.path_id || null; // привязка к пути (Фаза 2)
     try {
-      await db.from("public_pages").upsert({ user_id: user.id, entry_id: id, title, text, privacy }, { onConflict: "entry_id" });
+      await db.from("public_pages").upsert(row, { onConflict: "entry_id" });
     } catch {
       return NextResponse.json({ ok: false, error: "no_table" }, { status: 500 });
     }

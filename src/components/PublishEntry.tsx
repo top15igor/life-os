@@ -5,18 +5,19 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 const STR: Record<string, any> = {
-  ru: { publish: "Опубликовать", published: "Опубликовано", edit: "Изменить", remove: "Убрать", modalTitle: "Опубликовать в Книгу жизни", sub: "AI подготовил публичную версию — личное не уйдёт. Проверь и поправь под себя.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI спрятал ради приватности:", save: "Опубликовать", saveEdit: "Сохранить", cancel: "Отмена", preparing: "AI готовит…", bookNote: "Появится в твоей публичной книге /p/… (если она включена в «Поделиться»).", confirmRemove: "Убрать запись из публичной книги?", empty: "Текст не может быть пустым." },
-  en: { publish: "Publish", published: "Published", edit: "Edit", remove: "Remove", modalTitle: "Publish to your Book of Life", sub: "AI prepared a public version — nothing personal leaks. Review and tweak.", lTitle: "Title", lText: "Text", aiHid: "🔒 AI hid for privacy:", save: "Publish", saveEdit: "Save", cancel: "Cancel", preparing: "AI is preparing…", bookNote: "It'll appear in your public book /p/… (if it's on in Share).", confirmRemove: "Remove this entry from your public book?", empty: "Text can't be empty." },
-  uk: { publish: "Опублікувати", published: "Опубліковано", edit: "Змінити", remove: "Прибрати", modalTitle: "Опублікувати в Книгу життя", sub: "AI підготував публічну версію — особисте не піде. Перевір і поправ.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI сховав заради приватності:", save: "Опублікувати", saveEdit: "Зберегти", cancel: "Скасувати", preparing: "AI готує…", bookNote: "З'явиться у твоїй публічній книзі /p/… (якщо її ввімкнено в «Поділитися»).", confirmRemove: "Прибрати запис із публічної книги?", empty: "Текст не може бути порожнім." },
-  fr: { publish: "Publier", published: "Publié", edit: "Modifier", remove: "Retirer", modalTitle: "Publier dans ton Livre de vie", sub: "L'IA a préparé une version publique — rien de personnel ne sort. Vérifie et ajuste.", lTitle: "Titre", lText: "Texte", aiHid: "🔒 L'IA a masqué pour la confidentialité :", save: "Publier", saveEdit: "Enregistrer", cancel: "Annuler", preparing: "L'IA prépare…", bookNote: "Apparaîtra dans ton livre public /p/… (s'il est activé dans Partager).", confirmRemove: "Retirer cette entrée du livre public ?", empty: "Le texte ne peut pas être vide." },
+  ru: { publish: "Опубликовать", published: "Опубликовано", edit: "Изменить", remove: "Убрать", modalTitle: "Опубликовать в Книгу жизни", sub: "AI подготовил публичную версию — личное не уйдёт. Проверь и поправь под себя.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI спрятал ради приватности:", save: "Опубликовать", saveEdit: "Сохранить", cancel: "Отмена", preparing: "AI готовит…", bookNote: "Появится в твоей публичной книге /p/… (если она включена в «Поделиться»).", confirmRemove: "Убрать запись из публичной книги?", empty: "Текст не может быть пустым.", pathLabel: "Добавить в путь (необязательно)", pathNone: "Без пути" },
+  en: { publish: "Publish", published: "Published", edit: "Edit", remove: "Remove", modalTitle: "Publish to your Book of Life", sub: "AI prepared a public version — nothing personal leaks. Review and tweak.", lTitle: "Title", lText: "Text", aiHid: "🔒 AI hid for privacy:", save: "Publish", saveEdit: "Save", cancel: "Cancel", preparing: "AI is preparing…", bookNote: "It'll appear in your public book /p/… (if it's on in Share).", confirmRemove: "Remove this entry from your public book?", empty: "Text can't be empty.", pathLabel: "Add to a path (optional)", pathNone: "No path" },
+  uk: { publish: "Опублікувати", published: "Опубліковано", edit: "Змінити", remove: "Прибрати", modalTitle: "Опублікувати в Книгу життя", sub: "AI підготував публічну версію — особисте не піде. Перевір і поправ.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI сховав заради приватності:", save: "Опублікувати", saveEdit: "Зберегти", cancel: "Скасувати", preparing: "AI готує…", bookNote: "З'явиться у твоїй публічній книзі /p/… (якщо її ввімкнено в «Поділитися»).", confirmRemove: "Прибрати запис із публічної книги?", empty: "Текст не може бути порожнім.", pathLabel: "Додати в шлях (необов'язково)", pathNone: "Без шляху" },
+  fr: { publish: "Publier", published: "Publié", edit: "Modifier", remove: "Retirer", modalTitle: "Publier dans ton Livre de vie", sub: "L'IA a préparé une version publique — rien de personnel ne sort. Vérifie et ajuste.", lTitle: "Titre", lText: "Texte", aiHid: "🔒 L'IA a masqué pour la confidentialité :", save: "Publier", saveEdit: "Enregistrer", cancel: "Annuler", preparing: "L'IA prépare…", bookNote: "Apparaîtra dans ton livre public /p/… (s'il est activé dans Partager).", confirmRemove: "Retirer cette entrée du livre public ?", empty: "Le texte ne peut pas être vide.", pathLabel: "Ajouter à un chemin (optionnel)", pathNone: "Sans chemin" },
 };
 
-export default function PublishEntry({ entryId, initial, locale }: { entryId: string; initial: { published: boolean; title: string; text: string }; locale: string }) {
+export default function PublishEntry({ entryId, initial, paths = [], locale }: { entryId: string; initial: { published: boolean; title: string; text: string }; paths?: { id: string; title: string; emoji?: string }[]; locale: string }) {
   const L = STR[locale] || STR.ru;
   const router = useRouter();
   const [published, setPublished] = useState(initial.published);
   const [title, setTitle] = useState(initial.title);
   const [text, setText] = useState(initial.text);
+  const [pathId, setPathId] = useState("");
   const [removed, setRemoved] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,7 +39,9 @@ export default function PublishEntry({ entryId, initial, locale }: { entryId: st
     if (!t) { window.alert(L.empty); return; }
     setBusy(true);
     try {
-      const r = await fetch("/api/publish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: entryId, action: "publish", title: title.trim(), text: t, privacy: "public" }) });
+      const payload: any = { id: entryId, action: "publish", title: title.trim(), text: t, privacy: "public" };
+      if (paths.length) payload.path_id = pathId || null;
+      const r = await fetch("/api/publish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       if (r.ok) { setPublished(true); setOpen(false); router.refresh(); }
     } finally { setBusy(false); }
   }
@@ -82,6 +85,15 @@ export default function PublishEntry({ entryId, initial, locale }: { entryId: st
             {removed.length > 0 && (
               <div style={{ marginTop: 12, fontSize: 12.5, color: "var(--text-2)", background: "var(--surface-2)", borderRadius: 10, padding: "10px 12px", lineHeight: 1.5 }}>
                 {L.aiHid} {removed.join(", ")}
+              </div>
+            )}
+            {paths.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 4 }}>{L.pathLabel}</div>
+                <select value={pathId} onChange={(e) => setPathId(e.target.value)} style={{ ...inp, cursor: "pointer" }}>
+                  <option value="">{L.pathNone}</option>
+                  {paths.map((p) => <option key={p.id} value={p.id}>{p.emoji ? p.emoji + " " : ""}{p.title}</option>)}
+                </select>
               </div>
             )}
             <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 10, lineHeight: 1.45 }}>{L.bookNote}</div>
