@@ -193,6 +193,57 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
   return block.input as Analysis;
 }
 
+// === База знаний: разбор сохранённого контента (Instagram-пост/reels) ===
+export type SavedAnalysis = {
+  title: string;       // короткий понятный заголовок
+  topic: string;       // широкая тема, напр. «Строительство дома», «Рецепты», «Маркетинг»
+  summary: string;     // 2–4 предложения: что полезного внутри
+  key_points: string[];// практические тезисы/шаги
+  tags: string[];      // 3–8 тегов без #
+};
+
+const SAVED_TOOL: Anthropic.Tool = {
+  name: "save_knowledge",
+  description: "Сохранить структурированный разбор сохранённого контента в личную базу знаний.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "Короткий понятный заголовок (до ~70 символов), о чём этот пост/видео." },
+      topic: { type: "string", description: "Широкая тема для группировки, напр. «Строительство дома», «Рецепты», «Финансы», «Маркетинг», «Спорт»." },
+      summary: { type: "string", description: "2–4 предложения: что полезного внутри, чтобы потом легко вспомнить и применить." },
+      key_points: { type: "array", items: { type: "string" }, description: "Практические тезисы, советы или шаги из контента (списком, по делу). До 8 пунктов." },
+      tags: { type: "array", items: { type: "string" }, description: "3–8 коротких тегов без символа #." },
+    },
+    required: ["title", "topic", "summary", "key_points", "tags"],
+  },
+};
+
+// Разбирает подпись поста + расшифровку видео в карточку базы знаний.
+export async function analyzeSaved(text: string, userId?: string): Promise<SavedAnalysis> {
+  const msg = await client().messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1200,
+    tools: [SAVED_TOOL],
+    tool_choice: { type: "tool", name: "save_knowledge" },
+    messages: [{ role: "user", content: `Ты помогаешь вести личную БАЗУ ЗНАНИЙ. Пользователь сохраняет полезный контент (посты и reels из Instagram), чтобы потом находить по нему ответы (например: «как построить дом»). Тебе дают подпись поста и/или расшифровку звука из видео. Разбери это и вызови инструмент save_knowledge.
+
+Правила:
+- Пиши на том же языке, что и контент (по умолчанию русский).
+- Это НЕ личный дневник — это справочный/обучающий материал. Не пиши от первого лица, пиши по сути.
+- summary и key_points должны быть ПОЛЕЗНЫ для применения позже: конкретика, шаги, советы, цифры. Не пересказывай «автор показывает…», а извлекай суть.
+- Не выдумывай того, чего нет в тексте. Если контента мало — сделай короткий честный разбор.
+
+Контент:
+"""
+${text}
+"""` }],
+  });
+  logClaude(userId, "saved", "sonnet", (msg as any).usage);
+  const block = msg.content.find((b) => b.type === "tool_use");
+  if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
+  return block.input as SavedAnalysis;
+}
+
 // Переписать запись в тёплое резюме ОТ ПЕРВОГО ЛИЦА (для обновления старых записей).
 export async function summarize(text: string, userId?: string): Promise<string> {
   const m = await client().messages.create({

@@ -4,6 +4,7 @@ import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage } from "@/lib/memory";
+import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
@@ -98,6 +99,13 @@ const MEM_MSG: Record<string, { recognizing: string; saved: string; open: string
   en: { recognizing: "📸 Reading the photo…", saved: "Saved to Visual Memory:", open: "📂 Open memory", failed: "Couldn't read the photo, try again." },
   uk: { recognizing: "📸 Розпізнаю фото…", saved: "Зберіг у Візуальну пам'ять:", open: "📂 Відкрити пам'ять", failed: "Не вдалося розібрати фото, спробуй ще раз." },
   fr: { recognizing: "📸 Je lis la photo…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie." },
+};
+
+const IG_MSG: Record<string, { working: string; saved: string; open: string; noAudio: string; failed: string }> = {
+  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из Instagram. Попробуй другую ссылку или пришли скриншот/видео." },
+  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this Instagram post. Try another link or send a screenshot/video." },
+  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з Instagram. Спробуй інше посилання або надішли скріншот/відео." },
+  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post Instagram. Essaie un autre lien ou envoie une capture/vidéo." },
 };
 
 const MILE: Record<string, any> = {
@@ -322,6 +330,33 @@ export async function POST(req: NextRequest) {
 
     if (!text || !text.trim()) {
       await sendMessage(chatId, "Пришли текст или голосовое сообщение 🙂");
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🔖 Ссылка Instagram → сохраняем в личную Базу знаний (НЕ в дневник).
+    const igUrl = extractInstagramUrl(text);
+    if (igUrl) {
+      const lang = pickLang(msg.from?.language_code);
+      const L = IG_MSG[lang] || IG_MSG.ru;
+      await sendMessage(chatId, L.working);
+      try {
+        const r = await importInstagram(user.id, igUrl);
+        if (!r.ok) {
+          await sendMessage(chatId, L.failed);
+          return NextResponse.json({ ok: true });
+        }
+        const a = r.analysis;
+        let body = `🔖 <b>${L.saved}</b>\n\n<b>${esc(a.title)}</b>`;
+        if (a.topic) body += `\n📂 ${esc(a.topic)}`;
+        if (a.summary) body += `\n\n${esc(a.summary)}`;
+        if (a.key_points?.length) body += "\n\n" + a.key_points.slice(0, 5).map((p) => "• " + esc(p)).join("\n");
+        if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
+        if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
+        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
+      } catch (e) {
+        console.error("instagram", e);
+        await sendMessage(chatId, L.failed);
+      }
       return NextResponse.json({ ok: true });
     }
 
