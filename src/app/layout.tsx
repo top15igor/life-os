@@ -1,4 +1,5 @@
 import "./globals.css";
+import Assistant from "@/components/Assistant";
 
 export const metadata = {
   title: "LIFE OS",
@@ -31,7 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Assistant />
+      </body>
     </html>
   );
 }
