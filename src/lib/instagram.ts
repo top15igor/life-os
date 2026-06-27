@@ -79,14 +79,18 @@ async function fetchViaRapidApi(url: string): Promise<IgMedia | null> {
   const key = process.env.RAPIDAPI_KEY;
   if (!key) return null;
   const host = process.env.RAPIDAPI_INSTAGRAM_HOST || "instagram-scraper-api2.p.rapidapi.com";
-  // Путь до эндпоинта «инфо о посте». В пути или теле {url} заменяется на ссылку
-  // поста (url-encoded). Метод по умолчанию GET; если задан RAPIDAPI_INSTAGRAM_BODY —
-  // запрос уходит POST'ом с form-data (так устроены некоторые API, напр. *.php).
+  // Путь до эндпоинта «инфо о посте». В пути/теле подставляются плейсхолдеры:
+  //   {url}       — полная ссылка поста (url-encoded)
+  //   {shortcode} — только код поста (многие API хотят именно его)
+  // Метод по умолчанию GET; если задан RAPIDAPI_INSTAGRAM_BODY — запрос уходит
+  // POST'ом с form-data (так устроены некоторые API, напр. *.php).
   const path = process.env.RAPIDAPI_INSTAGRAM_PATH || "/v1/post_info?code_or_id_or_url={url}";
   const bodyTpl = process.env.RAPIDAPI_INSTAGRAM_BODY || "";
   const method = (process.env.RAPIDAPI_INSTAGRAM_METHOD || (bodyTpl ? "POST" : "GET")).toUpperCase();
   const enc = encodeURIComponent(url);
-  const endpoint = `https://${host}${path.replace("{url}", enc)}`;
+  const sc = shortcodeOf(url) || "";
+  const fill = (s: string) => s.replace(/\{url\}/g, enc).replace(/\{shortcode\}/g, sc);
+  const endpoint = `https://${host}${fill(path)}`;
 
   const init: RequestInit = {
     method,
@@ -97,7 +101,7 @@ async function fetchViaRapidApi(url: string): Promise<IgMedia | null> {
       ...(method === "POST" ? { "content-type": "application/x-www-form-urlencoded" } : {}),
     },
   };
-  if (method === "POST") init.body = (bodyTpl || "url={url}").replace("{url}", enc);
+  if (method === "POST") init.body = fill(bodyTpl || "url={url}");
 
   let json: any;
   try {
