@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Поделиться: карточки, публичная книга и пути", d: "Теперь можно делиться успехами наружу: красивые карточки достижений в Telegram/Instagram/WhatsApp, публикация отдельных записей (AI готовит публичную версию и прячет личное), публичная страница-витрина /p/имя и «Пути» — длинные истории с публичным таймлайном. Дневник остаётся приватным: публикуешь только вручную.", tag: "new" },
       { t: "Дневник стал календарём", d: "Вместо длинной ленты — календарь по месяцам и неделям: дни с записями подсвечены, выбираешь день и видишь только его записи. Так удобнее находить нужную дату.", tag: "new" },
       { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
       { t: "Визуальная память", d: "Фото и документы (чек, гарантия, важный момент) → AI понимает смысл и сохраняет в архив с категориями. Можно прислать фото боту или загрузить на сайте и добавить заметку голосом или текстом.", tag: "new" },
@@ -60,6 +61,26 @@ const E: Record<Locale, Extras> = {
       { t: "Новый дизайн «Осознанность»", d: "Голос-first главная с большим живым микрофоном. Включается тумблером вверху главной — можно сравнить с классическим.", tag: "new" },
     ],
     features: [
+      {
+        key: "social", icon: "ti-share-2", color: "#4f46e5", title: "Поделиться: карточки, книга и пути",
+        short: "Делись успехами и веди публичную книгу жизни — приватность остаётся за тобой.",
+        sections: [
+          { p: "Дневник остаётся приватным. Но отдельные моменты, достижения и целые истории ты можешь по своему желанию показать другим. Делишься не «постами», а своим путём — тем, что может вдохновить или помочь." },
+          { h: "Что можно сделать", steps: [
+            "Карточка достижения: раздел «Поделиться» → собери красивую карточку (своё достижение, прогресс «было→стало», сбывшаяся мечта или мысль) → отправь в Telegram, Instagram или WhatsApp.",
+            "Опубликовать запись: на экране любой записи нажми «Опубликовать» — AI подготовит публичную версию (перепишет по-человечески и спрячет личное), ты проверишь и поправишь.",
+            "Публичная страница: в «Поделиться» включи свою витрину /p/имя — туда попадают опубликованные страницы и твои цифры. Скопируй ссылку и кидай людям.",
+            "Пути: в «Мои пути» создай длинную историю («Восстановление здоровья», «Запуск дела») и публикуй записи в неё — получится публичный таймлайн твоего прогресса.",
+          ] },
+          { h: "Примеры", examples: ["Карточка: «Пробежал первый марафон 🏃».", "Прогресс: «Вес: было 65 → стало 61».", "Путь: «АИП, день 12» с лентой обновлений."] },
+          { h: "Приватность", tips: [
+            "По умолчанию НИЧЕГО не публикуется — только вручную и с предпросмотром.",
+            "Перед публикацией AI прячет фамилии, телефоны, адреса, медицинские детали, имена детей и финансы — и показывает, что именно скрыл.",
+            "Публичную страницу и любой путь можно в любой момент выключить, а запись — убрать из публичного.",
+            "Каждый, кто открывает твою публичную книгу, видит кнопку «Завести свой дневник» — так ты приглашаешь людей.",
+          ] },
+        ],
+      },
       {
         key: "book", icon: "ti-book-2", color: "var(--accent)", title: "Книга жизни",
         short: "Твоя жизнь, собранная в книгу. Можно читать, печатать и дарить близким.",
@@ -146,6 +167,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Share: cards, public book & paths", d: "You can now share your wins outward: beautiful achievement cards to Telegram/Instagram/WhatsApp, publishing individual entries (AI prepares a public version and hides personal data), a public showcase page /p/name and “Paths” — long stories with a public timeline. Your diary stays private: you publish only manually.", tag: "new" },
       { t: "Diary is now a calendar", d: "Instead of an endless feed — a month/week calendar: days with entries are highlighted, pick a day to see just its entries. Easier to find a specific date.", tag: "new" },
       { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
       { t: "Visual Memory", d: "Photos and documents (a receipt, warranty, a meaningful moment) → AI understands the meaning and saves them to a categorized archive. Send a photo to the bot or upload on the site and add a note by voice or text.", tag: "new" },
@@ -163,6 +185,26 @@ const E: Record<Locale, Extras> = {
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "social", icon: "ti-share-2", color: "#4f46e5", title: "Share: cards, book & paths",
+        short: "Share your wins and keep a public book of life — privacy stays yours.",
+        sections: [
+          { p: "Your diary stays private. But you can choose to show individual moments, achievements and whole stories to others. You share a path, not “posts” — something that can inspire or help." },
+          { h: "What you can do", steps: [
+            "Achievement card: the “Share” section → build a beautiful card (a win, a “before→after” progress, a dream come true or a thought) → send to Telegram, Instagram or WhatsApp.",
+            "Publish an entry: on any entry tap “Publish” — AI prepares a public version (rewrites it warmly and hides personal data); you review and tweak.",
+            "Public page: in “Share” turn on your showcase /p/name — published pages and your numbers appear there. Copy the link and send it to people.",
+            "Paths: in “My paths” create a long story (“Restoring health”, “Launching a venture”) and publish entries into it — a public timeline of your progress.",
+          ] },
+          { h: "Examples", examples: ["Card: “Ran my first marathon 🏃”.", "Progress: “Weight: 65 → 61”.", "Path: “AIP, day 12” with a feed of updates."] },
+          { h: "Privacy", tips: [
+            "By default NOTHING is published — only manually and with a preview.",
+            "Before publishing, AI hides surnames, phones, addresses, medical details, kids' names and finances — and shows you what it hid.",
+            "You can turn off your public page or any path, or unpublish an entry, anytime.",
+            "Everyone who opens your public book sees a “Start your own diary” button — that's how you invite people.",
+          ] },
+        ],
+      },
       {
         key: "book", icon: "ti-book-2", color: "var(--accent)", title: "Book of Life",
         short: "Your life gathered into a book — to read, print and gift to loved ones.",
