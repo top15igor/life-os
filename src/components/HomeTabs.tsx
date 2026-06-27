@@ -310,7 +310,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </Section>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 22 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 12, marginBottom: 22 }}>
             {vis("gratitude") && data.gratitude.length > 0 && (
               <div className="card" style={{ background: "#E1F5EE", border: "none" }}>
                 <div style={{ fontSize: 12, color: "#04342C", opacity: 0.7, marginBottom: 6 }}>{s.gratitude}</div>

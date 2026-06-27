@@ -227,7 +227,7 @@ export default function AwarenessHomeV2({ data, locale }: { data: any; locale: s
       </div>
 
       {/* TODAY + AI */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, alignItems: "start" }}>
         <div style={{ background: "#fff", border: "1px solid rgba(44,42,38,.06)", borderRadius: 20, padding: "20px 20px 8px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#26241f" }}>{t.todayTitle}</h3>

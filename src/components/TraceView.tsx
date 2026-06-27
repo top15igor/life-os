@@ -114,7 +114,7 @@ export default function TraceView({ locale, deeds, promises, gratitudeCount, wee
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 18, alignItems: "start" }}>
             <div>
               {Head(s.attention)}
               {active.length === 0 ? Empty(s.openEmpty) : <div style={{ display: "grid", gap: 8 }}>{active.map(PromCard)}</div>}

@@ -115,7 +115,7 @@ export default async function GuidePage() {
         {/* Чем отличаемся от ChatGPT */}
         <SectionTitle id="why">{g.whyTitle}</SectionTitle>
         <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{g.whyLead}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10, marginBottom: 26 }}>
           {g.why.map(([lead, text], i) => (
             <div key={i} className="card" style={{ display: "flex", gap: 11 }}>
               <i className="ti ti-circle-check" style={{ fontSize: 19, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
@@ -162,7 +162,7 @@ export default async function GuidePage() {
 
         {/* Разделы */}
         <SectionTitle id="sections">{g.sectionsTitle}</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 26 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10, marginBottom: 26 }}>
           {SECTIONS.map((sec) => (
             <div key={sec.key} className="card" style={{ display: "flex", gap: 11 }}>
               <i className={`ti ${sec.icon}`} style={{ fontSize: 20, color: sec.color, flexShrink: 0, marginTop: 1 }} />

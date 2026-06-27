@@ -43,7 +43,7 @@ export default function ProjectsManager({ initial, locale }: { initial: any[]; l
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 10 }}>
       {items.map((p, idx) => (
         <div key={p.id} className="card">
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 8 }}>

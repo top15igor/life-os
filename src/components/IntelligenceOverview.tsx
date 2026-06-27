@@ -162,7 +162,7 @@ export default function IntelligenceOverview({ locale }: { locale: string }) {
       )}
 
       {(d.energyGivers?.length > 0 || d.energyDrainers?.length > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14, marginBottom: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 14, marginBottom: 22 }}>
           {d.energyGivers?.length > 0 && (
             <div>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 10 }}>⚡ {s.givers}</div>

@@ -172,9 +172,9 @@ export default function ShareCard({ prefill, host, refLink, locale }: { prefill:
         {kinds.map((x) => <button key={x.k} onClick={() => setKind(x.k)} style={tab(kind === x.k)}><i className={`ti ${x.icon}`} style={{ fontSize: 15 }} />{x.label}</button>)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 22, alignItems: "start" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 22, alignItems: "start" }}>
         {/* редактор полей */}
-        <div style={{ maxWidth: 420 }}>
+        <div style={{ flex: "1 1 300px", minWidth: 0, maxWidth: 420 }}>
           {kind === "custom" && (
             <>
               <div style={lbl}>{L.fHeadline}</div>
@@ -244,7 +244,7 @@ export default function ShareCard({ prefill, host, refLink, locale }: { prefill:
         </div>
 
         {/* превью */}
-        <div style={{ width: 250, flexShrink: 0 }}>
+        <div style={{ flex: "1 1 220px", minWidth: 0, maxWidth: 280 }}>
           <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 7 }}>{L.preview}</div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={dataUrl} alt="" style={{ width: "100%", borderRadius: 16, display: "block", boxShadow: "0 10px 30px rgba(79,70,229,.22)" }} />

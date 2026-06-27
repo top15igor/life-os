@@ -76,7 +76,7 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
       <SectionTitle>{ex.whatsNew}</SectionTitle>
       <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.whatsNewLead}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12, marginBottom: 26 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 12, marginBottom: 26 }}>
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
             <i className="ti ti-rocket" style={{ fontSize: 18, color: "var(--positive)" }} />{ex.thisMonth}
@@ -96,7 +96,7 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
       <SectionTitle>{ex.featuresTitle}</SectionTitle>
       <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.featuresLead}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 10, marginBottom: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10, marginBottom: 12 }}>
         {shownFeatures.map((f) => (
           <button key={f.key} onClick={() => setActive(f)} className="card" style={{ textAlign: "left", cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)" }}>
             <i className={`ti ${f.icon}`} style={{ fontSize: 22, color: f.color, flexShrink: 0, marginTop: 1 }} />
