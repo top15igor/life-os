@@ -14,10 +14,10 @@ import { requireUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 const STR = {
-  ru: { from: "из записи от", empty: "Инсайтов пока нет — они появятся из твоих записей.", dreams: "Мечты" },
-  en: { from: "from entry on", empty: "No insights yet — they'll appear from your entries.", dreams: "Dreams" },
-  uk: { from: "із запису від", empty: "Інсайтів поки немає — з'являться з твоїх записів.", dreams: "Мрії" },
-  fr: { from: "de l'entrée du", empty: "Pas encore d'insights — ils apparaîtront depuis tes entrées.", dreams: "Rêves" },
+  ru: { from: "из записи от", empty: "Инсайтов пока нет — они появятся из твоих записей.", dreams: "Карта желаний" },
+  en: { from: "from entry on", empty: "No insights yet — they'll appear from your entries.", dreams: "Wish Map" },
+  uk: { from: "із запису від", empty: "Інсайтів поки немає — з'являться з твоїх записів.", dreams: "Карта бажань" },
+  fr: { from: "de l'entrée du", empty: "Pas encore d'insights — ils apparaîtront depuis tes entrées.", dreams: "Carte des rêves" },
 };
 
 export default async function PlansPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
