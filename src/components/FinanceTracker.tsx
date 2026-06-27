@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; note: string | null };
@@ -15,16 +15,20 @@ type Data = {
 const STR: Record<string, any> = {
   ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта",
     budgets: "Бюджеты по категориям", limit: "Лимит", setLimit: "Задать лимит", editLimit: "Изменить лимит", removeLimit: "Убрать лимит", ofLimit: "из", over: "превышен на", leftWord: "осталось", addBudget: "Добавить лимит", budgetTotalT: "Бюджет на месяц", spent: "потрачено",
-    settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Курсы нужны только если ведёшь учёт в нескольких валютах." },
+    settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Курсы нужны только если ведёшь учёт в нескольких валютах.",
+    importTitle: "Перенос из MoneyOK", importBtn: "Выбрать файл MoneyOK.csv", importing: "Переносим операции…", importHint: "В MoneyOK: Меню → «Экспорт в CSV» → пришли себе файл и загрузи его здесь. Перенесутся все доходы и расходы. Повторная загрузка того же файла не создаёт дублей.", importDone: (n: number, dup: number) => `Перенесено операций: ${n}${dup ? `, пропущено дублей: ${dup}` : ""}.`, importEmpty: "Не удалось распознать операции в файле. Это точно экспорт MoneyOK в CSV?", importErr: "Не получилось загрузить файл. Попробуй ещё раз." },
   en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency",
     budgets: "Category budgets", limit: "Limit", setLimit: "Set a limit", editLimit: "Edit limit", removeLimit: "Remove limit", ofLimit: "of", over: "over by", leftWord: "left", addBudget: "Add a limit", budgetTotalT: "Monthly budget", spent: "spent",
-    settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "Rates are only needed if you track several currencies." },
+    settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "Rates are only needed if you track several currencies.",
+    importTitle: "Migrate from MoneyOK", importBtn: "Choose MoneyOK.csv file", importing: "Importing transactions…", importHint: "In MoneyOK: Menu → “Export to CSV” → send the file to yourself and upload it here. All income and expenses will be migrated. Re-uploading the same file won't create duplicates.", importDone: (n: number, dup: number) => `Imported ${n} transactions${dup ? `, skipped ${dup} duplicates` : ""}.`, importEmpty: "Couldn't recognise any transactions. Is this a MoneyOK CSV export?", importErr: "Upload failed. Please try again." },
   uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта",
     budgets: "Бюджети за категоріями", limit: "Ліміт", setLimit: "Задати ліміт", editLimit: "Змінити ліміт", removeLimit: "Прибрати ліміт", ofLimit: "з", over: "перевищено на", leftWord: "залишилось", addBudget: "Додати ліміт", budgetTotalT: "Бюджет на місяць", spent: "витрачено",
-    settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Курси потрібні лише якщо ведеш облік у кількох валютах." },
+    settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Курси потрібні лише якщо ведеш облік у кількох валютах.",
+    importTitle: "Перенесення з MoneyOK", importBtn: "Обрати файл MoneyOK.csv", importing: "Переносимо операції…", importHint: "У MoneyOK: Меню → «Експорт у CSV» → надішли собі файл і завантаж його тут. Перенесуться всі доходи й витрати. Повторне завантаження того ж файлу не створює дублів.", importDone: (n: number, dup: number) => `Перенесено операцій: ${n}${dup ? `, пропущено дублів: ${dup}` : ""}.`, importEmpty: "Не вдалося розпізнати операції у файлі. Це точно експорт MoneyOK у CSV?", importErr: "Не вдалося завантажити файл. Спробуй ще раз." },
   fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise",
     budgets: "Budgets par catégorie", limit: "Limite", setLimit: "Définir une limite", editLimit: "Modifier la limite", removeLimit: "Retirer la limite", ofLimit: "sur", over: "dépassé de", leftWord: "restant", addBudget: "Ajouter une limite", budgetTotalT: "Budget du mois", spent: "dépensé",
-    settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Les taux ne servent que si tu suis plusieurs devises." },
+    settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Les taux ne servent que si tu suis plusieurs devises.",
+    importTitle: "Migrer depuis MoneyOK", importBtn: "Choisir le fichier MoneyOK.csv", importing: "Import des opérations…", importHint: "Dans MoneyOK : Menu → « Export CSV » → envoie-toi le fichier et charge-le ici. Tous les revenus et dépenses seront migrés. Recharger le même fichier ne crée pas de doublons.", importDone: (n: number, dup: number) => `${n} opérations importées${dup ? `, ${dup} doublons ignorés` : ""}.`, importEmpty: "Aucune opération reconnue. S'agit-il bien d'un export CSV de MoneyOK ?", importErr: "Échec du chargement. Réessaie." },
 };
 
 // Категории расходов и доходов: ключ, эмодзи, цвет, названия на 4 языках.
@@ -115,6 +119,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [newBudgetCat, setNewBudgetCat] = useState("food");
   const [newBudgetVal, setNewBudgetVal] = useState("");
 
+  // Перенос из MoneyOK.
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   // Настройки валют.
   const [setOpenS, setSetOpenS] = useState(false);
   const [baseSel, setBaseSel] = useState(base);
@@ -161,6 +170,29 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const r = await fetch("/api/finance-budget", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ category: cat }) });
     setBusy(false);
     if (r.ok) { setEditBudget(null); router.refresh(); }
+  }
+
+  async function importMoneyOk(file: File) {
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/finance/import", { method: "POST", body: fd });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.ok) {
+        setImportMsg({ ok: true, text: s.importDone(j.inserted || 0, j.duplicates || 0) });
+        router.refresh();
+      } else if (j?.error === "no_rows") {
+        setImportMsg({ ok: false, text: s.importEmpty });
+      } else {
+        setImportMsg({ ok: false, text: s.importErr });
+      }
+    } catch {
+      setImportMsg({ ok: false, text: s.importErr });
+    }
+    setImporting(false);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function saveSettings() {
@@ -248,6 +280,26 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           <div style={{ display: "flex", gap: 8 }}>
             <button disabled={busy} onClick={saveSettings} style={btnP}>{s.save}</button>
             <button disabled={busy} onClick={() => setSetOpenS(false)} style={btnG}>{s.cancel}</button>
+          </div>
+
+          {/* Перенос данных из MoneyOK */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <i className="ti ti-file-import" style={{ fontSize: 15, color: "var(--accent)" }} />{s.importTitle}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{s.importHint}</div>
+            <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) importMoneyOk(f); }} />
+            <button disabled={importing} onClick={() => fileRef.current?.click()} style={{ ...btnG, opacity: importing ? 0.6 : 1 }}>
+              <i className="ti ti-upload" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {importing ? s.importing : s.importBtn}
+            </button>
+            {importMsg && (
+              <div style={{ marginTop: 10, fontSize: 12.5, padding: "8px 11px", borderRadius: 9,
+                color: importMsg.ok ? "#065f46" : "#92400e", background: importMsg.ok ? "#10b9811a" : "#fef3c7",
+                border: `1px solid ${importMsg.ok ? "#6ee7b7" : "#fde68a"}` }}>
+                {importMsg.text}
+              </div>
+            )}
           </div>
         </div>
       )}
