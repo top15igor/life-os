@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Path = { id: string; title: string; description: string; emoji: string; accent: string; status: string; public: boolean; pages: number };
 
 const STR: Record<string, any> = {
-  ru: { newPath: "Новый путь", title: "Название", titlePh: "Напр.: Восстановление энергии", desc: "Описание (необязательно)", descPh: "О чём этот путь и куда ведёт", emoji: "Эмодзи", color: "Цвет", status: "Статус", active: "Иду", done: "Пройден", makePublic: "Публичный (виден по ссылке)", save: "Сохранить", create: "Создать путь", cancel: "Отмена", edit: "Изменить", del: "Удалить", open: "Открыть", pages: "стр.", confirmDel: "Удалить путь? Страницы останутся, просто отвяжутся от него.", empty: "Пока нет путей. Путь — это длинная история: «Восстановление здоровья», «Запуск проекта», «200 отжиманий». Группируй в него опубликованные страницы.", hint: "Привязывай страницы к пути при публикации записи (кнопка «Опубликовать»).", privateNote: "выключен — никто не видит",
+  ru: { newPath: "Новый путь", title: "Название", titlePh: "Напр.: Восстановление энергии", desc: "Описание (необязательно)", descPh: "О чём этот путь и куда ведёт", emoji: "Эмодзи", color: "Цвет", status: "Статус", active: "Иду", done: "Пройден", makePublic: "Публичный (виден по ссылке)", save: "Сохранить", create: "Создать путь", cancel: "Отмена", edit: "Изменить", del: "Удалить", open: "Открыть", share: "Поделиться", copied: "Скопировано", pages: "стр.", confirmDel: "Удалить путь? Страницы останутся, просто отвяжутся от него.", empty: "Пока нет путей. Путь — это длинная история: «Восстановление здоровья», «Запуск проекта», «200 отжиманий». Группируй в него опубликованные страницы.", hint: "Привязывай страницы к пути при публикации записи (кнопка «Опубликовать»).", privateNote: "выключен — никто не видит",
     guideTitle: "Как это работает", guideHide: "скрыть", guideShow: "как это работает?",
     steps: ["Создай путь — большую цель или историю, к которой идёшь.", "Публикуй записи дневника в этот путь — они складываются в таймлайн.", "Включи «Публичный» 🌍 и поделись ссылкой — твой прогресс вдохновляет других."],
     ideasLabel: "С чего начать — нажми и поменяй под себя:",
@@ -22,7 +22,7 @@ const STR: Record<string, any> = {
       { emoji: "👶", accent: "pink", title: "Первый год малыша", desc: "Самые тёплые 365 дней. Чтобы не забыть ни мгновения." },
       { emoji: "🎸", accent: "dark", title: "Учусь играть на гитаре", desc: "От первых аккордов до своей песни." },
     ] },
-  en: { newPath: "New path", title: "Title", titlePh: "e.g. Restoring energy", desc: "Description (optional)", descPh: "What this path is about and where it leads", emoji: "Emoji", color: "Color", status: "Status", active: "Ongoing", done: "Completed", makePublic: "Public (visible via link)", save: "Save", create: "Create path", cancel: "Cancel", edit: "Edit", del: "Delete", open: "Open", pages: "pages", confirmDel: "Delete this path? Pages stay, just unlinked.", empty: "No paths yet. A path is a long story: “Restoring health”, “Launching a project”, “200 push-ups”. Group published pages into it.", hint: "Attach pages to a path when you publish an entry (the “Publish” button).", privateNote: "off — nobody sees it",
+  en: { newPath: "New path", title: "Title", titlePh: "e.g. Restoring energy", desc: "Description (optional)", descPh: "What this path is about and where it leads", emoji: "Emoji", color: "Color", status: "Status", active: "Ongoing", done: "Completed", makePublic: "Public (visible via link)", save: "Save", create: "Create path", cancel: "Cancel", edit: "Edit", del: "Delete", open: "Open", share: "Share", copied: "Copied", pages: "pages", confirmDel: "Delete this path? Pages stay, just unlinked.", empty: "No paths yet. A path is a long story: “Restoring health”, “Launching a project”, “200 push-ups”. Group published pages into it.", hint: "Attach pages to a path when you publish an entry (the “Publish” button).", privateNote: "off — nobody sees it",
     guideTitle: "How it works", guideHide: "hide", guideShow: "how it works?",
     steps: ["Create a path — a big goal or story you're walking toward.", "Publish diary entries into it — they stack up into a timeline.", "Turn on “Public” 🌍 and share the link — your progress inspires others."],
     ideasLabel: "Start here — tap one and make it yours:",
@@ -38,7 +38,7 @@ const STR: Record<string, any> = {
       { emoji: "👶", accent: "pink", title: "Baby's first year", desc: "The warmest 365 days — so no moment is forgotten." },
       { emoji: "🎸", accent: "dark", title: "Learning guitar", desc: "From first chords to a song of my own." },
     ] },
-  uk: { newPath: "Новий шлях", title: "Назва", titlePh: "Напр.: Відновлення енергії", desc: "Опис (необов'язково)", descPh: "Про що цей шлях і куди веде", emoji: "Емодзі", color: "Колір", status: "Статус", active: "Іду", done: "Пройдено", makePublic: "Публічний (видно за посиланням)", save: "Зберегти", create: "Створити шлях", cancel: "Скасувати", edit: "Змінити", del: "Видалити", open: "Відкрити", pages: "стор.", confirmDel: "Видалити шлях? Сторінки лишаться, просто відв'яжуться.", empty: "Поки немає шляхів. Шлях — це довга історія: «Відновлення здоров'я», «Запуск проєкту». Групуй у нього опубліковані сторінки.", hint: "Прив'язуй сторінки до шляху під час публікації запису.", privateNote: "вимкнено — ніхто не бачить",
+  uk: { newPath: "Новий шлях", title: "Назва", titlePh: "Напр.: Відновлення енергії", desc: "Опис (необов'язково)", descPh: "Про що цей шлях і куди веде", emoji: "Емодзі", color: "Колір", status: "Статус", active: "Іду", done: "Пройдено", makePublic: "Публічний (видно за посиланням)", save: "Зберегти", create: "Створити шлях", cancel: "Скасувати", edit: "Змінити", del: "Видалити", open: "Відкрити", share: "Поділитися", copied: "Скопійовано", pages: "стор.", confirmDel: "Видалити шлях? Сторінки лишаться, просто відв'яжуться.", empty: "Поки немає шляхів. Шлях — це довга історія: «Відновлення здоров'я», «Запуск проєкту». Групуй у нього опубліковані сторінки.", hint: "Прив'язуй сторінки до шляху під час публікації запису.", privateNote: "вимкнено — ніхто не бачить",
     guideTitle: "Як це працює", guideHide: "сховати", guideShow: "як це працює?",
     steps: ["Створи шлях — велику ціль або історію, до якої йдеш.", "Публікуй записи щоденника в цей шлях — вони складаються в таймлайн.", "Увімкни «Публічний» 🌍 і поділись посиланням — твій прогрес надихає інших."],
     ideasLabel: "З чого почати — натисни й зміни під себе:",
@@ -54,7 +54,7 @@ const STR: Record<string, any> = {
       { emoji: "👶", accent: "pink", title: "Перший рік малюка", desc: "Найтепліші 365 днів. Щоб не забути жодної миті." },
       { emoji: "🎸", accent: "dark", title: "Вчуся грати на гітарі", desc: "Від перших акордів до своєї пісні." },
     ] },
-  fr: { newPath: "Nouveau chemin", title: "Titre", titlePh: "Ex. : Retrouver l'énergie", desc: "Description (optionnel)", descPh: "De quoi parle ce chemin et où il mène", emoji: "Emoji", color: "Couleur", status: "Statut", active: "En cours", done: "Terminé", makePublic: "Public (visible via lien)", save: "Enregistrer", create: "Créer le chemin", cancel: "Annuler", edit: "Modifier", del: "Supprimer", open: "Ouvrir", pages: "pages", confirmDel: "Supprimer ce chemin ? Les pages restent, juste détachées.", empty: "Pas encore de chemins. Un chemin est une longue histoire : « Retrouver la santé », « Lancer un projet ». Regroupes-y tes pages publiées.", hint: "Attache des pages à un chemin en publiant une entrée.", privateNote: "désactivé — personne ne voit",
+  fr: { newPath: "Nouveau chemin", title: "Titre", titlePh: "Ex. : Retrouver l'énergie", desc: "Description (optionnel)", descPh: "De quoi parle ce chemin et où il mène", emoji: "Emoji", color: "Couleur", status: "Statut", active: "En cours", done: "Terminé", makePublic: "Public (visible via lien)", save: "Enregistrer", create: "Créer le chemin", cancel: "Annuler", edit: "Modifier", del: "Supprimer", open: "Ouvrir", share: "Partager", copied: "Copié", pages: "pages", confirmDel: "Supprimer ce chemin ? Les pages restent, juste détachées.", empty: "Pas encore de chemins. Un chemin est une longue histoire : « Retrouver la santé », « Lancer un projet ». Regroupes-y tes pages publiées.", hint: "Attache des pages à un chemin en publiant une entrée.", privateNote: "désactivé — personne ne voit",
     guideTitle: "Comment ça marche", guideHide: "masquer", guideShow: "comment ça marche ?",
     steps: ["Crée un chemin — un grand objectif ou une histoire vers laquelle tu avances.", "Publie des entrées de journal dedans — elles forment une frise chronologique.", "Active « Public » 🌍 et partage le lien — ta progression en inspire d'autres."],
     ideasLabel: "Pour commencer — touche et adapte à toi :",
@@ -82,6 +82,7 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
   const [edit, setEdit] = useState<Path | null>(null); // null = редактор закрыт
   const [busy, setBusy] = useState(false);
   const [guide, setGuide] = useState(paths.length === 0); // гайд открыт по умолчанию, пока нет путей
+  const [copiedId, setCopiedId] = useState<string | null>(null); // показываем «Скопировано» у конкретной карточки
 
   function startFromIdea(idea: { emoji: string; accent: string; title: string; desc: string }) {
     setGuide(false);
@@ -102,6 +103,13 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
     setBusy(true);
     await fetch("/api/path", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "update", id: p.id, public: !p.public }) });
     setBusy(false); router.refresh();
+  }
+  async function share(p: Path) {
+    const url = `https://${host}/path/${p.id}`;
+    const nav: any = typeof navigator !== "undefined" ? navigator : null;
+    // на телефоне — системное меню «Поделиться»; на десктопе — копируем ссылку в буфер
+    if (nav?.share) { nav.share({ title: p.title, text: p.description || p.title, url }).catch(() => {}); return; }
+    try { await nav?.clipboard?.writeText(url); setCopiedId(p.id); setTimeout(() => setCopiedId(null), 1800); } catch {}
   }
   async function del(p: Path) {
     if (!window.confirm(L.confirmDel)) return;
@@ -213,6 +221,11 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
               </div>
               <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
                 {p.public && <a href={`https://${host}/path/${p.id}`} target="_blank" rel="noreferrer" style={{ ...chip, color: "var(--accent)", borderColor: "var(--accent)", textDecoration: "none" }}>{L.open} →</a>}
+                {p.public && (
+                  <button onClick={() => share(p)} disabled={busy} style={{ ...chip, color: "var(--accent)", borderColor: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <i className={`ti ${copiedId === p.id ? "ti-check" : "ti-share"}`} style={{ fontSize: 13 }} />{copiedId === p.id ? L.copied : L.share}
+                  </button>
+                )}
                 <button onClick={() => togglePublic(p)} disabled={busy} style={chip}>{p.public ? "🌍→🔒" : "🔒→🌍"}</button>
                 <button onClick={() => setEdit(p)} disabled={busy} style={chip}>{L.edit}</button>
                 <button onClick={() => del(p)} disabled={busy} style={{ ...chip, color: "#ef4444" }}>{L.del}</button>
