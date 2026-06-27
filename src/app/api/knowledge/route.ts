@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { askKnowledge } from "@/lib/knowledge";
+import { canonicalFolder } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -70,6 +71,14 @@ export async function POST(req: NextRequest) {
     if (!from || !to) return NextResponse.json({ ok: false }, { status: 400 });
     await db.from("saved_items").update({ topic: to }).eq("topic", from).eq("user_id", user.id);
     return NextResponse.json({ ok: true });
+  }
+
+  // Навести порядок: разложить все карточки по фиксированным папкам.
+  if (action === "tidy") {
+    const { data } = await db.from("saved_items").select("id, topic").eq("user_id", user.id);
+    const changes = ((data as any[]) || []).map((d) => ({ id: d.id, to: canonicalFolder(d.topic) })).filter((c, i) => c.to !== (data as any[])[i].topic);
+    await Promise.all(changes.map((c) => db.from("saved_items").update({ topic: c.to }).eq("id", c.id).eq("user_id", user.id)));
+    return NextResponse.json({ ok: true, changed: changes.length });
   }
 
   // Ручной порядок: сохраняем позиции по присланному списку id.
