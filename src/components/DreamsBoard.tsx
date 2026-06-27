@@ -182,10 +182,11 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
     // Fluid geometry: radius/centre follow the real width, node & label sizes stay fixed → крупно и читаемо на телефоне.
     const W = boardW;
     const compact = W < 400;
-    const Rs = Math.min(150, (W - 116) / 2);
-    const cx = W / 2, cy = Rs + 42, H = cy + Rs + 70;
-    const centralSize = compact ? 100 : 116;
-    const nodeSize = compact ? 56 : 60;
+    const labelBox = compact ? 86 : 104;          // фикс. ширина подписи под узлом — текст переносится, не вылезает
+    const Rs = Math.min(150, W / 2 - labelBox / 2 - 6); // радиус с запасом под подпись по краям
+    const cx = W / 2, cy = Rs + 48, H = cy + Rs + 74;
+    const centralSize = compact ? 96 : 116;
+    const nodeSize = compact ? 54 : 60;
     const N = used.length || 1;
     const active = selSphere && used.some((u) => u.key === selSphere) ? selSphere : used[0]?.key || null;
     const nodes = used.map((sp, i) => {
@@ -200,7 +201,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
     const aDreams = active ? dreams.filter((d) => d.sphere === active) : [];
     return (
       <div>
-        <div ref={wrapRef} style={{ width: "100%", maxWidth: 600, margin: "0 auto" }}>
+        <div ref={wrapRef} style={{ width: "100%", maxWidth: 600, margin: "0 auto", overflow: "hidden" }}>
           <div style={{ position: "relative", width: W, height: H, margin: "0 auto" }}>
             <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
               {nodes.map((n, i) => <path key={i} d={curve(cx, cy, n.x, n.y)} stroke={n.sp.c} strokeWidth={n.sp.key === active ? 3.5 : 2.5} fill="none" opacity={n.sp.key === active ? 0.7 : 0.35} />)}
@@ -214,12 +215,12 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
             {nodes.map((n, i) => {
               const on = n.sp.key === active;
               return (
-                <button key={i} onClick={() => setSelSphere(n.sp.key)} style={{ position: "absolute", left: n.x, top: n.y, transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", zIndex: 2 }}>
+                <button key={i} onClick={() => setSelSphere(n.sp.key)} style={{ position: "absolute", left: n.x, top: n.y, transform: "translate(-50%,-50%)", width: labelBox, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", zIndex: 2, padding: 0 }}>
                   <div style={{ position: "relative", width: nodeSize, height: nodeSize, borderRadius: "50%", background: n.sp.bg, border: `${on ? 3 : 2}px solid ${n.sp.c}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: on ? `0 0 0 5px ${n.sp.c}22, 0 6px 16px rgba(0,0,0,.12)` : "0 4px 14px rgba(0,0,0,.08)", transition: "box-shadow .15s" }}>
                     <i className={`ti ${n.sp.icon}`} style={{ fontSize: compact ? 23 : 25, color: n.sp.c }} />
                     {n.count > 0 && <span style={{ position: "absolute", top: -5, right: -5, minWidth: 19, height: 19, padding: "0 5px", borderRadius: 999, background: n.sp.c, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{n.count}</span>}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: n.sp.c, textAlign: "center", lineHeight: 1.15, maxWidth: compact ? 78 : 96 }}>{s.sph[n.sp.key]}</span>
+                  <span style={{ fontSize: compact ? 11.5 : 12, fontWeight: 600, color: n.sp.c, textAlign: "center", lineHeight: 1.15, width: "100%", wordBreak: "break-word" }}>{s.sph[n.sp.key]}</span>
                 </button>
               );
             })}
