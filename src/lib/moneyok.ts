@@ -14,7 +14,7 @@ export type ParsedTx = {
   kind: "income" | "expense";
   amount: number; // > 0
   currency: string; // код из ALLOWED
-  category: string; // ключ нашей категории либо исходное название
+  category: string | null; // исходное название категории из MoneyOK
   note: string | null;
 };
 
@@ -41,8 +41,12 @@ const CUR_ALIAS: Record<string, string> = {
   "aed": "AED", "дирхам": "AED",
 };
 
-// Названия категорий MoneyOK (и похожих приложений) → наши ключи.
-// Сопоставление по вхождению подстроки в нижнем регистре.
+// Статьи, которые не являются операциями дохода/расхода и пропускаются:
+// переводы между счетами и снимки остатков на счёте.
+const SKIP_CATS = ["перевод", "transfer", "остаток на счете", "остаток на счёте", "начальный остаток", "opening balance"];
+
+// Ключевые слова названий категорий → ключ пресета (для иконки в интерфейсе).
+// Само название категории при импорте сохраняется как есть.
 const EXPENSE_MAP: Array<[string[], string]> = [
   [["продукт", "еда", "супермаркет", "groceries", "food", "магазин прод"], "food"],
   [["кафе", "ресторан", "столов", "фастфуд", "fast food", "eating", "cafe", "restaurant", "бар"], "cafe"],
@@ -174,13 +178,14 @@ function mapCurrency(raw: string, fallback: string): string {
   return fallback;
 }
 
-function mapCategory(raw: string, kind: "income" | "expense"): string {
+// Угадать ключ пресета по названию категории — только для выбора иконки/цвета.
+// Возвращает ключ из EXPENSE_CATS/INCOME_CATS либо null, если не распознано.
+export function guessCatKey(raw: string, kind: "income" | "expense"): string | null {
   const s = norm(raw);
-  if (!s) return kind === "income" ? "salary" : "other";
+  if (!s) return null;
   const table = kind === "income" ? INCOME_MAP : EXPENSE_MAP;
   for (const [keys, key] of table) if (keys.some((k) => s.includes(k))) return key;
-  // Не распознали — сохраняем исходное название (усечённое), чтобы не терять данные.
-  return raw.trim().slice(0, 40);
+  return null;
 }
 
 // Найти индекс колонки по списку синонимов заголовка.
@@ -276,6 +281,11 @@ export function parseMoneyOk(text: string): ParseResult {
     const day = parseDate(idx.date >= 0 ? r[idx.date] || "" : "");
     if (!day) { skipped++; continue; }
 
+    // Статья (категория). Переводы и остатки на счёте — не операции, пропускаем.
+    const rawCat = idx.category >= 0 ? (r[idx.category] || "").trim() : "";
+    const catN = norm(rawCat);
+    if (SKIP_CATS.some((m) => catN === m || catN.startsWith(m))) { skipped++; continue; }
+
     // Определяем тип и сумму.
     let kind: "income" | "expense" | null = null;
     let amount = NaN;
@@ -305,10 +315,9 @@ export function parseMoneyOk(text: string): ParseResult {
     if (!isFinite(amount) || amount <= 0 || amount > 1e12) { skipped++; continue; }
 
     const currency = idx.currency >= 0 ? mapCurrency(r[idx.currency] || "", fallbackCur) : fallbackCur;
-    const rawCat = idx.category >= 0 ? r[idx.category] || "" : "";
-    const category = mapCategory(rawCat, kind);
+    // Сохраняем исходное название категории как есть — не теряем авторскую таксономию.
+    const category = rawCat ? rawCat.slice(0, 40) : null;
     let note = idx.note >= 0 ? (r[idx.note] || "").trim() : "";
-    // Если категорию распознали в наш ключ, но исходное имя отличалось — сохраним его в заметке.
     if (note.length > 200) note = note.slice(0, 200);
 
     rows.push({ day, kind, amount: Math.round(amount * 100) / 100, currency, category, note: note || null });
