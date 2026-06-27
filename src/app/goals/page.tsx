@@ -1,13 +1,13 @@
 import Sidebar from "@/components/Sidebar";
-import Link from "next/link";
 import PageHead from "@/components/PageHead";
 import SubTabs from "@/components/SubTabs";
 import GoalsManager from "@/components/GoalsManager";
 import TasksList from "@/components/TasksList";
 import DreamsBoard from "@/components/DreamsBoard";
+import InsightsView from "@/components/InsightsView";
 import { getGoals, getAllTasks, getInsights, getDreams } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
-import { getDict, dateLabel } from "@/lib/i18n";
+import { getDict } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
 
@@ -51,25 +51,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
         {tab === "goals" && <GoalsManager initial={goals as any} locale={locale} />}
         {tab === "tasks" && <TasksList tasks={tasks as any} locale={locale} />}
         {tab === "dreams" && <DreamsBoard initial={dreams as any} locale={locale} />}
-        {tab === "ideas" && (
-          insights.length === 0 ? (
-            <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
-          ) : (
-            insights.map((i: any, k: number) => (
-              <Link key={k} href={i.entry_id ? `/entry/${i.entry_id}` : "#"} className="card" style={{ display: "block", marginBottom: 9 }}>
-                <div style={{ fontSize: 13.5, lineHeight: 1.55, display: "flex", gap: 9 }}>
-                  <i className="ti ti-bulb" style={{ fontSize: 16, color: "var(--energy)", marginTop: 2 }} />
-                  <span>{i.text}</span>
-                </div>
-                {i.entries?.entry_date && (
-                  <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6, marginLeft: 25 }}>
-                    {s.from} {dateLabel(locale, i.entries.entry_date)}
-                  </div>
-                )}
-              </Link>
-            ))
-          )
-        )}
+        {tab === "ideas" && <InsightsView insights={insights as any} locale={locale} />}
       </main>
     </div>
   );

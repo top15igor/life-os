@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPublicBySlug, getPublicStats } from "@/lib/public";
+import { getPublicPages } from "@/lib/publish";
 import { getInviteCode } from "@/lib/users";
 import { getLocale } from "@/lib/locale";
 
@@ -37,7 +38,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   const st = await getPublicStats(prof.userId);
   const inviteCode = await getInviteCode(prof.userId);
+  const pages = await getPublicPages(prof.userId);
   const blocks = new Set(prof.blocks);
+  const bookTitle = locale === "en" ? "Public book" : locale === "fr" ? "Livre public" : locale === "uk" ? "Публічна книга" : "Публичная книга";
   const sinceStr = st.memberSince ? (() => { const [y, m] = st.memberSince!.split("-"); return `${s.since} ${s.months[Number(m) - 1]} ${y}`; })() : "";
   const initial = (prof.name || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -73,6 +76,22 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           <div style={{ textAlign: "center", fontSize: 13.5, color: "var(--text-2)", margin: "8px 0 22px", fontStyle: "italic" }}>
             «{s.tagline}»
           </div>
+
+          {/* Публичная книга — опубликованные страницы */}
+          {pages.length > 0 && (
+            <div style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+                <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{bookTitle}
+              </div>
+              {pages.map((pg) => (
+                <div key={pg.id} className="card" style={{ marginBottom: 10 }}>
+                  {pg.title && <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 5 }}>{pg.title}</div>}
+                  <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-2)", whiteSpace: "pre-wrap" }}>{pg.text}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 8 }}>{(() => { const d = (pg.created_at || "").slice(0, 10); const [yy, mm] = d.split("-"); return mm ? `${s.months[Number(mm) - 1]} ${yy}` : d; })()}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* CTA */}
           <Link href={`/i/${inviteCode}`} style={{ display: "block", background: "var(--accent)", color: "#fff", textAlign: "center", padding: "14px", borderRadius: 13, fontSize: 15.5, fontWeight: 600, textDecoration: "none" }}>

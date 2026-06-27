@@ -7,6 +7,8 @@ import { requireUser } from "@/lib/auth";
 import TaskList from "@/components/TaskList";
 import LifeIntelligence from "@/components/LifeIntelligence";
 import EntryActions from "@/components/EntryActions";
+import PublishEntry from "@/components/PublishEntry";
+import { getPublishStatus } from "@/lib/publish";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +67,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const placeNames = (e.entry_places || []).map((x: any) => x.places?.name).filter(Boolean);
   const projectNames = (e.entry_projects || []).map((x: any) => x.projects?.name).filter(Boolean);
   const catNames = cats(e).map((c: any) => t.cats[c.slug] || c.slug);
+  const pub = (await getPublishStatus(user.id, id)) || { published: false, title: "", text: "" };
 
   return (
     <div className="shell">
@@ -144,7 +147,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
           </Section>
         )}
 
-        <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+        <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <PublishEntry entryId={id} initial={{ published: pub.published, title: pub.title || "", text: pub.text || "" }} locale={locale} />
           <EntryActions id={id} locale={locale} rawText={e.raw_text || ""} />
         </div>
       </main>
