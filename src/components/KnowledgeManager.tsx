@@ -4,10 +4,10 @@ import { useMemo, useState } from "react";
 import type { SavedItem } from "@/lib/queries";
 
 const STR: Record<string, any> = {
-  ru: { addPh: "Вставь ссылку на пост или reels…", add: "Добавить", adding: "Добавляю…", badUrl: "Не похоже на ссылку Instagram", limited: "Закончился месячный лимит — попробуй позже", searchPh: "Поиск по заголовку, тексту, тегам…", favOnly: "Избранное", ask: "Спросить по базе", askPh: "Например: что я сохранял про спину?", asking: "Думаю…", points: "Главное", open: "Открыть в Instagram", reel: "Reels", post: "Instagram", edit: "Редактировать", save: "Сохранить", cancel: "Отмена", delete: "Удалить", del2: "Удалить эту карточку?", folder: "Папка", note: "Заметка", notePh: "Зачем сохранил, что применить…", title: "Заголовок", summary: "Описание", done: "Применил", undone: "Применить", fav: "В избранное", unfav: "В избранном", empty: "Ничего не найдено по фильтру.", applied: "Применил", clear: "Сбросить", newFolder: "Новая папка…" },
-  en: { addPh: "Paste a post or reel link…", add: "Add", adding: "Adding…", badUrl: "Doesn't look like an Instagram link", limited: "Monthly limit reached — try later", searchPh: "Search by title, text, tags…", favOnly: "Favorites", ask: "Ask your base", askPh: "e.g. what did I save about back pain?", asking: "Thinking…", points: "Key points", open: "Open in Instagram", reel: "Reels", post: "Instagram", edit: "Edit", save: "Save", cancel: "Cancel", delete: "Delete", del2: "Delete this card?", folder: "Folder", note: "Note", notePh: "Why you saved it, what to apply…", title: "Title", summary: "Summary", done: "Applied", undone: "Mark applied", fav: "Add to favorites", unfav: "Favorited", empty: "Nothing matches the filter.", applied: "Applied", clear: "Clear", newFolder: "New folder…" },
-  uk: { addPh: "Встав посилання на пост або reels…", add: "Додати", adding: "Додаю…", badUrl: "Не схоже на посилання Instagram", limited: "Закінчився місячний ліміт — спробуй пізніше", searchPh: "Пошук за заголовком, текстом, тегами…", favOnly: "Обране", ask: "Спитати базу", askPh: "Напр.: що я зберігав про спину?", asking: "Думаю…", points: "Головне", open: "Відкрити в Instagram", reel: "Reels", post: "Instagram", edit: "Редагувати", save: "Зберегти", cancel: "Скасувати", delete: "Видалити", del2: "Видалити цю картку?", folder: "Папка", note: "Нотатка", notePh: "Навіщо зберіг, що застосувати…", title: "Заголовок", summary: "Опис", done: "Застосував", undone: "Застосувати", fav: "В обране", unfav: "В обраному", empty: "Нічого не знайдено.", applied: "Застосував", clear: "Скинути", newFolder: "Нова папка…" },
-  fr: { addPh: "Colle un lien de post ou reel…", add: "Ajouter", adding: "Ajout…", badUrl: "Ce n'est pas un lien Instagram", limited: "Limite mensuelle atteinte — réessaie plus tard", searchPh: "Recherche par titre, texte, tags…", favOnly: "Favoris", ask: "Demander à ta base", askPh: "ex. : qu'ai-je enregistré sur le dos ?", asking: "Réflexion…", points: "Points clés", open: "Ouvrir dans Instagram", reel: "Reels", post: "Instagram", edit: "Modifier", save: "Enregistrer", cancel: "Annuler", delete: "Supprimer", del2: "Supprimer cette carte ?", folder: "Dossier", note: "Note", notePh: "Pourquoi tu l'as gardé, quoi appliquer…", title: "Titre", summary: "Résumé", done: "Appliqué", undone: "Marquer appliqué", fav: "Ajouter aux favoris", unfav: "En favori", empty: "Aucun résultat.", applied: "Appliqué", clear: "Effacer", newFolder: "Nouveau dossier…" },
+  ru: { addPh: "Вставь ссылку на пост или reels…", add: "Добавить", adding: "Добавляю…", badUrl: "Не похоже на ссылку Instagram", limited: "Закончился месячный лимит — попробуй позже", searchPh: "Поиск по заголовку, тексту, тегам…", favOnly: "Избранное", ask: "Спросить по базе", askPh: "Например: что я сохранял про спину?", asking: "Думаю…", points: "Главное", open: "Открыть в Instagram", reel: "Reels", post: "Instagram", edit: "Редактировать", save: "Сохранить", cancel: "Отмена", delete: "Удалить", del2: "Удалить эту карточку?", folder: "Папка", note: "Заметка", notePh: "Зачем сохранил, что применить…", title: "Заголовок", summary: "Описание", done: "Применил", undone: "Применить", fav: "В избранное", unfav: "В избранном", empty: "Ничего не найдено по фильтру.", applied: "Применил", clear: "Сбросить", newFolder: "Новая папка…", tidy: "Навести порядок", tidying: "Раскладываю…" },
+  en: { addPh: "Paste a post or reel link…", add: "Add", adding: "Adding…", badUrl: "Doesn't look like an Instagram link", limited: "Monthly limit reached — try later", searchPh: "Search by title, text, tags…", favOnly: "Favorites", ask: "Ask your base", askPh: "e.g. what did I save about back pain?", asking: "Thinking…", points: "Key points", open: "Open in Instagram", reel: "Reels", post: "Instagram", edit: "Edit", save: "Save", cancel: "Cancel", delete: "Delete", del2: "Delete this card?", folder: "Folder", note: "Note", notePh: "Why you saved it, what to apply…", title: "Title", summary: "Summary", done: "Applied", undone: "Mark applied", fav: "Add to favorites", unfav: "Favorited", empty: "Nothing matches the filter.", applied: "Applied", clear: "Clear", newFolder: "New folder…", tidy: "Tidy folders", tidying: "Tidying…" },
+  uk: { addPh: "Встав посилання на пост або reels…", add: "Додати", adding: "Додаю…", badUrl: "Не схоже на посилання Instagram", limited: "Закінчився місячний ліміт — спробуй пізніше", searchPh: "Пошук за заголовком, текстом, тегами…", favOnly: "Обране", ask: "Спитати базу", askPh: "Напр.: що я зберігав про спину?", asking: "Думаю…", points: "Головне", open: "Відкрити в Instagram", reel: "Reels", post: "Instagram", edit: "Редагувати", save: "Зберегти", cancel: "Скасувати", delete: "Видалити", del2: "Видалити цю картку?", folder: "Папка", note: "Нотатка", notePh: "Навіщо зберіг, що застосувати…", title: "Заголовок", summary: "Опис", done: "Застосував", undone: "Застосувати", fav: "В обране", unfav: "В обраному", empty: "Нічого не знайдено.", applied: "Застосував", clear: "Скинути", newFolder: "Нова папка…", tidy: "Навести лад", tidying: "Розкладаю…" },
+  fr: { addPh: "Colle un lien de post ou reel…", add: "Ajouter", adding: "Ajout…", badUrl: "Ce n'est pas un lien Instagram", limited: "Limite mensuelle atteinte — réessaie plus tard", searchPh: "Recherche par titre, texte, tags…", favOnly: "Favoris", ask: "Demander à ta base", askPh: "ex. : qu'ai-je enregistré sur le dos ?", asking: "Réflexion…", points: "Points clés", open: "Ouvrir dans Instagram", reel: "Reels", post: "Instagram", edit: "Modifier", save: "Enregistrer", cancel: "Annuler", delete: "Supprimer", del2: "Supprimer cette carte ?", folder: "Dossier", note: "Note", notePh: "Pourquoi tu l'as gardé, quoi appliquer…", title: "Titre", summary: "Résumé", done: "Appliqué", undone: "Marquer appliqué", fav: "Ajouter aux favoris", unfav: "En favori", empty: "Aucun résultat.", applied: "Appliqué", clear: "Effacer", newFolder: "Nouveau dossier…", tidy: "Ranger", tidying: "Rangement…" },
 };
 
 const clamp = (n: number): React.CSSProperties => ({ display: "-webkit-box", WebkitLineClamp: n, WebkitBoxOrient: "vertical", overflow: "hidden" });
@@ -46,6 +46,7 @@ export default function KnowledgeManager({ initial, locale, emptyHint }: { initi
   const [draft, setDraft] = useState<{ title: string; summary: string; note: string; topic: string }>({ title: "", summary: "", note: "", topic: "" });
   const [menuId, setMenuId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [tidyBusy, setTidyBusy] = useState(false);
 
   const folders = useMemo(() => {
     const m = new Map<string, number>();
@@ -122,6 +123,11 @@ export default function KnowledgeManager({ initial, locale, emptyHint }: { initi
     const j = await api("ask", { q });
     setAskBusy(false); setAskA(j?.answer || "—");
   }
+  async function tidy() {
+    setTidyBusy(true);
+    await api("tidy");
+    window.location.reload();
+  }
 
   // drag reorder within folder / move between folders
   async function onDrop(targetId: string) {
@@ -169,9 +175,14 @@ export default function KnowledgeManager({ initial, locale, emptyHint }: { initi
       {/* Спросить по базе */}
       <div style={{ marginBottom: 14 }}>
         {!askOpen ? (
-          <button onClick={() => setAskOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", color: "#6d5efc", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            <i className="ti ti-sparkles" style={{ fontSize: 15 }} />{s.ask}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => setAskOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", color: "#6d5efc", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              <i className="ti ti-sparkles" style={{ fontSize: 15 }} />{s.ask}
+            </button>
+            <button onClick={tidy} disabled={tidyBusy} title={s.tidy} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--card)", color: "var(--text-2,var(--muted))", fontSize: 13, fontWeight: 600, cursor: tidyBusy ? "default" : "pointer" }}>
+              <i className={`ti ${tidyBusy ? "ti-loader-2" : "ti-folders"}`} style={{ fontSize: 15 }} />{tidyBusy ? s.tidying : s.tidy}
+            </button>
+          </div>
         ) : (
           <div style={{ border: "1px solid var(--border)", borderRadius: 12, background: "var(--card)", padding: 12 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
