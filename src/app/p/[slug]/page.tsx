@@ -87,7 +87,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 <div key={pg.id} className="card" style={{ marginBottom: 10 }}>
                   {pg.title && <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 5 }}>{pg.title}</div>}
                   <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text-2)", whiteSpace: "pre-wrap" }}>{pg.text}</div>
-                  <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 8 }}>{(() => { const d = (pg.created_at || "").slice(0, 10); const [yy, mm] = d.split("-"); return mm ? `${s.months[Number(mm) - 1]} ${yy}` : d; })()}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 8 }}>{(() => { const d = (pg.created_at || "").slice(0, 10); const [yy, mm, dd] = d.split("-"); return mm ? `${Number(dd)} ${s.months[Number(mm) - 1]} ${yy}` : d; })()}</div>
                 </div>
               ))}
             </div>
