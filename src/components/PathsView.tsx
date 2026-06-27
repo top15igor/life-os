@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 type Path = { id: string; title: string; description: string; emoji: string; accent: string; status: string; public: boolean; pages: number };
 
 const STR: Record<string, any> = {
-  ru: { newPath: "Новый путь", title: "Название", titlePh: "Напр.: Восстановление энергии", desc: "Описание (необязательно)", descPh: "О чём этот путь и куда ведёт", emoji: "Эмодзи", color: "Цвет", status: "Статус", active: "Иду", done: "Пройден", makePublic: "Публичный (виден по ссылке)", save: "Сохранить", create: "Создать путь", cancel: "Отмена", edit: "Изменить", del: "Удалить", open: "Открыть", pages: "стр.", confirmDel: "Удалить путь? Страницы останутся, просто отвяжутся от него.", empty: "Пока нет путей. Путь — это длинная история: «Восстановление здоровья», «Запуск проекта», «200 отжиманий». Группируй в него опубликованные страницы.", hint: "Привязывай страницы к пути при публикации записи (кнопка «Опубликовать»).", privateNote: "выключен — никто не видит" },
-  en: { newPath: "New path", title: "Title", titlePh: "e.g. Restoring energy", desc: "Description (optional)", descPh: "What this path is about and where it leads", emoji: "Emoji", color: "Color", status: "Status", active: "Ongoing", done: "Completed", makePublic: "Public (visible via link)", save: "Save", create: "Create path", cancel: "Cancel", edit: "Edit", del: "Delete", open: "Open", pages: "pages", confirmDel: "Delete this path? Pages stay, just unlinked.", empty: "No paths yet. A path is a long story: “Restoring health”, “Launching a project”, “200 push-ups”. Group published pages into it.", hint: "Attach pages to a path when you publish an entry (the “Publish” button).", privateNote: "off — nobody sees it" },
-  uk: { newPath: "Новий шлях", title: "Назва", titlePh: "Напр.: Відновлення енергії", desc: "Опис (необов'язково)", descPh: "Про що цей шлях і куди веде", emoji: "Емодзі", color: "Колір", status: "Статус", active: "Іду", done: "Пройдено", makePublic: "Публічний (видно за посиланням)", save: "Зберегти", create: "Створити шлях", cancel: "Скасувати", edit: "Змінити", del: "Видалити", open: "Відкрити", pages: "стор.", confirmDel: "Видалити шлях? Сторінки лишаться, просто відв'яжуться.", empty: "Поки немає шляхів. Шлях — це довга історія: «Відновлення здоров'я», «Запуск проєкту». Групуй у нього опубліковані сторінки.", hint: "Прив'язуй сторінки до шляху під час публікації запису.", privateNote: "вимкнено — ніхто не бачить" },
-  fr: { newPath: "Nouveau chemin", title: "Titre", titlePh: "Ex. : Retrouver l'énergie", desc: "Description (optionnel)", descPh: "De quoi parle ce chemin et où il mène", emoji: "Emoji", color: "Couleur", status: "Statut", active: "En cours", done: "Terminé", makePublic: "Public (visible via lien)", save: "Enregistrer", create: "Créer le chemin", cancel: "Annuler", edit: "Modifier", del: "Supprimer", open: "Ouvrir", pages: "pages", confirmDel: "Supprimer ce chemin ? Les pages restent, juste détachées.", empty: "Pas encore de chemins. Un chemin est une longue histoire : « Retrouver la santé », « Lancer un projet ». Regroupes-y tes pages publiées.", hint: "Attache des pages à un chemin en publiant une entrée.", privateNote: "désactivé — personne ne voit" },
+  ru: { newPath: "Новый путь", title: "Название", titlePh: "Напр.: Восстановление энергии", desc: "Описание (необязательно)", descPh: "О чём этот путь и куда ведёт", emoji: "Эмодзи", color: "Цвет", status: "Статус", active: "Иду", done: "Пройден", makePublic: "Публичный (виден по ссылке)", save: "Сохранить", create: "Создать путь", cancel: "Отмена", edit: "Изменить", del: "Удалить", open: "Открыть", share: "Поделиться", copied: "Скопировано", pages: "стр.", confirmDel: "Удалить путь? Страницы останутся, просто отвяжутся от него.", empty: "Пока нет путей. Путь — это длинная история: «Восстановление здоровья», «Запуск проекта», «200 отжиманий». Группируй в него опубликованные страницы.", hint: "Привязывай страницы к пути при публикации записи (кнопка «Опубликовать»).", privateNote: "выключен — никто не видит" },
+  en: { newPath: "New path", title: "Title", titlePh: "e.g. Restoring energy", desc: "Description (optional)", descPh: "What this path is about and where it leads", emoji: "Emoji", color: "Color", status: "Status", active: "Ongoing", done: "Completed", makePublic: "Public (visible via link)", save: "Save", create: "Create path", cancel: "Cancel", edit: "Edit", del: "Delete", open: "Open", share: "Share", copied: "Copied", pages: "pages", confirmDel: "Delete this path? Pages stay, just unlinked.", empty: "No paths yet. A path is a long story: “Restoring health”, “Launching a project”, “200 push-ups”. Group published pages into it.", hint: "Attach pages to a path when you publish an entry (the “Publish” button).", privateNote: "off — nobody sees it" },
+  uk: { newPath: "Новий шлях", title: "Назва", titlePh: "Напр.: Відновлення енергії", desc: "Опис (необов'язково)", descPh: "Про що цей шлях і куди веде", emoji: "Емодзі", color: "Колір", status: "Статус", active: "Іду", done: "Пройдено", makePublic: "Публічний (видно за посиланням)", save: "Зберегти", create: "Створити шлях", cancel: "Скасувати", edit: "Змінити", del: "Видалити", open: "Відкрити", share: "Поділитися", copied: "Скопійовано", pages: "стор.", confirmDel: "Видалити шлях? Сторінки лишаться, просто відв'яжуться.", empty: "Поки немає шляхів. Шлях — це довга історія: «Відновлення здоров'я», «Запуск проєкту». Групуй у нього опубліковані сторінки.", hint: "Прив'язуй сторінки до шляху під час публікації запису.", privateNote: "вимкнено — ніхто не бачить" },
+  fr: { newPath: "Nouveau chemin", title: "Titre", titlePh: "Ex. : Retrouver l'énergie", desc: "Description (optionnel)", descPh: "De quoi parle ce chemin et où il mène", emoji: "Emoji", color: "Couleur", status: "Statut", active: "En cours", done: "Terminé", makePublic: "Public (visible via lien)", save: "Enregistrer", create: "Créer le chemin", cancel: "Annuler", edit: "Modifier", del: "Supprimer", open: "Ouvrir", share: "Partager", copied: "Copié", pages: "pages", confirmDel: "Supprimer ce chemin ? Les pages restent, juste détachées.", empty: "Pas encore de chemins. Un chemin est une longue histoire : « Retrouver la santé », « Lancer un projet ». Regroupes-y tes pages publiées.", hint: "Attache des pages à un chemin en publiant une entrée.", privateNote: "désactivé — personne ne voit" },
 };
 
 const ACCENTS: Record<string, [string, string]> = { indigo: ["#4f46e5", "#7c6ff0"], green: ["#0f9d6e", "#34d399"], amber: ["#c2620a", "#f59e0b"], pink: ["#be1d6a", "#f472b6"], dark: ["#111827", "#374151"] };
@@ -21,6 +21,7 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
   const router = useRouter();
   const [edit, setEdit] = useState<Path | null>(null); // null = редактор закрыт
   const [busy, setBusy] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null); // показываем «Скопировано» у конкретной карточки
 
   async function save() {
     if (!edit) return;
@@ -36,6 +37,13 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
     setBusy(true);
     await fetch("/api/path", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "update", id: p.id, public: !p.public }) });
     setBusy(false); router.refresh();
+  }
+  async function share(p: Path) {
+    const url = `https://${host}/path/${p.id}`;
+    const nav: any = typeof navigator !== "undefined" ? navigator : null;
+    // на телефоне — системное меню «Поделиться»; на десктопе — копируем ссылку в буфер
+    if (nav?.share) { nav.share({ title: p.title, text: p.description || p.title, url }).catch(() => {}); return; }
+    try { await nav?.clipboard?.writeText(url); setCopiedId(p.id); setTimeout(() => setCopiedId(null), 1800); } catch {}
   }
   async function del(p: Path) {
     if (!window.confirm(L.confirmDel)) return;
@@ -103,6 +111,11 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
               </div>
               <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
                 {p.public && <a href={`https://${host}/path/${p.id}`} target="_blank" rel="noreferrer" style={{ ...chip, color: "var(--accent)", borderColor: "var(--accent)", textDecoration: "none" }}>{L.open} →</a>}
+                {p.public && (
+                  <button onClick={() => share(p)} disabled={busy} style={{ ...chip, color: "var(--accent)", borderColor: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <i className={`ti ${copiedId === p.id ? "ti-check" : "ti-share"}`} style={{ fontSize: 13 }} />{copiedId === p.id ? L.copied : L.share}
+                  </button>
+                )}
                 <button onClick={() => togglePublic(p)} disabled={busy} style={chip}>{p.public ? "🌍→🔒" : "🔒→🌍"}</button>
                 <button onClick={() => setEdit(p)} disabled={busy} style={chip}>{L.edit}</button>
                 <button onClick={() => del(p)} disabled={busy} style={{ ...chip, color: "#ef4444" }}>{L.del}</button>
