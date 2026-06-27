@@ -41,12 +41,17 @@ export async function GET() {
     const { data } = await db.from("biographer_chats").select("question, answer, created_at").eq("user_id", user.id);
     biographer = data || [];
   } catch {}
+  let finance: any[] = [];
+  try {
+    const { data } = await db.from("finance_tx").select("day, kind, amount, currency, category, note, created_at").eq("user_id", user.id).order("day", { ascending: false });
+    finance = data || [];
+  } catch {}
 
   const exportData = {
     service: "LIFE OS",
     exported_at: new Date().toISOString(),
     profile: { name: user.name },
-    counts: { entries: entries.length, tasks: tasks.length, insights: (insights || []).length, gratitude: (gratitude || []).length, goals: goals.length, experiments: experiments.length },
+    counts: { entries: entries.length, tasks: tasks.length, insights: (insights || []).length, gratitude: (gratitude || []).length, goals: goals.length, experiments: experiments.length, finance: finance.length },
     entries,
     tasks,
     insights: insights || [],
@@ -54,6 +59,7 @@ export async function GET() {
     goals,
     experiments,
     biographer,
+    finance,
   };
 
   const date = new Date().toISOString().slice(0, 10);
