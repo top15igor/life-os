@@ -121,3 +121,7 @@ a { color: inherit; text-decoration: none; }
   .book-page { box-shadow: none !important; border: none !important; page-break-after: always; padding: 0 0 24px; background: #fff !important; }
   @page { margin: 18mm; }
 }
+
+/* Finance: строки операций — лёгкая подсветка при наведении */
+.fin-row { border-radius: 9px; transition: background .12s; }
+.fin-row:hover { background: var(--surface-2); }

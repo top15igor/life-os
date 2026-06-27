@@ -41,12 +41,27 @@ export async function GET() {
     const { data } = await db.from("biographer_chats").select("question, answer, created_at").eq("user_id", user.id);
     biographer = data || [];
   } catch {}
+  let finance: any[] = [];
+  try {
+    const { data } = await db.from("finance_tx").select("day, kind, amount, currency, category, note, created_at").eq("user_id", user.id).order("day", { ascending: false });
+    finance = data || [];
+  } catch {}
+  let finance_budgets: any[] = [];
+  try {
+    const { data } = await db.from("finance_budget").select("category, amount").eq("user_id", user.id);
+    finance_budgets = data || [];
+  } catch {}
+  let finance_settings: any = null;
+  try {
+    const { data } = await db.from("finance_settings").select("base_currency, rates").eq("user_id", user.id).maybeSingle();
+    finance_settings = data || null;
+  } catch {}
 
   const exportData = {
     service: "LIFE OS",
     exported_at: new Date().toISOString(),
     profile: { name: user.name },
-    counts: { entries: entries.length, tasks: tasks.length, insights: (insights || []).length, gratitude: (gratitude || []).length, goals: goals.length, experiments: experiments.length },
+    counts: { entries: entries.length, tasks: tasks.length, insights: (insights || []).length, gratitude: (gratitude || []).length, goals: goals.length, experiments: experiments.length, finance: finance.length },
     entries,
     tasks,
     insights: insights || [],
@@ -54,6 +69,9 @@ export async function GET() {
     goals,
     experiments,
     biographer,
+    finance,
+    finance_budgets,
+    finance_settings,
   };
 
   const date = new Date().toISOString().slice(0, 10);

@@ -18,6 +18,12 @@ export const DEED_KINDS = ["help", "support", "care", "gift", "knowledge", "volu
 // Сферы мечты для «Карты желаний».
 export const DREAM_SPHERES = ["home", "transport", "body", "travel", "family", "business", "money", "growth", "other"];
 
+// Финансы: категории расходов и доходов (ключи совпадают с FinanceTracker) + валюты.
+export const EXPENSE_CAT_KEYS = ["food", "cafe", "transport", "housing", "bills", "shopping", "health", "fun", "education", "travel", "gifts", "other"];
+export const INCOME_CAT_KEYS = ["salary", "freelance", "business", "gift", "investment", "other"];
+export const FINANCE_CATS = [...new Set([...EXPENSE_CAT_KEYS, ...INCOME_CAT_KEYS])];
+export const FINANCE_CURRENCIES = ["USD", "EUR", "UAH", "RUB", "GBP", "PLN", "KZT", "GEL", "TRY", "AED"];
+
 export type Analysis = {
   summary: string;
   focus?: string | null;
@@ -38,6 +44,7 @@ export type Analysis = {
   good_deeds: { text: string; kind?: string; person?: string }[];
   promises: { text: string; person?: string }[];
   dreams: { text: string; sphere?: string; emoji?: string }[];
+  finance?: { kind: "income" | "expense"; amount: number; currency?: string; category?: string; note?: string }[];
 };
 
 const TOOL: Anthropic.Tool = {
@@ -100,6 +107,21 @@ const TOOL: Anthropic.Tool = {
           required: ["text"],
         },
       },
+      finance: {
+        type: "array",
+        description: "Денежные операции с КОНКРЕТНОЙ суммой: траты («потратил/купил/заплатил…») и доходы («получил/заработал/зарплата…»). Добавляй ТОЛЬКО если названо число-сумма. Не выдумывай суммы.",
+        items: {
+          type: "object",
+          properties: {
+            kind: { type: "string", enum: ["income", "expense"], description: "expense — трата, income — доход." },
+            amount: { type: "number", description: "Сумма, положительное число." },
+            currency: { type: "string", enum: FINANCE_CURRENCIES, description: "Код валюты, если ясен из текста или символа (₴ → UAH, $ → USD, € → EUR, ₽ → RUB, грн → UAH, руб → RUB). Если не ясно — не указывай." },
+            category: { type: "string", enum: FINANCE_CATS, description: "Категория. Расходы: food (продукты), cafe (кафе/рестораны), transport, housing (жильё/аренда), bills (счета/связь), shopping (покупки), health (здоровье/аптека), fun (развлечения), education, travel, gifts, other. Доходы: salary, freelance (подработка), business, gift, investment, other." },
+            note: { type: "string", description: "Короткое пояснение — на что/откуда, если есть." },
+          },
+          required: ["kind", "amount"],
+        },
+      },
     },
     required: ["summary", "categories", "tags", "people", "places", "projects", "tasks", "insights", "gratitude"],
   },
@@ -121,6 +143,7 @@ function prompt(text: string): string {
 - good_deeds: ТОЛЬКО настоящая помощь/забота/поддержка/подарок/знания другим. Для каждого укажи kind и person (если ясно). ВАЖНО: возврат долга, оплата, выполнение обязательства или рабочей задачи — это НЕ доброе дело, НЕ включай их в good_deeds. Не морализируй и не выдумывай.
 - promises: явные обещания людям (позвонить, помочь, отправить, вернуть). Указывай person, если назван. НЕ ДУБЛИРУЙ: если поступок уже совершён (это доброе дело) — не добавляй его ещё и в promises.
 - dreams: мечты/желания на будущее («мечтаю…», «хочу когда-нибудь…», «когда-нибудь…»). Для каждой укажи sphere (из списка) и emoji. НЕ путай с задачами на сегодня и рабочими целями.
+- finance: денежные операции, где названа КОНКРЕТНАЯ сумма. Траты («потратил 500 на продукты», «кофе за 80», «заплатил за аренду 12000») → kind=expense; доходы («получил зарплату 50000», «заработал 3000») → kind=income. Для каждой укажи amount (число), подходящую category из списка и currency, если ясна из текста/символа. Если суммы нет — НЕ добавляй операцию.
 - sleep_hours/weight: только если названы числом.
 
 Запись:
