@@ -202,73 +202,82 @@ export type SavedAnalysis = {
   tags: string[];      // 3–8 тегов без #
 };
 
-// Фиксированный набор «папок» Базы знаний — всегда по-русски, чтобы посты
-// группировались вместе (а не плодили по папке на каждый пост).
-export const KNOWLEDGE_FOLDERS = [
-  "Здоровье",
-  "Спорт и тело",
-  "Питание и рецепты",
-  "Психология и саморазвитие",
-  "Деньги и финансы",
-  "Бизнес и маркетинг",
-  "Технологии и AI",
-  "Путешествия",
-  "Дом и быт",
-  "Отношения и семья",
-  "Образование",
-  "Другое",
-];
-
-// Привести любую тему к канонической папке по ключевым словам (нормализация
-// старых записей и страховка для ответа AI). Порядок проверок важен.
-export function canonicalFolder(raw?: string | null): string {
-  const t = (raw || "").toLowerCase();
-  const has = (...ws: string[]) => ws.some((w) => t.includes(w));
-  if (!t.trim()) return "Другое";
-  if (has("спорт", "фитнес", "трениров", "упражн", "workout", "gym", "мышц", "растяж", "йог", "бег", "пресс", "тело")) return "Спорт и тело";
-  if (has("здоров", "health", "голодан", "медиц", "витамин", "иммун", "болезн", "диет", "детокс", "сон")) return "Здоровье";
-  if (has("рецеп", "питан", "еда", "блюд", "готов", "food", "recipe", "выпеч", "десерт", "завтрак", "кулинар", "напит")) return "Питание и рецепты";
-  if (has("деньг", "финанс", "инвест", "money", "бюджет", "накопл", "крипт", "доход", "налог")) return "Деньги и финансы";
-  if (has("бизнес", "маркетинг", "продаж", "business", "стартап", "реклам", "бренд", "smm", "карьер", "работ")) return "Бизнес и маркетинг";
-  if (has("технолог", "гаджет", "нейросет", "программ", "tech", "приложен", "софт", " ai", "код")) return "Технологии и AI";
-  if (has("путешеств", "travel", "поездк", "тур", "страна", "отдых", "виза")) return "Путешествия";
-  if (has("психолог", "саморазв", "мотивац", "привыч", "продуктивн", "mindset", "осознан", "эмоц")) return "Психология и саморазвитие";
-  if (has("дом", "быт", "уборк", "интерьер", "ремонт", "растен", "органайз")) return "Дом и быт";
-  if (has("отношен", "семь", "дет", "родител", "любов", "relationship", "пара")) return "Отношения и семья";
-  if (has("образован", "учеб", "язык", "курс", "обучен", "наук")) return "Образование";
-  // Осмысленная тема вне списка — оставим как есть (своя папка пользователя).
-  return (raw || "").trim() || "Другое";
-}
-
-const SAVED_TOOL: Anthropic.Tool = {
-  name: "save_knowledge",
-  description: "Сохранить структурированный разбор сохранённого контента в личную базу знаний.",
-  input_schema: {
-    type: "object",
-    properties: {
-      title: { type: "string", description: "Короткий понятный заголовок (до ~70 символов), о чём этот пост/видео." },
-      topic: { type: "string", enum: KNOWLEDGE_FOLDERS, description: "Папка для группировки — выбери ОДНУ наиболее подходящую из списка, ВСЕГДА по-русски, независимо от языка поста." },
-      summary: { type: "string", description: "2–4 предложения: что полезного внутри, чтобы потом легко вспомнить и применить." },
-      key_points: { type: "array", items: { type: "string" }, description: "Практические тезисы, советы или шаги из контента (списком, по делу). До 8 пунктов." },
-      tags: { type: "array", items: { type: "string" }, description: "3–8 коротких тегов без символа #." },
-    },
-    required: ["title", "topic", "summary", "key_points", "tags"],
-  },
+// Фиксированный набор «папок» Базы знаний на языке интерфейса. Параллельные
+// массивы (один порядок), чтобы переводить папку по индексу между языками.
+export const KNOWLEDGE_FOLDERS_BY_LOCALE: Record<string, string[]> = {
+  ru: ["Здоровье", "Спорт и тело", "Питание и рецепты", "Психология и саморазвитие", "Деньги и финансы", "Бизнес и маркетинг", "Технологии и AI", "Путешествия", "Дом и быт", "Отношения и семья", "Образование", "Другое"],
+  en: ["Health", "Fitness & Body", "Food & Recipes", "Psychology & Growth", "Money & Finance", "Business & Marketing", "Tech & AI", "Travel", "Home & Living", "Relationships & Family", "Education", "Other"],
+  uk: ["Здоров'я", "Спорт і тіло", "Їжа та рецепти", "Психологія та саморозвиток", "Гроші та фінанси", "Бізнес і маркетинг", "Технології та AI", "Подорожі", "Дім і побут", "Стосунки та сім'я", "Освіта", "Інше"],
+  fr: ["Santé", "Sport & Corps", "Cuisine & Recettes", "Psychologie & Développement", "Argent & Finance", "Business & Marketing", "Tech & IA", "Voyages", "Maison & Quotidien", "Relations & Famille", "Éducation", "Autre"],
 };
 
+export function knowledgeFolders(locale?: string): string[] {
+  return KNOWLEDGE_FOLDERS_BY_LOCALE[locale || "ru"] || KNOWLEDGE_FOLDERS_BY_LOCALE.ru;
+}
+
+// Определить индекс канонической папки по ключевым словам (мультиязычно). -1 — не определено.
+function folderIndex(raw?: string | null): number {
+  const t = (raw || "").toLowerCase();
+  const has = (...ws: string[]) => ws.some((w) => t.includes(w));
+  if (!t.trim()) return -1;
+  if (has("спорт", "sport", "фитнес", "фітнес", "fitness", "трениров", "трену", "workout", "упражн", "вправ", "gym", "мышц", "м'яз", "muscle", "растяж", "yoga", "йог", "бег", "run", "пресс", "тіло", "body")) return 1;
+  if (has("здоров", "здоров'я", "health", "santé", "голодан", "медиц", "médic", "витамин", "vitamin", "иммун", "імун", "болезн", "діет", "диет", "diet", "детокс", "detox", "sleep")) return 0;
+  if (has("рецеп", "recipe", "recette", "питан", "харчув", "еда", "їж", "food", "блюд", "cook", "готов", "выпеч", "десерт", "dessert", "breakfast", "завтрак", "напит", "drink", "кулинар")) return 2;
+  if (has("деньг", "грош", "финанс", "фінанс", "financ", "argent", "invest", "інвест", "инвест", "money", "бюджет", "budget", "накопл", "крипт", "crypto", "доход", "income", "налог", "tax")) return 4;
+  if (has("бизнес", "бізнес", "business", "маркетинг", "marketing", "продаж", "sales", "стартап", "startup", "реклам", "бренд", "brand", "smm", "карьер", "карʼєр", "career")) return 5;
+  if (has("технолог", "технолог", "tech", "гаджет", "gadget", "нейросет", "neural", "ии", "програм", "program", "code", "приложен", "застосун", "app", "софт", "software")) return 6;
+  if (has("путешеств", "подорож", "travel", "voyage", "поездк", "trip", "тур", "tour", "страна", "country", "отдых", "виза", "visa")) return 7;
+  if (has("психолог", "psycho", "саморазв", "саморозв", "growth", "мотивац", "motiv", "привыч", "звичк", "habit", "продуктивн", "productiv", "mindset", "осознан", "mindful", "эмоц", "емоц", "emot")) return 3;
+  if (has("дом", "дім", "home", "быт", "побут", "living", "уборк", "приберан", "clean", "интерьер", "interior", "ремонт", "repair", "растен", "росл", "plant", "органайз", "organi")) return 8;
+  if (has("отношен", "стосунк", "relationship", "семь", "сім", "family", "famille", "дет", "child", "родител", "батьк", "parent", "любов", "love", "пара", "couple")) return 9;
+  if (has("образован", "освіт", "educat", "éducat", "учеб", "навчанн", "study", "язык", "мов", "language", "курс", "course", "обучен", "наук", "science")) return 10;
+  return -1;
+}
+
+// Привести тему к канонической папке на нужном языке (нормализация старых записей
+// и страховка для ответа AI). Осмысленную тему вне списка оставляем как есть.
+export function canonicalFolder(raw: string | null | undefined, locale?: string): string {
+  const folders = knowledgeFolders(locale);
+  const idx = folderIndex(raw);
+  if (idx >= 0) return folders[idx];
+  return (raw || "").trim() || folders[folders.length - 1];
+}
+
+const LANG_NAME: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+
+function savedTool(locale: string): Anthropic.Tool {
+  return {
+    name: "save_knowledge",
+    description: "Сохранить структурированный разбор сохранённого контента в личную базу знаний.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Короткий понятный заголовок (до ~70 символов), о чём этот пост/видео." },
+        topic: { type: "string", enum: knowledgeFolders(locale), description: "Папка для группировки — выбери ОДНУ наиболее подходящую из списка." },
+        summary: { type: "string", description: "2–4 предложения: что полезного внутри, чтобы потом легко вспомнить и применить." },
+        key_points: { type: "array", items: { type: "string" }, description: "Практические тезисы, советы или шаги из контента (списком, по делу). До 8 пунктов." },
+        tags: { type: "array", items: { type: "string" }, description: "3–8 коротких тегов без символа #." },
+      },
+      required: ["title", "topic", "summary", "key_points", "tags"],
+    },
+  };
+}
+
 // Разбирает подпись поста + расшифровку видео в карточку базы знаний.
-export async function analyzeSaved(text: string, userId?: string): Promise<SavedAnalysis> {
+// locale — язык интерфейса: карточка пишется на нём (с переводом, если пост на другом языке).
+export async function analyzeSaved(text: string, userId?: string, locale = "ru"): Promise<SavedAnalysis> {
+  const lang = LANG_NAME[locale] || LANG_NAME.ru;
   const msg = await client().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1200,
-    tools: [SAVED_TOOL],
+    tools: [savedTool(locale)],
     tool_choice: { type: "tool", name: "save_knowledge" },
-    messages: [{ role: "user", content: `Ты помогаешь вести личную БАЗУ ЗНАНИЙ. Пользователь сохраняет полезный контент (посты и reels из Instagram), чтобы потом находить по нему ответы (например: «как построить дом»). Тебе дают подпись поста и/или расшифровку звука из видео. Разбери это и вызови инструмент save_knowledge.
+    messages: [{ role: "user", content: `Ты помогаешь вести личную БАЗУ ЗНАНИЙ. Пользователь сохраняет полезный контент (посты и reels из Instagram), чтобы потом находить по нему ответы. Тебе дают подпись поста и/или расшифровку звука из видео. Разбери это и вызови инструмент save_knowledge.
 
 Правила:
-- title, summary, key_points, tags — на языке контента (по умолчанию русский).
-- topic — это ПАПКА для группировки: выбери ОДНУ из фиксированного списка и ВСЕГДА по-русски (даже если пост на другом языке), чтобы похожие посты попадали в одну папку.
-- Это НЕ личный дневник — это справочный/обучающий материал. Не пиши от первого лица, пиши по сути.
+- ВЕСЬ результат (title, summary, key_points, tags, topic) пиши на ${lang} языке, ДАЖЕ ЕСЛИ пост на другом языке — переводи смысл на ${lang}. Это важно: база знаний должна быть на одном языке.
+- topic — ПАПКА для группировки: выбери ОДНУ из фиксированного списка (он уже на нужном языке), чтобы похожие посты попадали в одну папку.
+- Это НЕ личный дневник — это справочный/обучающий материал. Не от первого лица, пиши по сути.
 - summary и key_points должны быть ПОЛЕЗНЫ для применения позже: конкретика, шаги, советы, цифры. Не пересказывай «автор показывает…», а извлекай суть.
 - Не выдумывай того, чего нет в тексте. Если контента мало — сделай короткий честный разбор.
 
@@ -281,7 +290,7 @@ ${text}
   const block = msg.content.find((b) => b.type === "tool_use");
   if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
   const out = block.input as SavedAnalysis;
-  out.topic = canonicalFolder(out.topic); // страховка: всегда каноническая папка
+  out.topic = canonicalFolder(out.topic, locale); // страховка: каноническая папка на языке интерфейса
   return out;
 }
 
