@@ -1,6 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
-import KnowledgeGrid from "@/components/KnowledgeGrid";
+import KnowledgeManager from "@/components/KnowledgeManager";
 import { getSavedItems } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -34,13 +34,7 @@ export default async function KnowledgePage() {
       <main className="main">
         <PageHead icon="ti-bookmarks" color="#6d5efc" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
 
-        {items.length === 0 ? (
-          <div style={{ padding: 28, border: "1px solid var(--border)", borderRadius: 16, background: "var(--card)", color: "var(--muted)", maxWidth: 640, lineHeight: 1.6 }}>
-            {EMPTY[locale] || EMPTY.ru}
-          </div>
-        ) : (
-          <KnowledgeGrid items={items} locale={locale} />
-        )}
+        <KnowledgeManager initial={items} locale={locale} emptyHint={EMPTY[locale] || EMPTY.ru} />
       </main>
     </div>
   );
