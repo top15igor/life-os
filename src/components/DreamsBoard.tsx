@@ -81,6 +81,8 @@ function resizeImage(file: File, max = 1200): Promise<Blob> {
 
 const statusStyle = (st: string) => st === "done" ? { bg: "#FAEEDA", c: "#854F0B" } : st === "progress" ? { bg: "#E6F1FB", c: "#185FA5" } : { bg: "var(--surface-2)", c: "var(--text-2)" };
 
+const EMOJIS = ["✨", "⭐", "🌟", "🎯", "🏆", "🎉", "🔥", "❤️", "🥰", "😊", "🌈", "🍀", "☀️", "🌊", "🏝️", "✈️", "🌍", "🗾", "🏠", "🏡", "🏖️", "🚗", "🚀", "💼", "💡", "📈", "💰", "💵", "💪", "🏃", "🧘", "🚴", "🥗", "📚", "🎓", "🎨", "🎸", "🐶", "🐱", "👨‍👩‍👧‍👦", "👶", "💍", "🌱", "🛏️"];
+
 export default function DreamsBoard({ initial, locale }: { initial: Dream[]; locale: string }) {
   const s = STR[locale] || STR.ru;
   const [dreams, setDreams] = useState<Dream[]>(initial);
@@ -88,6 +90,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
   const [sphere, setSphere] = useState("home");
   const [text, setText] = useState("");
   const [emoji, setEmoji] = useState("");
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
@@ -280,7 +283,22 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
             })}
           </div>
           <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <input value={emoji} onChange={(e) => setEmoji(e.target.value.slice(0, 4))} placeholder={s.emojiPh} style={{ width: 52, textAlign: "center", padding: "10px 0", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", fontSize: 18 }} />
+            <div style={{ position: "relative" }}>
+              <button type="button" onClick={() => setEmojiOpen((v) => !v)} title={s.emojiPh} style={{ width: 52, height: 44, borderRadius: 10, border: "1px solid " + (emojiOpen ? "var(--accent)" : "var(--border)"), background: "var(--surface)", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {emoji || "🙂"}
+              </button>
+              {emojiOpen && (
+                <>
+                  <div onClick={() => setEmojiOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                  <div style={{ position: "absolute", top: "112%", left: 0, zIndex: 41, width: 280, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,.16)", padding: 9, display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {emoji && <button type="button" onClick={() => { setEmoji(""); setEmojiOpen(false); }} title="—" style={{ width: 34, height: 34, fontSize: 14, border: "none", background: "var(--surface-2)", cursor: "pointer", borderRadius: 8, color: "var(--text-3)" }}>✕</button>}
+                    {EMOJIS.map((em) => (
+                      <button key={em} type="button" onClick={() => { setEmoji(em); setEmojiOpen(false); }} style={{ width: 34, height: 34, fontSize: 19, border: "none", background: emoji === em ? "var(--accent-bg)" : "none", cursor: "pointer", borderRadius: 8 }}>{em}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder={s.ph} autoFocus onKeyDown={(e) => e.key === "Enter" && add()} style={{ flex: 1, padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14.5 }} />
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
