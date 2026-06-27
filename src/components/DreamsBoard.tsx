@@ -139,64 +139,67 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
 
   // ===== РАДИАЛЬНАЯ КАРТА =====
   function MapView() {
-    const W = 820, H = 660, cx = W / 2, cy = H / 2, Rs = 168;
+    const W = 600, H = 600, cx = W / 2, cy = H / 2, Rs = 140;
     const N = used.length || 1;
+    const ringColor = (st: string, fallback: string) => (st === "done" ? "#16a34a" : st === "progress" ? "#2563eb" : fallback);
     const nodes = used.map((sp, i) => {
       const ang = (-90 + i * (360 / N)) * Math.PI / 180;
       const ux = Math.cos(ang), uy = Math.sin(ang);
       const sxp = cx + Rs * ux, syp = cy + Rs * uy;
       const ds = dreams.filter((d) => d.sphere === sp.key);
       const shown = ds.slice(0, 3);
-      const chips = shown.map((d, j) => { const r = Rs + 78 + j * 50; return { d, x: cx + r * ux, y: cy + r * uy }; });
+      const chips = shown.map((d, j) => { const r = Rs + 52 + j * 42; return { d, x: cx + r * ux, y: cy + r * uy }; });
       const extra = ds.length - shown.length;
-      const exR = Rs + 78 + shown.length * 50;
-      return { sp, sxp, syp, ux, uy, chips, extra, exX: cx + exR * ux, exY: cy + exR * uy, count: ds.length };
+      const exR = Rs + 52 + shown.length * 42;
+      return { sp, sxp, syp, ux, uy, chips, extra, exX: cx + exR * ux, exY: cy + exR * uy };
     });
     const curve = (x1: number, y1: number, x2: number, y2: number) => {
-      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, off = 0.1;
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, off = 0.08;
       return `M ${x1} ${y1} Q ${mx - dy * off} ${my + dx * off} ${x2} ${y2}`;
     };
     return (
       <div style={{ overflowX: "auto", paddingBottom: 8 }}>
         <div style={{ position: "relative", width: W, height: H, margin: "0 auto" }}>
           <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {nodes.map((n, i) => <path key={"c" + i} d={curve(cx, cy, n.sxp, n.syp)} stroke={n.sp.c} strokeWidth={2.5} fill="none" opacity={0.45} />)}
-            {nodes.map((n, i) => n.chips.map((ch, j) => <line key={"l" + i + j} x1={n.sxp} y1={n.syp} x2={ch.x} y2={ch.y} stroke={n.sp.c} strokeWidth={1.5} opacity={0.28} />))}
+            {nodes.map((n, i) => <path key={"c" + i} d={curve(cx, cy, n.sxp, n.syp)} stroke={n.sp.c} strokeWidth={2.5} fill="none" opacity={0.4} />)}
+            {nodes.map((n, i) => n.chips.map((ch, j) => <line key={"l" + i + j} x1={n.sxp} y1={n.syp} x2={ch.x} y2={ch.y} stroke={n.sp.c} strokeWidth={1.5} opacity={0.25} />))}
           </svg>
 
           {/* центр */}
-          <div style={{ position: "absolute", left: cx, top: cy, transform: "translate(-50%,-50%)", width: 124, height: 124, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #efeafe, #ddd6fb)", border: "2px solid #c7bdf5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", boxShadow: "0 8px 26px rgba(99,70,255,.18)", zIndex: 3 }}>
-            <i className="ti ti-user" style={{ fontSize: 26, color: "var(--accent)", marginBottom: 3 }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-text)", lineHeight: 1.2, padding: "0 10px" }}>{s.center} ✨</span>
+          <div style={{ position: "absolute", left: cx, top: cy, transform: "translate(-50%,-50%)", width: 112, height: 112, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #efeafe, #ddd6fb)", border: "2px solid #c7bdf5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", boxShadow: "0 8px 26px rgba(99,70,255,.18)", zIndex: 3 }}>
+            <i className="ti ti-user" style={{ fontSize: 24, color: "var(--accent)", marginBottom: 2 }} />
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--accent-text)", lineHeight: 1.2, padding: "0 12px" }}>{s.center} ✨</span>
           </div>
 
           {/* сферы */}
           {nodes.map((n, i) => (
             <div key={"s" + i} style={{ position: "absolute", left: n.sxp, top: n.syp, transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 2 }}>
-              <div style={{ width: 58, height: 58, borderRadius: "50%", background: n.sp.bg, border: `2px solid ${n.sp.c}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(0,0,0,.08)" }}>
-                <i className={`ti ${n.sp.icon}`} style={{ fontSize: 24, color: n.sp.c }} />
+              <div style={{ width: 54, height: 54, borderRadius: "50%", background: n.sp.bg, border: `2px solid ${n.sp.c}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(0,0,0,.08)" }}>
+                <i className={`ti ${n.sp.icon}`} style={{ fontSize: 22, color: n.sp.c }} />
               </div>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: n.sp.c, whiteSpace: "nowrap" }}>{s.sph[n.sp.key]}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: n.sp.c, whiteSpace: "nowrap" }}>{s.sph[n.sp.key]}</span>
             </div>
           ))}
 
-          {/* мечты-чипы */}
+          {/* мечты — компактные кружки */}
           {nodes.map((n, i) => n.chips.map((ch, j) => {
-            const d = ch.d; const ss = statusStyle(d.status);
-            const txt = d.text.length > 24 ? d.text.slice(0, 24) + "…" : d.text;
+            const d = ch.d;
             return (
-              <button key={"d" + i + j} onClick={() => cycleStatus(d)} title={d.text} style={{ position: "absolute", left: ch.x, top: ch.y, transform: "translate(-50%,-50%)", display: "flex", alignItems: "center", gap: 7, maxWidth: 168, padding: "6px 11px 6px 6px", borderRadius: 999, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 3px 12px rgba(0,0,0,.07)", cursor: "pointer", zIndex: 2 }}>
-                <span style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : n.sp.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{!d.image_url && (d.emoji || "✨")}</span>
-                <span style={{ fontSize: 12, color: "var(--text)", textAlign: "left", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{txt}</span>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: ss.c === "var(--text-2)" ? "var(--text-3)" : ss.c }} />
+              <button key={"d" + i + j} onClick={() => cycleStatus(d)} title={`${d.text} · ${s.status[d.status] || ""}`}
+                style={{ position: "absolute", left: ch.x, top: ch.y, transform: "translate(-50%,-50%)", width: 44, height: 44, borderRadius: "50%", background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : "var(--surface)", border: `2.5px solid ${ringColor(d.status, n.sp.c)}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, cursor: "pointer", boxShadow: "0 3px 10px rgba(0,0,0,.1)", zIndex: 2, padding: 0 }}>
+                {!d.image_url && (d.emoji || "✨")}
+                {d.status === "done" && <span style={{ position: "absolute", top: -6, right: -6, fontSize: 13 }}>✨</span>}
               </button>
             );
           }))}
 
           {/* +N */}
           {nodes.map((n, i) => n.extra > 0 && (
-            <button key={"e" + i} onClick={() => setView("list")} style={{ position: "absolute", left: n.exX, top: n.exY, transform: "translate(-50%,-50%)", fontSize: 11.5, fontWeight: 600, color: n.sp.c, background: n.sp.bg, border: "none", borderRadius: 999, padding: "4px 10px", cursor: "pointer", zIndex: 2 }}>+{n.extra}</button>
+            <button key={"e" + i} onClick={() => setView("list")} style={{ position: "absolute", left: n.exX, top: n.exY, transform: "translate(-50%,-50%)", fontSize: 11.5, fontWeight: 600, color: n.sp.c, background: n.sp.bg, border: "none", borderRadius: 999, padding: "4px 9px", cursor: "pointer", zIndex: 2 }}>+{n.extra}</button>
           ))}
+        </div>
+        <div style={{ textAlign: "center", fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
+          {locale === "en" ? "Hover a circle for its name · click to change status" : locale === "uk" ? "Наведи на кружок — назва · клік змінює статус" : locale === "fr" ? "Survole un cercle pour son nom · clique pour changer le statut" : "Наведи на кружок — увидишь название · клик меняет статус"}
         </div>
       </div>
     );
