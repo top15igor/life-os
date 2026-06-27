@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type Dream = { id: string; sphere: string; text: string; emoji?: string; image_url?: string; status: string; created_at: string };
 
@@ -169,6 +169,17 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
   // ===== РАДИАЛЬНАЯ КАРТА (сферы вокруг центра, клик раскрывает мечты сферы) =====
   function MapView() {
     const W = 600, H = 408, cx = 300, cy = 196, Rs = 150;
+    const wrapRef = useRef<HTMLDivElement | null>(null);
+    const [scale, setScale] = useState(1);
+    useEffect(() => {
+      const el = wrapRef.current;
+      if (!el) return;
+      const update = () => setScale(Math.min(1, el.clientWidth / W));
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(el);
+      return () => ro.disconnect();
+    }, []);
     const N = used.length || 1;
     const active = selSphere && used.some((u) => u.key === selSphere) ? selSphere : used[0]?.key || null;
     const nodes = used.map((sp, i) => {
@@ -183,8 +194,8 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
     const aDreams = active ? dreams.filter((d) => d.sphere === active) : [];
     return (
       <div>
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ position: "relative", width: W, height: H, margin: "0 auto" }}>
+        <div ref={wrapRef} style={{ width: "100%", maxWidth: W, height: H * scale, margin: "0 auto", position: "relative" }}>
+          <div style={{ position: "relative", width: W, height: H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
             <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
               {nodes.map((n, i) => <path key={i} d={curve(cx, cy, n.x, n.y)} stroke={n.sp.c} strokeWidth={n.sp.key === active ? 3.5 : 2.5} fill="none" opacity={n.sp.key === active ? 0.7 : 0.35} />)}
             </svg>
