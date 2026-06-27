@@ -75,9 +75,11 @@ function deepGet(obj: any, key: string, depth = 0): any {
   return undefined;
 }
 
-async function fetchViaRapidApi(url: string): Promise<IgMedia | null> {
+type ApiResult = { media: IgMedia | null; rateLimited: boolean };
+
+async function fetchViaRapidApi(url: string): Promise<ApiResult> {
   const key = process.env.RAPIDAPI_KEY;
-  if (!key) return null;
+  if (!key) return { media: null, rateLimited: false };
   const host = process.env.RAPIDAPI_INSTAGRAM_HOST || "instagram-scraper-api2.p.rapidapi.com";
   // Путь до эндпоинта «инфо о посте». В пути/теле подставляются плейсхолдеры:
   //   {url}       — полная ссылка поста (url-encoded)
@@ -108,12 +110,13 @@ async function fetchViaRapidApi(url: string): Promise<IgMedia | null> {
     const res = await fetch(endpoint, init);
     if (!res.ok) {
       console.error("rapidapi ig", res.status, (await res.text()).slice(0, 200));
-      return null;
+      // 429 — исчерпан месячный лимит RapidAPI; пробрасываем наверх, чтобы честно сказать пользователю.
+      return { media: null, rateLimited: res.status === 429 };
     }
     json = await res.json();
   } catch (e) {
     console.error("rapidapi ig fetch", e);
-    return null;
+    return { media: null, rateLimited: false };
   }
 
   // Достаём поля устойчиво к разной форме ответа разных API.
@@ -147,8 +150,8 @@ async function fetchViaRapidApi(url: string): Promise<IgMedia | null> {
   const author = uname ? "@" + String(uname).replace(/^@/, "") : null;
 
   // Нечего отдавать — пусть сработает запасной способ.
-  if (!caption && !videoUrl && !imageUrl) return null;
-  return { caption: (caption || "").trim(), imageUrl, videoUrl, author, shortcode: shortcodeOf(url), kind: kindOf(url) };
+  if (!caption && !videoUrl && !imageUrl) return { media: null, rateLimited: false };
+  return { media: { caption: (caption || "").trim(), imageUrl, videoUrl, author, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: false };
 }
 
 // Способ 2 (запасной): og-теги превью. Работает редко (Instagram чаще отдаёт логин-стену),
@@ -181,38 +184,46 @@ async function fetchViaOg(url: string): Promise<IgMedia> {
 }
 
 // Сначала пробуем API (если задан ключ), потом — og-теги. Поля API имеют приоритет.
-async function fetchIg(url: string): Promise<IgMedia> {
-  const viaApi = await fetchViaRapidApi(url).catch(() => null);
-  if (viaApi && (viaApi.caption || viaApi.videoUrl)) return viaApi;
+async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: boolean }> {
+  const api = await fetchViaRapidApi(url).catch(() => ({ media: null, rateLimited: false } as ApiResult));
+  const viaApi = api.media;
+  if (viaApi && (viaApi.caption || viaApi.videoUrl)) return { media: viaApi, rateLimited: api.rateLimited };
 
   let viaOg: IgMedia | null = null;
   try {
     viaOg = await fetchViaOg(url);
   } catch (e) {
-    if (viaApi) return viaApi; // API хоть что-то дал (например, картинку)
+    if (viaApi) return { media: viaApi, rateLimited: api.rateLimited }; // API хоть что-то дал (например, картинку)
+    if (api.rateLimited) return { media: { caption: "", imageUrl: null, videoUrl: null, author: null, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: true };
     throw e;
   }
-  if (!viaApi) return viaOg;
+  if (!viaApi) return { media: viaOg, rateLimited: api.rateLimited };
   // Объединяем: непустые поля API перекрывают og.
   return {
-    caption: viaApi.caption || viaOg.caption,
-    imageUrl: viaApi.imageUrl || viaOg.imageUrl,
-    videoUrl: viaApi.videoUrl || viaOg.videoUrl,
-    author: viaApi.author || viaOg.author,
-    shortcode: viaApi.shortcode || viaOg.shortcode,
-    kind: viaApi.kind,
+    media: {
+      caption: viaApi.caption || viaOg.caption,
+      imageUrl: viaApi.imageUrl || viaOg.imageUrl,
+      videoUrl: viaApi.videoUrl || viaOg.videoUrl,
+      author: viaApi.author || viaOg.author,
+      shortcode: viaApi.shortcode || viaOg.shortcode,
+      kind: viaApi.kind,
+    },
+    rateLimited: api.rateLimited,
   };
 }
 
 export type ImportResult =
-  | { ok: false; reason: "empty" | "blocked" }
-  | { ok: true; id: string | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
+  | { ok: false; reason: "empty" | "blocked" | "limited" }
+  | { ok: true; id: string | null; saved: boolean; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string): Promise<ImportResult> {
   let media: IgMedia;
+  let rateLimited = false;
   try {
-    media = await fetchIg(url);
+    const r = await fetchIg(url);
+    media = r.media;
+    rateLimited = r.rateLimited;
   } catch (e) {
     console.error("ig fetch", e);
     return { ok: false, reason: "blocked" };
@@ -235,7 +246,10 @@ export async function importInstagram(userId: string, url: string): Promise<Impo
   }
 
   const combined = [media.caption, transcript].filter(Boolean).join("\n\n").trim();
-  if (!combined) return { ok: false, reason: media.videoUrl || media.imageUrl ? "empty" : "blocked" };
+  if (!combined) {
+    if (rateLimited) return { ok: false, reason: "limited" };
+    return { ok: false, reason: media.videoUrl || media.imageUrl ? "empty" : "blocked" };
+  }
 
   const analysis = await analyzeSaved(combined, userId);
 
@@ -255,8 +269,9 @@ export async function importInstagram(userId: string, url: string): Promise<Impo
   }
 
   let id: string | null = null;
+  let saved = false;
   try {
-    const { data } = await supabaseAdmin()
+    const { data, error } = await supabaseAdmin()
       .from("saved_items")
       .insert({
         user_id: userId,
@@ -277,10 +292,12 @@ export async function importInstagram(userId: string, url: string): Promise<Impo
       })
       .select("id")
       .single();
+    if (error) throw error;
     id = (data as any)?.id || null;
+    saved = !!id;
   } catch (e) {
     console.error("ig insert", e);
   }
 
-  return { ok: true, id, analysis, kind: media.kind, hadTranscript: !!transcript };
+  return { ok: true, id, saved, analysis, kind: media.kind, hadTranscript: !!transcript };
 }
