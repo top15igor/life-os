@@ -32,5 +32,7 @@ export async function GET(req: NextRequest) {
   const opts = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 600 };
   res.cookies.set("lifeos_oauth_state", state, opts);
   if (ref) res.cookies.set("lifeos_oauth_ref", ref, opts);
+  // Режим привязки: ?link=1 — присоединить Google к текущему аккаунту, а не заводить новый.
+  if (req.nextUrl.searchParams.get("link") === "1") res.cookies.set("lifeos_oauth_link", "1", opts);
   return res;
 }

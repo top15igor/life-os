@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findOrCreateGoogleUser } from "@/lib/emailAuth";
+import { findOrCreateGoogleUser, attachLoginToUser } from "@/lib/emailAuth";
 import { setSessionCookie } from "@/lib/authCookie";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,7 @@ function fail(req: NextRequest) {
   const res = NextResponse.redirect(new URL("/login?e=google", req.url));
   res.cookies.delete("lifeos_oauth_state");
   res.cookies.delete("lifeos_oauth_ref");
+  res.cookies.delete("lifeos_oauth_link");
   return res;
 }
 
@@ -54,6 +56,24 @@ export async function GET(req: NextRequest) {
     const verified = info?.email_verified === true || info?.email_verified === "true";
     if (!email || !verified) return fail(req);
 
+    // Режим привязки: присоединяем Google к уже залогиненному аккаунту.
+    if (req.cookies.get("lifeos_oauth_link")?.value === "1") {
+      const token = req.cookies.get("lifeos_token")?.value;
+      const { data: cur } = token
+        ? await supabaseAdmin().from("users").select("id").eq("token", token).maybeSingle()
+        : { data: null };
+      const dest = !cur
+        ? "/login" // сессия истекла — обычный вход
+        : (await attachLoginToUser((cur as any).id, email)).ok
+        ? "/profile?linked=google"
+        : "/profile?e=emailtaken";
+      const res = NextResponse.redirect(new URL(dest, req.url));
+      res.cookies.delete("lifeos_oauth_state");
+      res.cookies.delete("lifeos_oauth_ref");
+      res.cookies.delete("lifeos_oauth_link");
+      return res;
+    }
+
     const ref = req.cookies.get("lifeos_oauth_ref")?.value || null;
     const result = await findOrCreateGoogleUser(email, info?.name, ref);
     if (!result) return fail(req);
@@ -62,6 +82,7 @@ export async function GET(req: NextRequest) {
     setSessionCookie(res, result.token);
     res.cookies.delete("lifeos_oauth_state");
     res.cookies.delete("lifeos_oauth_ref");
+    res.cookies.delete("lifeos_oauth_link");
     return res;
   } catch (e) {
     console.error("google callback", e);

@@ -134,4 +134,39 @@ export async function findOrCreateGoogleUser(
   return { token };
 }
 
+// ===== Привязка почты/Google к УЖЕ существующему аккаунту (связывание входов) =====
+// Если password задан — ставит и пароль (привязка «почта+пароль»); иначе только email (привязка Google).
+// Если email занят ДРУГИМ аккаунтом: освобождаем его, только если тот пустой (0 записей) и не владелец.
+export async function attachLoginToUser(
+  userId: string,
+  rawEmail: string,
+  password?: string
+): Promise<{ ok: boolean; error?: AuthError }> {
+  const email = normalizeEmail(rawEmail);
+  if (!validEmail(email)) return { ok: false, error: "invalid_email" };
+  if (password !== undefined && password.length < 6) return { ok: false, error: "weak_password" };
+
+  const db = supabaseAdmin();
+  const { data: other } = await db.from("users").select("id").eq("email", email).maybeSingle();
+  if (other && (other as any).id !== userId) {
+    const otherId = (other as any).id;
+    const { count } = await db
+      .from("entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", otherId);
+    if ((count || 0) > 0 || otherId === OWNER) return { ok: false, error: "exists" };
+    // Пустой дубль — убираем, чтобы освободить почту.
+    await db.from("users").delete().eq("id", otherId);
+  }
+
+  const patch: any = { email };
+  if (password) patch.password_hash = hashPassword(password);
+  const { error } = await db.from("users").update(patch).eq("id", userId);
+  if (error) {
+    console.error("attachLoginToUser", error);
+    return { ok: false, error: "server" };
+  }
+  return { ok: true };
+}
+
 export { OWNER };

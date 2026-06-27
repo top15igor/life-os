@@ -3,6 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import LangSwitcher from "@/components/LangSwitcher";
 import { CopyLink, ProfileButtons, PinSettings } from "@/components/ProfileActions";
+import LoginMethods from "@/components/LoginMethods";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -17,8 +18,9 @@ const STR: Record<string, any> = {
   fr: { title: "Profil", privateT: "C'est ton espace privé", privateS: "Ton journal n'est visible que par toi — via ce lien personnel. Personne d'autre ne le voit, il n'est pas public.", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil.", language: "Langue", privacy: "En savoir plus sur la confidentialité", yourData: "Tes données", exportBtn: "Télécharger mes données", exportHint: "Toutes tes entrées en un fichier — récupère-les quand tu veux. Et le code de LIFE OS est ouvert : vérifie toi-même ce qu'on fait des données.", openCode: "Code source sur GitHub", obsidianBtn: "Télécharger pour Obsidian (Markdown)", obsidianHint: "Tu veux tout garder chez toi ? Télécharge ton journal en dossier de fichiers Markdown et ouvre-le dans Obsidian — tes données t'appartiennent entièrement.", accent: "Accent de l'accueil", security: "Sécurité", danger: "Compte", plan: "Forfait", planSub: "Tu es sur Start. Plus tu vis dans ton journal, plus il te rend.", planBtn: "Voir les forfaits", secLead: "Ta vie est privée et protégée", sec: ["Toi seul vois tes entrées — l'accès se fait via ton lien personnel. Aucun autre utilisateur n'entre dans ton journal.", "Les gens ne les lisent pas : ni les autres utilisateurs, ni notre équipe. Pour les stats, on ne voit que des chiffres anonymes — sans le texte.", "Seule l'IA voit le texte — et uniquement pour préparer tes résumés, réponses et Livre de vie. Jamais pour entraîner des modèles.", "Les données sont transférées et stockées chiffrées ; l'accès se fait via des clés secrètes absentes du code ouvert.", "Tu en es le propriétaire : télécharge tout ou supprime ton compte, sans trace, à tout moment.", "Le code de LIFE OS est ouvert — vérifie toi-même ce qui se passe avec tes données."] },
 };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ linked?: string; e?: string }> }) {
   const user = await requireUser();
+  const sp = await searchParams;
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale] || STR.ru;
@@ -31,9 +33,11 @@ export default async function ProfilePage() {
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   let hasPin = false;
+  let email: string | null = null;
   try {
-    const { data } = await supabaseAdmin().from("users").select("pin_hash").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("pin_hash, email").eq("id", user.id).maybeSingle();
     hasPin = !!data?.pin_hash;
+    email = (data as any)?.email || null;
   } catch {}
 
   return (
@@ -55,6 +59,14 @@ export default async function ProfilePage() {
             <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 11, lineHeight: 1.5 }}>{s.linkHint}</div>
             <CopyLink link={link} locale={locale} />
           </div>
+
+          {/* Способы входа */}
+          <LoginMethods
+            locale={locale}
+            hasTelegram={!!user.chat_id}
+            email={email}
+            notice={sp.linked ? "linked" : sp.e === "emailtaken" ? "emailtaken" : undefined}
+          />
 
           {/* Тариф */}
           <Link href="/pricing" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16, border: "1px solid #f59e0b55", background: "#f59e0b0d" }}>

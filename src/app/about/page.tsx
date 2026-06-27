@@ -111,10 +111,14 @@ const C = {
   },
 };
 
-export default async function AboutPage() {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+  const sp = await searchParams;
   const locale = await getLocale();
   const t = locale === "en" || locale === "fr" ? C.en : C.ru;
   const GH = "https://github.com/top15igor/life-os";
+  // Реферал: пробрасываем метку на страницу входа, чтобы пригласивший засчитался.
+  const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? sp.ref : "";
+  const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
 
   const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
   const kicker: React.CSSProperties = {
@@ -135,7 +139,7 @@ export default async function AboutPage() {
           <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
         </div>
         <a
-          href="/login"
+          href={loginHref}
           style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
         >
           {t.nav_login}
@@ -165,7 +169,7 @@ export default async function AboutPage() {
           {t.hero_sub}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href="/login" style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
+          <a href={loginHref} style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
             {t.cta_create}
           </a>
         </div>
@@ -248,7 +252,7 @@ export default async function AboutPage() {
       <div style={{ ...section, textAlign: "center", padding: "20px 22px 64px" }}>
         <h2 style={{ fontSize: "clamp(23px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{t.final_title}</h2>
         <p style={{ fontSize: 16, color: "var(--text-2)", margin: "0 0 24px" }}>{t.final_sub}</p>
-        <a href="/login" style={{ display: "inline-block", padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
+        <a href={loginHref} style={{ display: "inline-block", padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
           {t.cta_create}
         </a>
       </div>
