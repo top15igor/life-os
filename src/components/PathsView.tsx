@@ -17,6 +17,10 @@ const STR: Record<string, any> = {
       { emoji: "🍷", accent: "indigo", title: "Трезвый год", desc: "365 дней ясности. История жизни без алкоголя." },
       { emoji: "🏃", accent: "green", title: "От дивана до марафона", desc: "Первые 5 км → 42,2. Весь путь в записях." },
       { emoji: "🌅", accent: "dark", title: "Меняю жизнь", desc: "Новая версия себя — по странице в день." },
+      { emoji: "💰", accent: "amber", title: "Финансовая свобода", desc: "Закрываю долги и строю подушку. Шаг за шагом." },
+      { emoji: "📖", accent: "indigo", title: "Пишу первую книгу", desc: "От идеи до точки. Дневник одной рукописи." },
+      { emoji: "👶", accent: "pink", title: "Первый год малыша", desc: "Самые тёплые 365 дней. Чтобы не забыть ни мгновения." },
+      { emoji: "🎸", accent: "dark", title: "Учусь играть на гитаре", desc: "От первых аккордов до своей песни." },
     ] },
   en: { newPath: "New path", title: "Title", titlePh: "e.g. Restoring energy", desc: "Description (optional)", descPh: "What this path is about and where it leads", emoji: "Emoji", color: "Color", status: "Status", active: "Ongoing", done: "Completed", makePublic: "Public (visible via link)", save: "Save", create: "Create path", cancel: "Cancel", edit: "Edit", del: "Delete", open: "Open", pages: "pages", confirmDel: "Delete this path? Pages stay, just unlinked.", empty: "No paths yet. A path is a long story: “Restoring health”, “Launching a project”, “200 push-ups”. Group published pages into it.", hint: "Attach pages to a path when you publish an entry (the “Publish” button).", privateNote: "off — nobody sees it",
     guideTitle: "How it works", guideHide: "hide", guideShow: "how it works?",
@@ -29,6 +33,10 @@ const STR: Record<string, any> = {
       { emoji: "🍷", accent: "indigo", title: "A sober year", desc: "365 days of clarity. Life without alcohol." },
       { emoji: "🏃", accent: "green", title: "Couch to marathon", desc: "First 5 km → 42.2. The whole road in entries." },
       { emoji: "🌅", accent: "dark", title: "Changing my life", desc: "A new version of myself — one page a day." },
+      { emoji: "💰", accent: "amber", title: "Financial freedom", desc: "Clearing debt, building a cushion. Step by step." },
+      { emoji: "📖", accent: "indigo", title: "Writing my first book", desc: "From idea to the final page. The log of one manuscript." },
+      { emoji: "👶", accent: "pink", title: "Baby's first year", desc: "The warmest 365 days — so no moment is forgotten." },
+      { emoji: "🎸", accent: "dark", title: "Learning guitar", desc: "From first chords to a song of my own." },
     ] },
   uk: { newPath: "Новий шлях", title: "Назва", titlePh: "Напр.: Відновлення енергії", desc: "Опис (необов'язково)", descPh: "Про що цей шлях і куди веде", emoji: "Емодзі", color: "Колір", status: "Статус", active: "Іду", done: "Пройдено", makePublic: "Публічний (видно за посиланням)", save: "Зберегти", create: "Створити шлях", cancel: "Скасувати", edit: "Змінити", del: "Видалити", open: "Відкрити", pages: "стор.", confirmDel: "Видалити шлях? Сторінки лишаться, просто відв'яжуться.", empty: "Поки немає шляхів. Шлях — це довга історія: «Відновлення здоров'я», «Запуск проєкту». Групуй у нього опубліковані сторінки.", hint: "Прив'язуй сторінки до шляху під час публікації запису.", privateNote: "вимкнено — ніхто не бачить",
     guideTitle: "Як це працює", guideHide: "сховати", guideShow: "як це працює?",
@@ -41,6 +49,10 @@ const STR: Record<string, any> = {
       { emoji: "🍷", accent: "indigo", title: "Тверезий рік", desc: "365 днів ясності. Історія життя без алкоголю." },
       { emoji: "🏃", accent: "green", title: "Від дивана до марафону", desc: "Перші 5 км → 42,2. Увесь шлях у записах." },
       { emoji: "🌅", accent: "dark", title: "Змінюю життя", desc: "Нова версія себе — по сторінці на день." },
+      { emoji: "💰", accent: "amber", title: "Фінансова свобода", desc: "Закриваю борги й будую подушку. Крок за кроком." },
+      { emoji: "📖", accent: "indigo", title: "Пишу першу книгу", desc: "Від ідеї до крапки. Щоденник одного рукопису." },
+      { emoji: "👶", accent: "pink", title: "Перший рік малюка", desc: "Найтепліші 365 днів. Щоб не забути жодної миті." },
+      { emoji: "🎸", accent: "dark", title: "Вчуся грати на гітарі", desc: "Від перших акордів до своєї пісні." },
     ] },
   fr: { newPath: "Nouveau chemin", title: "Titre", titlePh: "Ex. : Retrouver l'énergie", desc: "Description (optionnel)", descPh: "De quoi parle ce chemin et où il mène", emoji: "Emoji", color: "Couleur", status: "Statut", active: "En cours", done: "Terminé", makePublic: "Public (visible via lien)", save: "Enregistrer", create: "Créer le chemin", cancel: "Annuler", edit: "Modifier", del: "Supprimer", open: "Ouvrir", pages: "pages", confirmDel: "Supprimer ce chemin ? Les pages restent, juste détachées.", empty: "Pas encore de chemins. Un chemin est une longue histoire : « Retrouver la santé », « Lancer un projet ». Regroupes-y tes pages publiées.", hint: "Attache des pages à un chemin en publiant une entrée.", privateNote: "désactivé — personne ne voit",
     guideTitle: "Comment ça marche", guideHide: "masquer", guideShow: "comment ça marche ?",
@@ -53,6 +65,10 @@ const STR: Record<string, any> = {
       { emoji: "🍷", accent: "indigo", title: "Une année sobre", desc: "365 jours de clarté. La vie sans alcool." },
       { emoji: "🏃", accent: "green", title: "Du canapé au marathon", desc: "Premiers 5 km → 42,2. Tout le parcours en entrées." },
       { emoji: "🌅", accent: "dark", title: "Je change de vie", desc: "Une nouvelle version de moi — une page par jour." },
+      { emoji: "💰", accent: "amber", title: "Liberté financière", desc: "Je solde mes dettes et je bâtis un matelas. Pas à pas." },
+      { emoji: "📖", accent: "indigo", title: "J'écris mon premier livre", desc: "De l'idée au point final. Le carnet d'un manuscrit." },
+      { emoji: "👶", accent: "pink", title: "La première année de bébé", desc: "Les 365 jours les plus tendres — pour ne rien oublier." },
+      { emoji: "🎸", accent: "dark", title: "J'apprends la guitare", desc: "Des premiers accords à ma propre chanson." },
     ] },
 };
 
@@ -141,6 +157,18 @@ export default function PathsView({ paths, host, locale }: { paths: Path[]; host
       {/* редактор */}
       {edit && (
         <div className="card" style={{ marginBottom: 18 }}>
+          {!edit.id && (
+            <div style={{ marginBottom: 13 }}>
+              <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 6 }}>{L.ideasLabel}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {L.ideas.map((idea: any) => (
+                  <button key={idea.title} onClick={() => setEdit({ ...edit, emoji: idea.emoji, accent: idea.accent, title: idea.title, description: idea.desc })} style={{ ...chip, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <span>{idea.emoji}</span>{idea.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 4 }}>{L.title}</div>
           <input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value.slice(0, 80) })} placeholder={L.titlePh} style={{ ...inp, marginBottom: 11 }} />
           <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 4 }}>{L.desc}</div>
