@@ -94,6 +94,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
+  const [selSphere, setSelSphere] = useState<string | null>(null);
   const addFileRef = useRef<HTMLInputElement | null>(null);
   const cardFileRef = useRef<HTMLInputElement | null>(null);
   const cardTargetRef = useRef<string | null>(null);
@@ -140,70 +141,86 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
   const used = SPHERES.filter((sp) => dreams.some((d) => d.sphere === sp.key));
   const inProgress = dreams.filter((d) => d.status === "progress").length;
 
-  // ===== РАДИАЛЬНАЯ КАРТА =====
+  const SM = (k: string) => SPHERES.find((x) => x.key === k) || SPHERES[8];
+
+  function DreamCard(d: Dream) {
+    const sp = SM(d.sphere); const ss = statusStyle(d.status);
+    return (
+      <div key={d.id} className="card" style={{ padding: 0, overflow: "hidden", opacity: d.status === "done" ? 0.92 : 1 }}>
+        <div style={{ height: 118, background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : sp.bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          {!d.image_url && <span style={{ fontSize: 40 }}>{d.emoji || "✨"}</span>}
+          {d.status === "done" && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 18 }}>✨</span>}
+        </div>
+        <div style={{ padding: "11px 12px 12px" }}>
+          <div style={{ fontSize: 14, lineHeight: 1.35, marginBottom: 9, minHeight: 38 }}>{d.text}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <button onClick={() => cycleStatus(d)} style={{ fontSize: 11.5, fontWeight: 500, padding: "4px 10px", borderRadius: 999, border: "none", cursor: "pointer", background: ss.bg, color: ss.c }}>{s.status[d.status] || s.status.dream}</button>
+            <div style={{ flex: 1 }} />
+            <button onClick={() => { cardTargetRef.current = d.id; cardFileRef.current?.click(); }} aria-label="photo" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-photo" style={{ fontSize: 15 }} /></button>
+            <button onClick={() => makeGoal(d.id)} aria-label="goal" title={s.makeGoal} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-target" style={{ fontSize: 15 }} /></button>
+            <button onClick={() => del(d.id)} aria-label="delete" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-x" style={{ fontSize: 15 }} /></button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== РАДИАЛЬНАЯ КАРТА (сферы вокруг центра, клик раскрывает мечты сферы) =====
   function MapView() {
-    const W = 600, H = 600, cx = W / 2, cy = H / 2, Rs = 140;
+    const W = 600, H = 408, cx = 300, cy = 196, Rs = 150;
     const N = used.length || 1;
-    const ringColor = (st: string, fallback: string) => (st === "done" ? "#16a34a" : st === "progress" ? "#2563eb" : fallback);
+    const active = selSphere && used.some((u) => u.key === selSphere) ? selSphere : used[0]?.key || null;
     const nodes = used.map((sp, i) => {
       const ang = (-90 + i * (360 / N)) * Math.PI / 180;
-      const ux = Math.cos(ang), uy = Math.sin(ang);
-      const sxp = cx + Rs * ux, syp = cy + Rs * uy;
-      const ds = dreams.filter((d) => d.sphere === sp.key);
-      const shown = ds.slice(0, 3);
-      const chips = shown.map((d, j) => { const r = Rs + 52 + j * 42; return { d, x: cx + r * ux, y: cy + r * uy }; });
-      const extra = ds.length - shown.length;
-      const exR = Rs + 52 + shown.length * 42;
-      return { sp, sxp, syp, ux, uy, chips, extra, exX: cx + exR * ux, exY: cy + exR * uy };
+      return { sp, x: cx + Rs * Math.cos(ang), y: cy + Rs * Math.sin(ang), count: dreams.filter((d) => d.sphere === sp.key).length };
     });
     const curve = (x1: number, y1: number, x2: number, y2: number) => {
       const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, off = 0.08;
       return `M ${x1} ${y1} Q ${mx - dy * off} ${my + dx * off} ${x2} ${y2}`;
     };
+    const aMeta = active ? SM(active) : null;
+    const aDreams = active ? dreams.filter((d) => d.sphere === active) : [];
     return (
-      <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-        <div style={{ position: "relative", width: W, height: H, margin: "0 auto" }}>
-          <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {nodes.map((n, i) => <path key={"c" + i} d={curve(cx, cy, n.sxp, n.syp)} stroke={n.sp.c} strokeWidth={2.5} fill="none" opacity={0.4} />)}
-            {nodes.map((n, i) => n.chips.map((ch, j) => <line key={"l" + i + j} x1={n.sxp} y1={n.syp} x2={ch.x} y2={ch.y} stroke={n.sp.c} strokeWidth={1.5} opacity={0.25} />))}
-          </svg>
+      <div>
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ position: "relative", width: W, height: H, margin: "0 auto" }}>
+            <svg width={W} height={H} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+              {nodes.map((n, i) => <path key={i} d={curve(cx, cy, n.x, n.y)} stroke={n.sp.c} strokeWidth={n.sp.key === active ? 3.5 : 2.5} fill="none" opacity={n.sp.key === active ? 0.7 : 0.35} />)}
+            </svg>
 
-          {/* центр */}
-          <div style={{ position: "absolute", left: cx, top: cy, transform: "translate(-50%,-50%)", width: 112, height: 112, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #efeafe, #ddd6fb)", border: "2px solid #c7bdf5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", boxShadow: "0 8px 26px rgba(99,70,255,.18)", zIndex: 3 }}>
-            <i className="ti ti-user" style={{ fontSize: 24, color: "var(--accent)", marginBottom: 2 }} />
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--accent-text)", lineHeight: 1.2, padding: "0 12px" }}>{s.center} ✨</span>
-          </div>
-
-          {/* сферы */}
-          {nodes.map((n, i) => (
-            <div key={"s" + i} style={{ position: "absolute", left: n.sxp, top: n.syp, transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, zIndex: 2 }}>
-              <div style={{ width: 54, height: 54, borderRadius: "50%", background: n.sp.bg, border: `2px solid ${n.sp.c}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(0,0,0,.08)" }}>
-                <i className={`ti ${n.sp.icon}`} style={{ fontSize: 22, color: n.sp.c }} />
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 600, color: n.sp.c, whiteSpace: "nowrap" }}>{s.sph[n.sp.key]}</span>
+            <div style={{ position: "absolute", left: cx, top: cy, transform: "translate(-50%,-50%)", width: 116, height: 116, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #efeafe, #ddd6fb)", border: "2px solid #c7bdf5", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", boxShadow: "0 8px 26px rgba(99,70,255,.18)", zIndex: 3 }}>
+              <i className="ti ti-user" style={{ fontSize: 25, color: "var(--accent)", marginBottom: 2 }} />
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--accent-text)", lineHeight: 1.2, padding: "0 12px" }}>{s.center} ✨</span>
             </div>
-          ))}
 
-          {/* мечты — компактные кружки */}
-          {nodes.map((n, i) => n.chips.map((ch, j) => {
-            const d = ch.d;
-            return (
-              <button key={"d" + i + j} onClick={() => cycleStatus(d)} title={`${d.text} · ${s.status[d.status] || ""}`}
-                style={{ position: "absolute", left: ch.x, top: ch.y, transform: "translate(-50%,-50%)", width: 44, height: 44, borderRadius: "50%", background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : "var(--surface)", border: `2.5px solid ${ringColor(d.status, n.sp.c)}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, cursor: "pointer", boxShadow: "0 3px 10px rgba(0,0,0,.1)", zIndex: 2, padding: 0 }}>
-                {!d.image_url && (d.emoji || "✨")}
-                {d.status === "done" && <span style={{ position: "absolute", top: -6, right: -6, fontSize: 13 }}>✨</span>}
-              </button>
-            );
-          }))}
+            {nodes.map((n, i) => {
+              const on = n.sp.key === active;
+              return (
+                <button key={i} onClick={() => setSelSphere(n.sp.key)} style={{ position: "absolute", left: n.x, top: n.y, transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", zIndex: 2 }}>
+                  <div style={{ position: "relative", width: 60, height: 60, borderRadius: "50%", background: n.sp.bg, border: `${on ? 3 : 2}px solid ${n.sp.c}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: on ? `0 0 0 5px ${n.sp.c}22, 0 6px 16px rgba(0,0,0,.12)` : "0 4px 14px rgba(0,0,0,.08)", transition: "box-shadow .15s" }}>
+                    <i className={`ti ${n.sp.icon}`} style={{ fontSize: 25, color: n.sp.c }} />
+                    {n.count > 0 && <span style={{ position: "absolute", top: -5, right: -5, minWidth: 19, height: 19, padding: "0 5px", borderRadius: 999, background: n.sp.c, color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{n.count}</span>}
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: n.sp.c, whiteSpace: "nowrap" }}>{s.sph[n.sp.key]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          {/* +N */}
-          {nodes.map((n, i) => n.extra > 0 && (
-            <button key={"e" + i} onClick={() => setView("list")} style={{ position: "absolute", left: n.exX, top: n.exY, transform: "translate(-50%,-50%)", fontSize: 11.5, fontWeight: 600, color: n.sp.c, background: n.sp.bg, border: "none", borderRadius: 999, padding: "4px 9px", cursor: "pointer", zIndex: 2 }}>+{n.extra}</button>
-          ))}
-        </div>
-        <div style={{ textAlign: "center", fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>
-          {locale === "en" ? "Hover a circle for its name · click to change status" : locale === "uk" ? "Наведи на кружок — назва · клік змінює статус" : locale === "fr" ? "Survole un cercle pour son nom · clique pour changer le statut" : "Наведи на кружок — увидишь название · клик меняет статус"}
-        </div>
+        {/* мечты выбранной сферы */}
+        {aMeta && (
+          <div style={{ marginTop: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 11px" }}>
+              <span style={{ width: 28, height: 28, borderRadius: 8, background: aMeta.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${aMeta.icon}`} style={{ fontSize: 16, color: aMeta.c }} /></span>
+              <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.sph[aMeta.key]}</span>
+              <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>· {aDreams.length}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 11 }}>
+              {aDreams.map((d) => DreamCard(d))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -217,27 +234,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
           <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.sph[sp.key]}</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 11 }}>
-          {dreams.filter((d) => d.sphere === sp.key).map((d) => {
-            const ss = statusStyle(d.status);
-            return (
-              <div key={d.id} className="card" style={{ padding: 0, overflow: "hidden", opacity: d.status === "done" ? 0.92 : 1 }}>
-                <div style={{ height: 118, background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : sp.bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                  {!d.image_url && <span style={{ fontSize: 40 }}>{d.emoji || "✨"}</span>}
-                  {d.status === "done" && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 18 }}>✨</span>}
-                </div>
-                <div style={{ padding: "11px 12px 12px" }}>
-                  <div style={{ fontSize: 14, lineHeight: 1.35, marginBottom: 9, minHeight: 38 }}>{d.text}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    <button onClick={() => cycleStatus(d)} style={{ fontSize: 11.5, fontWeight: 500, padding: "4px 10px", borderRadius: 999, border: "none", cursor: "pointer", background: ss.bg, color: ss.c }}>{s.status[d.status] || s.status.dream}</button>
-                    <div style={{ flex: 1 }} />
-                    <button onClick={() => { cardTargetRef.current = d.id; cardFileRef.current?.click(); }} aria-label="photo" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-photo" style={{ fontSize: 15 }} /></button>
-                    <button onClick={() => makeGoal(d.id)} aria-label="goal" title={s.makeGoal} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-target" style={{ fontSize: 15 }} /></button>
-                    <button onClick={() => del(d.id)} aria-label="delete" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-x" style={{ fontSize: 15 }} /></button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {dreams.filter((d) => d.sphere === sp.key).map((d) => DreamCard(d))}
         </div>
       </div>
     ));
