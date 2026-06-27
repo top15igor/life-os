@@ -10,3 +10,4 @@ out/
 
 # TS incremental build cache
 *.tsbuildinfo
+.env*
