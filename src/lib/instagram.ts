@@ -217,7 +217,7 @@ export type ImportResult =
   | { ok: true; id: string | null; saved: boolean; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
-export async function importInstagram(userId: string, url: string): Promise<ImportResult> {
+export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
   let media: IgMedia;
   let rateLimited = false;
   try {
@@ -251,7 +251,7 @@ export async function importInstagram(userId: string, url: string): Promise<Impo
     return { ok: false, reason: media.videoUrl || media.imageUrl ? "empty" : "blocked" };
   }
 
-  const analysis = await analyzeSaved(combined, userId);
+  const analysis = await analyzeSaved(combined, userId, locale);
 
   // Сохраняем превью в bucket 'saved' (ссылки Instagram-CDN протухают).
   let image_url: string | null = null;

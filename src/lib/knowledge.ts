@@ -4,9 +4,12 @@ import { logClaude } from "./usage";
 
 // Ответ по личной Базе знаний: AI отвечает на вопрос, опираясь ТОЛЬКО на
 // сохранённые из Instagram материалы пользователя.
-export async function askKnowledge(userId: string, question: string): Promise<string> {
+const LANG: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+
+export async function askKnowledge(userId: string, question: string, locale = "ru"): Promise<string> {
   const q = (question || "").trim();
   if (!q) return "Спроси что-нибудь по своим сохранёнкам 🙂";
+  const lang = LANG[locale] || LANG.ru;
 
   const { data } = await supabaseAdmin()
     .from("saved_items")
@@ -29,7 +32,7 @@ export async function askKnowledge(userId: string, question: string): Promise<st
     .slice(0, 14000);
 
   const prompt = `Ты — помощник по личной Базе знаний пользователя. Это его сохранённые из Instagram материалы (рецепты, тренировки, советы и т.п.).
-Ответь на вопрос, опираясь ТОЛЬКО на материалы ниже. Пиши на языке вопроса, по делу и по-человечески.
+Ответь на вопрос, опираясь ТОЛЬКО на материалы ниже. Отвечай на ${lang} языке (язык интерфейса), по делу и по-человечески — даже если сами материалы на другом языке, ты их понимаешь и переводишь смысл.
 Если в материалах нет ответа — честно скажи, что про это сохранёнок нет, и не выдумывай.
 Где уместно — ссылайся, из какого сохранения инфа (по заголовку).
 

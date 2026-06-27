@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
       const L = IG_MSG[lang] || IG_MSG.ru;
       await sendMessage(chatId, L.working);
       try {
-        const r = await importInstagram(user.id, igUrl);
+        const r = await importInstagram(user.id, igUrl, lang);
         if (r.ok === false) {
           await sendMessage(chatId, r.reason === "limited" ? L.limited : L.failed);
           return NextResponse.json({ ok: true });
