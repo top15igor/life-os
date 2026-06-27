@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import type { Analysis } from "./ai";
+import { type Analysis, EXPENSE_CAT_KEYS, INCOME_CAT_KEYS, FINANCE_CURRENCIES } from "./ai";
 
 export async function saveEntry(opts: {
   userId: string;
@@ -30,12 +30,12 @@ export async function saveEntry(opts: {
     .single();
   if (error) throw error;
 
-  await attachDerived(owner, entry.id, a);
+  await attachDerived(owner, entry.id, a, entry.entry_date);
   return entry;
 }
 
 // Привязать производные данные (категории/теги/люди/задачи/дела/обещания…) к записи.
-export async function attachDerived(owner: string, id: string, a: Analysis) {
+export async function attachDerived(owner: string, id: string, a: Analysis, day?: string) {
   const db = supabaseAdmin();
 
   if (a.categories?.length) {
@@ -72,6 +72,19 @@ export async function attachDerived(owner: string, id: string, a: Analysis) {
       .map((d: any) => ({ entry_id: id, user_id: owner, text: d.text, sphere: d.sphere ?? "other", emoji: d.emoji ?? null, status: "dream" }));
     if (rows.length) await db.from("dreams").insert(rows);
   }
+  if (a.finance?.length) {
+    const txDay = /^\d{4}-\d{2}-\d{2}$/.test(day || "") ? (day as string) : new Date().toISOString().slice(0, 10);
+    const rows = a.finance
+      .filter((f) => f && (f.kind === "income" || f.kind === "expense") && Number(f.amount) > 0)
+      .map((f) => {
+        const kind = f.kind;
+        const allowed = kind === "income" ? INCOME_CAT_KEYS : EXPENSE_CAT_KEYS;
+        const category = f.category && allowed.includes(f.category) ? f.category : "other";
+        const currency = f.currency && FINANCE_CURRENCIES.includes(f.currency) ? f.currency : "USD";
+        return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
+      });
+    if (rows.length) { try { await db.from("finance_tx").insert(rows); } catch {} }
+  }
 }
 
 // Удалить все производные данные записи (для пере-разбора при правке или для удаления записи).
@@ -80,7 +93,7 @@ export async function clearDerived(id: string) {
   for (const tbl of ["entry_categories", "entry_tags", "entry_people", "entry_places", "entry_projects"]) {
     try { await db.from(tbl).delete().eq("entry_id", id); } catch {}
   }
-  for (const tbl of ["tasks", "insights", "gratitude", "good_deeds", "promises"]) {
+  for (const tbl of ["tasks", "insights", "gratitude", "good_deeds", "promises", "finance_tx"]) {
     try { await db.from(tbl).delete().eq("entry_id", id); } catch {}
   }
 }

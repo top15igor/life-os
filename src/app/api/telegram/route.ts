@@ -77,11 +77,14 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent" },
 };
+
+// Символы валют для подтверждения в боте.
+const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
 
 const FIXED: Record<string, string> = {
   ru: "✏️ Поправил предыдущую запись:",
@@ -383,17 +386,15 @@ export async function POST(req: NextRequest) {
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
     const refLink = `${origin}/i/${await getInviteCode(user.id)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
-    await sendMessage(chatId, body, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
-            { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
-          ],
-          [{ text: L.share, url: shareUrl }],
-        ],
-      },
-    });
+    const rows: any[] = [
+      [
+        { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
+        { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
+      ],
+    ];
+    if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/u/${user.token}?next=/finance` }]);
+    rows.push([{ text: L.share, url: shareUrl }]);
+    await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
   } catch (e: any) {
     console.error(e);
     await sendMessage(chatId, "Упс, что-то пошло не так при сохранении. Попробуй ещё раз.");
@@ -420,6 +421,15 @@ function formatConfirm(a: Analysis, streak: number, lang: string): string {
   if (a.insights?.length) {
     lines.push("", `💡 <b>${L.insightsTitle}</b>`);
     a.insights.slice(0, 2).forEach((it) => lines.push("• " + esc(it)));
+  }
+  if (a.finance?.length) {
+    lines.push("", `💰 <b>${L.moneyTitle}</b>`);
+    a.finance.slice(0, 5).forEach((f) => {
+      const sym = CUR_SYM[f.currency || "USD"] || f.currency || "";
+      const sign = f.kind === "income" ? "+" : "−";
+      const note = f.note ? ` · ${esc(f.note)}` : "";
+      lines.push(`• ${f.kind === "income" ? "📈" : "💸"} ${sign}${esc(String(f.amount))} ${sym}${note}`);
+    });
   }
   const m = [
     a.mood != null ? `😊 ${a.mood}` : null,
