@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { getUsdPerUnit } from "./fx";
 
 export type Tx = {
   id: string;
@@ -92,18 +93,29 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     // нет таблицы настроек — используем дефолты
   }
 
-  // Конвертация суммы в основную валюту. Если курс не задан — берём 1:1 и помечаем неточность.
-  let needsRates = false;
-  const toBase = (amount: number, cur: string) => {
-    if (cur === base) return amount;
-    const r = rates[cur];
-    if (!r || !isFinite(r) || r <= 0) { needsRates = true; return amount; }
-    return amount * r;
-  };
-
   const monthsWithData = [...new Set(all.map((t) => t.day.slice(0, 7)))].sort().reverse();
 
   const txs = all.filter((t) => t.day.slice(0, 7) === m);
+
+  // Исторические курсы на месяц операций: 1 единица валюты = usd_per_unit USD.
+  // Конвертация в базовую валюту идёт по курсу ТОГО месяца, а не сегодняшнему,
+  // поэтому операции 2020 и 2023 годов считаются по своим курсам.
+  const monthCurs = [...new Set([base, ...txs.map((t) => t.currency)])];
+  let usdPer = new Map<string, number>();
+  try { usdPer = await getUsdPerUnit(db, [m], monthCurs); } catch { /* ниже — ручной курс или 1:1 */ }
+
+  let needsRates = false;
+  const toBase = (amount: number, cur: string) => {
+    if (cur === base) return amount;
+    const uc = usdPer.get(`${m}|${cur}`);
+    const ub = usdPer.get(`${m}|${base}`);
+    if (uc && ub && uc > 0 && ub > 0) return (amount * uc) / ub; // курс на дату операции
+    const r = rates[cur]; // запас: ручной курс из настроек
+    if (r && isFinite(r) && r > 0) return amount * r;
+    needsRates = true;
+    return amount;
+  };
+
   let income = 0,
     expense = 0;
   const catMap = new Map<string, number>();
