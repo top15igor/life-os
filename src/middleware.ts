@@ -12,6 +12,8 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Защищаем страницы, кроме /welcome, /login, /privacy, /u/* (вход по ссылке), /api/* и статики.
-  matcher: ["/((?!welcome|login|privacy|u|api|_next/static|_next/image|favicon.ico).*)"],
+  // Защищаем страницы, кроме публичных: /welcome, /login, /privacy, /u/* (вход по ссылке),
+  // /i/* (приглашение), /p/* (публичная книга-витрина), /path/* (публичный путь), /api/* и статики.
+  // Слэш в p/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /paths, /insights.
+  matcher: ["/((?!welcome|login|privacy|u|api|p/|path/|i/|_next/static|_next/image|favicon.ico).*)"],
 };
