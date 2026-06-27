@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
     life_overview: await tableExists("life_overview"),
     experiments: await tableExists("experiments"),
     finance_tx: await tableExists("finance_tx"),
+    finance_budget: await tableExists("finance_budget"),
+    finance_settings: await tableExists("finance_settings"),
   };
   return NextResponse.json({ ok: true, checks });
 }

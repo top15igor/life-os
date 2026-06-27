@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
         await db.from(tbl).delete().in("entry_id", ids);
       }
     }
-    for (const tbl of ["tasks", "insights", "gratitude", "entries", "goals", "projects", "tags", "people", "places", "experiments", "biographer_chats", "life_overview"]) {
-      await db.from(tbl).delete().eq("user_id", uid);
+    for (const tbl of ["tasks", "insights", "gratitude", "finance_tx", "finance_budget", "finance_settings", "entries", "goals", "projects", "tags", "people", "places", "experiments", "biographer_chats", "life_overview"]) {
+      try { await db.from(tbl).delete().eq("user_id", uid); } catch {}
     }
     // Владельца не удаляем как пользователя (иначе сломается админка) — только его данные.
     if (uid !== OWNER) await db.from("users").delete().eq("id", uid);

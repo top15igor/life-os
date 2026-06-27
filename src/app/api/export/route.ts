@@ -46,6 +46,16 @@ export async function GET() {
     const { data } = await db.from("finance_tx").select("day, kind, amount, currency, category, note, created_at").eq("user_id", user.id).order("day", { ascending: false });
     finance = data || [];
   } catch {}
+  let finance_budgets: any[] = [];
+  try {
+    const { data } = await db.from("finance_budget").select("category, amount").eq("user_id", user.id);
+    finance_budgets = data || [];
+  } catch {}
+  let finance_settings: any = null;
+  try {
+    const { data } = await db.from("finance_settings").select("base_currency, rates").eq("user_id", user.id).maybeSingle();
+    finance_settings = data || null;
+  } catch {}
 
   const exportData = {
     service: "LIFE OS",
@@ -60,6 +70,8 @@ export async function GET() {
     experiments,
     biographer,
     finance,
+    finance_budgets,
+    finance_settings,
   };
 
   const date = new Date().toISOString().slice(0, 10);

@@ -43,7 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
-      { t: "Деньги: учёт доходов и расходов", d: "Новый раздел «Деньги»: записывай траты и доходы, выбирай категорию — и сразу видишь баланс месяца, доходы, расходы и куда уходят деньги (наглядные полоски по категориям). Можно листать по месяцам. А ещё проще: скажи боту «потратил 500 на продукты» или «получил зарплату 50000» — AI сам внесёт операцию в учёт.", tag: "new" },
+      { t: "Деньги: учёт доходов и расходов", d: "Новый раздел «Деньги»: записывай траты и доходы, выбирай категорию — и сразу видишь баланс месяца, доходы, расходы и куда уходят деньги (наглядные полоски по категориям). Можно листать по месяцам, задавать месячные бюджеты-лимиты по категориям (предупреждение при превышении) и вести учёт в нескольких валютах с пересчётом в основную. А ещё проще: скажи боту «потратил 500 на продукты» или «получил зарплату 50000» — AI сам внесёт операцию в учёт.", tag: "new" },
       { t: "Поделиться: карточки, публичная книга и пути", d: "Теперь можно делиться успехами наружу: красивые карточки достижений в Telegram/Instagram/WhatsApp, публикация отдельных записей (AI готовит публичную версию и прячет личное), публичная страница-витрина /p/имя и «Пути» — длинные истории с публичным таймлайном. Дневник остаётся приватным: публикуешь только вручную.", tag: "new" },
       { t: "Дневник стал календарём", d: "Вместо длинной ленты — календарь по месяцам и неделям: дни с записями подсвечены, выбираешь день и видишь только его записи. Так удобнее находить нужную дату.", tag: "new" },
       { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
@@ -78,9 +78,14 @@ const E: Record<Locale, Extras> = {
             "«Купил кофе за 80 грн» → расход 80 ₴, «Кафе».",
             "«Получил зарплату 50000» → доход 50000, «Зарплата».",
           ] },
+          { h: "Бюджеты и валюты", steps: [
+            "Лимиты: у каждой категории расходов нажми на 🎯 и задай месячный лимит — полоска станет жёлтой ближе к пределу и красной при превышении. Сверху появится сводный «Бюджет на месяц».",
+            "Несколько валют: нажми ⚙ вверху → выбери основную валюту и впиши курсы остальных к ней. Итоги (баланс, доходы, расходы, бюджеты) считаются в основной валюте, а каждая операция в списке остаётся в своей.",
+          ] },
           { h: "Подсказки", tips: [
             "AI вносит операцию, только если в записи названа конкретная сумма.",
             "Поддерживается 10 валют ($ € ₴ ₽ £ zł ₸ ₾ ₺ AED) — символ или слово (грн/руб) распознаётся автоматически.",
+            "Пока курсы не заданы, итоги по разным валютам считаются примерно — вверху появится подсказка.",
             "Все операции попадают в общий экспорт данных, а удаление записи убирает и связанные с ней траты.",
           ] },
         ],
@@ -191,7 +196,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
-      { t: "Money: income & expense tracking", d: "A new “Money” section: log expenses and income, pick a category — and instantly see your monthly balance, income, expenses and where the money goes (clear per-category bars). Flip between months. Even easier: tell the bot “spent 500 on groceries” or “got my salary 50000” and AI logs the transaction for you.", tag: "new" },
+      { t: "Money: income & expense tracking", d: "A new “Money” section: log expenses and income, pick a category — and instantly see your monthly balance, income, expenses and where the money goes (clear per-category bars). Flip between months, set monthly category budgets (with an over-limit warning) and track several currencies converted into a base one. Even easier: tell the bot “spent 500 on groceries” or “got my salary 50000” and AI logs the transaction for you.", tag: "new" },
       { t: "Share: cards, public book & paths", d: "You can now share your wins outward: beautiful achievement cards to Telegram/Instagram/WhatsApp, publishing individual entries (AI prepares a public version and hides personal data), a public showcase page /p/name and “Paths” — long stories with a public timeline. Your diary stays private: you publish only manually.", tag: "new" },
       { t: "Diary is now a calendar", d: "Instead of an endless feed — a month/week calendar: days with entries are highlighted, pick a day to see just its entries. Easier to find a specific date.", tag: "new" },
       { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
@@ -226,9 +231,14 @@ const E: Record<Locale, Extras> = {
             "“Bought coffee for 80” → expense 80, “Eating out”.",
             "“Got my salary 50000” → income 50000, “Salary”.",
           ] },
+          { h: "Budgets & currencies", steps: [
+            "Limits: on any expense category tap 🎯 and set a monthly limit — the bar turns amber near the limit and red once exceeded. A combined “Monthly budget” appears on top.",
+            "Multiple currencies: tap ⚙ on top → pick a base currency and enter rates for the others. Totals (balance, income, expenses, budgets) are computed in the base currency, while each transaction keeps its own.",
+          ] },
           { h: "Tips", tips: [
             "AI logs a transaction only when a concrete amount is mentioned.",
             "10 currencies supported ($ € ₴ ₽ £ zł ₸ ₾ ₺ AED) — a symbol or word is recognized automatically.",
+            "Until rates are set, totals across currencies are approximate — a hint shows up on top.",
             "Every transaction is included in your data export, and deleting an entry also removes its linked spending.",
           ] },
         ],

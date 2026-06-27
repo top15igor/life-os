@@ -23,4 +23,23 @@ alter table if exists finance_tx add column if not exists entry_id uuid;
 create index if not exists finance_tx_user_idx  on finance_tx (user_id, day desc);
 create index if not exists finance_tx_entry_idx on finance_tx (entry_id);
 
-alter table if exists finance_tx enable row level security;
+-- Месячные лимиты (бюджеты) по категориям расходов. Сумма — в основной валюте.
+create table if not exists finance_budget (
+  user_id    uuid not null,
+  category   text not null,
+  amount     numeric not null check (amount > 0),
+  updated_at timestamptz default now(),
+  primary key (user_id, category)
+);
+
+-- Настройки финансов: основная валюта + курсы остальных валют к ней (jsonb: {"USD": 41.5, ...}).
+create table if not exists finance_settings (
+  user_id       uuid primary key,
+  base_currency text not null default 'USD',
+  rates         jsonb not null default '{}'::jsonb,
+  updated_at    timestamptz default now()
+);
+
+alter table if exists finance_tx       enable row level security;
+alter table if exists finance_budget   enable row level security;
+alter table if exists finance_settings enable row level security;
