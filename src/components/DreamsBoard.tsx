@@ -143,13 +143,14 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
 
   const SM = (k: string) => SPHERES.find((x) => x.key === k) || SPHERES[8];
 
-  function DreamCard(d: Dream) {
+  function DreamCard(d: Dream, showSphere = false) {
     const sp = SM(d.sphere); const ss = statusStyle(d.status);
     return (
       <div key={d.id} className="card" style={{ padding: 0, overflow: "hidden", opacity: d.status === "done" ? 0.92 : 1 }}>
         <div style={{ height: 118, background: d.image_url ? `center/cover no-repeat url(${d.image_url})` : sp.bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
           {!d.image_url && <span style={{ fontSize: 40 }}>{d.emoji || "✨"}</span>}
           {d.status === "done" && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 18 }}>✨</span>}
+          {showSphere && <span style={{ position: "absolute", top: 8, left: 8, display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 600, color: sp.c, background: "rgba(255,255,255,0.85)", padding: "3px 8px", borderRadius: 999 }}><i className={`ti ${sp.icon}`} style={{ fontSize: 12 }} />{s.sph[d.sphere]}</span>}
         </div>
         <div style={{ padding: "11px 12px 12px" }}>
           <div style={{ fontSize: 14, lineHeight: 1.35, marginBottom: 9, minHeight: 38 }}>{d.text}</div>
@@ -225,19 +226,14 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
     );
   }
 
-  // ===== СПИСОК =====
+  // ===== СПИСОК (сплошная сетка по всем сферам) =====
   function ListView() {
-    return used.map((sp) => (
-      <div key={sp.key} style={{ marginBottom: 22 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 11px" }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, background: sp.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${sp.icon}`} style={{ fontSize: 16, color: sp.c }} /></span>
-          <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.sph[sp.key]}</span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 11 }}>
-          {dreams.filter((d) => d.sphere === sp.key).map((d) => DreamCard(d))}
-        </div>
+    const all = used.flatMap((sp) => dreams.filter((d) => d.sphere === sp.key));
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 11 }}>
+        {all.map((d) => DreamCard(d, true))}
       </div>
-    ));
+    );
   }
 
   return (
