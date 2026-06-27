@@ -56,16 +56,38 @@ export async function POST(req: NextRequest) {
       seen.add(k);
       return true;
     })
-    .map((t) => ({ user_id: user.id, day: t.day, kind: t.kind, amount: t.amount, currency: t.currency, category: t.category, note: t.note }));
+    .map((t) => ({ user_id: user.id, day: t.day, kind: t.kind, amount: t.amount, currency: t.currency, category: t.category, note: t.note, source: "moneyok" }));
 
   const duplicates = rows.length - toInsert.length;
   let inserted = 0;
+  let tagged = true; // удалось ли пометить операции (есть ли колонка source)
   for (let i = 0; i < toInsert.length; i += 500) {
-    const chunk = toInsert.slice(i, i + 500);
-    const { error } = await db.from("finance_tx").insert(chunk);
+    let chunk = toInsert.slice(i, i + 500);
+    let { error } = await db.from("finance_tx").insert(chunk);
+    // Старая база без колонки source — вставляем без метки (откат будет недоступен).
+    if (error && /source|column|schema cache/i.test(error.message)) {
+      tagged = false;
+      chunk = chunk.map(({ source, ...rest }) => rest) as any;
+      ({ error } = await db.from("finance_tx").insert(chunk));
+    }
     if (error) return NextResponse.json({ ok: false, error: error.message, inserted }, { status: 500 });
     inserted += chunk.length;
   }
 
-  return NextResponse.json({ ok: true, inserted, duplicates, skipped, total });
+  return NextResponse.json({ ok: true, inserted, duplicates, skipped, total, tagged });
+}
+
+// Откат: удалить все операции, помеченные как импорт из MoneyOK.
+export async function DELETE() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("finance_tx")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("source", "moneyok")
+    .select("id");
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, removed: (data || []).length });
 }

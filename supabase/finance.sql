@@ -20,6 +20,10 @@ create table if not exists finance_tx (
 -- Для уже существующих установок: добавить колонку связи с записью.
 alter table if exists finance_tx add column if not exists entry_id uuid;
 
+-- Источник операции: NULL — добавлено вручную, 'moneyok' — импорт из MoneyOK.
+-- Нужно, чтобы откатить импорт одним действием.
+alter table if exists finance_tx add column if not exists source text;
+
 create index if not exists finance_tx_user_idx  on finance_tx (user_id, day desc);
 create index if not exists finance_tx_entry_idx on finance_tx (entry_id);
 
