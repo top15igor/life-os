@@ -87,8 +87,10 @@ const keyOf = (month: string, cur: string) => `${month}|${cur}`;
 export async function getUsdPerUnit(
   db: SupabaseClient,
   months: string[],
-  currencies: string[]
+  currencies: string[],
+  opts: { live?: boolean } = {}
 ): Promise<Map<string, number>> {
+  const live = opts.live !== false; // по умолчанию дотягиваем недостающее из НБУ
   const out = new Map<string, number>();
   const uniqMonths = [...new Set(months)];
   const uniqCurs = [...new Set(currencies)];
@@ -110,8 +112,8 @@ export async function getUsdPerUnit(
     cacheOk = false; // таблицы ещё нет — работаем без кэша
   }
 
-  // 2) Чего не хватает — добираем из НБУ и кэшируем.
-  for (const m of uniqMonths) {
+  // 2) Чего не хватает — добираем из НБУ и кэшируем (если разрешены живые запросы).
+  if (live) for (const m of uniqMonths) {
     for (const cur of uniqCurs) {
       if (cur === "USD") { out.set(keyOf(m, cur), 1); continue; }
       if (out.has(keyOf(m, cur))) continue;
