@@ -115,6 +115,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
 
   const t0 = T0[locale] || T0.ru;
   const inBookWord = (({ ru: "в книге", uk: "у книзі", en: "in your book", fr: "dans ton livre" }) as Record<string, string>)[locale] || "в книге";
+  const bq = (({ ru: { label: "Вопрос для книги", cta: "Ответить" }, en: { label: "A question for your book", cta: "Answer" }, uk: { label: "Питання для книги", cta: "Відповісти" }, fr: { label: "Une question pour ton livre", cta: "Répondre" } }) as Record<string, { label: string; cta: string }>)[locale] || { label: "Вопрос для книги", cta: "Ответить" };
   const entriesWord = (n: number) => {
     if (locale === "en") return n === 1 ? "entry" : "entries";
     if (locale === "fr") return n === 1 ? "entrée" : "entrées";
@@ -186,6 +187,19 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
         <div className="fade-up">
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
           <DictationHints locale={locale} />
+
+          {data.bookPrompt && (
+            <button
+              onClick={() => { window.dispatchEvent(new Event("lifeos-open-capture")); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 16, padding: "13px 15px", borderRadius: 14, border: "1px solid var(--border)", background: "var(--accent-bg)", cursor: "pointer", color: "var(--text)", fontFamily: "inherit" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--accent-text)", fontWeight: 600 }}>
+                <i className="ti ti-book-2" style={{ fontSize: 15, color: "var(--accent)" }} />{bq.label} · {data.bookPrompt.title}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4, marginTop: 6 }}>{data.bookPrompt.question}</div>
+              <div style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 600, marginTop: 9, display: "inline-flex", alignItems: "center", gap: 4 }}>{bq.cta}<i className="ti ti-arrow-up" style={{ fontSize: 14 }} /></div>
+            </button>
+          )}
 
           {curPreset === "mindful" ? (
             <AwarenessCard locale={locale} totalDays={data.habit?.totalDays || 0} />

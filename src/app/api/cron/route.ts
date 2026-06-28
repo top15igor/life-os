@@ -4,6 +4,7 @@ import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage } from "@/lib/telegram";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { shiftMonth, currentMonth } from "@/lib/finance";
+import { getBookPrompt, bookPromptMessage } from "@/lib/bookPrompts";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -122,10 +123,15 @@ export async function GET(req: NextRequest) {
   const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
   const today = isoOf(todayT);
   const isSunday = new Date().getUTCDay() === 0;
+  // День года — для ротации «вопроса для книги». В «вопросный день» (примерно
+  // дважды в неделю) обычное напоминание заменяем тёплым наводящим вопросом.
+  const nowD = new Date();
+  const doy = Math.floor((nowD.getTime() - new Date(nowD.getUTCFullYear(), 0, 0).getTime()) / 86400000);
+  const isBookQuestionDay = doy % 3 === 0;
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0 };
 
   for (const u of users || []) {
     try {
@@ -182,8 +188,15 @@ export async function GET(req: NextRequest) {
           await sendMessage(u.chat_id, m.reminderStreak(streak));
           stats.streakReminders++;
         } else {
-          await sendMessage(u.chat_id, m.reminder);
-          stats.reminders++;
+          // В «вопросный день» — тёплый наводящий вопрос для книги вместо общего напоминания.
+          let asked = false;
+          if (isBookQuestionDay) {
+            try {
+              const bp = await getBookPrompt(u.id, lang, doy);
+              if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; asked = true; }
+            } catch (e) { console.error("book prompt", u.id, e); }
+          }
+          if (!asked) { await sendMessage(u.chat_id, m.reminder); stats.reminders++; }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.

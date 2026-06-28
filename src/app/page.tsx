@@ -10,6 +10,7 @@ import { getBookSummary } from "@/lib/book";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
+import { getBookPrompt } from "@/lib/bookPrompts";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PinPrompt from "@/components/PinPrompt";
@@ -118,8 +119,11 @@ export default async function HomePage() {
     tags: tagList(e).slice(0, 3),
   }));
 
+  const bookPrompt = await getBookPrompt(user.id, locale, dayOfYear).catch(() => null);
+
   const data = {
     greeting: `${greeting(locale)}${user.name ? ", " + user.name : ""}`,
+    bookPrompt,
     dateLine: dateLabel(locale, date || undefined),
     hint: h.today,
     mood: pickLatest(todayEntries, "mood"),
