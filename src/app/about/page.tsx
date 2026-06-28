@@ -1,10 +1,12 @@
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 const C = {
   ru: {
     nav_login: "Войти",
+    back_to_app: "В приложение",
     hero_badge: "Личная операционная система жизни",
     hero_title: "Твоя жизнь заслуживает быть сохранённой",
     hero_sub:
@@ -75,6 +77,7 @@ const C = {
   },
   en: {
     nav_login: "Sign in",
+    back_to_app: "Back to app",
     hero_badge: "A personal operating system for your life",
     hero_title: "Your life deserves to be saved",
     hero_sub:
@@ -150,6 +153,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   const locale = await getLocale();
   const t = locale === "en" || locale === "fr" ? C.en : C.ru;
   const GH = "https://github.com/top15igor/life-os";
+  // Залогиненный гость пришёл по логотипу — прячем призывы «войти/создать аккаунт».
+  const isAuthed = !!(await getCurrentUser());
   // Реферал: пробрасываем метку на страницу входа, чтобы пригласивший засчитался.
   const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? sp.ref : "";
   const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
@@ -173,10 +178,10 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
         </div>
         <a
-          href={loginHref}
+          href={isAuthed ? "/" : loginHref}
           style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
         >
-          {t.nav_login}
+          {isAuthed ? t.back_to_app : t.nav_login}
         </a>
       </div>
 
@@ -203,11 +208,11 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           {t.hero_sub}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href={loginHref} style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
-            {t.cta_create}
+          <a href={isAuthed ? "/" : loginHref} style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
+            {isAuthed ? t.back_to_app : t.cta_create}
           </a>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 14 }}>{t.cta_hint}</div>
+        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 14 }}>{t.cta_hint}</div>}
       </div>
 
       {/* Idea */}
@@ -330,9 +335,9 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       {/* Final CTA */}
       <div style={{ ...section, textAlign: "center", padding: "20px 22px 64px" }}>
         <h2 style={{ fontSize: "clamp(23px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{t.final_title}</h2>
-        <p style={{ fontSize: 16, color: "var(--text-2)", margin: "0 0 24px" }}>{t.final_sub}</p>
-        <a href={loginHref} style={{ display: "inline-block", padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
-          {t.cta_create}
+        {!isAuthed && <p style={{ fontSize: 16, color: "var(--text-2)", margin: "0 0 24px" }}>{t.final_sub}</p>}
+        <a href={isAuthed ? "/" : loginHref} style={{ display: "inline-block", marginTop: isAuthed ? 12 : 0, padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
+          {isAuthed ? t.back_to_app : t.cta_create}
         </a>
       </div>
 

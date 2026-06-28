@@ -87,7 +87,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   return (
     <>
       <aside className="sidebar">
-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
+        <Link href="/about" className="brand" style={{ textDecoration: "none" }}>
           <i className="ti ti-flower" style={{ fontSize: 18, color: "var(--accent)" }} />
           <span>{brand}</span>
         </Link>
