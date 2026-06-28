@@ -28,7 +28,7 @@ export default async function LifeBookPage({ searchParams }: { searchParams: Pro
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main">
+      <main className="main narrow">
         <PageHead icon="ti-book-2" color="var(--accent)" title={t.nav.lifebook} hint={h.lifebook} />
         <BookOfLife book={book} meta={meta} years={years} year={year} locale={locale} userName={user.name || ""} memories={memories} />
       </main>

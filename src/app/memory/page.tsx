@@ -25,7 +25,7 @@ export default async function MemoryPage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main">
+      <main className="main wide">
         <PageHead icon="ti-camera" color="#ec4899" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <MemoryArchive initial={memories as any} locale={locale} />
       </main>

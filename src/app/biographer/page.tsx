@@ -19,7 +19,7 @@ export default async function BiographerPage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main">
+      <main className="main narrow">
         <PageHead icon="ti-messages" color="var(--insight)" title={t.nav.biographer} hint={h.biographer} />
         <Biographer locale={locale} initialHistory={history as any} />
       </main>
