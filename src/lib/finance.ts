@@ -98,8 +98,11 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     // таблицы ещё нет — отдаём пустую сводку
   }
 
-  // Операции выбранного месяца — запрашиваем напрямую по диапазону дат,
-  // поэтому месяц всегда полный, даже если в истории десятки тысяч записей.
+  // Операции выбранного месяца — запрашиваем напрямую по диапазону дат
+  // [1-е число месяца; 1-е число следующего месяца). Через «< следующий месяц»,
+  // а не «<= m-31»: 31-го числа нет в 30-дневных месяцах и феврале, и такой
+  // запрос Postgres отклоняет (invalid date) — из-за чего месяц казался пустым.
+  const monthEnd = `${shiftMonth(m, 1)}-01`;
   let txsRaw: Tx[] = [];
   try {
     const { data } = await db
@@ -107,7 +110,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
       .select("id, day, kind, amount, currency, category, note")
       .eq("user_id", userId)
       .gte("day", `${m}-01`)
-      .lte("day", `${m}-31`)
+      .lt("day", monthEnd)
       .order("day", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5000);
