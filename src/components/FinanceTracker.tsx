@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { guessCatKey } from "@/lib/moneyok";
 
 type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; note: string | null };
 type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean };
@@ -15,16 +16,20 @@ type Data = {
 const STR: Record<string, any> = {
   ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта",
     budgets: "Бюджеты по категориям", limit: "Лимит", setLimit: "Задать лимит", editLimit: "Изменить лимит", removeLimit: "Убрать лимит", ofLimit: "из", over: "превышен на", leftWord: "осталось", addBudget: "Добавить лимит", budgetTotalT: "Бюджет на месяц", spent: "потрачено",
-    settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Курсы нужны только если ведёшь учёт в нескольких валютах." },
+    settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Эти курсы — запасные: применяются, только если курс НБУ на месяц операции недоступен.", histNote: "Суммы в разных валютах сводятся к основной по официальному курсу НБУ на месяц каждой операции — операции 2020 и 2023 годов считаются по своим курсам, а не по сегодняшнему.",
+    importTitle: "Перенос из MoneyOK", importBtn: "Выбрать файл MoneyOK.csv", importing: "Переносим операции…", importHint: "В MoneyOK: Меню → «Экспорт в CSV» → пришли себе файл и загрузи его здесь. Перенесутся все доходы и расходы. Повторная загрузка того же файла не создаёт дублей.", importDone: (n: number, dup: number, skip: number) => `Перенесено операций: ${n}${dup ? `, дублей пропущено: ${dup}` : ""}${skip ? `, переводов/остатков пропущено: ${skip}` : ""}.`, importEmpty: "Не удалось распознать операции в файле. Это точно экспорт MoneyOK в CSV?", importErr: "Не получилось загрузить файл. Попробуй ещё раз.", importUntagged: " Внимание: пометить операции не удалось (старая база), откат в один клик будет недоступен — обнови схему supabase/finance.sql.", undoBtn: "Откатить импорт MoneyOK", undoConfirm: "Удалить все операции, перенесённые из MoneyOK? Добавленные вручную останутся.", undoDone: (n: number) => `Откат выполнен: удалено операций — ${n}.`, undoNone: "Импортированных операций не найдено — удалять нечего.", undoErr: "Не удалось откатить. Попробуй ещё раз." },
   en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency",
     budgets: "Category budgets", limit: "Limit", setLimit: "Set a limit", editLimit: "Edit limit", removeLimit: "Remove limit", ofLimit: "of", over: "over by", leftWord: "left", addBudget: "Add a limit", budgetTotalT: "Monthly budget", spent: "spent",
-    settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "Rates are only needed if you track several currencies." },
+    settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "These rates are a fallback — used only when the NBU rate for an operation's month is unavailable.", histNote: "Amounts in different currencies are converted to the base one using the official NBU rate for each operation's month — 2020 and 2023 operations are counted at their own rates, not today's.",
+    importTitle: "Migrate from MoneyOK", importBtn: "Choose MoneyOK.csv file", importing: "Importing transactions…", importHint: "In MoneyOK: Menu → “Export to CSV” → send the file to yourself and upload it here. All income and expenses will be migrated. Re-uploading the same file won't create duplicates.", importDone: (n: number, dup: number, skip: number) => `Imported ${n} transactions${dup ? `, ${dup} duplicates skipped` : ""}${skip ? `, ${skip} transfers/balances skipped` : ""}.`, importEmpty: "Couldn't recognise any transactions. Is this a MoneyOK CSV export?", importErr: "Upload failed. Please try again.", importUntagged: " Note: couldn't tag the transactions (old database), one-click undo won't be available — update the schema supabase/finance.sql.", undoBtn: "Undo MoneyOK import", undoConfirm: "Delete all transactions migrated from MoneyOK? Manually added ones stay.", undoDone: (n: number) => `Undone: ${n} transactions removed.`, undoNone: "No imported transactions found — nothing to remove.", undoErr: "Undo failed. Please try again." },
   uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта",
     budgets: "Бюджети за категоріями", limit: "Ліміт", setLimit: "Задати ліміт", editLimit: "Змінити ліміт", removeLimit: "Прибрати ліміт", ofLimit: "з", over: "перевищено на", leftWord: "залишилось", addBudget: "Додати ліміт", budgetTotalT: "Бюджет на місяць", spent: "витрачено",
-    settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Курси потрібні лише якщо ведеш облік у кількох валютах." },
+    settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Ці курси — запасні: застосовуються, лише якщо курс НБУ на місяць операції недоступний.", histNote: "Суми в різних валютах зводяться до основної за офіційним курсом НБУ на місяць кожної операції — операції 2020 і 2023 років рахуються за своїми курсами, а не за сьогоднішнім.",
+    importTitle: "Перенесення з MoneyOK", importBtn: "Обрати файл MoneyOK.csv", importing: "Переносимо операції…", importHint: "У MoneyOK: Меню → «Експорт у CSV» → надішли собі файл і завантаж його тут. Перенесуться всі доходи й витрати. Повторне завантаження того ж файлу не створює дублів.", importDone: (n: number, dup: number, skip: number) => `Перенесено операцій: ${n}${dup ? `, дублів пропущено: ${dup}` : ""}${skip ? `, переказів/залишків пропущено: ${skip}` : ""}.`, importEmpty: "Не вдалося розпізнати операції у файлі. Це точно експорт MoneyOK у CSV?", importErr: "Не вдалося завантажити файл. Спробуй ще раз.", importUntagged: " Увага: позначити операції не вдалося (стара база), відкат в один клік буде недоступний — онови схему supabase/finance.sql.", undoBtn: "Відкотити імпорт MoneyOK", undoConfirm: "Видалити всі операції, перенесені з MoneyOK? Додані вручну залишаться.", undoDone: (n: number) => `Відкат виконано: видалено операцій — ${n}.`, undoNone: "Імпортованих операцій не знайдено — видаляти нічого.", undoErr: "Не вдалося відкотити. Спробуй ще раз." },
   fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise",
     budgets: "Budgets par catégorie", limit: "Limite", setLimit: "Définir une limite", editLimit: "Modifier la limite", removeLimit: "Retirer la limite", ofLimit: "sur", over: "dépassé de", leftWord: "restant", addBudget: "Ajouter une limite", budgetTotalT: "Budget du mois", spent: "dépensé",
-    settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Les taux ne servent que si tu suis plusieurs devises." },
+    settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Ces taux sont un secours — utilisés uniquement si le taux NBU du mois de l'opération est indisponible.", histNote: "Les montants en différentes devises sont convertis dans la devise principale au taux officiel NBU du mois de chaque opération — les opérations de 2020 et 2023 sont comptées à leurs propres taux, pas celui d'aujourd'hui.",
+    importTitle: "Migrer depuis MoneyOK", importBtn: "Choisir le fichier MoneyOK.csv", importing: "Import des opérations…", importHint: "Dans MoneyOK : Menu → « Export CSV » → envoie-toi le fichier et charge-le ici. Tous les revenus et dépenses seront migrés. Recharger le même fichier ne crée pas de doublons.", importDone: (n: number, dup: number, skip: number) => `${n} opérations importées${dup ? `, ${dup} doublons ignorés` : ""}${skip ? `, ${skip} transferts/soldes ignorés` : ""}.`, importEmpty: "Aucune opération reconnue. S'agit-il bien d'un export CSV de MoneyOK ?", importErr: "Échec du chargement. Réessaie.", importUntagged: " Note : impossible de marquer les opérations (ancienne base), l'annulation en un clic sera indisponible — mets à jour le schéma supabase/finance.sql.", undoBtn: "Annuler l'import MoneyOK", undoConfirm: "Supprimer toutes les opérations importées de MoneyOK ? Celles ajoutées à la main restent.", undoDone: (n: number) => `Annulé : ${n} opérations supprimées.`, undoNone: "Aucune opération importée trouvée — rien à supprimer.", undoErr: "Échec de l'annulation. Réessaie." },
 };
 
 // Категории расходов и доходов: ключ, эмодзи, цвет, названия на 4 языках.
@@ -71,9 +76,25 @@ function fmtMoney(amount: number, currency: string, locale: string) {
   return `${n} ${symOf(currency)}`;
 }
 
-function catMeta(kind: "income" | "expense", key: string | null) {
+// Палитра для произвольных (импортированных) категорий — стабильный цвет по имени.
+const HASH_COLORS = ["#22c55e", "#f97316", "#3b82f6", "#8b5cf6", "#0ea5e9", "#ec4899", "#ef4444", "#a855f7", "#14b8a6", "#06b6d4", "#f43f5e", "#eab308", "#10b981", "#6366f1"];
+function hashColor(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return HASH_COLORS[h % HASH_COLORS.length];
+}
+
+// Отображение категории: пресет по ключу, иначе исходное название (импорт из MoneyOK)
+// с угаданной иконкой и стабильным цветом. Возвращает { icon, color, label }.
+function catView(kind: "income" | "expense", key: string | null, locale: string): { icon: string; color: string; label: string } {
   const list = kind === "income" ? INCOME_CATS : EXPENSE_CATS;
-  return list.find((c) => c.key === key) || list[list.length - 1];
+  const preset = key ? list.find((c) => c.key === key) : null;
+  if (preset) return { icon: preset.icon, color: preset.color, label: (preset.l as any)[locale] || preset.l.ru };
+  if (!key) { const o = list[list.length - 1]; return { icon: o.icon, color: o.color, label: (o.l as any)[locale] || o.l.ru }; }
+  // Произвольное название: иконка по ключевым словам, цвет — по имени.
+  const guess = guessCatKey(key, kind);
+  const hint = guess ? list.find((c) => c.key === guess) : null;
+  return { icon: hint?.icon || (kind === "income" ? "💰" : "🏷️"), color: hint?.color || hashColor(key), label: key };
 }
 
 function monthLabel(m: string, locale: string) {
@@ -114,6 +135,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [addBudgetOpen, setAddBudgetOpen] = useState(false);
   const [newBudgetCat, setNewBudgetCat] = useState("food");
   const [newBudgetVal, setNewBudgetVal] = useState("");
+
+  // Перенос из MoneyOK.
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Настройки валют.
   const [setOpenS, setSetOpenS] = useState(false);
@@ -161,6 +187,49 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const r = await fetch("/api/finance-budget", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ category: cat }) });
     setBusy(false);
     if (r.ok) { setEditBudget(null); router.refresh(); }
+  }
+
+  async function importMoneyOk(file: File) {
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/finance/import", { method: "POST", body: fd });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.ok) {
+        const warn = j.tagged === false ? s.importUntagged : "";
+        setImportMsg({ ok: true, text: s.importDone(j.inserted || 0, j.duplicates || 0, j.skipped || 0) + warn });
+        router.refresh();
+      } else if (j?.error === "no_rows") {
+        setImportMsg({ ok: false, text: s.importEmpty });
+      } else {
+        setImportMsg({ ok: false, text: s.importErr });
+      }
+    } catch {
+      setImportMsg({ ok: false, text: s.importErr });
+    }
+    setImporting(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function undoImport() {
+    if (importing || !window.confirm(s.undoConfirm)) return;
+    setImporting(true);
+    setImportMsg(null);
+    try {
+      const r = await fetch("/api/finance/import", { method: "DELETE" });
+      const j = await r.json().catch(() => null);
+      if (r.ok && j?.ok) {
+        setImportMsg({ ok: true, text: j.removed ? s.undoDone(j.removed) : s.undoNone });
+        router.refresh();
+      } else {
+        setImportMsg({ ok: false, text: s.undoErr });
+      }
+    } catch {
+      setImportMsg({ ok: false, text: s.undoErr });
+    }
+    setImporting(false);
   }
 
   async function saveSettings() {
@@ -230,6 +299,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
             </select>
           </label>
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5, display: "flex", gap: 6 }}>
+            <i className="ti ti-history" style={{ fontSize: 14, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+            <span>{s.histNote}</span>
+          </div>
           {data.currenciesUsed.filter((c) => c !== baseSel).length > 0 && (
             <>
               <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 6 }}>{s.ratesT}</div>
@@ -248,6 +321,31 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           <div style={{ display: "flex", gap: 8 }}>
             <button disabled={busy} onClick={saveSettings} style={btnP}>{s.save}</button>
             <button disabled={busy} onClick={() => setSetOpenS(false)} style={btnG}>{s.cancel}</button>
+          </div>
+
+          {/* Перенос данных из MoneyOK */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <i className="ti ti-file-import" style={{ fontSize: 15, color: "var(--accent)" }} />{s.importTitle}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{s.importHint}</div>
+            <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) importMoneyOk(f); }} />
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button disabled={importing} onClick={() => fileRef.current?.click()} style={{ ...btnG, opacity: importing ? 0.6 : 1 }}>
+                <i className="ti ti-upload" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {importing ? s.importing : s.importBtn}
+              </button>
+              <button disabled={importing} onClick={undoImport} title={s.undoBtn} style={{ ...btnG, opacity: importing ? 0.6 : 1, color: "#ef4444" }}>
+                <i className="ti ti-arrow-back-up" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.undoBtn}
+              </button>
+            </div>
+            {importMsg && (
+              <div style={{ marginTop: 10, fontSize: 12.5, padding: "8px 11px", borderRadius: 9,
+                color: importMsg.ok ? "#065f46" : "#92400e", background: importMsg.ok ? "#10b9811a" : "#fef3c7",
+                border: `1px solid ${importMsg.ok ? "#6ee7b7" : "#fde68a"}` }}>
+                {importMsg.text}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -348,7 +446,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {byCategory.map((c) => {
-              const m = catMeta("expense", c.category);
+              const m = catView("expense", c.category, locale);
               const hasBudget = c.limit != null;
               const barPct = hasBudget ? Math.min(100, c.budgetPct || 0) : Math.min(100, c.pct);
               const barColor = hasBudget ? budgetColor(c.budgetPct || 0) : m.color;
@@ -356,8 +454,8 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                 <div key={c.category}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 4, gap: 8 }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      <span>{m.icon}</span>{(m.l as any)[locale] || m.l.ru}
-                      {!hasBudget && <span style={{ color: "var(--text-3)", fontSize: 12 }}>{c.pct}%</span>}
+                      <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</span>
+                      {!hasBudget && <span style={{ color: "var(--text-3)", fontSize: 12, flexShrink: 0 }}>{c.pct}%</span>}
                       {c.over && <span style={{ fontSize: 11, color: "#ef4444", background: "#ef44441a", padding: "1px 7px", borderRadius: 10 }}>{s.over} {fmtMoney(c.amount - (c.limit || 0), base, locale)}</span>}
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -421,13 +519,13 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             <div key={d} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
               {byDay.get(d)!.map((t) => {
-                const m = catMeta(t.kind, t.category);
+                const m = catView(t.kind, t.category, locale);
                 const pos = t.kind === "income";
                 return (
                   <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
                     <span style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</span>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 500 }}>{(m.l as any)[locale] || m.l.ru}</div>
+                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</div>
                       {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
                     </div>
                     <div style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap" }}>
