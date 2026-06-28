@@ -241,7 +241,7 @@ export default function KnowledgeManager({ initial, locale, emptyHint }: { initi
               <span style={{ color: "var(--text-3)", fontWeight: 500 }}>· {list.length}</span>
               {topic !== "—" ? <button onClick={() => renameFolder(topic)} aria-label="rename" title={s.edit} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: 13, padding: 2 }}><i className="ti ti-pencil" /></button> : null}
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 14 }}>
               {list.map((it) => (
                 <article
                   key={it.id}

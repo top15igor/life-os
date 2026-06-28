@@ -31,7 +31,7 @@ export default async function KnowledgePage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main">
+      <main className="main wide">
         <PageHead icon="ti-bookmarks" color="#6d5efc" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
 
         <KnowledgeManager initial={items} locale={locale} emptyHint={EMPTY[locale] || EMPTY.ru} />
