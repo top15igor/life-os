@@ -39,6 +39,12 @@ const STR: Record<string, any> = {
     done: (n: number) => `Готово: загружено дней — ${n}`,
     err: "Не удалось прочитать архив. Убедись, что это export.zip из «Здоровья».",
     test: "Проверить ссылку", testing: "Проверяю…", testOk: "Ссылка работает ✓", testFail: "Ссылка не отвечает",
+    fb_title: "Fitbit", fb_lead: "Автоматическая синхронизация через аккаунт Google (Google Health): шаги, активность, сон и пульс покоя приходят сами раз в день.",
+    fb_connect: "Подключить Fitbit", fb_connected: "Fitbit подключён ✓",
+    fb_sync: "Обновить сейчас", fb_syncing: "Обновляю…", fb_disconnect: "Отключить",
+    fb_notconfigured: "Fitbit пока не настроен (нужны ключи приложения).",
+    fb_ok: "Fitbit подключён — данные загружены ✓", fb_err: "Не удалось подключить Fitbit, попробуй ещё раз.",
+    fb_denied: "Доступ к Fitbit не выдан.", fb_synced: (n: number) => `Обновлено дней: ${n}`,
   },
   en: {
     title: "Apple Health",
@@ -64,6 +70,12 @@ const STR: Record<string, any> = {
     done: (n: number) => `Done: ${n} days imported`,
     err: "Could not read the archive. Make sure it is export.zip from Health.",
     test: "Test link", testing: "Testing…", testOk: "Link works ✓", testFail: "Link not responding",
+    fb_title: "Fitbit", fb_lead: "Automatic sync via your Google account (Google Health): steps, activity, sleep and resting heart rate arrive once a day on their own.",
+    fb_connect: "Connect Fitbit", fb_connected: "Fitbit connected ✓",
+    fb_sync: "Sync now", fb_syncing: "Syncing…", fb_disconnect: "Disconnect",
+    fb_notconfigured: "Fitbit is not set up yet (app keys required).",
+    fb_ok: "Fitbit connected — data loaded ✓", fb_err: "Could not connect Fitbit, please try again.",
+    fb_denied: "Fitbit access was not granted.", fb_synced: (n: number) => `${n} days updated`,
   },
 };
 
@@ -151,7 +163,7 @@ function Stat({ label, value, unit, sub }: { label: string; value: string; unit?
   );
 }
 
-export default function HealthSync({ days, token, locale }: { days: HealthDay[]; token: string; locale: string }) {
+export default function HealthSync({ days, token, locale, fitbitConnected, fitbitConfigured, fitbitMsg }: { days: HealthDay[]; token: string; locale: string; fitbitConnected?: boolean; fitbitConfigured?: boolean; fitbitMsg?: string }) {
   const s = STR[locale] || STR.en;
   const router = useRouter();
   const [open, setOpen] = useState(days.length === 0);
@@ -160,6 +172,30 @@ export default function HealthSync({ days, token, locale }: { days: HealthDay[];
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [test, setTest] = useState<string>("");
+  const [fbBusy, setFbBusy] = useState(false);
+  const [fbStatus, setFbStatus] = useState<string>(
+    fitbitMsg === "ok" ? s.fb_ok : fitbitMsg === "error" ? s.fb_err : fitbitMsg === "denied" ? s.fb_denied : fitbitMsg === "notconfigured" ? s.fb_notconfigured : ""
+  );
+
+  async function fbSync() {
+    setFbBusy(true); setFbStatus(s.fb_syncing);
+    try {
+      const r = await fetch("/api/integrations/google-health/sync", { method: "POST" }).then((x) => x.json());
+      setFbStatus(r?.ok ? s.fb_synced(r.saved || 0) : s.fb_err);
+      if (r?.ok) router.refresh();
+    } catch { setFbStatus(s.fb_err); }
+    setFbBusy(false);
+    setTimeout(() => setFbStatus(""), 5000);
+  }
+
+  async function fbDisconnect() {
+    setFbBusy(true);
+    try {
+      await fetch("/api/integrations/google-health/sync", { method: "DELETE" });
+      router.refresh();
+    } catch {}
+    setFbBusy(false);
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined") setUrl(`${window.location.origin}/api/health-sync?token=${token}`);
@@ -239,6 +275,29 @@ export default function HealthSync({ days, token, locale }: { days: HealthDay[];
       ) : (
         <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5, marginBottom: 10 }}>{s.noData}</div>
       )}
+
+      {/* Fitbit — облачная автосинхронизация */}
+      <div className="card" style={{ padding: 14, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <i className="ti ti-brand-fitbit" style={{ fontSize: 17, color: "#00b0b9" }} />
+          <span style={{ fontSize: 13.5, fontWeight: 600 }}>{s.fb_title}</span>
+          {fitbitConnected && <span style={{ fontSize: 12, color: "#10b981" }}>{s.fb_connected}</span>}
+          <span style={{ flex: 1 }} />
+          {!fitbitConnected && fitbitConfigured && (
+            <a href="/api/integrations/google-health/start" style={{ fontSize: 12.5, padding: "8px 14px", borderRadius: 9, background: "#00b0b9", color: "#fff", textDecoration: "none" }}>{s.fb_connect}</a>
+          )}
+          {fitbitConnected && (
+            <>
+              <button onClick={fbSync} disabled={fbBusy} style={{ fontSize: 12.5, padding: "8px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--text)", cursor: fbBusy ? "default" : "pointer", opacity: fbBusy ? 0.6 : 1 }}>{fbBusy ? s.fb_syncing : s.fb_sync}</button>
+              <button onClick={fbDisconnect} disabled={fbBusy} style={{ fontSize: 12.5, padding: "8px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "none", color: "var(--text-3)", cursor: "pointer" }}>{s.fb_disconnect}</button>
+            </>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.5, marginTop: 6 }}>
+          {!fitbitConfigured ? s.fb_notconfigured : s.fb_lead}
+        </div>
+        {fbStatus && <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 7 }}>{fbStatus}</div>}
+      </div>
 
       <button onClick={() => setOpen((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
         <i className={`ti ${open ? "ti-chevron-up" : "ti-plug"}`} style={{ fontSize: 15 }} />{open ? s.hide : s.connect}
