@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 
-type Memory = { id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; mem_date: string | null; image_url: string | null; status: string; note?: string | null; created_at: string };
+type Memory = { id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; mem_date: string | null; image_url: string | null; status: string; note?: string | null; file_url?: string | null; file_name?: string | null; mime_type?: string | null; created_at: string };
 
 const CATS = [
   { key: "moment", icon: "ti-photo-heart", c: "#993556", bg: "#FBEAF0" },
@@ -125,6 +125,11 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
       <div key={m.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
         {m.image_url ? (
           <a href={m.image_url} target="_blank" rel="noreferrer" style={{ display: "block", height: 150, background: `center/cover no-repeat url(${m.image_url})` }} />
+        ) : m.file_url ? (
+          <a href={m.file_url} target="_blank" rel="noreferrer" style={{ display: "flex", height: 110, background: cm.bg, alignItems: "center", justifyContent: "center", gap: 9, textDecoration: "none", color: cm.c }}>
+            <i className="ti ti-file-type-pdf" style={{ fontSize: 34 }} />
+            <span style={{ fontSize: 12.5, fontWeight: 600, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.file_name || "PDF"}</span>
+          </a>
         ) : (
           <div style={{ height: 110, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} /></div>
         )}
