@@ -105,19 +105,28 @@ async function fetchViaRapidApi(url: string): Promise<ApiResult> {
   };
   if (method === "POST") init.body = fill(bodyTpl || "url={url}");
 
+  // До 2 попыток: API иногда отдаёт временную ошибку/пустоту. На 429 (лимит) не повторяем.
   let json: any;
-  try {
-    const res = await fetch(endpoint, init);
-    if (!res.ok) {
-      console.error("rapidapi ig", res.status, (await res.text()).slice(0, 200));
-      // 429 — исчерпан месячный лимит RapidAPI; пробрасываем наверх, чтобы честно сказать пользователю.
-      return { media: null, rateLimited: res.status === 429 };
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(endpoint, init);
+      if (res.status === 429) {
+        console.error("rapidapi ig 429 (лимит)");
+        return { media: null, rateLimited: true };
+      }
+      if (!res.ok) {
+        console.error("rapidapi ig", res.status, (await res.text()).slice(0, 200));
+        if (attempt === 2) return { media: null, rateLimited: false };
+        continue;
+      }
+      json = await res.json();
+      break;
+    } catch (e) {
+      console.error("rapidapi ig fetch", e);
+      if (attempt === 2) return { media: null, rateLimited: false };
     }
-    json = await res.json();
-  } catch (e) {
-    console.error("rapidapi ig fetch", e);
-    return { media: null, rateLimited: false };
   }
+  if (!json) return { media: null, rateLimited: false };
 
   // Достаём поля устойчиво к разной форме ответа разных API.
   let caption = "";
