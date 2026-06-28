@@ -71,16 +71,32 @@ async function ytFetch(url: string): Promise<string> {
   return res.text();
 }
 
-// Достать текст субтитров из выбранного трека (XML вида <text ...>...</text>).
+// Достать текст субтитров: предпочитаем ручные (не asr), пробуем json3 и xml.
 async function fetchTranscript(tracks: any[]): Promise<string> {
-  const track = tracks.find((t) => t?.baseUrl);
-  if (!track) return "";
-  const url = decodeEntities(String(track.baseUrl));
-  const xml = await (await fetch(url, { headers: { "user-agent": UA } })).text();
-  const parts = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) =>
-    decodeEntities(m[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim()
-  );
-  return parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  const pick = tracks.find((t) => t?.kind !== "asr" && t?.baseUrl) || tracks.find((t) => t?.baseUrl);
+  if (!pick) return "";
+  const base = decodeEntities(String(pick.baseUrl));
+  for (const u of [base + (base.includes("?") ? "&" : "?") + "fmt=json3", base]) {
+    try {
+      const res = await fetch(u, { headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9" } });
+      if (!res.ok) continue;
+      const body = await res.text();
+      if (u.includes("fmt=json3")) {
+        const j = JSON.parse(body);
+        const text = (j?.events || []).flatMap((e: any) => (e?.segs || []).map((s: any) => s?.utf8 || "")).join("").replace(/\s+/g, " ").trim();
+        if (text) return text;
+      } else {
+        const parts = [...body.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((m) =>
+          decodeEntities(m[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim()
+        );
+        const text = parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+        if (text) return text;
+      }
+    } catch {
+      // пробуем следующий формат
+    }
+  }
+  return "";
 }
 
 export type YtMedia = { title: string; author: string | null; description: string; thumbnail: string | null; transcript: string; kind: "video" | "short" };
