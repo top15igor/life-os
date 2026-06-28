@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import HomeTabs from "./HomeTabs";
 import AwarenessHomeV2 from "./AwarenessHomeV2";
+import LangMenu from "./LangMenu";
 
 const LBL: Record<string, { aware: string; classic: string }> = {
   ru: { aware: "Новый", classic: "Классический" },
@@ -31,7 +32,8 @@ export default function HomeSwitch(props: any) {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <LangMenu current={locale} />
         <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, background: "var(--surface-2)", gap: 2 }}>
           <button onClick={() => set("classic")} style={pill(design === "classic")}>{l.classic}</button>
           <button onClick={() => set("aware")} style={pill(design === "aware")}>✨ {l.aware}</button>
