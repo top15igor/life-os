@@ -114,7 +114,14 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
   const [tab, setTab] = useState(0);
 
   const t0 = T0[locale] || T0.ru;
-  const bookWord = (({ ru: "книга", uk: "книга", en: "book", fr: "livre" }) as Record<string, string>)[locale] || "книга";
+  const inBookWord = (({ ru: "в книге", uk: "у книзі", en: "in your book", fr: "dans ton livre" }) as Record<string, string>)[locale] || "в книге";
+  const entriesWord = (n: number) => {
+    if (locale === "en") return n === 1 ? "entry" : "entries";
+    if (locale === "fr") return n === 1 ? "entrée" : "entrées";
+    const a = Math.abs(n) % 100, b = a % 10;
+    if (locale === "uk") return a > 10 && a < 20 ? "записів" : b === 1 ? "запис" : b > 1 && b < 5 ? "записи" : "записів";
+    return a > 10 && a < 20 ? "записей" : b === 1 ? "запись" : b > 1 && b < 5 ? "записи" : "записей";
+  };
   const heroPool = HEROLINES[locale] || HEROLINES.ru;
   const quotePool = QUOTES[locale] || QUOTES.ru;
   const doy = data.dayOfYear || 0;
@@ -202,7 +209,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
                 <>
                   <span style={{ color: "var(--text-3)" }}>·</span>
                   <Link href="/lifebook" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}>
-                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} /><span style={{ color: "var(--text-2)", fontWeight: 400 }}>{bookWord}</span> {data.book.readiness}%
+                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
                   </Link>
                 </>
               )}

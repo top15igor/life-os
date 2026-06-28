@@ -52,6 +52,15 @@ const STR: Record<string, any> = {
     order: "Оставить заявку", ordered: "Заявка отправлена ✓ — мы свяжемся с тобой.", ordering: "Отправляю…",
     includes: "Что входит", orderNote: "Деньги сейчас НЕ списываются. Это предварительная заявка — она придёт команде LIFE OS, мы свяжемся с тобой, уточним детали (адрес, оформление) и поможем оплатить и напечатать.",
     soon: "печать скоро", tiersNote: "Цены — предварительные, на этапе тестирования.",
+    reward: {
+      haveTitle: "У тебя есть бесплатная печатная книга 🎁",
+      haveSub: "Награда за приглашённых друзей. Оформи бесплатно тариф «Classic» — мягкая обложка, доставка почтой. Деньги не списываются.",
+      claim: "Получить бесплатно", claiming: "Отправляю…",
+      claimed: "Готово! Заявка на бесплатную книгу отправлена ✓ — мы свяжемся с тобой.",
+      progressTitle: "Пригласи друзей — получи книгу бесплатно",
+      progressSub: (n: number) => `Ещё ${n} ${plRu(n, ["друг", "друга", "друзей"])} с дневником — и печатная книга «Classic» будет бесплатной.`,
+      activeOf: (a: number, p: number) => `Активных друзей: ${a} из ${p}`,
+    },
     readTitle: "Моя жизнь", by: "Автор", print: "Скачать / Печать (PDF)", closeReader: "Закрыть",
     buildAll: "Собрать все главы", reading: "Читать книгу",
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
@@ -103,6 +112,15 @@ const STR: Record<string, any> = {
     order: "Request it", ordered: "Request sent ✓ — we'll reach out to you.", ordering: "Sending…",
     includes: "What's included", orderNote: "You are NOT charged now. This is a preliminary request — it reaches the LIFE OS team, we'll contact you, confirm the details (address, finishing) and help you pay and print.",
     soon: "print coming soon", tiersNote: "Prices are preliminary, in testing.",
+    reward: {
+      haveTitle: "You have a free printed book 🎁",
+      haveSub: "A reward for the friends you invited. Order the «Classic» softcover for free — delivered by mail. You are not charged.",
+      claim: "Get it free", claiming: "Sending…",
+      claimed: "Done! Your free book request is sent ✓ — we'll reach out to you.",
+      progressTitle: "Invite friends — get a book for free",
+      progressSub: (n: number) => `${n} more ${n === 1 ? "active friend" : "active friends"} with a diary and the «Classic» printed book is free.`,
+      activeOf: (a: number, p: number) => `Active friends: ${a} of ${p}`,
+    },
     readTitle: "My life", by: "By", print: "Download / Print (PDF)", closeReader: "Close",
     buildAll: "Build all chapters", reading: "Read the book",
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
@@ -188,7 +206,7 @@ function Bar({ pct }: { pct: number }) {
   );
 }
 
-export default function BookOfLife({ book, meta, years, year, locale, userName, memories = [] }: any) {
+export default function BookOfLife({ book, meta, years, year, locale, userName, memories = [], referral = null }: any) {
   const s = STR[locale] || STR.ru;
   const router = useRouter();
   const isLife = year === 0;
@@ -583,7 +601,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
       </div>
 
       {/* ПОЛНАЯ КНИГА */}
-      <FullBook s={s} locale={locale} year={year} bookType={m.book_type} recipient={m.recipient} />
+      <FullBook s={s} locale={locale} year={year} bookType={m.book_type} recipient={m.recipient} referral={referral} />
 
       {/* РИДЕР */}
       {reader && mounted && createPortal(
@@ -715,12 +733,15 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
 }
 
 // ===== «Получить полную книгу» =====
-function FullBook({ s, locale, year, bookType, recipient }: any) {
+function FullBook({ s, locale, year, bookType, recipient, referral = null }: any) {
   const [sel, setSel] = useState("gift");
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
+  const [claimState, setClaimState] = useState<"idle" | "sending" | "done">("idle");
   const ru = locale === "ru" || locale === "uk";
   const pick = (o: any) => (ru ? o.ru : o.en) || o.en || o.ru;
   const cur = TIERS.find((t) => t.id === sel);
+  const available = referral?.available || 0;
+  const rw = s.reward;
 
   async function order() {
     setState("sending");
@@ -729,10 +750,46 @@ function FullBook({ s, locale, year, bookType, recipient }: any) {
     setState("done");
   }
 
+  async function claim() {
+    setClaimState("sending");
+    const text = `БЕСПЛАТНАЯ книга-награда (Classic, мягкая обложка).\nТип: ${bookType}\nКому: ${recipient}\nПериод: ${year || "вся жизнь"}`;
+    const r = await fetch("/api/referral", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }).then((x) => x.json()).catch(() => null);
+    setClaimState(r?.ok ? "done" : "idle");
+  }
+
   return (
     <div style={{ marginTop: 26, borderRadius: 18, padding: "22px", background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div style={{ fontSize: 17, fontWeight: 600 }}>{s.full}</div>
       <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 5, marginBottom: 14, lineHeight: 1.55 }}>{s.fullSub}</div>
+
+      {/* Награда за приглашения: доступная бесплатная книга */}
+      {rw && available >= 1 && (
+        <div style={{ borderRadius: 14, padding: "16px 18px", marginBottom: 16, background: "var(--accent-bg)", border: "1.5px solid var(--accent)" }}>
+          <div style={{ fontSize: 15.5, fontWeight: 600, marginBottom: 6 }}>{rw.haveTitle}</div>
+          <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 12 }}>{rw.haveSub}</div>
+          {claimState === "done" ? (
+            <div style={{ fontSize: 13.5, color: "var(--positive)", fontWeight: 500 }}>{rw.claimed}</div>
+          ) : (
+            <button onClick={claim} disabled={claimState === "sending"} style={{ ...btnPrimary, background: "var(--positive)" }}>
+              <i className="ti ti-gift" style={{ fontSize: 16 }} />{claimState === "sending" ? rw.claiming : rw.claim}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Прогресс приглашений: сколько друзей осталось до бесплатной книги */}
+      {rw && referral && available < 1 && (
+        <div style={{ borderRadius: 14, padding: "14px 16px", marginBottom: 16, background: "var(--surface-2)", border: "1px dashed var(--border)" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>🎁 {rw.progressTitle}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 10 }}>{rw.progressSub(referral.toNext)}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ height: 6, borderRadius: 99, background: "var(--surface)", overflow: "hidden", flex: 1 }}>
+              <div style={{ height: "100%", width: `${Math.round(((referral.active % referral.perBook) / referral.perBook) * 100)}%`, background: "var(--accent)" }} />
+            </div>
+            <span style={{ fontSize: 12, color: "var(--text-3)", whiteSpace: "nowrap" }}>{rw.activeOf(referral.active % referral.perBook, referral.perBook)}</span>
+          </div>
+        </div>
+      )}
 
       {/* Зачем книга, если PDF бесплатный */}
       {s.whyReasons && (
