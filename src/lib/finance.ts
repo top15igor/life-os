@@ -1,5 +1,27 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getUsdPerUnit } from "./fx";
+
+// Постраничная загрузка ВСЕХ операций пользователя. Нужна потому, что
+// PostgREST/Supabase отдаёт максимум ~1000 строк за запрос (.limit это не
+// обходит), а операций могут быть тысячи — иначе теряются старые месяцы и
+// часть расходов/доходов в сводках.
+async function fetchAllTx(db: SupabaseClient, columns: string, userId: string): Promise<any[]> {
+  const page = 1000;
+  const out: any[] = [];
+  for (let from = 0; from < 200000; from += page) {
+    const { data, error } = await db
+      .from("finance_tx")
+      .select(columns)
+      .eq("user_id", userId)
+      .order("day", { ascending: true })
+      .range(from, from + page - 1);
+    if (error || !data || !data.length) break;
+    out.push(...data);
+    if (data.length < page) break;
+  }
+  return out;
+}
 
 export type Tx = {
   id: string;
@@ -61,12 +83,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   // упора в лимит строк (важно: у пользователя могут быть тысячи операций).
   let overview: Array<{ day: string; currency: string }> = [];
   try {
-    const { data } = await db
-      .from("finance_tx")
-      .select("day, currency")
-      .eq("user_id", userId)
-      .limit(100000);
-    overview = (data || []) as any;
+    overview = await fetchAllTx(db, "day, currency", userId);
   } catch {
     // таблицы ещё нет — отдаём пустую сводку
   }
@@ -210,12 +227,7 @@ export async function getFinanceSummary(userId: string): Promise<string> {
   const db = supabaseAdmin();
   let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null }> = [];
   try {
-    const { data } = await db
-      .from("finance_tx")
-      .select("day, kind, amount, currency, category")
-      .eq("user_id", userId)
-      .limit(10000);
-    all = (data || []).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+    all = (await fetchAllTx(db, "day, kind, amount, currency, category", userId)).map((t: any) => ({ ...t, amount: Number(t.amount) }));
   } catch {
     return "";
   }
