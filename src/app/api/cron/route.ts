@@ -100,6 +100,23 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
 }
 
 export async function GET(req: NextRequest) {
+  // Безопасный самотест доставки: /api/cron?test=<TELEGRAM_WEBHOOK_SECRET>
+  // Шлёт ОДИН тестовый пуш владельцу и выходит (без массовой рассылки).
+  const test = req.nextUrl.searchParams.get("test");
+  if (test !== null) {
+    if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+      return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    }
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    if (!chat) return NextResponse.json({ ok: false, error: "no TELEGRAM_ALLOWED_CHAT_ID" });
+    try {
+      await sendMessage(Number(chat), "🔔 Тест пуша LIFE OS. Видишь это сообщение — значит доставка работает, и вопрос только в расписании крона.");
+      return NextResponse.json({ ok: true, test: true, chat });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, test: true, error: String(e?.message || e) });
+    }
+  }
+
   // Vercel Cron присылает Authorization: Bearer <CRON_SECRET> (если задан).
   const auth = req.headers.get("authorization");
   if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
