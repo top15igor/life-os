@@ -27,12 +27,16 @@ export async function GET(req: NextRequest) {
   if (!/^\d{4}-\d{2}$/.test(month)) return NextResponse.json({ ok: false }, { status: 400 });
 
   const db = supabaseAdmin();
+  // Граница «< 1-е число следующего месяца»: даты 31 нет в 30-дневных месяцах
+  // и феврале, и «<= month-31» отклонялся бы Postgres как invalid date.
+  const [my, mm] = month.split("-").map(Number);
+  const monthEnd = mm === 12 ? `${my + 1}-01-01` : `${my}-${String(mm + 1).padStart(2, "0")}-01`;
   const { data } = await db
     .from("entries")
     .select("entry_date, summary, raw_text")
     .eq("user_id", user.id)
     .gte("entry_date", `${month}-01`)
-    .lte("entry_date", `${month}-31`)
+    .lt("entry_date", monthEnd)
     .order("entry_date", { ascending: true });
 
   if (!data?.length) return NextResponse.json({ ok: true, chapter: null });
