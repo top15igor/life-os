@@ -108,6 +108,26 @@ async function transcriptViaRapidApi(videoId: string, url: string): Promise<stri
   }
 }
 
+// ANDROID-клиент InnerTube — часто отдаёт дорожки субтитров, когда WEB их прячет.
+async function innertubePlayerAndroid(videoId: string): Promise<any | null> {
+  try {
+    const res = await fetch("https://www.youtube.com/youtubei/v1/player?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
+        "accept-language": "en-US,en;q=0.9",
+      },
+      body: JSON.stringify({ context: { client: { clientName: "ANDROID", clientVersion: "19.09.37", androidSdkVersion: 30, hl: "en", gl: "US" } }, videoId }),
+    });
+    if (!res.ok) { console.error("yt innertube android", res.status); return null; }
+    return await res.json();
+  } catch (e) {
+    console.error("yt innertube android", e);
+    return null;
+  }
+}
+
 async function ytFetch(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" },
@@ -170,7 +190,13 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     if (pr) tracks = apply(pr);
   }
 
-  // 2) Страница видео (запасной) — если чего-то не хватило.
+  // 2) ANDROID-клиент — если WEB не отдал субтитры.
+  if (!tracks && videoId) {
+    const pr = await innertubePlayerAndroid(videoId);
+    if (pr) tracks = apply(pr);
+  }
+
+  // 3) Страница видео (запасной) — если чего-то не хватило.
   if (!description || !tracks) {
     try {
       const html = await ytFetch(url + "&hl=en");
