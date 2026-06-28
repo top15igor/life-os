@@ -4,7 +4,8 @@ import { useState } from "react";
 import { LOCALES, type Locale } from "@/lib/i18n";
 
 // Компактный переключатель языка «глобус + код» с выпадающим списком. Удобно показать на другом языке в один тап.
-export default function LangMenu({ current }: { current: Locale }) {
+// align="right" — список раскрывается влево (для глобуса у правого края, чтобы не вылезал за экран).
+export default function LangMenu({ current, align = "left" }: { current: Locale; align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
   const cur = LOCALES.find((l) => l.code === current) || LOCALES[0];
 
@@ -26,7 +27,7 @@ export default function LangMenu({ current }: { current: Locale }) {
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-          <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 41, minWidth: 168, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,.16)", padding: 5 }}>
+          <div style={{ position: "absolute", top: "calc(100% + 6px)", ...(align === "right" ? { right: 0 } : { left: 0 }), zIndex: 41, minWidth: 168, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 12px 32px rgba(0,0,0,.16)", padding: 5 }}>
             {LOCALES.map((l) => {
               const on = l.code === current;
               return (

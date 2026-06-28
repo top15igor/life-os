@@ -343,7 +343,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LangMenu current={locale} />
+          <LangMenu current={locale} align="right" />
           <a
             href={isAuthed ? "/" : loginHref}
             style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}

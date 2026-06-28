@@ -301,7 +301,7 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref }: { loc
           <a href="#book" className="lm-nav lm-navlinks" style={{ font: "500 14.5px 'Onest'", color: "var(--ink2)" }}>{t.nav.book}</a>
           <a href="#stories" className="lm-nav lm-navlinks" style={{ font: "500 14.5px 'Onest'", color: "var(--ink2)" }}>{t.nav.stories}</a>
           {!isAuthed && <a href={loginHref} className="lm-nav lm-navlinks" style={{ font: "500 14.5px 'Onest'", color: "var(--ink2)", marginLeft: 8 }}>{t.nav.login}</a>}
-          <LangMenu current={locale} />
+          <LangMenu current={locale} align="right" />
           <a href={startHref} className="lm-dark" style={{ padding: "11px 20px", borderRadius: 12, background: "var(--ink)", color: "#fff", font: "600 14px 'Onest'" }}>{isAuthed ? t.inApp : t.nav.start}</a>
         </nav>
       </header>
