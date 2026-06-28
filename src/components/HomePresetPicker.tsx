@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const ORDER = ["mindful", "focus", "trace", "balance", "minimal", "custom"];
+const ORDER = ["minimal", "mindful", "focus", "trace", "balance", "custom"];
 const ICON: Record<string, string> = { mindful: "ti-sun-high", focus: "ti-target", trace: "ti-heart-handshake", balance: "ti-yin-yang", minimal: "ti-minus", custom: "ti-adjustments" };
 
 const BLOCK_ORDER = ["habit", "trace", "promises", "traceWeek", "context", "metrics", "changes", "focus", "stories", "tasks", "gratitude"];
@@ -15,7 +15,7 @@ const STR: Record<string, { hint: string; updated: string; view: string; blocksT
     updated: "Главная обновлена",
     view: "Посмотреть главную →",
     blocksTitle: "Какие блоки показывать",
-    p: { mindful: ["Осознанность", "Сбалансированная главная по умолчанию"], focus: ["Фокус и цели", "Задачи, цели, проекты, истории"], trace: ["Добрый след", "Добрые дела, обещания, благодарность"], balance: ["Баланс жизни", "Самочувствие, добро, благодарность"], minimal: ["Минимум", "Только серия, фокус и мысль дня"], custom: ["Собрать свою", "Сам выбери, какие блоки показывать"] },
+    p: { minimal: ["Минимум", "Спокойный старт без лишнего — по умолчанию"], mindful: ["Осознанность", "Тёплая, с обучающей карточкой"], focus: ["Фокус и цели", "Задачи, цели, проекты, истории"], trace: ["Добрый след", "Добрые дела, обещания, благодарность"], balance: ["Баланс жизни", "Самочувствие, добро, благодарность"], custom: ["Собрать свою", "Сам выбери, какие блоки показывать"] },
     b: { habit: "Серия", trace: "Мой след сегодня", promises: "Обещания", traceWeek: "След за неделю", context: "Контекст дня", metrics: "Самочувствие", changes: "Что изменилось", focus: "Фокус дня", stories: "Истории и проекты", tasks: "Задачи", gratitude: "Благодарность" },
   },
   en: {
@@ -23,7 +23,7 @@ const STR: Record<string, { hint: string; updated: string; view: string; blocksT
     updated: "Home updated",
     view: "View home →",
     blocksTitle: "Which blocks to show",
-    p: { mindful: ["Mindful", "Balanced default home"], focus: ["Focus & goals", "Tasks, goals, projects, stories"], trace: ["Kind trace", "Good deeds, promises, gratitude"], balance: ["Life balance", "Wellbeing, kindness, gratitude"], minimal: ["Minimal", "Just streak, focus and thought"], custom: ["Build your own", "Pick which blocks to show"] },
+    p: { minimal: ["Minimal", "A calm, clutter-free start — default"], mindful: ["Mindful", "Warm, with a learning card"], focus: ["Focus & goals", "Tasks, goals, projects, stories"], trace: ["Kind trace", "Good deeds, promises, gratitude"], balance: ["Life balance", "Wellbeing, kindness, gratitude"], custom: ["Build your own", "Pick which blocks to show"] },
     b: { habit: "Streak", trace: "My trace today", promises: "Promises", traceWeek: "Trace this week", context: "Day context", metrics: "Wellbeing", changes: "What changed", focus: "Focus", stories: "Stories & projects", tasks: "Tasks", gratitude: "Gratitude" },
   },
   uk: {
@@ -31,7 +31,7 @@ const STR: Record<string, { hint: string; updated: string; view: string; blocksT
     updated: "Головну оновлено",
     view: "Переглянути головну →",
     blocksTitle: "Які блоки показувати",
-    p: { mindful: ["Усвідомленість", "Збалансована головна за умовчанням"], focus: ["Фокус і цілі", "Завдання, цілі, проєкти, історії"], trace: ["Добрий слід", "Добрі справи, обіцянки, вдячність"], balance: ["Баланс життя", "Самопочуття, добро, вдячність"], minimal: ["Мінімум", "Лише серія, фокус і думка дня"], custom: ["Зібрати свою", "Сам обери, які блоки показувати"] },
+    p: { minimal: ["Мінімум", "Спокійний старт без зайвого — за умовчанням"], mindful: ["Усвідомленість", "Тепла, з навчальною карткою"], focus: ["Фокус і цілі", "Завдання, цілі, проєкти, історії"], trace: ["Добрий слід", "Добрі справи, обіцянки, вдячність"], balance: ["Баланс життя", "Самопочуття, добро, вдячність"], custom: ["Зібрати свою", "Сам обери, які блоки показувати"] },
     b: { habit: "Серія", trace: "Мій слід сьогодні", promises: "Обіцянки", traceWeek: "Слід за тиждень", context: "Контекст дня", metrics: "Самопочуття", changes: "Що змінилося", focus: "Фокус дня", stories: "Історії та проєкти", tasks: "Завдання", gratitude: "Вдячність" },
   },
   fr: {
@@ -39,14 +39,14 @@ const STR: Record<string, { hint: string; updated: string; view: string; blocksT
     updated: "Accueil mis à jour",
     view: "Voir l'accueil →",
     blocksTitle: "Quels blocs afficher",
-    p: { mindful: ["Pleine conscience", "Accueil équilibré par défaut"], focus: ["Focus & objectifs", "Tâches, objectifs, projets, histoires"], trace: ["Belle empreinte", "Bonnes actions, promesses, gratitude"], balance: ["Équilibre de vie", "Bien-être, bonté, gratitude"], minimal: ["Minimal", "Juste série, focus et pensée"], custom: ["Composer la mienne", "Choisis les blocs à afficher"] },
+    p: { minimal: ["Minimal", "Un démarrage calme et épuré — par défaut"], mindful: ["Pleine conscience", "Chaleureux, avec une carte d'aide"], focus: ["Focus & objectifs", "Tâches, objectifs, projets, histoires"], trace: ["Belle empreinte", "Bonnes actions, promesses, gratitude"], balance: ["Équilibre de vie", "Bien-être, bonté, gratitude"], custom: ["Composer la mienne", "Choisis les blocs à afficher"] },
     b: { habit: "Série", trace: "Mon empreinte du jour", promises: "Promesses", traceWeek: "Empreinte de la semaine", context: "Contexte du jour", metrics: "Bien-être", changes: "Ce qui a changé", focus: "Focus du jour", stories: "Histoires et projets", tasks: "Tâches", gratitude: "Gratitude" },
   },
 };
 
 export default function HomePresetPicker({ current, locale, currentBlocks }: { current: string; locale: string; currentBlocks?: string[] }) {
   const s = STR[locale] || STR.ru;
-  const [val, setVal] = useState(current && ORDER.includes(current) ? current : "mindful");
+  const [val, setVal] = useState(current && ORDER.includes(current) ? current : "minimal");
   const [blocks, setBlocks] = useState<string[]>(currentBlocks && currentBlocks.length ? currentBlocks : DEFAULT_BLOCKS);
   const [saved, setSaved] = useState(false);
 

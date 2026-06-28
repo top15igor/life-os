@@ -10,6 +10,7 @@ import { getBookSummary } from "@/lib/book";
 import { getLocale } from "@/lib/locale";
 import { getDict, greeting, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
+import { getBookPrompt } from "@/lib/bookPrompts";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PinPrompt from "@/components/PinPrompt";
@@ -51,7 +52,7 @@ export default async function HomePage() {
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
   let hasPin = false;
-  let preset = "mindful";
+  let preset = "minimal";
   let blocks: string[] | null = null;
   try {
     const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
@@ -118,9 +119,12 @@ export default async function HomePage() {
     tags: tagList(e).slice(0, 3),
   }));
 
+  const bookPrompt = await getBookPrompt(user.id, locale, dayOfYear).catch(() => null);
+
   const data = {
     greeting: `${greeting(locale)}${user.name ? ", " + user.name : ""}`,
-    dateLine: `${dateLabel(locale, date || undefined)} · ${todayEntries.length} ${t.entriesWord}`,
+    bookPrompt,
+    dateLine: dateLabel(locale, date || undefined),
     hint: h.today,
     mood: pickLatest(todayEntries, "mood"),
     energy: pickLatest(todayEntries, "energy"),

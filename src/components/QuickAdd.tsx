@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -49,6 +49,13 @@ export default function QuickAdd({
     setResult(null);
     setTimeout(() => taRef.current?.focus(), 30);
   }
+
+  // «Вопрос для книги» (и другие нудж-карточки) могут раскрыть поле записи.
+  useEffect(() => {
+    const h = () => openExpand();
+    window.addEventListener("lifeos-open-capture", h);
+    return () => window.removeEventListener("lifeos-open-capture", h);
+  }, []);
 
   function showResult(res: { text: string; id?: string }) {
     setResult(res);

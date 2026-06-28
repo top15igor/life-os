@@ -4,8 +4,11 @@ export const runtime = "nodejs";
 
 const COMMANDS_RU = [
   { command: "start", description: "Начать и получить ссылку на дневник" },
+  { command: "chat", description: "Поговорить с AI-другом (режим беседы)" },
   { command: "ask", description: "Спросить ассистента о своей жизни" },
   { command: "money", description: "Финансовый разбор и советы" },
+  { command: "spend", description: "Записать расход: /spend 250 eur сёрф" },
+  { command: "income", description: "Записать доход: /income 1000 зарплата" },
   { command: "save", description: "Сохранить запись принудительно" },
   { command: "link", description: "Ссылка на веб-дневник" },
   { command: "invite", description: "Пригласить друга" },
@@ -14,8 +17,11 @@ const COMMANDS_RU = [
 
 const COMMANDS_EN = [
   { command: "start", description: "Start and get your diary link" },
+  { command: "chat", description: "Talk to your AI friend (chat mode)" },
   { command: "ask", description: "Ask the assistant about your life" },
   { command: "money", description: "Financial review and tips" },
+  { command: "spend", description: "Log an expense: /spend 250 eur surf" },
+  { command: "income", description: "Log income: /income 1000 salary" },
   { command: "save", description: "Force-save an entry" },
   { command: "link", description: "Web diary link" },
   { command: "invite", description: "Invite a friend" },

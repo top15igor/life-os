@@ -10,6 +10,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
+import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { financeReview } from "@/lib/financeCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
@@ -180,6 +181,29 @@ const ASK_PROMPT: Record<string, string> = {
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
 const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent" };
+
+// Распознать токен валюты (код или символ) → ISO-код, иначе null.
+const CUR_TOKEN: Record<string, string> = {
+  "€": "EUR", eur: "EUR", евро: "EUR", "$": "USD", usd: "USD", дол: "USD",
+  "₴": "UAH", uah: "UAH", грн: "UAH", "₽": "RUB", rub: "RUB", руб: "RUB",
+  "£": "GBP", gbp: "GBP", "zł": "PLN", pln: "PLN", "₸": "KZT", kzt: "KZT",
+  "₾": "GEL", gel: "GEL", "₺": "TRY", try: "TRY", aed: "AED",
+};
+
+// Быстрый ввод траты/дохода: «/spend 250 eur уроки сёрфа», «/income 1000 зарплата».
+// Возвращает { amount, currency, label } или null. defaultCur — если валюта не указана.
+function parseQuickFinance(rest: string, defaultCur: string): { amount: number; currency: string; label: string } | null {
+  const m = rest.trim().match(/^([\d][\d\s.,]*)\s*(\S*)\s*([\s\S]*)$/);
+  if (!m) return null;
+  const amount = Number(m[1].replace(/[\s ]/g, "").replace(",", "."));
+  if (!isFinite(amount) || amount <= 0 || amount > 1e12) return null;
+  let currency = defaultCur;
+  let label = (m[3] || "").trim();
+  const tok = (m[2] || "").toLowerCase().replace(/\.$/, "");
+  if (tok && CUR_TOKEN[tok]) currency = CUR_TOKEN[tok];
+  else if (m[2]) label = (m[2] + " " + label).trim(); // не валюта — часть названия
+  return { amount: Math.round(amount * 100) / 100, currency, label: label.slice(0, 60) };
+}
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
@@ -267,6 +291,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // 💬 Режим беседы с AI-другом: /chat включает, /stop выключает, /newchat — с чистого листа.
+  if (typeof msg.text === "string" && /^\/chat\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await setChatMode(user.id, true);
+    const greet =
+      lang === "en"
+        ? "💬 Chat mode is on. I'm your friend who knows your whole story — let's just talk: ask, share, think out loud. I can also look things up online.\n\nWrite /stop to leave, /newchat to start fresh."
+        : "💬 Режим беседы включён. Я — твой друг, который знает всю твою историю. Давай просто поговорим: спрашивай, делись, рассуждай вслух. Если надо — загляну и в интернет за свежим.\n\nЧтобы выйти — /stop, начать заново — /newchat.";
+    await sendMessage(chatId, greet);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof msg.text === "string" && /^\/stop\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await setChatMode(user.id, false);
+    await sendMessage(
+      chatId,
+      lang === "en"
+        ? "✅ Left chat mode. Your messages go back to the diary. Type /chat anytime to talk again."
+        : "✅ Вышли из беседы. Сообщения снова идут в дневник. Захочешь поговорить — /chat."
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof msg.text === "string" && /^\/newchat\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await clearHistory(user.id);
+    await setChatMode(user.id, true);
+    await sendMessage(
+      chatId,
+      lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
   if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
     const lang = pickLang(msg.from?.language_code);
@@ -277,6 +336,46 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error("money cmd", e);
       await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  // Быстрая запись траты/дохода: /spend|/расход и /income|/доход.
+  if (typeof msg.text === "string" && /^\/(spend|income|расход|доход)\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    const kind = /^\/(income|доход)\b/i.test(msg.text.trim()) ? "income" : "expense";
+    const rest = msg.text.replace(/^\/(spend|income|расход|доход)\s*/i, "");
+    if (!rest.trim()) {
+      await sendMessage(chatId, kind === "income"
+        ? "Напиши сумму и источник, например:\n<code>/income 1000 eur зарплата</code>"
+        : "Напиши сумму и на что, например:\n<code>/spend 250 eur уроки сёрфа</code>");
+      return NextResponse.json({ ok: true });
+    }
+    // Основная валюта по умолчанию — из настроек финансов, иначе EUR.
+    let defaultCur = "EUR";
+    try {
+      const { data: st } = await supabaseAdmin().from("finance_settings").select("base_currency").eq("user_id", user.id).maybeSingle();
+      if (st?.base_currency) defaultCur = st.base_currency as string;
+    } catch {}
+    const parsed = parseQuickFinance(rest, defaultCur);
+    if (!parsed) {
+      await sendMessage(chatId, "Не понял сумму. Пример: <code>/spend 250 eur уроки сёрфа</code>");
+      return NextResponse.json({ ok: true });
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      await supabaseAdmin().from("finance_tx").insert({
+        user_id: user.id, day: today, kind, amount: parsed.amount, currency: parsed.currency,
+        category: parsed.label || null, note: null,
+      });
+      const sym = CUR_SYM[parsed.currency] || parsed.currency;
+      const sign = kind === "income" ? "+" : "−";
+      const head = kind === "income" ? "✅ Доход записан:" : "✅ Расход записан:";
+      await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${parsed.label ? ` · ${esc(parsed.label)}` : ""}`,
+        { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+    } catch (e) {
+      console.error("quick finance", e);
+      await sendMessage(chatId, "Не получилось записать операцию. Попробуй ещё раз 🙂");
     }
     return NextResponse.json({ ok: true });
   }
@@ -384,6 +483,20 @@ export async function POST(req: NextRequest) {
 
     if (!text || !text.trim()) {
       await sendMessage(chatId, "Пришли текст или голосовое сообщение 🙂");
+      return NextResponse.json({ ok: true });
+    }
+
+    // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
+    //    диалога и веб-поиском), а НЕ в дневник. Выход — командой /stop (поймана выше).
+    if (await getChatMode(user.id)) {
+      await sendChatAction(chatId, "typing");
+      try {
+        const reply = await talkToCompanion(user.id, user.name ?? null, text);
+        await sendMessage(chatId, esc(reply).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "…");
+      } catch (e) {
+        console.error("companion", e);
+        await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
+      }
       return NextResponse.json({ ok: true });
     }
 

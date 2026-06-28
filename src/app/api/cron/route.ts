@@ -4,6 +4,7 @@ import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage } from "@/lib/telegram";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { shiftMonth, currentMonth } from "@/lib/finance";
+import { getBookPrompt, bookPromptMessage } from "@/lib/bookPrompts";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -99,6 +100,23 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
 }
 
 export async function GET(req: NextRequest) {
+  // Безопасный самотест доставки: /api/cron?test=<TELEGRAM_WEBHOOK_SECRET>
+  // Шлёт ОДИН тестовый пуш владельцу и выходит (без массовой рассылки).
+  const test = req.nextUrl.searchParams.get("test");
+  if (test !== null) {
+    if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+      return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    }
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    if (!chat) return NextResponse.json({ ok: false, error: "no TELEGRAM_ALLOWED_CHAT_ID" });
+    try {
+      await sendMessage(Number(chat), "🔔 Тест пуша LIFE OS. Видишь это сообщение — значит доставка работает, и вопрос только в расписании крона.");
+      return NextResponse.json({ ok: true, test: true, chat });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, test: true, error: String(e?.message || e) });
+    }
+  }
+
   // Vercel Cron присылает Authorization: Bearer <CRON_SECRET> (если задан).
   const auth = req.headers.get("authorization");
   if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -122,10 +140,15 @@ export async function GET(req: NextRequest) {
   const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
   const today = isoOf(todayT);
   const isSunday = new Date().getUTCDay() === 0;
+  // День года — для ротации «вопроса для книги». В «вопросный день» (примерно
+  // дважды в неделю) обычное напоминание заменяем тёплым наводящим вопросом.
+  const nowD = new Date();
+  const doy = Math.floor((nowD.getTime() - new Date(nowD.getUTCFullYear(), 0, 0).getTime()) / 86400000);
+  const isBookQuestionDay = doy % 3 === 0;
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0 };
 
   for (const u of users || []) {
     try {
@@ -158,7 +181,18 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (wroteToday) continue;
+      // Активным (писал сегодня) напоминания не шлём, но в «вопросный день»
+      // даём тёплый «вопрос для книги» — приглашение дополнить главу, без нудёжа.
+      // На воскресенье не дублируем (там AI-обзор недели).
+      if (wroteToday) {
+        if (isBookQuestionDay && !isSunday) {
+          try {
+            const bp = await getBookPrompt(u.id, lang, doy);
+            if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; }
+          } catch (e) { console.error("book prompt active", u.id, e); }
+        }
+        continue;
+      }
 
       // Сколько дней «тишины»: от последней записи или от регистрации.
       let gap: number;
@@ -182,8 +216,15 @@ export async function GET(req: NextRequest) {
           await sendMessage(u.chat_id, m.reminderStreak(streak));
           stats.streakReminders++;
         } else {
-          await sendMessage(u.chat_id, m.reminder);
-          stats.reminders++;
+          // В «вопросный день» — тёплый наводящий вопрос для книги вместо общего напоминания.
+          let asked = false;
+          if (isBookQuestionDay) {
+            try {
+              const bp = await getBookPrompt(u.id, lang, doy);
+              if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; asked = true; }
+            } catch (e) { console.error("book prompt", u.id, e); }
+          }
+          if (!asked) { await sendMessage(u.chat_id, m.reminder); stats.reminders++; }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.

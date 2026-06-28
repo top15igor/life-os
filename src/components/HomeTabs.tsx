@@ -114,13 +114,22 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
   const [tab, setTab] = useState(0);
 
   const t0 = T0[locale] || T0.ru;
+  const inBookWord = (({ ru: "в книге", uk: "у книзі", en: "in your book", fr: "dans ton livre" }) as Record<string, string>)[locale] || "в книге";
+  const bq = (({ ru: { label: "Вопрос для книги", cta: "Ответить" }, en: { label: "A question for your book", cta: "Answer" }, uk: { label: "Питання для книги", cta: "Відповісти" }, fr: { label: "Une question pour ton livre", cta: "Répondre" } }) as Record<string, { label: string; cta: string }>)[locale] || { label: "Вопрос для книги", cta: "Ответить" };
+  const entriesWord = (n: number) => {
+    if (locale === "en") return n === 1 ? "entry" : "entries";
+    if (locale === "fr") return n === 1 ? "entrée" : "entrées";
+    const a = Math.abs(n) % 100, b = a % 10;
+    if (locale === "uk") return a > 10 && a < 20 ? "записів" : b === 1 ? "запис" : b > 1 && b < 5 ? "записи" : "записів";
+    return a > 10 && a < 20 ? "записей" : b === 1 ? "запись" : b > 1 && b < 5 ? "записи" : "записей";
+  };
   const heroPool = HEROLINES[locale] || HEROLINES.ru;
   const quotePool = QUOTES[locale] || QUOTES.ru;
   const doy = data.dayOfYear || 0;
   const heroLine = heroPool[doy % heroPool.length];
   const quote = quotePool[doy % quotePool.length];
   const daypart = data.daypart || "day";
-  const [curPreset, setCurPreset] = useState<string>(data.preset || "mindful");
+  const [curPreset, setCurPreset] = useState<string>(data.preset || "minimal");
   const [curBlocks, setCurBlocks] = useState<string[]>(data.blocks && data.blocks.length ? data.blocks : DEFAULT_BLOCKS);
   const [editOpen, setEditOpen] = useState(false);
   const allowedBlocks = curPreset === "custom" ? (curBlocks.length ? curBlocks : undefined) : PRESET_VIS[curPreset];
@@ -179,9 +188,22 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
           <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
           <DictationHints locale={locale} />
 
+          {data.bookPrompt && (
+            <button
+              onClick={() => { window.dispatchEvent(new Event("lifeos-open-capture")); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 16, padding: "13px 15px", borderRadius: 14, border: "1px solid var(--border)", background: "var(--accent-bg)", cursor: "pointer", color: "var(--text)", fontFamily: "inherit" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--accent-text)", fontWeight: 600 }}>
+                <i className="ti ti-book-2" style={{ fontSize: 15, color: "var(--accent)" }} />{bq.label} · {data.bookPrompt.title}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.4, marginTop: 6 }}>{data.bookPrompt.question}</div>
+              <div style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 600, marginTop: 9, display: "inline-flex", alignItems: "center", gap: 4 }}>{bq.cta}<i className="ti ti-arrow-up" style={{ fontSize: 14 }} /></div>
+            </button>
+          )}
+
           {curPreset === "mindful" ? (
             <AwarenessCard locale={locale} totalDays={data.habit?.totalDays || 0} />
-          ) : (
+          ) : curPreset === "minimal" ? null : (
             <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
               <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
               <div style={{ fontSize: 13.5, color: "var(--accent-text)", marginTop: 9, fontWeight: 500, lineHeight: 1.45, maxWidth: 520 }}>{dpLine}</div>
@@ -189,9 +211,28 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </div>
           )}
 
-          {vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
+          {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
+            <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8 }}>
+              {data.habit && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 500 }}>
+                  <span style={{ fontSize: 17, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
+                  {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
+                </span>
+              )}
+              {data.book && data.book.entries > 0 && (
+                <>
+                  <span style={{ color: "var(--text-3)" }}>·</span>
+                  <Link href="/lifebook" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}>
+                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
 
-          {vis("habit") && data.habit && (
+          {curPreset !== "minimal" && vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
+
+          {curPreset !== "minimal" && vis("habit") && data.habit && (
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
