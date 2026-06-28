@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import LangMenu from "./LangMenu";
+import type { Locale } from "@/lib/i18n";
 
 type Screen = { t: string; s?: string; list?: string[]; cta?: string; trust?: boolean };
 
@@ -97,6 +99,9 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", padding: "26px 22px", maxWidth: 600, margin: "0 auto" }}>
       <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "absolute", left: 0 }}>
+          <LangMenu current={locale as Locale} />
+        </div>
         <div style={{ display: "flex", gap: 6 }}>
           {screens.map((_, k) => (
             <span key={k} style={{ width: k === i ? 20 : 6, height: 6, borderRadius: 99, background: k === i ? "var(--accent)" : "var(--border)", transition: "all .3s" }} />
