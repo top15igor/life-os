@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { askKnowledge } from "@/lib/knowledge";
-import { canonicalFolder } from "@/lib/ai";
+import { canonicalFolder, analyzeSaved } from "@/lib/ai";
 import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
@@ -81,6 +81,26 @@ export async function POST(req: NextRequest) {
     const changes = ((data as any[]) || []).map((d) => ({ id: d.id, to: canonicalFolder(d.topic, loc) })).filter((c, i) => c.to !== (data as any[])[i].topic);
     await Promise.all(changes.map((c) => db.from("saved_items").update({ topic: c.to }).eq("id", c.id).eq("user_id", user.id)));
     return NextResponse.json({ ok: true, changed: changes.length });
+  }
+
+  // Перевести базу: пересобрать карточки на языке интерфейса (из подписи/расшифровки).
+  if (action === "translate") {
+    const loc = await getLocale();
+    const { data } = await db.from("saved_items").select("id, caption, transcript, title, summary, key_points").eq("user_id", user.id).order("created_at", { ascending: false }).limit(40);
+    let changed = 0;
+    for (const it of (data as any[]) || []) {
+      const base = [it.caption, it.transcript].filter(Boolean).join("\n\n").trim()
+        || [it.title, it.summary, Array.isArray(it.key_points) ? it.key_points.join("\n") : ""].filter(Boolean).join("\n").trim();
+      if (!base) continue;
+      try {
+        const a = await analyzeSaved(base, user.id, loc);
+        await db.from("saved_items").update({ title: a.title, summary: a.summary, key_points: a.key_points, tags: a.tags, topic: a.topic }).eq("id", it.id).eq("user_id", user.id);
+        changed++;
+      } catch (e) {
+        console.error("translate item", e);
+      }
+    }
+    return NextResponse.json({ ok: true, changed });
   }
 
   // Ручной порядок: сохраняем позиции по присланному списку id.
