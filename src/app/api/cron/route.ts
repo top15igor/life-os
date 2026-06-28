@@ -181,7 +181,18 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (wroteToday) continue;
+      // Активным (писал сегодня) напоминания не шлём, но в «вопросный день»
+      // даём тёплый «вопрос для книги» — приглашение дополнить главу, без нудёжа.
+      // На воскресенье не дублируем (там AI-обзор недели).
+      if (wroteToday) {
+        if (isBookQuestionDay && !isSunday) {
+          try {
+            const bp = await getBookPrompt(u.id, lang, doy);
+            if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; }
+          } catch (e) { console.error("book prompt active", u.id, e); }
+        }
+        continue;
+      }
 
       // Сколько дней «тишины»: от последней записи или от регистрации.
       let gap: number;
