@@ -14,19 +14,19 @@ type Data = {
 };
 
 const STR: Record<string, any> = {
-  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта",
+  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта", pickPeriod: "Выбрать месяц и год", earliest: "К самым ранним", thisMonth: "Текущий месяц",
     budgets: "Бюджеты по категориям", limit: "Лимит", setLimit: "Задать лимит", editLimit: "Изменить лимит", removeLimit: "Убрать лимит", ofLimit: "из", over: "превышен на", leftWord: "осталось", addBudget: "Добавить лимит", budgetTotalT: "Бюджет на месяц", spent: "потрачено",
     settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Эти курсы — запасные: применяются, только если курс НБУ на месяц операции недоступен.", histNote: "Суммы в разных валютах сводятся к основной по официальному курсу НБУ на месяц каждой операции — операции 2020 и 2023 годов считаются по своим курсам, а не по сегодняшнему.",
     importTitle: "Перенос из MoneyOK", importBtn: "Выбрать файл MoneyOK.csv", importing: "Переносим операции…", importHint: "В MoneyOK: Меню → «Экспорт в CSV» → пришли себе файл и загрузи его здесь. Перенесутся все доходы и расходы. Повторная загрузка того же файла не создаёт дублей.", importDone: (n: number, dup: number, skip: number) => `Перенесено операций: ${n}${dup ? `, дублей пропущено: ${dup}` : ""}${skip ? `, переводов/остатков пропущено: ${skip}` : ""}.`, importEmpty: "Не удалось распознать операции в файле. Это точно экспорт MoneyOK в CSV?", importErr: "Не получилось загрузить файл. Попробуй ещё раз.", importUntagged: " Внимание: пометить операции не удалось (старая база), откат в один клик будет недоступен — обнови схему supabase/finance.sql.", undoBtn: "Откатить импорт MoneyOK", undoConfirm: "Удалить все операции, перенесённые из MoneyOK? Добавленные вручную останутся.", undoDone: (n: number) => `Откат выполнен: удалено операций — ${n}.`, undoNone: "Импортированных операций не найдено — удалять нечего.", undoErr: "Не удалось откатить. Попробуй ещё раз." },
-  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency",
+  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency", pickPeriod: "Pick month and year", earliest: "To earliest", thisMonth: "Current month",
     budgets: "Category budgets", limit: "Limit", setLimit: "Set a limit", editLimit: "Edit limit", removeLimit: "Remove limit", ofLimit: "of", over: "over by", leftWord: "left", addBudget: "Add a limit", budgetTotalT: "Monthly budget", spent: "spent",
     settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "These rates are a fallback — used only when the NBU rate for an operation's month is unavailable.", histNote: "Amounts in different currencies are converted to the base one using the official NBU rate for each operation's month — 2020 and 2023 operations are counted at their own rates, not today's.",
     importTitle: "Migrate from MoneyOK", importBtn: "Choose MoneyOK.csv file", importing: "Importing transactions…", importHint: "In MoneyOK: Menu → “Export to CSV” → send the file to yourself and upload it here. All income and expenses will be migrated. Re-uploading the same file won't create duplicates.", importDone: (n: number, dup: number, skip: number) => `Imported ${n} transactions${dup ? `, ${dup} duplicates skipped` : ""}${skip ? `, ${skip} transfers/balances skipped` : ""}.`, importEmpty: "Couldn't recognise any transactions. Is this a MoneyOK CSV export?", importErr: "Upload failed. Please try again.", importUntagged: " Note: couldn't tag the transactions (old database), one-click undo won't be available — update the schema supabase/finance.sql.", undoBtn: "Undo MoneyOK import", undoConfirm: "Delete all transactions migrated from MoneyOK? Manually added ones stay.", undoDone: (n: number) => `Undone: ${n} transactions removed.`, undoNone: "No imported transactions found — nothing to remove.", undoErr: "Undo failed. Please try again." },
-  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта",
+  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта", pickPeriod: "Обрати місяць і рік", earliest: "До найраніших", thisMonth: "Поточний місяць",
     budgets: "Бюджети за категоріями", limit: "Ліміт", setLimit: "Задати ліміт", editLimit: "Змінити ліміт", removeLimit: "Прибрати ліміт", ofLimit: "з", over: "перевищено на", leftWord: "залишилось", addBudget: "Додати ліміт", budgetTotalT: "Бюджет на місяць", spent: "витрачено",
     settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Ці курси — запасні: застосовуються, лише якщо курс НБУ на місяць операції недоступний.", histNote: "Суми в різних валютах зводяться до основної за офіційним курсом НБУ на місяць кожної операції — операції 2020 і 2023 років рахуються за своїми курсами, а не за сьогоднішнім.",
     importTitle: "Перенесення з MoneyOK", importBtn: "Обрати файл MoneyOK.csv", importing: "Переносимо операції…", importHint: "У MoneyOK: Меню → «Експорт у CSV» → надішли собі файл і завантаж його тут. Перенесуться всі доходи й витрати. Повторне завантаження того ж файлу не створює дублів.", importDone: (n: number, dup: number, skip: number) => `Перенесено операцій: ${n}${dup ? `, дублів пропущено: ${dup}` : ""}${skip ? `, переказів/залишків пропущено: ${skip}` : ""}.`, importEmpty: "Не вдалося розпізнати операції у файлі. Це точно експорт MoneyOK у CSV?", importErr: "Не вдалося завантажити файл. Спробуй ще раз.", importUntagged: " Увага: позначити операції не вдалося (стара база), відкат в один клік буде недоступний — онови схему supabase/finance.sql.", undoBtn: "Відкотити імпорт MoneyOK", undoConfirm: "Видалити всі операції, перенесені з MoneyOK? Додані вручну залишаться.", undoDone: (n: number) => `Відкат виконано: видалено операцій — ${n}.`, undoNone: "Імпортованих операцій не знайдено — видаляти нічого.", undoErr: "Не вдалося відкотити. Спробуй ще раз." },
-  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise",
+  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise", pickPeriod: "Choisir mois et année", earliest: "Au plus tôt", thisMonth: "Mois courant",
     budgets: "Budgets par catégorie", limit: "Limite", setLimit: "Définir une limite", editLimit: "Modifier la limite", removeLimit: "Retirer la limite", ofLimit: "sur", over: "dépassé de", leftWord: "restant", addBudget: "Ajouter une limite", budgetTotalT: "Budget du mois", spent: "dépensé",
     settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Ces taux sont un secours — utilisés uniquement si le taux NBU du mois de l'opération est indisponible.", histNote: "Les montants en différentes devises sont convertis dans la devise principale au taux officiel NBU du mois de chaque opération — les opérations de 2020 et 2023 sont comptées à leurs propres taux, pas celui d'aujourd'hui.",
     importTitle: "Migrer depuis MoneyOK", importBtn: "Choisir le fichier MoneyOK.csv", importing: "Import des opérations…", importHint: "Dans MoneyOK : Menu → « Export CSV » → envoie-toi le fichier et charge-le ici. Tous les revenus et dépenses seront migrés. Recharger le même fichier ne crée pas de doublons.", importDone: (n: number, dup: number, skip: number) => `${n} opérations importées${dup ? `, ${dup} doublons ignorés` : ""}${skip ? `, ${skip} transferts/soldes ignorés` : ""}.`, importEmpty: "Aucune opération reconnue. S'agit-il bien d'un export CSV de MoneyOK ?", importErr: "Échec du chargement. Réessaie.", importUntagged: " Note : impossible de marquer les opérations (ancienne base), l'annulation en un clic sera indisponible — mets à jour le schéma supabase/finance.sql.", undoBtn: "Annuler l'import MoneyOK", undoConfirm: "Supprimer toutes les opérations importées de MoneyOK ? Celles ajoutées à la main restent.", undoDone: (n: number) => `Annulé : ${n} opérations supprimées.`, undoNone: "Aucune opération importée trouvée — rien à supprimer.", undoErr: "Échec de l'annulation. Réessaie." },
@@ -129,6 +129,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [day, setDay] = useState(todayISO());
   const [note, setNote] = useState("");
 
+  // Календарь-выбор месяца/года.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => Number(month.slice(0, 4)));
+
   // Бюджеты.
   const [editBudget, setEditBudget] = useState<string | null>(null);
   const [budgetVal, setBudgetVal] = useState("");
@@ -155,6 +159,28 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
   function gotoMonth(d: number) { router.push(`/finance?m=${shift(month, d)}`); }
   function switchKind(k: "income" | "expense") { setKind(k); setCategory(k === "income" ? "salary" : "food"); }
+
+  // Календарь: данные по месяцам, границы периода, переходы.
+  const nowMonth = todayISO().slice(0, 7);
+  const dataMonths = new Set(data.monthsWithData);
+  const dataYears = [...new Set(data.monthsWithData.map((mm) => Number(mm.slice(0, 4))))];
+  const minYear = dataYears.length ? Math.min(...dataYears) : Number(nowMonth.slice(0, 4));
+  const maxYear = Number(nowMonth.slice(0, 4));
+  const shortMonths = Array.from({ length: 12 }, (_, i) => {
+    try { return new Date(Date.UTC(2021, i, 1)).toLocaleDateString(intlOf(locale), { month: "short" }); }
+    catch { return String(i + 1); }
+  });
+  function openPicker() { setPickerYear(Number(month.slice(0, 4))); setPickerOpen((o) => !o); setSetOpenS(false); }
+  function pickMonth(moIdx: number) {
+    const mm = `${pickerYear}-${String(moIdx + 1).padStart(2, "0")}`;
+    if (mm > nowMonth) return; // будущее недоступно
+    setPickerOpen(false);
+    router.push(`/finance?m=${mm}`);
+  }
+  function jumpEarliest() {
+    const earliest = [...data.monthsWithData].sort()[0];
+    if (earliest) { setPickerOpen(false); router.push(`/finance?m=${earliest}`); }
+  }
 
   async function save() {
     const v = parseFloat(amount.replace(",", "."));
@@ -269,14 +295,68 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         <button onClick={() => gotoMonth(-1)} aria-label="prev" style={{ ...btnG, padding: "6px 10px" }}>
           <i className="ti ti-chevron-left" style={{ fontSize: 16, verticalAlign: "-3px" }} />
         </button>
-        <div style={{ fontSize: 15, fontWeight: 600, textTransform: "capitalize", flex: 1, textAlign: "center" }}>{monthLabel(month, locale)}</div>
-        <button onClick={() => { setSetOpenS((o) => !o); setBaseSel(base); }} aria-label="settings" title={s.settings} style={{ ...btnG, padding: "6px 10px" }}>
+        <button onClick={openPicker} title={s.pickPeriod} style={{ ...btnG, flex: 1, fontSize: 15, fontWeight: 600, textTransform: "capitalize", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--text)", background: pickerOpen ? "var(--surface-2)" : "var(--surface)" }}>
+          {monthLabel(month, locale)}
+          <i className="ti ti-calendar-event" style={{ fontSize: 14, color: "var(--accent)" }} />
+        </button>
+        <button onClick={() => { setSetOpenS((o) => !o); setBaseSel(base); setPickerOpen(false); }} aria-label="settings" title={s.settings} style={{ ...btnG, padding: "6px 10px" }}>
           <i className="ti ti-settings" style={{ fontSize: 16, verticalAlign: "-3px" }} />
         </button>
         <button onClick={() => gotoMonth(1)} disabled={isCur} aria-label="next" style={{ ...btnG, padding: "6px 10px", opacity: isCur ? 0.4 : 1, cursor: isCur ? "default" : "pointer" }}>
           <i className="ti ti-chevron-right" style={{ fontSize: 16, verticalAlign: "-3px" }} />
         </button>
       </div>
+
+      {/* Календарь: быстрый выбор года и месяца */}
+      {pickerOpen && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          {/* Переключатель года */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
+            <button onClick={() => setPickerYear((y) => Math.max(minYear, y - 1))} disabled={pickerYear <= minYear} aria-label="prev-year"
+              style={{ ...btnG, padding: "6px 12px", opacity: pickerYear <= minYear ? 0.4 : 1 }}>
+              <i className="ti ti-chevron-left" style={{ fontSize: 16, verticalAlign: "-3px" }} />
+            </button>
+            <div style={{ fontSize: 18, fontWeight: 700, flex: 1, textAlign: "center" }}>{pickerYear}</div>
+            <button onClick={() => setPickerYear((y) => Math.min(maxYear, y + 1))} disabled={pickerYear >= maxYear} aria-label="next-year"
+              style={{ ...btnG, padding: "6px 12px", opacity: pickerYear >= maxYear ? 0.4 : 1 }}>
+              <i className="ti ti-chevron-right" style={{ fontSize: 16, verticalAlign: "-3px" }} />
+            </button>
+          </div>
+          {/* Сетка месяцев */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {shortMonths.map((mn, i) => {
+              const mm = `${pickerYear}-${String(i + 1).padStart(2, "0")}`;
+              const isSel = mm === month;
+              const hasData = dataMonths.has(mm);
+              const future = mm > nowMonth;
+              return (
+                <button key={i} onClick={() => pickMonth(i)} disabled={future} style={{
+                  position: "relative", fontSize: 13, padding: "10px 4px", borderRadius: 9, cursor: future ? "default" : "pointer",
+                  textTransform: "capitalize", fontWeight: isSel ? 700 : hasData ? 600 : 400,
+                  border: `1px solid ${isSel ? "var(--accent)" : "var(--border)"}`,
+                  background: isSel ? "var(--accent)" : hasData ? "var(--surface-2)" : "var(--surface)",
+                  color: isSel ? "#fff" : future ? "var(--text-3)" : hasData ? "var(--text)" : "var(--text-3)",
+                  opacity: future ? 0.45 : 1,
+                }}>
+                  {mn.replace(".", "")}
+                  {hasData && !isSel && <span style={{ position: "absolute", top: 5, right: 6, width: 5, height: 5, borderRadius: "50%", background: "var(--accent)" }} />}
+                </button>
+              );
+            })}
+          </div>
+          {/* Быстрые переходы */}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            {data.monthsWithData.length > 0 && (
+              <button onClick={jumpEarliest} style={{ ...btnG, padding: "6px 12px", fontSize: 12.5 }}>
+                <i className="ti ti-player-skip-back" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.earliest}
+              </button>
+            )}
+            <button onClick={() => { setPickerOpen(false); router.push(`/finance?m=${nowMonth}`); }} style={{ ...btnG, padding: "6px 12px", fontSize: 12.5 }}>
+              <i className="ti ti-calendar-due" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.thisMonth}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Предупреждение про курсы */}
       {data.needsRates && !setOpenS && (
