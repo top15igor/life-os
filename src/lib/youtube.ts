@@ -63,6 +63,51 @@ async function innertubePlayer(videoId: string): Promise<any | null> {
   }
 }
 
+// Рекурсивно собрать текст расшифровки из ответа любого YouTube-transcript API
+// (форматы разные: массив {text,...}, {transcript:[...]}, {content:[...]} и т.п.).
+function collectTranscript(node: any, depth = 0, acc: string[] = []): string[] {
+  if (node == null || depth > 9) return acc;
+  if (Array.isArray(node)) { for (const x of node) collectTranscript(x, depth + 1, acc); return acc; }
+  if (typeof node === "object") {
+    for (const [k, v] of Object.entries(node)) {
+      if (typeof v === "string") {
+        if (/^(text|subtitle|utf8|snippet|caption|line|segment)$/i.test(k) && v.trim()) acc.push(v.trim());
+        else if (/^(transcript|content)$/i.test(k) && v.trim().length > 40) acc.push(v.trim());
+      } else collectTranscript(v, depth + 1, acc);
+    }
+  }
+  return acc;
+}
+
+// Запасной способ через RapidAPI (твой ключ). Включается, если задан
+// RAPIDAPI_YOUTUBE_HOST. Плейсхолдеры {id} и {url} в пути/теле.
+async function transcriptViaRapidApi(videoId: string, url: string): Promise<string> {
+  const key = process.env.RAPIDAPI_KEY;
+  const host = process.env.RAPIDAPI_YOUTUBE_HOST;
+  if (!key || !host) return "";
+  const pathTpl = process.env.RAPIDAPI_YOUTUBE_PATH || "/transcript?video_id={id}";
+  const bodyTpl = process.env.RAPIDAPI_YOUTUBE_BODY || "";
+  const method = (process.env.RAPIDAPI_YOUTUBE_METHOD || (bodyTpl ? "POST" : "GET")).toUpperCase();
+  const fill = (s: string) => s.replace(/\{id\}/g, encodeURIComponent(videoId)).replace(/\{url\}/g, encodeURIComponent(url));
+  try {
+    const init: RequestInit = {
+      method,
+      headers: {
+        "x-rapidapi-key": key, "x-rapidapi-host": host, accept: "application/json",
+        ...(method === "POST" ? { "content-type": "application/x-www-form-urlencoded" } : {}),
+      },
+    };
+    if (method === "POST") init.body = fill(bodyTpl || "video_id={id}");
+    const res = await fetch(`https://${host}${fill(pathTpl)}`, init);
+    if (!res.ok) { console.error("yt rapidapi transcript", res.status); return ""; }
+    const json = await res.json();
+    return collectTranscript(json).join(" ").replace(/\s+/g, " ").trim().slice(0, 100000);
+  } catch (e) {
+    console.error("yt rapidapi transcript", e);
+    return "";
+  }
+}
+
 async function ytFetch(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" },
@@ -148,9 +193,13 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     }
   }
 
-  // Субтитры — речь из видео.
+  // Субтитры — речь из видео (бесплатно).
   if (tracks && tracks.length) {
     try { transcript = await fetchTranscript(tracks); } catch (e) { console.error("yt transcript", e); }
+  }
+  // Запас: если бесплатно не вышло — через RapidAPI (если настроен).
+  if (!transcript && videoId) {
+    transcript = await transcriptViaRapidApi(videoId, url);
   }
 
   return { title, author, description, thumbnail, transcript, kind };
