@@ -54,6 +54,7 @@ const TOC: { id: string; label: string }[] = [
   { id: "stack", label: "Технологический стек" },
   { id: "layers", label: "Как всё устроено — 4 слоя" },
   { id: "flow", label: "Путь данных" },
+  { id: "routes", label: "Входные двери и маршруты" },
   { id: "database", label: "База данных" },
   { id: "models", label: "AI-модели" },
   { id: "endpoints", label: "API-эндпоинты" },
@@ -111,6 +112,25 @@ const FLOW = [
   "Vercel сохраняет всё в Supabase.",
   "Бот присылает подтверждение, а на сайте запись сразу видна — сайт читает из Supabase.",
 ];
+
+const DOORS = [
+  ["/about", "Главная дверь — лендинг-витрина", "История проекта, основатель, отзывы, гарантии «данные навсегда твои», вход через Google/почту. Для вошедшего кнопки регистрации спрятаны — вместо них «В приложение»."],
+  ["/welcome", "Telegram-онбординг", "Карусель «Запиши первое сообщение» → бот. Для приглашённых (/i/код) и тех, кто пришёл из Telegram. Внизу ссылки на /login и /about."],
+  ["/login", "Вход для своих", "Почта, Google, Telegram. Сюда ведёт «Уже есть аккаунт?» с обеих дверей."],
+];
+
+const ROUTING = [
+  "Гость открыл любую защищённую страницу → middleware редиректит на /about (главная дверь).",
+  "Логотип «LIFE OS» в меню → всегда ведёт на /about (витрина проекта).",
+  "Выход из аккаунта (/api/logout) → /about, cookie lifeos_token очищается.",
+  "PIN-замок без активного юзера (/lock) → /about.",
+  "Ссылка-приглашение /i/[code] → показывает /welcome (тот же Onboarding) с реф-кодом пригласившего.",
+  "У вошедшего есть cookie lifeos_token → middleware пропускает на все страницы приложения.",
+];
+
+// Публичные маршруты (middleware их НЕ закрывает): /welcome, /login, /about, /privacy,
+// /u/* (вход по ссылке), /i/* (инвайт), /p/* (публичная книга), /path/* (публичный путь), /api/*.
+const PUBLIC_ROUTES = "/welcome · /login · /about · /privacy · /u/* · /i/* · /p/* · /path/* · /api/*";
 
 const TABLES = [
   ["entries", "Записи — центр базы", "id, user_id, raw_text, summary, source, mood, energy, health, sleep_hours, weight, focus, importance, entry_date, entry_time"],
@@ -348,6 +368,22 @@ export default async function ArchitecturePage() {
                 <span style={{ fontSize: 13.5, lineHeight: 1.55 }}>{step}</span>
               </div>
             ))}
+          </div>
+        </Sec>
+
+        <Sec id="routes" icon="ti-door-enter" title="Входные двери и маршруты" sub="Куда попадает человек до входа и как устроена защита страниц. Единая главная дверь — /about.">
+          <Table head={["Маршрут", "Роль", "Что показывает / для кого"]} rows={DOORS} />
+          <div className="card" style={{ marginTop: 10 }}>
+            {ROUTING.map((step, i) => (
+              <div key={i} style={{ display: "flex", gap: 11, padding: "6px 0", alignItems: "flex-start" }}>
+                <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600 }}>{i + 1}</span>
+                <span style={{ fontSize: 13.5, lineHeight: 1.55 }}>{step}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6, margin: "10px 0 0 2px" }}>
+            <b>Защита (middleware):</b> без cookie lifeos_token всё закрыто и редиректит на /about. Публичные исключения:{" "}
+            <span style={{ fontFamily: "monospace", fontSize: 12 }}>{PUBLIC_ROUTES}</span>. Сам токен проверяется по базе уже в страницах (requireUser).
           </div>
         </Sec>
 
