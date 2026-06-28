@@ -1,4 +1,5 @@
 import "./globals.css";
+import LangFromQuery from "@/components/LangFromQuery";
 
 export const metadata = {
   title: "LIFE OS",
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
         />
       </head>
-      <body>{children}</body>
+      <body><LangFromQuery />{children}</body>
     </html>
   );
 }
