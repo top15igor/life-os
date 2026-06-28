@@ -120,7 +120,7 @@ export default async function HomePage() {
 
   const data = {
     greeting: `${greeting(locale)}${user.name ? ", " + user.name : ""}`,
-    dateLine: `${dateLabel(locale, date || undefined)} · ${todayEntries.length} ${t.entriesWord}`,
+    dateLine: dateLabel(locale, date || undefined),
     hint: h.today,
     mood: pickLatest(todayEntries, "mood"),
     energy: pickLatest(todayEntries, "energy"),

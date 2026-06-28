@@ -114,6 +114,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
   const [tab, setTab] = useState(0);
 
   const t0 = T0[locale] || T0.ru;
+  const bookWord = (({ ru: "книга", uk: "книга", en: "book", fr: "livre" }) as Record<string, string>)[locale] || "книга";
   const heroPool = HEROLINES[locale] || HEROLINES.ru;
   const quotePool = QUOTES[locale] || QUOTES.ru;
   const doy = data.dayOfYear || 0;
@@ -201,7 +202,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
                 <>
                   <span style={{ color: "var(--text-3)" }}>·</span>
                   <Link href="/lifebook" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}>
-                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.readiness}%
+                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} /><span style={{ color: "var(--text-2)", fontWeight: 400 }}>{bookWord}</span> {data.book.readiness}%
                   </Link>
                 </>
               )}
