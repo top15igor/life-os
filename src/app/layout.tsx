@@ -14,6 +14,7 @@ export const viewport = {
   themeColor: "#6d5efc",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover" as const, // чтобы env(safe-area-inset-*) работал и нижняя навигация не пряталась за панелью Safari
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
