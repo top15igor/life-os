@@ -224,21 +224,25 @@ export async function getFinanceSummary(userId: string): Promise<string> {
   };
 
   type Agg = { inc: number; exp: number; incCat: Map<string, number>; expCat: Map<string, number> };
+  const mkAgg = (): Agg => ({ inc: 0, exp: 0, incCat: new Map(), expCat: new Map() });
   const years = new Map<string, Agg>();
+  const monthsAgg = new Map<string, Agg>();
   for (const t of all) {
     const y = t.day.slice(0, 4), mo = t.day.slice(0, 7);
     const v = toBase(t.amount, t.currency, mo);
-    const o = years.get(y) || { inc: 0, exp: 0, incCat: new Map(), expCat: new Map() };
     const c = t.category || "—";
-    if (t.kind === "income") { o.inc += v; o.incCat.set(c, (o.incCat.get(c) || 0) + v); }
-    else { o.exp += v; o.expCat.set(c, (o.expCat.get(c) || 0) + v); }
-    years.set(y, o);
+    for (const o of [years.get(y) || years.set(y, mkAgg()).get(y)!, monthsAgg.get(mo) || monthsAgg.set(mo, mkAgg()).get(mo)!]) {
+      if (t.kind === "income") { o.inc += v; o.incCat.set(c, (o.incCat.get(c) || 0) + v); }
+      else { o.exp += v; o.expCat.set(c, (o.expCat.get(c) || 0) + v); }
+    }
   }
   const top = (mp: Map<string, number>, n: number) =>
     [...mp.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([c, v]) => `${c} ${Math.round(v)}`).join(", ") || "—";
 
   const lines = [
     `ФИНАНСЫ — сводка из раздела «Деньги» (валюта итогов: ${base}; операции в разных валютах сведены по официальному курсу НБУ на дату каждой операции). Числа — округлённые суммы в ${base}.`,
+    "",
+    "ПО ГОДАМ:",
   ];
   let totInc = 0, totExp = 0;
   for (const y of [...years.keys()].sort()) {
@@ -247,5 +251,13 @@ export async function getFinanceSummary(userId: string): Promise<string> {
     lines.push(`${y}: доход ${Math.round(o.inc)}, расход ${Math.round(o.exp)}, баланс ${Math.round(o.inc - o.exp)}. Доходы по статьям: ${top(o.incCat, 4)}. Расходы по статьям: ${top(o.expCat, 5)}.`);
   }
   lines.push(`За всё время: доход ${Math.round(totInc)} ${base}, расход ${Math.round(totExp)} ${base}, баланс ${Math.round(totInc - totExp)} ${base}.`);
+
+  lines.push("", "ПО МЕСЯЦАМ (формат YYYY-MM: доход / расход / баланс; крупнейшие статьи):");
+  for (const mo of [...monthsAgg.keys()].sort()) {
+    const o = monthsAgg.get(mo)!;
+    const incPart = o.inc > 0 ? `, доходы: ${top(o.incCat, 2)}` : "";
+    const expPart = o.exp > 0 ? `, расходы: ${top(o.expCat, 3)}` : "";
+    lines.push(`${mo}: ${Math.round(o.inc)} / ${Math.round(o.exp)} / ${Math.round(o.inc - o.exp)}${incPart}${expPart}`);
+  }
   return lines.join("\n");
 }
