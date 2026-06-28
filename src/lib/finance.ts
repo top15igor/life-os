@@ -182,3 +182,70 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     hasAny: all.length > 0,
   };
 }
+
+// Компактная сводка по финансам для AI-ассистента: итоги по годам и статьям
+// в основной валюте (разные валюты сведены по историческому курсу). Пустая
+// строка, если операций нет. Не делает живых запросов к НБУ — кэш + запасные
+// курсы, чтобы ответ бота не тормозил.
+export async function getFinanceSummary(userId: string): Promise<string> {
+  const db = supabaseAdmin();
+  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null }> = [];
+  try {
+    const { data } = await db
+      .from("finance_tx")
+      .select("day, kind, amount, currency, category")
+      .eq("user_id", userId)
+      .limit(10000);
+    all = (data || []).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+  } catch {
+    return "";
+  }
+  if (!all.length) return "";
+
+  // Основная валюта: из настроек либо самая частая в операциях.
+  let base = "USD";
+  const freq = new Map<string, number>();
+  for (const t of all) freq.set(t.currency, (freq.get(t.currency) || 0) + 1);
+  if (freq.size) base = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  try {
+    const { data: st } = await db.from("finance_settings").select("base_currency").eq("user_id", userId).maybeSingle();
+    if (st?.base_currency) base = st.base_currency as string;
+  } catch { /* нет настроек — дефолт */ }
+
+  const months = [...new Set(all.map((t) => t.day.slice(0, 7)))];
+  const curs = [...new Set([base, ...all.map((t) => t.currency)])];
+  let usdPer = new Map<string, number>();
+  try { usdPer = await getUsdPerUnit(db, months, curs, { live: false }); } catch { /* без курсов — ниже 1:1 */ }
+  const toBase = (amount: number, cur: string, mo: string) => {
+    if (cur === base) return amount;
+    const uc = usdPer.get(`${mo}|${cur}`), ub = usdPer.get(`${mo}|${base}`);
+    if (uc && ub && uc > 0 && ub > 0) return (amount * uc) / ub;
+    return amount;
+  };
+
+  type Agg = { inc: number; exp: number; incCat: Map<string, number>; expCat: Map<string, number> };
+  const years = new Map<string, Agg>();
+  for (const t of all) {
+    const y = t.day.slice(0, 4), mo = t.day.slice(0, 7);
+    const v = toBase(t.amount, t.currency, mo);
+    const o = years.get(y) || { inc: 0, exp: 0, incCat: new Map(), expCat: new Map() };
+    const c = t.category || "—";
+    if (t.kind === "income") { o.inc += v; o.incCat.set(c, (o.incCat.get(c) || 0) + v); }
+    else { o.exp += v; o.expCat.set(c, (o.expCat.get(c) || 0) + v); }
+    years.set(y, o);
+  }
+  const top = (mp: Map<string, number>, n: number) =>
+    [...mp.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([c, v]) => `${c} ${Math.round(v)}`).join(", ") || "—";
+
+  const lines = [
+    `ФИНАНСЫ — сводка из раздела «Деньги» (валюта итогов: ${base}; операции в разных валютах сведены по официальному курсу НБУ на дату каждой операции). Числа — округлённые суммы в ${base}.`,
+  ];
+  let totInc = 0, totExp = 0;
+  for (const y of [...years.keys()].sort()) {
+    const o = years.get(y)!;
+    totInc += o.inc; totExp += o.exp;
+    lines.push(`${y}: доход ${Math.round(o.inc)}, расход ${Math.round(o.exp)}, баланс ${Math.round(o.inc - o.exp)}. Доходы по статьям: ${top(o.incCat, 4)}. Расходы по статьям: ${top(o.expCat, 5)}.`);
+  }
+  lines.push(`За всё время: доход ${Math.round(totInc)} ${base}, расход ${Math.round(totExp)} ${base}, баланс ${Math.round(totInc - totExp)} ${base}.`);
+  return lines.join("\n");
+}
