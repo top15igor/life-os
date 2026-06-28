@@ -211,11 +211,11 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
     // Сначала пробуем с колонками файлов; если миграция не применена — откатываемся к базовому набору.
     const { data, error } = await db.from("memories").select(base + ", file_url, file_name, mime_type").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
     if (error) throw error;
-    return data || [];
+    return (data as any) || [];
   } catch {
     try {
       const { data } = await db.from("memories").select(base).eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
-      return data || [];
+      return (data as any) || [];
     } catch {
       return [];
     }
