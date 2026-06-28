@@ -5,6 +5,7 @@ import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
+import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
@@ -333,14 +334,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 🔖 Ссылка Instagram → сохраняем в личную Базу знаний (НЕ в дневник).
+    // 🔖 Ссылка Instagram / YouTube → сохраняем в личную Базу знаний (НЕ в дневник).
     const igUrl = extractInstagramUrl(text);
-    if (igUrl) {
+    const yt = extractYoutubeUrl(text);
+    if (igUrl || yt) {
       const lang = pickLang(msg.from?.language_code);
       const L = IG_MSG[lang] || IG_MSG.ru;
       await sendMessage(chatId, L.working);
       try {
-        const r = await importInstagram(user.id, igUrl, lang);
+        const r = igUrl ? await importInstagram(user.id, igUrl, lang) : await importYoutube(user.id, yt!.url, yt!.kind, lang);
         if (r.ok === false) {
           await sendMessage(chatId, r.reason === "limited" ? L.limited : L.failed);
           return NextResponse.json({ ok: true });

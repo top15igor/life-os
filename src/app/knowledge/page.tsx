@@ -10,10 +10,10 @@ export const dynamic = "force-dynamic";
 
 const TITLE: Record<string, string> = { ru: "База знаний", en: "Knowledge Base", uk: "База знань", fr: "Base de connaissances" };
 const HINT: Record<string, string> = {
-  ru: "Сохранённое из Instagram, разобранное по темам. Пришли боту ссылку на пост или reels — он добавит сюда.",
-  en: "Your Instagram saves, organized by topic. Send the bot a post or reel link — it lands here.",
-  uk: "Збережене з Instagram, розкладене за темами. Надішли боту посилання на пост або reels.",
-  fr: "Tes enregistrements Instagram, classés par thème. Envoie un lien au bot — il atterrit ici.",
+  ru: "Сохранённое из Instagram и YouTube, разобранное по темам. Пришли боту ссылку на пост, reels или видео — он добавит сюда.",
+  en: "Your Instagram & YouTube saves, organized by topic. Send the bot a post, reel or video link — it lands here.",
+  uk: "Збережене з Instagram і YouTube, розкладене за темами. Надішли боту посилання на пост, reels або відео.",
+  fr: "Tes enregistrements Instagram & YouTube, classés par thème. Envoie un lien au bot — il atterrit ici.",
 };
 const EMPTY: Record<string, string> = {
   ru: "Пока пусто. Открой в Instagram сохранённый пост или reels → «Поделиться» → «Копировать ссылку» → пришли её боту в Telegram.",
