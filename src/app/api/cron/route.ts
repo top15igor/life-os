@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage } from "@/lib/telegram";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -103,6 +104,18 @@ export async function GET(req: NextRequest) {
   }
 
   const db = supabaseAdmin();
+
+  // Подтягиваем свежие данные у всех, кто подключил Fitbit/Google Health (последние 2 дня).
+  let fitbitSynced = 0;
+  try {
+    const ids = await googleHealthUserIds();
+    for (const uid of ids) {
+      try { if ((await syncGoogleHealth(uid, 2)) >= 0) fitbitSynced++; } catch (e) { console.error("googlehealth cron", uid, e); }
+    }
+  } catch (e) {
+    console.error("googlehealth cron", e);
+  }
+
   const { data: users } = await db.from("users").select("id, chat_id, lang, created_at").not("chat_id", "is", null);
   const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
   const today = isoOf(todayT);
@@ -170,5 +183,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, ...stats, sunday: isSunday });
+  return NextResponse.json({ ok: true, ...stats, fitbitSynced, sunday: isSunday });
 }

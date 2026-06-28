@@ -1,5 +1,8 @@
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
+import { intlOf } from "@/lib/i18n";
+import AboutModern from "@/components/about/AboutModern";
+import DesignSwitch from "@/components/about/DesignSwitch";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +77,8 @@ const C = {
 
     foot_priv: "Приватность",
     foot_code: "Код на GitHub",
+    design_a: "Классика",
+    design_b: "Новый",
   },
   en: {
     nav_login: "Sign in",
@@ -145,19 +150,177 @@ const C = {
 
     foot_priv: "Privacy",
     foot_code: "Code on GitHub",
+    design_a: "Classic",
+    design_b: "New",
+  },
+  uk: {
+    nav_login: "Увійти",
+    back_to_app: "До застосунку",
+    hero_badge: "Особиста операційна система життя",
+    hero_title: "Твоє життя заслуговує бути збереженим",
+    hero_sub:
+      "Ти просто розповідаєш, як минув день — голосом або текстом. AI розшифровує, розкладає за змістом і збирає з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
+    cta_create: "Створити акаунт",
+    cta_tg: "Відкрити в Telegram",
+    cta_hint: "Через Google або звичайну пошту — за хвилину",
+
+    idea_kicker: "Навіщо це",
+    idea_title: "Ми майже нічого не пам'ятаємо",
+    idea_p1:
+      "За тиждень ти забудеш, про що думав сьогодні. За рік — яким був цей місяць. Ми фотографуємо відпустку, але майже ніколи не зберігаємо свої думки, рішення та ідеї — а саме з них і складається життя.",
+    idea_p2:
+      "LIFE OS прибирає все тертя. Не треба нічого заповнювати й систематизувати. Ти говориш — решту робить AI. З часом він починає розуміти тебе: що дає енергію, які звички працюють, які рішення змінювали твоє життя.",
+
+    how_kicker: "Як це працює",
+    how: [
+      { n: "1", t: "Розповідаєш", d: "Голосом або текстом — Telegram-боту або прямо на сайті. Як другу: «сьогодні було…»." },
+      { n: "2", t: "AI розуміє", d: "Розшифровує мову, виділяє інсайти, задачі, настрій, людей і місця, пов'язує з проєктами." },
+      { n: "3", t: "Бачиш своє життя", d: "Стрічка, аналітика, книга життя, карта здоров'я та цілей. Питаєш — AI-біограф відповідає за твоїми записами." },
+    ],
+
+    feat_kicker: "Що всередині",
+    feats: [
+      { i: "ti-book", t: "Книга життя", d: "AI збирає з твоїх днів справжній літопис за главами та роками." },
+      { i: "ti-heart-rate-monitor", t: "Здоров'я", d: "Вага, енергія, самопочуття — у динаміці, без ручного ведення." },
+      { i: "ti-target", t: "Цілі та мрії", d: "Карта бажань і задачі — AI сам дістає їх з того, що ти розповів." },
+      { i: "ti-users", t: "Люди та місця", d: "Хто поруч і де ти був — само складається в карту твого життя." },
+      { i: "ti-sparkles", t: "Що помітив AI", d: "Закономірності, що дає тобі енергію і щастя — погляд збоку." },
+      { i: "ti-message-chatbot", t: "AI-біограф", d: "«Коли я був найщасливіший?» — відповідь за секунди за твоїми записами." },
+    ],
+
+    founder_kicker: "Про засновника",
+    founder_title: "Чому я створюю LIFE OS",
+    founder_paras: [
+      "Мене звати Ігор. Я почав створювати LIFE OS не як бізнес-проєкт, а як лист тим, хто буде після мене.",
+      "Одного разу я впіймав себе на простій і трохи страшній думці: я майже не пам'ятаю власне життя. Відпустки, розмови, важливі рішення, ідеї, від яких колись горіли очі, — усе це поступово стирається. Фотографії залишаються, але ми вже не пам'ятаємо, що було за кадром і чому цей день був для нас важливим.",
+      "А ще я зрозумів: усе, що я дізнався за своє життя — мої помилки, відкриття й моменти, заради яких варто було жити, — одного дня може піти разом зі мною. Мої діти й онуки побачать фотографії, але не впізнають мене справжнього. Ми зберігаємо зображення свого життя, але майже не зберігаємо себе.",
+      "Я хотів інструмент, який не вимагає дисципліни. Де достатньо просто говорити — як близькій людині, — а технологія сама розуміє, що сталося, знаходить важливе і перетворює це на історію життя. Такого не було. Тому я почав створювати його сам — для себе і своєї родини.",
+      "LIFE OS — це мій особистий щоденник, пам'ять і майбутня книга життя. А тепер я відкриваю його для кожного, хто теж не хоче, щоб його досвід і найважливіші моменти одного дня зникли.",
+    ],
+    founder_quote:
+      "Я не програміст і не хочу підлаштовувати своє життя під складні системи. Я хочу просто говорити — а технологія нехай робить решту. LIFE OS створюється не для технічних фахівців, а для звичайних людей.",
+    founder_sign: "Ігор, засновник LIFE OS",
+
+    testi_kicker: "Відгуки",
+    testi_title: "Люди в захваті від LIFE OS",
+    testi: [
+      { text: "Веду LIFE OS три місяці й уперше в житті не закинув щоденник. Просто говорю в Telegram дорогою додому — а ввечері читаю своє життя, розкладене по поличках.", name: "Анна", role: "маркетолог" },
+      { text: "Пробував десятки застосунків для нотаток — усе кидав. Тут нічого не треба налаштовувати: говориш як другу, решту робить AI.", name: "Дмитро", role: "підприємець" },
+      { text: "Вивантажив усе в Obsidian і зрозумів — це справді моє. Я не прив'язаний до сервісу, мої спогади завжди зі мною.", name: "Сергій", role: "інженер" },
+      { text: "Роблю це для доньки. Хочу, щоб одного дня вона змогла прочитати, про що я думала, коли вона була маленькою.", name: "Марія", role: "мама в декреті" },
+    ],
+
+    trust_own: "Дані — ваші назавжди",
+    trust_own_d: "Вивантаження в Markdown і Obsidian в один клік. Ваша книга життя залишиться з вами — навіть без інтернету і без нашого сервісу.",
+    trust_open: "Відкритий код",
+    trust_open_d: "Проєкт публічний — можна перевірити, як усе влаштовано.",
+    trust_priv: "Чесна приватність",
+    trust_priv_d: "Щоденник бачиш лише ти. Завантажити або видалити все — в один клік.",
+
+    final_title: "Почни першу сторінку своєї книги життя",
+    final_sub: "Безкоштовно. Через Google або пошту.",
+
+    foot_priv: "Приватність",
+    foot_code: "Код на GitHub",
+    design_a: "Класика",
+    design_b: "Новий",
+  },
+  fr: {
+    nav_login: "Se connecter",
+    back_to_app: "Vers l'app",
+    hero_badge: "Un système d'exploitation personnel pour ta vie",
+    hero_title: "Ta vie mérite d'être sauvegardée",
+    hero_sub:
+      "Tu racontes simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
+    cta_create: "Créer un compte",
+    cta_tg: "Ouvrir dans Telegram",
+    cta_hint: "Avec Google ou un e-mail ordinaire — en une minute",
+
+    idea_kicker: "Pourquoi",
+    idea_title: "On ne se souvient presque de rien",
+    idea_p1:
+      "Dans une semaine, tu auras oublié à quoi tu pensais aujourd'hui. Dans un an — comment était ce mois. On photographie nos vacances, mais on ne garde presque jamais nos pensées, décisions et idées — pourtant c'est de cela qu'est faite la vie.",
+    idea_p2:
+      "LIFE OS supprime toute friction. Rien à remplir ni à organiser. Tu parles — l'IA fait le reste. Avec le temps, elle apprend à te comprendre : ce qui te donne de l'énergie, quelles habitudes marchent, quelles décisions ont changé ta vie.",
+
+    how_kicker: "Comment ça marche",
+    how: [
+      { n: "1", t: "Tu racontes", d: "À la voix ou au texte — au bot Telegram ou directement sur le site. Comme à un ami : « aujourd'hui… »." },
+      { n: "2", t: "L'IA comprend", d: "Transcrit la parole, dégage insights, tâches, humeur, gens et lieux, relie aux projets." },
+      { n: "3", t: "Tu vois ta vie", d: "Fil, analytique, livre de vie, carte de santé et d'objectifs. Tu demandes — le biographe IA répond d'après tes entrées." },
+    ],
+
+    feat_kicker: "Ce qu'il y a dedans",
+    feats: [
+      { i: "ti-book", t: "Livre de vie", d: "L'IA fait de tes journées une vraie chronique, par chapitres et par années." },
+      { i: "ti-heart-rate-monitor", t: "Santé", d: "Poids, énergie, bien-être — suivis dans le temps, sans saisie manuelle." },
+      { i: "ti-target", t: "Objectifs et rêves", d: "Une carte des envies et des tâches — l'IA les tire de ce que tu as dit." },
+      { i: "ti-users", t: "Gens et lieux", d: "Qui est là et où tu es allé — la carte de ta vie se construit seule." },
+      { i: "ti-sparkles", t: "Ce que l'IA a remarqué", d: "Des tendances, ce qui te donne énergie et bonheur — un regard extérieur." },
+      { i: "ti-message-chatbot", t: "Biographe IA", d: "« Quand étais-je le plus heureux ? » — réponse en secondes d'après tes entrées." },
+    ],
+
+    founder_kicker: "À propos du fondateur",
+    founder_title: "Pourquoi je crée LIFE OS",
+    founder_paras: [
+      "Je m'appelle Igor. J'ai commencé à créer LIFE OS non comme une entreprise, mais comme une lettre à ceux qui viendront après moi.",
+      "Un jour, une pensée simple et un peu effrayante m'a saisi : je ne me souviens presque pas de ma propre vie. Vacances, conversations, décisions importantes, idées qui me faisaient autrefois briller les yeux — tout cela s'efface peu à peu. Les photos restent, mais on ne se rappelle plus ce qui se passait hors champ ni pourquoi ce jour comptait.",
+      "Et j'ai compris autre chose : tout ce que j'ai appris dans ma vie — mes erreurs, mes découvertes et les moments pour lesquels il valait la peine de vivre — pourrait un jour partir avec moi. Mes enfants et petits-enfants verront des photos, mais ne connaîtront pas le vrai moi. On sauvegarde les images de notre vie, mais on ne se sauvegarde presque pas soi-même.",
+      "Je voulais un outil qui n'exige aucune discipline. Où il suffit de parler — comme à un proche — et où la technologie comprend ce qui s'est passé, repère l'essentiel et en fait une histoire de vie. Ça n'existait pas. Alors je l'ai créé moi-même — pour moi et ma famille.",
+      "LIFE OS, c'est mon journal personnel, ma mémoire et mon futur livre de vie. Et maintenant je l'ouvre à tous ceux qui, eux aussi, ne veulent pas que leur expérience et leurs moments les plus précieux disparaissent un jour.",
+    ],
+    founder_quote:
+      "Je ne suis pas programmeur et je ne veux pas plier ma vie à des systèmes complexes. Je veux simplement parler — et que la technologie fasse le reste. LIFE OS n'est pas conçu pour les spécialistes techniques, mais pour les gens ordinaires.",
+    founder_sign: "Igor, fondateur de LIFE OS",
+
+    testi_kicker: "Témoignages",
+    testi_title: "Les gens adorent LIFE OS",
+    testi: [
+      { text: "Je tiens LIFE OS depuis trois mois et, pour la première fois, je n'ai pas abandonné mon journal. Je parle simplement dans Telegram en rentrant — et le soir je relis ma vie, bien rangée.", name: "Anna", role: "marketeuse" },
+      { text: "J'ai essayé des dizaines d'applis de notes — je les ai toutes lâchées. Ici, rien à configurer : tu parles comme à un ami, l'IA fait le reste.", name: "Dmitri", role: "entrepreneur" },
+      { text: "J'ai tout exporté vers Obsidian et j'ai compris — c'est vraiment à moi. Je ne dépends pas du service, mes souvenirs sont toujours avec moi.", name: "Sergueï", role: "ingénieur" },
+      { text: "Je le fais pour ma fille. Je veux qu'un jour elle puisse lire ce à quoi je pensais quand elle était petite.", name: "Maria", role: "maman en congé" },
+    ],
+
+    trust_own: "Tes données, à toi pour toujours",
+    trust_own_d: "Export vers Markdown et Obsidian en un clic. Ton livre de vie reste avec toi — même sans internet et sans notre service.",
+    trust_open: "Code ouvert",
+    trust_open_d: "Le projet est public — tu peux vérifier comment tout fonctionne.",
+    trust_priv: "Une vraie confidentialité",
+    trust_priv_d: "Toi seul vois ton journal. Télécharge ou supprime tout en un clic.",
+
+    final_title: "Commence la première page de ton livre de vie",
+    final_sub: "Gratuit. Avec Google ou e-mail.",
+
+    foot_priv: "Confidentialité",
+    foot_code: "Code sur GitHub",
+    design_a: "Classique",
+    design_b: "Nouveau",
   },
 };
 
-export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string; d?: string }> }) {
   const sp = await searchParams;
   const locale = await getLocale();
-  const t = locale === "en" || locale === "fr" ? C.en : C.ru;
+  const t = C[locale] || C.ru;
   const GH = "https://github.com/top15igor/life-os";
   // Залогиненный гость пришёл по логотипу — прячем призывы «войти/создать аккаунт».
   const isAuthed = !!(await getCurrentUser());
   // Реферал: пробрасываем метку на страницу входа, чтобы пригласивший засчитался.
   const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? sp.ref : "";
   const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
+  // Какой дизайн показывать: B (новый) или A (классический, по умолчанию).
+  const design = sp.d === "b" ? "b" : "a";
+
+  // Новый дизайн (Дизайн B) — отдельный компонент.
+  if (design === "b") {
+    return (
+      <>
+        <DesignSwitch active="b" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
+        <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} />
+      </>
+    );
+  }
 
   const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
   const kicker: React.CSSProperties = {
@@ -171,6 +334,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
 
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh" }}>
+      <DesignSwitch active="a" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
       {/* Top bar */}
       <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
