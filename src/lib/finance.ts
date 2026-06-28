@@ -56,28 +56,47 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   const m = /^\d{4}-\d{2}$/.test(month || "") ? (month as string) : currentMonth();
   const db = supabaseAdmin();
 
-  let all: Tx[] = [];
+  // Лёгкий обзор всех операций (день+валюта) — для списка месяцев, валют и
+  // основной валюты. Грузим только два столбца, чтобы покрыть всю историю без
+  // упора в лимит строк (важно: у пользователя могут быть тысячи операций).
+  let overview: Array<{ day: string; currency: string }> = [];
+  try {
+    const { data } = await db
+      .from("finance_tx")
+      .select("day, currency")
+      .eq("user_id", userId)
+      .limit(100000);
+    overview = (data || []) as any;
+  } catch {
+    // таблицы ещё нет — отдаём пустую сводку
+  }
+
+  // Операции выбранного месяца — запрашиваем напрямую по диапазону дат,
+  // поэтому месяц всегда полный, даже если в истории десятки тысяч записей.
+  let txsRaw: Tx[] = [];
   try {
     const { data } = await db
       .from("finance_tx")
       .select("id, day, kind, amount, currency, category, note")
       .eq("user_id", userId)
+      .gte("day", `${m}-01`)
+      .lte("day", `${m}-31`)
       .order("day", { ascending: false })
       .order("created_at", { ascending: false })
-      .limit(2000);
-    all = (data || []).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+      .limit(5000);
+    txsRaw = (data || []).map((t: any) => ({ ...t, amount: Number(t.amount) }));
   } catch {
-    // таблицы ещё нет — отдаём пустую сводку
+    // нет таблицы — пустой месяц
   }
 
-  const currenciesUsed = [...new Set(all.map((t) => t.currency))].sort();
+  const currenciesUsed = [...new Set(overview.map((t) => t.currency))].sort();
 
   // Настройки: основная валюта + курсы. По умолчанию — самая частая валюта операций.
   let base = currenciesUsed[0] || "USD";
   let rates: Record<string, number> = {};
   if (currenciesUsed.length) {
     const freq = new Map<string, number>();
-    for (const t of all) freq.set(t.currency, (freq.get(t.currency) || 0) + 1);
+    for (const t of overview) freq.set(t.currency, (freq.get(t.currency) || 0) + 1);
     base = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
   }
   try {
@@ -93,9 +112,9 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     // нет таблицы настроек — используем дефолты
   }
 
-  const monthsWithData = [...new Set(all.map((t) => t.day.slice(0, 7)))].sort().reverse();
+  const monthsWithData = [...new Set(overview.map((t) => t.day.slice(0, 7)))].sort().reverse();
 
-  const txs = all.filter((t) => t.day.slice(0, 7) === m);
+  const txs = txsRaw;
 
   // Исторические курсы на месяц операций: 1 единица валюты = usd_per_unit USD.
   // Конвертация в базовую валюту идёт по курсу ТОГО месяца, а не сегодняшнему,
@@ -179,7 +198,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     budgetTotal,
     txs,
     monthsWithData,
-    hasAny: all.length > 0,
+    hasAny: overview.length > 0,
   };
 }
 

@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 const COMMANDS_RU = [
   { command: "start", description: "Начать и получить ссылку на дневник" },
   { command: "ask", description: "Спросить ассистента о своей жизни" },
+  { command: "money", description: "Финансовый разбор и советы" },
   { command: "save", description: "Сохранить запись принудительно" },
   { command: "link", description: "Ссылка на веб-дневник" },
   { command: "invite", description: "Пригласить друга" },
@@ -14,6 +15,7 @@ const COMMANDS_RU = [
 const COMMANDS_EN = [
   { command: "start", description: "Start and get your diary link" },
   { command: "ask", description: "Ask the assistant about your life" },
+  { command: "money", description: "Financial review and tips" },
   { command: "save", description: "Force-save an entry" },
   { command: "link", description: "Web diary link" },
   { command: "invite", description: "Invite a friend" },

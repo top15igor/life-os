@@ -10,6 +10,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
+import { financeReview } from "@/lib/financeCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -139,24 +140,24 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 }
 
 // Постоянная клавиатура с кнопками под полем ввода.
-const KB: Record<string, { ask: string; invite: string; diary: string; help: string }> = {
-  ru: { ask: "🧠 Спросить", invite: "🎁 Пригласить друга", diary: "📖 Открыть дневник", help: "❓ Помощь" },
-  en: { ask: "🧠 Ask", invite: "🎁 Invite a friend", diary: "📖 Open diary", help: "❓ Help" },
-  uk: { ask: "🧠 Запитати", invite: "🎁 Запросити друга", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
-  fr: { ask: "🧠 Demander", invite: "🎁 Inviter un ami", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
+const KB: Record<string, { ask: string; money: string; diary: string; help: string }> = {
+  ru: { ask: "🧠 Спросить", money: "📊 Финансы", diary: "📖 Открыть дневник", help: "❓ Помощь" },
+  en: { ask: "🧠 Ask", money: "📊 Finances", diary: "📖 Open diary", help: "❓ Help" },
+  uk: { ask: "🧠 Запитати", money: "📊 Фінанси", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
+  fr: { ask: "🧠 Demander", money: "📊 Finances", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
 };
 
 function mainKeyboard(lang: string) {
   const k = KB[lang] || KB.ru;
-  return { keyboard: [[{ text: k.ask }, { text: k.invite }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
+  return { keyboard: [[{ text: k.ask }, { text: k.money }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
 }
 
-function buttonAction(text?: string): "ask" | "invite" | "diary" | "help" | null {
+function buttonAction(text?: string): "ask" | "money" | "diary" | "help" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
     if (text === k.ask) return "ask";
-    if (text === k.invite) return "invite";
+    if (text === k.money) return "money";
     if (text === k.diary) return "diary";
     if (text === k.help) return "help";
   }
@@ -178,6 +179,7 @@ const ASK_PROMPT: Record<string, string> = {
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
+const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent" };
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
@@ -265,11 +267,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
+  if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await sendChatAction(chatId, "typing");
+    try {
+      const report = await financeReview(user.id, lang);
+      await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+    } catch (e) {
+      console.error("money cmd", e);
+      await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   // Нажатия кнопок постоянной клавиатуры.
   const ba = buttonAction(msg.text);
   if (ba) {
     const lang = pickLang(msg.from?.language_code);
-    if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
+    if (ba === "money") {
+      await sendChatAction(chatId, "typing");
+      try {
+        const report = await financeReview(user.id, lang);
+        await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+      } catch (e) {
+        console.error("money btn", e);
+        await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
+      }
+    }
     else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     else if (ba === "help") await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     else await sendMessage(chatId, ASK_PROMPT[lang] || ASK_PROMPT.ru);
