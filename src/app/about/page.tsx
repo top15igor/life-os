@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
 import DesignSwitch from "@/components/about/DesignSwitch";
+import LangMenu from "@/components/LangMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -341,12 +342,15 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
           <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
         </div>
-        <a
-          href={isAuthed ? "/" : loginHref}
-          style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
-        >
-          {isAuthed ? t.back_to_app : t.nav_login}
-        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LangMenu current={locale} />
+          <a
+            href={isAuthed ? "/" : loginHref}
+            style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
+          >
+            {isAuthed ? t.back_to_app : t.nav_login}
+          </a>
+        </div>
       </div>
 
       {/* Hero */}
