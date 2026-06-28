@@ -38,13 +38,30 @@ const C = {
     ],
 
     founder_kicker: "Об основателе",
-    founder_title: "Почему я это создаю",
-    founder_p1:
-      "Меня зовут Игорь. Я сделал LIFE OS прежде всего для себя — потому что устал терять важное: мысли, идеи, моменты, которые казались незабываемыми, а через месяц растворялись.",
-    founder_p2:
-      "Я хотел инструмент, который не требует дисциплины. Где достаточно просто говорить — а технологии сами превращают это в память, понимание и историю жизни. Оказалось, такого не было. Поэтому я его построил — и открыл для всех.",
+    founder_title: "Почему я создаю LIFE OS",
+    founder_paras: [
+      "Меня зовут Игорь. Я начал создавать LIFE OS не как бизнес-проект, а как письмо тем, кто будет после меня.",
+      "Однажды я поймал себя на простой и немного страшной мысли: я почти не помню собственную жизнь. Отпуска, разговоры, важные решения, идеи, от которых когда-то горели глаза, — всё это постепенно стирается. Фотографии остаются, но мы уже не помним, что было за кадром и почему этот день был для нас важен.",
+      "А ещё я понял: всё, что я узнал за свою жизнь — мои ошибки, открытия и моменты, ради которых стоило жить, — однажды может уйти вместе со мной. Мои дети и внуки увидят фотографии, но не узнают меня настоящего. Мы сохраняем изображения своей жизни, но почти не сохраняем себя.",
+      "Я хотел инструмент, который не требует дисциплины. Где достаточно просто говорить — как близкому человеку, — а технология сама понимает, что произошло, находит важное и превращает это в историю жизни. Такого не было. Поэтому я начал создавать его сам — для себя и своей семьи.",
+      "LIFE OS — это мой личный дневник, память и будущая книга жизни. А теперь я открываю его для каждого, кто тоже не хочет, чтобы его опыт и самые важные моменты однажды исчезли.",
+    ],
+    founder_quote:
+      "Я не программист и не хочу подстраивать свою жизнь под сложные системы. Я хочу просто говорить — а технология пусть делает остальное. LIFE OS создаётся не для технических специалистов, а для обычных людей.",
     founder_sign: "Игорь, основатель LIFE OS",
 
+    testi_kicker: "Отзывы",
+    testi_title: "Люди в восторге от LIFE OS",
+    // TODO: заменить на реальные отзывы пользователей (пока — примеры для вёрстки)
+    testi: [
+      { text: "Веду LIFE OS три месяца и впервые в жизни не забросил дневник. Просто говорю в Telegram по дороге домой — а вечером читаю свою жизнь, разложенную по полочкам.", name: "Анна", role: "маркетолог" },
+      { text: "Пробовал десятки приложений для заметок — всё бросал. Здесь ничего не надо настраивать: говоришь как другу, остальное делает AI.", name: "Дмитрий", role: "предприниматель" },
+      { text: "Выгрузил всё в Obsidian и понял — это правда моё. Я не привязан к сервису, мои воспоминания всегда со мной.", name: "Сергей", role: "инженер" },
+      { text: "Делаю это для дочери. Хочу, чтобы однажды она смогла прочитать, о чём я думала, когда она была маленькой.", name: "Мария", role: "мама в декрете" },
+    ],
+
+    trust_own: "Данные — ваши навсегда",
+    trust_own_d: "Выгрузка в Markdown и Obsidian в один клик. Ваша книга жизни останется с вами — даже без интернета и без нашего сервиса.",
     trust_open: "Открытый код",
     trust_open_d: "Проект публичный — можно проверить, как всё устроено.",
     trust_priv: "Честная приватность",
@@ -91,13 +108,30 @@ const C = {
     ],
 
     founder_kicker: "About the founder",
-    founder_title: "Why I'm building this",
-    founder_p1:
-      "My name is Igor. I built LIFE OS first of all for myself — because I was tired of losing what mattered: thoughts, ideas, moments that felt unforgettable and dissolved a month later.",
-    founder_p2:
-      "I wanted a tool that needs no discipline. Where it's enough to just speak — and technology turns it into memory, understanding and a life story. It didn't exist. So I built it — and opened it to everyone.",
+    founder_title: "Why I'm building LIFE OS",
+    founder_paras: [
+      "My name is Igor. I started building LIFE OS not as a business, but as a letter to those who come after me.",
+      "One day a simple, slightly frightening thought caught me: I barely remember my own life. Vacations, conversations, important decisions, ideas that once lit me up — all of it slowly fades. The photos remain, but we no longer recall what happened off-camera or why that day mattered.",
+      "And I realized something else: everything I've learned in my life — my mistakes, discoveries and the moments worth living for — could one day leave with me. My children and grandchildren will see photos, but won't know the real me. We save the images of our lives, but we hardly save ourselves.",
+      "I wanted a tool that needs no discipline. Where it's enough to just speak — like to someone close — and technology understands what happened, finds what matters and turns it into a life story. It didn't exist. So I started building it myself — for me and my family.",
+      "LIFE OS is my personal diary, my memory and my future book of life. And now I'm opening it to everyone who also doesn't want their experience and most important moments to one day disappear.",
+    ],
+    founder_quote:
+      "I'm not a programmer, and I don't want to bend my life around complex systems. I just want to speak — and let technology do the rest. LIFE OS isn't built for tech specialists; it's built for ordinary people.",
     founder_sign: "Igor, founder of LIFE OS",
 
+    testi_kicker: "Testimonials",
+    testi_title: "People love LIFE OS",
+    // TODO: replace with real user testimonials (these are placeholders for layout)
+    testi: [
+      { text: "I've used LIFE OS for three months and for the first time I haven't abandoned a diary. I just talk into Telegram on my way home — and in the evening I read my life, neatly sorted.", name: "Anna", role: "marketer" },
+      { text: "I've tried dozens of note apps and quit them all. Here there's nothing to set up: you talk like to a friend, AI does the rest.", name: "Dmitry", role: "entrepreneur" },
+      { text: "I exported everything to Obsidian and realized — it's truly mine. I'm not locked to the service, my memories are always with me.", name: "Sergey", role: "engineer" },
+      { text: "I'm doing this for my daughter. I want her to one day read what I was thinking when she was little.", name: "Maria", role: "mom" },
+    ],
+
+    trust_own: "Your data, forever yours",
+    trust_own_d: "Export to Markdown and Obsidian in one click. Your book of life stays with you — even without internet and without our service.",
     trust_open: "Open source",
     trust_open_d: "The project is public — you can check how everything works.",
     trust_priv: "Honest privacy",
@@ -221,9 +255,26 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         <div style={{ ...section, maxWidth: 720 }}>
           <div style={kicker}>{t.founder_kicker}</div>
           <h2 style={{ fontSize: "clamp(23px, 3.6vw, 30px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 18px" }}>{t.founder_title}</h2>
-          <p style={{ fontSize: 17, color: "var(--text)", lineHeight: 1.65, margin: "0 0 14px" }}>{t.founder_p1}</p>
-          <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.65, margin: "0 0 22px" }}>{t.founder_p2}</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+          {t.founder_paras.map((p, i) => (
+            <p key={i} style={{ fontSize: 17, color: i === 0 ? "var(--text)" : "var(--text-2)", lineHeight: 1.65, margin: "0 0 14px" }}>{p}</p>
+          ))}
+          <blockquote
+            style={{
+              borderLeft: "3px solid var(--accent)",
+              background: "var(--accent-bg)",
+              borderRadius: "0 12px 12px 0",
+              padding: "16px 20px",
+              margin: "22px 0",
+              fontSize: 17.5,
+              fontWeight: 500,
+              fontStyle: "italic",
+              color: "var(--text)",
+              lineHeight: 1.6,
+            }}
+          >
+            {t.founder_quote}
+          </blockquote>
+          <div style={{ display: "flex", alignItems: "center", gap: 13, marginTop: 24 }}>
             <div style={{ width: 46, height: 46, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700 }}>
               И
             </div>
@@ -232,9 +283,37 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
+      {/* Testimonials */}
+      <div style={{ ...section, padding: "48px 22px" }}>
+        <div style={kicker}>{t.testi_kicker}</div>
+        <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 24px" }}>{t.testi_title}</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {t.testi.map((r, i) => (
+            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 20px", display: "flex", flexDirection: "column" }}>
+              <div style={{ color: "var(--accent)", fontSize: 14, marginBottom: 10 }}>★★★★★</div>
+              <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 16px", flex: 1 }}>«{r.text}»</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
+                  {r.name.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)" }}>{r.name}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-3)" }}>{r.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Trust */}
       <div style={{ ...section, padding: "44px 22px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+          <div style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", color: "var(--text)" }}>
+            <i className="ti ti-download" style={{ fontSize: 22, color: "var(--accent)" }} />
+            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_own}</div>
+            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_own_d}</div>
+          </div>
           <a href={GH} target="_blank" rel="noreferrer" style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", textDecoration: "none", color: "var(--text)" }}>
             <i className="ti ti-brand-github" style={{ fontSize: 22 }} />
             <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_open}</div>
