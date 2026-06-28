@@ -10,6 +10,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
+import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { financeReview } from "@/lib/financeCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
@@ -267,6 +268,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // 💬 Режим беседы с AI-другом: /chat включает, /stop выключает, /newchat — с чистого листа.
+  if (typeof msg.text === "string" && /^\/chat\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await setChatMode(user.id, true);
+    const greet =
+      lang === "en"
+        ? "💬 Chat mode is on. I'm your friend who knows your whole story — let's just talk: ask, share, think out loud. I can also look things up online.\n\nWrite /stop to leave, /newchat to start fresh."
+        : "💬 Режим беседы включён. Я — твой друг, который знает всю твою историю. Давай просто поговорим: спрашивай, делись, рассуждай вслух. Если надо — загляну и в интернет за свежим.\n\nЧтобы выйти — /stop, начать заново — /newchat.";
+    await sendMessage(chatId, greet);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof msg.text === "string" && /^\/stop\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await setChatMode(user.id, false);
+    await sendMessage(
+      chatId,
+      lang === "en"
+        ? "✅ Left chat mode. Your messages go back to the diary. Type /chat anytime to talk again."
+        : "✅ Вышли из беседы. Сообщения снова идут в дневник. Захочешь поговорить — /chat."
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof msg.text === "string" && /^\/newchat\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await clearHistory(user.id);
+    await setChatMode(user.id, true);
+    await sendMessage(
+      chatId,
+      lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
+    );
+    return NextResponse.json({ ok: true });
+  }
+
   // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
   if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
     const lang = pickLang(msg.from?.language_code);
@@ -356,6 +392,20 @@ export async function POST(req: NextRequest) {
 
     if (!text || !text.trim()) {
       await sendMessage(chatId, "Пришли текст или голосовое сообщение 🙂");
+      return NextResponse.json({ ok: true });
+    }
+
+    // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
+    //    диалога и веб-поиском), а НЕ в дневник. Выход — командой /stop (поймана выше).
+    if (await getChatMode(user.id)) {
+      await sendChatAction(chatId, "typing");
+      try {
+        const reply = await talkToCompanion(user.id, user.name ?? null, text);
+        await sendMessage(chatId, esc(reply).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "…");
+      } catch (e) {
+        console.error("companion", e);
+        await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
+      }
       return NextResponse.json({ ok: true });
     }
 
