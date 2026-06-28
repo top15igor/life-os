@@ -12,6 +12,7 @@ import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { financeReview } from "@/lib/financeCoach";
+import { syncBotCommands } from "@/lib/botCommands";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -216,11 +217,16 @@ async function sendInvite(chatId: number, lang: string, origin: string, userId: 
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
 }
 
+// Один раз на «тёплый» инстанс синхронизируем меню команд бота с кодом,
+// чтобы новые команды появлялись в Telegram без ручного вызова setup-commands.
+let commandsSynced = false;
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
     return new NextResponse("forbidden", { status: 403 });
   }
+  if (!commandsSynced) { commandsSynced = true; syncBotCommands().catch(() => {}); }
 
   const update = await req.json().catch(() => null);
   const msg = update?.message;
