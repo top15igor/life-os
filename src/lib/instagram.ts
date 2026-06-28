@@ -223,7 +223,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
 
 export type ImportResult =
   | { ok: false; reason: "empty" | "blocked" | "limited" }
-  | { ok: true; id: string | null; saved: boolean; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
+  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
@@ -308,5 +308,28 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     console.error("ig insert", e);
   }
 
-  return { ok: true, id, saved, analysis, kind: media.kind, hadTranscript: !!transcript };
+  // Готовая карточка для UI — без повторного чтения БД (не зависит от наличия
+  // колонок note/favorite/done/position, которые добавляет миграция).
+  const item = saved
+    ? {
+        id,
+        source: "instagram",
+        url,
+        author: media.author,
+        kind: media.kind,
+        title: analysis.title,
+        topic: analysis.topic,
+        summary: analysis.summary,
+        key_points: analysis.key_points,
+        tags: analysis.tags,
+        image_url,
+        note: null,
+        favorite: false,
+        done: false,
+        position: 0,
+        created_at: new Date().toISOString(),
+      }
+    : null;
+
+  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript };
 }

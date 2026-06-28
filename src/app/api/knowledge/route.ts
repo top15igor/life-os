@@ -25,25 +25,9 @@ export async function POST(req: NextRequest) {
     if (!url) return NextResponse.json({ ok: false, error: "bad_url" }, { status: 400 });
     const r = await importInstagram(user.id, url, await getLocale());
     if (r.ok === false) return NextResponse.json({ ok: false, error: r.reason }, { status: 400 });
-    if (!r.saved || !r.id) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
-    // Читаем сохранённую строку устойчиво: если миграция (note/favorite/done/position)
-    // ещё не запущена — берём базовый набор и подставляем дефолты, чтобы не падать.
-    let item: any = null;
-    try {
-      const { data, error } = await db
-        .from("saved_items")
-        .select("id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, note, favorite, done, position, created_at")
-        .eq("id", r.id).eq("user_id", user.id).single();
-      if (error) throw error;
-      item = data;
-    } catch {
-      const { data } = await db
-        .from("saved_items")
-        .select("id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, created_at")
-        .eq("id", r.id).eq("user_id", user.id).single();
-      item = data ? { ...data, note: null, favorite: false, done: false, position: 0 } : null;
-    }
-    return NextResponse.json({ ok: true, item });
+    if (!r.saved || !r.item) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+    // importInstagram уже вернул готовую карточку — без повторного чтения БД.
+    return NextResponse.json({ ok: true, item: r.item });
   }
 
   // Спросить по базе.
