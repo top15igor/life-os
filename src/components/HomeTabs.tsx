@@ -189,9 +189,28 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa }: any) 
             </div>
           )}
 
-          {vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
+          {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
+            <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8 }}>
+              {data.habit && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 500 }}>
+                  <span style={{ fontSize: 17, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
+                  {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
+                </span>
+              )}
+              {data.book && data.book.entries > 0 && (
+                <>
+                  <span style={{ color: "var(--text-3)" }}>·</span>
+                  <Link href="/lifebook" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}>
+                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.readiness}%
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
 
-          {vis("habit") && data.habit && (
+          {curPreset !== "minimal" && vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
+
+          {curPreset !== "minimal" && vis("habit") && data.habit && (
             <div className="card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
