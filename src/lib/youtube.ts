@@ -45,6 +45,24 @@ function extractJsonObject(html: string, marker: string): string | null {
   return null;
 }
 
+// InnerTube player API — надёжно отдаёт videoDetails + субтитры даже с серверного IP
+// (страница watch часто возвращает consent-заглушку без данных). Ключ WEB-клиента публичный.
+const INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+async function innertubePlayer(videoId: string): Promise<any | null> {
+  try {
+    const res = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_KEY}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "user-agent": UA, "accept-language": "en-US,en;q=0.9" },
+      body: JSON.stringify({ context: { client: { clientName: "WEB", clientVersion: "2.20240726.00.00", hl: "en", gl: "US" } }, videoId }),
+    });
+    if (!res.ok) { console.error("yt innertube", res.status); return null; }
+    return await res.json();
+  } catch (e) {
+    console.error("yt innertube", e);
+    return null;
+  }
+}
+
 async function ytFetch(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" },
@@ -68,30 +86,41 @@ async function fetchTranscript(tracks: any[]): Promise<string> {
 export type YtMedia = { title: string; author: string | null; description: string; thumbnail: string | null; transcript: string; kind: "video" | "short" };
 
 export async function unpackYoutube(url: string, kind: "video" | "short"): Promise<YtMedia> {
+  const videoId = (url.match(/[?&]v=([A-Za-z0-9_-]{11})/) || [])[1] || "";
   let title = "", author: string | null = null, description = "", thumbnail: string | null = null, transcript = "";
 
-  // 1) Страница видео — заголовок, автор, описание, субтитры.
-  try {
-    const html = await ytFetch(url + "&hl=en");
-    const raw = extractJsonObject(html, "ytInitialPlayerResponse");
-    if (raw) {
-      const pr = JSON.parse(raw);
-      const vd = pr?.videoDetails || {};
-      title = vd.title || "";
-      author = vd.author || null;
-      description = vd.shortDescription || "";
-      const th = vd.thumbnail?.thumbnails;
-      if (Array.isArray(th) && th.length) thumbnail = th[th.length - 1]?.url || null;
-      const tracks = pr?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-      if (Array.isArray(tracks) && tracks.length) {
-        try { transcript = await fetchTranscript(tracks); } catch (e) { console.error("yt transcript", e); }
-      }
-    }
-  } catch (e) {
-    console.error("yt watch", e);
+  // Применить player-response-подобный объект к полям; вернуть треки субтитров.
+  const apply = (pr: any): any[] | null => {
+    const vd = pr?.videoDetails || {};
+    if (!title) title = vd.title || "";
+    if (!author) author = vd.author || null;
+    if (!description) description = vd.shortDescription || "";
+    const th = vd.thumbnail?.thumbnails;
+    if (!thumbnail && Array.isArray(th) && th.length) thumbnail = th[th.length - 1]?.url || null;
+    const tr = pr?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    return Array.isArray(tr) && tr.length ? tr : null;
+  };
+
+  let tracks: any[] | null = null;
+
+  // 1) InnerTube player API (основной — стабильно работает с серверного IP).
+  if (videoId) {
+    const pr = await innertubePlayer(videoId);
+    if (pr) tracks = apply(pr);
   }
 
-  // 2) oEmbed (без ключа) — надёжный запас для заголовка/автора/превью.
+  // 2) Страница видео (запасной) — если чего-то не хватило.
+  if (!description || !tracks) {
+    try {
+      const html = await ytFetch(url + "&hl=en");
+      const raw = extractJsonObject(html, "ytInitialPlayerResponse");
+      if (raw) { const pr = JSON.parse(raw); tracks = tracks || apply(pr); }
+    } catch (e) {
+      console.error("yt watch", e);
+    }
+  }
+
+  // 3) oEmbed (без ключа) — надёжный запас для заголовка/автора/превью.
   if (!title || !thumbnail) {
     try {
       const o: any = await (await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`)).json();
@@ -101,6 +130,11 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     } catch (e) {
       console.error("yt oembed", e);
     }
+  }
+
+  // Субтитры — речь из видео.
+  if (tracks && tracks.length) {
+    try { transcript = await fetchTranscript(tracks); } catch (e) { console.error("yt transcript", e); }
   }
 
   return { title, author, description, thumbnail, transcript, kind };
