@@ -35,11 +35,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const { data: users } = await supabaseAdmin().from("users").select("chat_id, lang").not("chat_id", "is", null);
+  const db = supabaseAdmin();
+  // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
+  let users: any[] | null = null;
+  {
+    const r = await db.from("users").select("chat_id, lang, push_enabled").not("chat_id", "is", null);
+    if (r.error) {
+      const r2 = await db.from("users").select("chat_id, lang").not("chat_id", "is", null);
+      users = r2.data as any;
+    } else users = r.data as any;
+  }
   const doy = dayOfYear();
   let sent = 0;
   for (const u of users || []) {
     try {
+      if (u.push_enabled === false) continue; // пользователь выключил пуши в Профиле
       const lang = ["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru";
       await sendMessage(u.chat_id, morningMessage(lang, doy));
       sent++;

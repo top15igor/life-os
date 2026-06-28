@@ -136,7 +136,15 @@ export async function GET(req: NextRequest) {
     console.error("googlehealth cron", e);
   }
 
-  const { data: users } = await db.from("users").select("id, chat_id, lang, created_at").not("chat_id", "is", null);
+  // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
+  let users: any[] | null = null;
+  {
+    const r = await db.from("users").select("id, chat_id, lang, created_at, push_enabled").not("chat_id", "is", null);
+    if (r.error) {
+      const r2 = await db.from("users").select("id, chat_id, lang, created_at").not("chat_id", "is", null);
+      users = r2.data as any;
+    } else users = r.data as any;
+  }
   const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
   const today = isoOf(todayT);
   const isSunday = new Date().getUTCDay() === 0;
@@ -152,6 +160,7 @@ export async function GET(req: NextRequest) {
 
   for (const u of users || []) {
     try {
+      if (u.push_enabled === false) continue; // пользователь выключил пуши в Профиле
       const lang: Lang = (["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru") as Lang;
       const m = MSG[lang];
 

@@ -2,7 +2,7 @@ import { headers, cookies } from "next/headers";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import LangSwitcher from "@/components/LangSwitcher";
-import { CopyLink, ProfileButtons, PinSettings } from "@/components/ProfileActions";
+import { CopyLink, ProfileButtons, PinSettings, NotificationToggle } from "@/components/ProfileActions";
 import LoginMethods from "@/components/LoginMethods";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -34,11 +34,21 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   let hasPin = false;
   let email: string | null = null;
+  let pushEnabled = true;
   try {
-    const { data } = await supabaseAdmin().from("users").select("pin_hash, email").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("pin_hash, email, push_enabled").eq("id", user.id).maybeSingle();
     hasPin = !!data?.pin_hash;
     email = (data as any)?.email || null;
-  } catch {}
+    pushEnabled = (data as any)?.push_enabled !== false; // только явный false = выкл; null/нет колонки = вкл
+  } catch {
+    // нет колонки push_enabled — считаем включёнными (по умолчанию)
+    try {
+      const { data } = await supabaseAdmin().from("users").select("pin_hash, email").eq("id", user.id).maybeSingle();
+      hasPin = !!data?.pin_hash;
+      email = (data as any)?.email || null;
+    } catch {}
+  }
+  const showPushToggle = !!user.chat_id; // пуши приходят только тем, кто в Telegram
 
   return (
     <div className="shell">
@@ -83,6 +93,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <span style={{ fontSize: 14, fontWeight: 500 }}>{s.language}</span>
             <LangSwitcher current={locale} />
           </div>
+
+          {/* Уведомления (только для Telegram-аккаунтов — им приходят пуши) */}
+          {showPushToggle && <NotificationToggle locale={locale} enabled={pushEnabled} />}
 
           {/* Твои данные */}
           <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.yourData}</div>
