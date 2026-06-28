@@ -87,7 +87,12 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
         return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
       });
     if (rows.length) {
-      const { error: finErr } = await db.from("finance_tx").insert(rows);
+      let { error: finErr } = await db.from("finance_tx").insert(rows);
+      // Старая схема без колонки entry_id — повторяем вставку без неё.
+      if (finErr && /entry_id|column|schema cache/i.test(finErr.message)) {
+        const bare = rows.map(({ entry_id, ...rest }) => rest);
+        ({ error: finErr } = await db.from("finance_tx").insert(bare));
+      }
       if (finErr) { financeError = finErr.message; console.error("finance insert failed", finErr); }
       else financeSaved = rows.length;
     }
