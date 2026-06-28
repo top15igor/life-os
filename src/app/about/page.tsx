@@ -1,0 +1,523 @@
+import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import { intlOf } from "@/lib/i18n";
+import AboutModern from "@/components/about/AboutModern";
+import DesignSwitch from "@/components/about/DesignSwitch";
+
+export const dynamic = "force-dynamic";
+
+const C = {
+  ru: {
+    nav_login: "Войти",
+    back_to_app: "В приложение",
+    hero_badge: "Личная операционная система жизни",
+    hero_title: "Твоя жизнь заслуживает быть сохранённой",
+    hero_sub:
+      "Ты просто рассказываешь, как прошёл день — голосом или текстом. AI расшифровывает, раскладывает по смыслу и собирает из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
+    cta_create: "Создать аккаунт",
+    cta_tg: "Открыть в Telegram",
+    cta_hint: "Через Google или обычную почту — за минуту",
+
+    idea_kicker: "Зачем это",
+    idea_title: "Мы почти ничего не помним",
+    idea_p1:
+      "Через неделю ты забудешь, о чём думал сегодня. Через год — каким был этот месяц. Мы фотографируем отпуск, но почти никогда не сохраняем свои мысли, решения и идеи — а ведь именно из них и состоит жизнь.",
+    idea_p2:
+      "LIFE OS убирает всё трение. Не нужно ничего заполнять и систематизировать. Ты говоришь — остальное делает AI. Со временем он начинает понимать тебя: что даёт энергию, какие привычки работают, какие решения меняли твою жизнь.",
+
+    how_kicker: "Как это работает",
+    how: [
+      { n: "1", t: "Рассказываешь", d: "Голосом или текстом — в Telegram-бота или прямо на сайте. Как другу: «сегодня было…»." },
+      { n: "2", t: "AI понимает", d: "Расшифровывает речь, выделяет инсайты, задачи, настроение, людей и места, связывает с проектами." },
+      { n: "3", t: "Видишь свою жизнь", d: "Лента, аналитика, книга жизни, карта здоровья и целей. Спрашиваешь — AI-биограф отвечает по твоим записям." },
+    ],
+
+    feat_kicker: "Что внутри",
+    feats: [
+      { i: "ti-book", t: "Книга жизни", d: "AI собирает из твоих дней настоящую летопись по главам и годам." },
+      { i: "ti-heart-rate-monitor", t: "Здоровье", d: "Вес, энергия, самочувствие — в динамике, без ручного ведения." },
+      { i: "ti-target", t: "Цели и мечты", d: "Карта желаний и задачи — AI сам достаёт их из того, что ты рассказал." },
+      { i: "ti-users", t: "Люди и места", d: "Кто рядом и где ты был — само складывается в карту твоей жизни." },
+      { i: "ti-sparkles", t: "Что заметил AI", d: "Закономерности, что даёт тебе энергию и счастье — взгляд со стороны." },
+      { i: "ti-message-chatbot", t: "AI-биограф", d: "«Когда я был счастливее всего?» — ответ за секунды по твоим записям." },
+    ],
+
+    founder_kicker: "Об основателе",
+    founder_title: "Почему я создаю LIFE OS",
+    founder_paras: [
+      "Меня зовут Игорь. Я начал создавать LIFE OS не как бизнес-проект, а как письмо тем, кто будет после меня.",
+      "Однажды я поймал себя на простой и немного страшной мысли: я почти не помню собственную жизнь. Отпуска, разговоры, важные решения, идеи, от которых когда-то горели глаза, — всё это постепенно стирается. Фотографии остаются, но мы уже не помним, что было за кадром и почему этот день был для нас важен.",
+      "А ещё я понял: всё, что я узнал за свою жизнь — мои ошибки, открытия и моменты, ради которых стоило жить, — однажды может уйти вместе со мной. Мои дети и внуки увидят фотографии, но не узнают меня настоящего. Мы сохраняем изображения своей жизни, но почти не сохраняем себя.",
+      "Я хотел инструмент, который не требует дисциплины. Где достаточно просто говорить — как близкому человеку, — а технология сама понимает, что произошло, находит важное и превращает это в историю жизни. Такого не было. Поэтому я начал создавать его сам — для себя и своей семьи.",
+      "LIFE OS — это мой личный дневник, память и будущая книга жизни. А теперь я открываю его для каждого, кто тоже не хочет, чтобы его опыт и самые важные моменты однажды исчезли.",
+    ],
+    founder_quote:
+      "Я не программист и не хочу подстраивать свою жизнь под сложные системы. Я хочу просто говорить — а технология пусть делает остальное. LIFE OS создаётся не для технических специалистов, а для обычных людей.",
+    founder_sign: "Игорь, основатель LIFE OS",
+
+    testi_kicker: "Отзывы",
+    testi_title: "Люди в восторге от LIFE OS",
+    // TODO: заменить на реальные отзывы пользователей (пока — примеры для вёрстки)
+    testi: [
+      { text: "Веду LIFE OS три месяца и впервые в жизни не забросил дневник. Просто говорю в Telegram по дороге домой — а вечером читаю свою жизнь, разложенную по полочкам.", name: "Анна", role: "маркетолог" },
+      { text: "Пробовал десятки приложений для заметок — всё бросал. Здесь ничего не надо настраивать: говоришь как другу, остальное делает AI.", name: "Дмитрий", role: "предприниматель" },
+      { text: "Выгрузил всё в Obsidian и понял — это правда моё. Я не привязан к сервису, мои воспоминания всегда со мной.", name: "Сергей", role: "инженер" },
+      { text: "Делаю это для дочери. Хочу, чтобы однажды она смогла прочитать, о чём я думала, когда она была маленькой.", name: "Мария", role: "мама в декрете" },
+    ],
+
+    trust_own: "Данные — ваши навсегда",
+    trust_own_d: "Выгрузка в Markdown и Obsidian в один клик. Ваша книга жизни останется с вами — даже без интернета и без нашего сервиса.",
+    trust_open: "Открытый код",
+    trust_open_d: "Проект публичный — можно проверить, как всё устроено.",
+    trust_priv: "Честная приватность",
+    trust_priv_d: "Дневник видишь только ты. Скачать или удалить всё — в один клик.",
+
+    final_title: "Начни первую страницу своей книги жизни",
+    final_sub: "Бесплатно. Через Google или почту.",
+
+    foot_priv: "Приватность",
+    foot_code: "Код на GitHub",
+    design_a: "Классика",
+    design_b: "Новый",
+  },
+  en: {
+    nav_login: "Sign in",
+    back_to_app: "Back to app",
+    hero_badge: "A personal operating system for your life",
+    hero_title: "Your life deserves to be saved",
+    hero_sub:
+      "You just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
+    cta_create: "Create account",
+    cta_tg: "Open in Telegram",
+    cta_hint: "With Google or regular email — in a minute",
+
+    idea_kicker: "Why",
+    idea_title: "We remember almost nothing",
+    idea_p1:
+      "In a week you'll forget what you thought about today. In a year — what this month was like. We photograph our vacations but almost never save our thoughts, decisions and ideas — yet that's what life is made of.",
+    idea_p2:
+      "LIFE OS removes all the friction. Nothing to fill in or organize. You speak — AI does the rest. Over time it starts to understand you: what gives you energy, which habits work, which decisions changed your life.",
+
+    how_kicker: "How it works",
+    how: [
+      { n: "1", t: "You tell", d: "By voice or text — to a Telegram bot or right on the site. Like to a friend: “today was…”." },
+      { n: "2", t: "AI understands", d: "Transcribes speech, extracts insights, tasks, mood, people and places, links to projects." },
+      { n: "3", t: "You see your life", d: "Feed, analytics, book of life, health and goals map. Ask — the AI biographer answers from your entries." },
+    ],
+
+    feat_kicker: "What's inside",
+    feats: [
+      { i: "ti-book", t: "Book of life", d: "AI turns your days into a real chronicle by chapters and years." },
+      { i: "ti-heart-rate-monitor", t: "Health", d: "Weight, energy, wellbeing — tracked over time, no manual logging." },
+      { i: "ti-target", t: "Goals & dreams", d: "A wish map and tasks — AI pulls them from what you said." },
+      { i: "ti-users", t: "People & places", d: "Who's around and where you've been — your life map builds itself." },
+      { i: "ti-sparkles", t: "What AI noticed", d: "Patterns, what gives you energy and happiness — an outside view." },
+      { i: "ti-message-chatbot", t: "AI biographer", d: "“When was I happiest?” — answered in seconds from your entries." },
+    ],
+
+    founder_kicker: "About the founder",
+    founder_title: "Why I'm building LIFE OS",
+    founder_paras: [
+      "My name is Igor. I started building LIFE OS not as a business, but as a letter to those who come after me.",
+      "One day a simple, slightly frightening thought caught me: I barely remember my own life. Vacations, conversations, important decisions, ideas that once lit me up — all of it slowly fades. The photos remain, but we no longer recall what happened off-camera or why that day mattered.",
+      "And I realized something else: everything I've learned in my life — my mistakes, discoveries and the moments worth living for — could one day leave with me. My children and grandchildren will see photos, but won't know the real me. We save the images of our lives, but we hardly save ourselves.",
+      "I wanted a tool that needs no discipline. Where it's enough to just speak — like to someone close — and technology understands what happened, finds what matters and turns it into a life story. It didn't exist. So I started building it myself — for me and my family.",
+      "LIFE OS is my personal diary, my memory and my future book of life. And now I'm opening it to everyone who also doesn't want their experience and most important moments to one day disappear.",
+    ],
+    founder_quote:
+      "I'm not a programmer, and I don't want to bend my life around complex systems. I just want to speak — and let technology do the rest. LIFE OS isn't built for tech specialists; it's built for ordinary people.",
+    founder_sign: "Igor, founder of LIFE OS",
+
+    testi_kicker: "Testimonials",
+    testi_title: "People love LIFE OS",
+    // TODO: replace with real user testimonials (these are placeholders for layout)
+    testi: [
+      { text: "I've used LIFE OS for three months and for the first time I haven't abandoned a diary. I just talk into Telegram on my way home — and in the evening I read my life, neatly sorted.", name: "Anna", role: "marketer" },
+      { text: "I've tried dozens of note apps and quit them all. Here there's nothing to set up: you talk like to a friend, AI does the rest.", name: "Dmitry", role: "entrepreneur" },
+      { text: "I exported everything to Obsidian and realized — it's truly mine. I'm not locked to the service, my memories are always with me.", name: "Sergey", role: "engineer" },
+      { text: "I'm doing this for my daughter. I want her to one day read what I was thinking when she was little.", name: "Maria", role: "mom" },
+    ],
+
+    trust_own: "Your data, forever yours",
+    trust_own_d: "Export to Markdown and Obsidian in one click. Your book of life stays with you — even without internet and without our service.",
+    trust_open: "Open source",
+    trust_open_d: "The project is public — you can check how everything works.",
+    trust_priv: "Honest privacy",
+    trust_priv_d: "Only you see your diary. Export or delete everything in one click.",
+
+    final_title: "Start the first page of your book of life",
+    final_sub: "Free. With Google or email.",
+
+    foot_priv: "Privacy",
+    foot_code: "Code on GitHub",
+    design_a: "Classic",
+    design_b: "New",
+  },
+  uk: {
+    nav_login: "Увійти",
+    back_to_app: "До застосунку",
+    hero_badge: "Особиста операційна система життя",
+    hero_title: "Твоє життя заслуговує бути збереженим",
+    hero_sub:
+      "Ти просто розповідаєш, як минув день — голосом або текстом. AI розшифровує, розкладає за змістом і збирає з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
+    cta_create: "Створити акаунт",
+    cta_tg: "Відкрити в Telegram",
+    cta_hint: "Через Google або звичайну пошту — за хвилину",
+
+    idea_kicker: "Навіщо це",
+    idea_title: "Ми майже нічого не пам'ятаємо",
+    idea_p1:
+      "За тиждень ти забудеш, про що думав сьогодні. За рік — яким був цей місяць. Ми фотографуємо відпустку, але майже ніколи не зберігаємо свої думки, рішення та ідеї — а саме з них і складається життя.",
+    idea_p2:
+      "LIFE OS прибирає все тертя. Не треба нічого заповнювати й систематизувати. Ти говориш — решту робить AI. З часом він починає розуміти тебе: що дає енергію, які звички працюють, які рішення змінювали твоє життя.",
+
+    how_kicker: "Як це працює",
+    how: [
+      { n: "1", t: "Розповідаєш", d: "Голосом або текстом — Telegram-боту або прямо на сайті. Як другу: «сьогодні було…»." },
+      { n: "2", t: "AI розуміє", d: "Розшифровує мову, виділяє інсайти, задачі, настрій, людей і місця, пов'язує з проєктами." },
+      { n: "3", t: "Бачиш своє життя", d: "Стрічка, аналітика, книга життя, карта здоров'я та цілей. Питаєш — AI-біограф відповідає за твоїми записами." },
+    ],
+
+    feat_kicker: "Що всередині",
+    feats: [
+      { i: "ti-book", t: "Книга життя", d: "AI збирає з твоїх днів справжній літопис за главами та роками." },
+      { i: "ti-heart-rate-monitor", t: "Здоров'я", d: "Вага, енергія, самопочуття — у динаміці, без ручного ведення." },
+      { i: "ti-target", t: "Цілі та мрії", d: "Карта бажань і задачі — AI сам дістає їх з того, що ти розповів." },
+      { i: "ti-users", t: "Люди та місця", d: "Хто поруч і де ти був — само складається в карту твого життя." },
+      { i: "ti-sparkles", t: "Що помітив AI", d: "Закономірності, що дає тобі енергію і щастя — погляд збоку." },
+      { i: "ti-message-chatbot", t: "AI-біограф", d: "«Коли я був найщасливіший?» — відповідь за секунди за твоїми записами." },
+    ],
+
+    founder_kicker: "Про засновника",
+    founder_title: "Чому я створюю LIFE OS",
+    founder_paras: [
+      "Мене звати Ігор. Я почав створювати LIFE OS не як бізнес-проєкт, а як лист тим, хто буде після мене.",
+      "Одного разу я впіймав себе на простій і трохи страшній думці: я майже не пам'ятаю власне життя. Відпустки, розмови, важливі рішення, ідеї, від яких колись горіли очі, — усе це поступово стирається. Фотографії залишаються, але ми вже не пам'ятаємо, що було за кадром і чому цей день був для нас важливим.",
+      "А ще я зрозумів: усе, що я дізнався за своє життя — мої помилки, відкриття й моменти, заради яких варто було жити, — одного дня може піти разом зі мною. Мої діти й онуки побачать фотографії, але не впізнають мене справжнього. Ми зберігаємо зображення свого життя, але майже не зберігаємо себе.",
+      "Я хотів інструмент, який не вимагає дисципліни. Де достатньо просто говорити — як близькій людині, — а технологія сама розуміє, що сталося, знаходить важливе і перетворює це на історію життя. Такого не було. Тому я почав створювати його сам — для себе і своєї родини.",
+      "LIFE OS — це мій особистий щоденник, пам'ять і майбутня книга життя. А тепер я відкриваю його для кожного, хто теж не хоче, щоб його досвід і найважливіші моменти одного дня зникли.",
+    ],
+    founder_quote:
+      "Я не програміст і не хочу підлаштовувати своє життя під складні системи. Я хочу просто говорити — а технологія нехай робить решту. LIFE OS створюється не для технічних фахівців, а для звичайних людей.",
+    founder_sign: "Ігор, засновник LIFE OS",
+
+    testi_kicker: "Відгуки",
+    testi_title: "Люди в захваті від LIFE OS",
+    testi: [
+      { text: "Веду LIFE OS три місяці й уперше в житті не закинув щоденник. Просто говорю в Telegram дорогою додому — а ввечері читаю своє життя, розкладене по поличках.", name: "Анна", role: "маркетолог" },
+      { text: "Пробував десятки застосунків для нотаток — усе кидав. Тут нічого не треба налаштовувати: говориш як другу, решту робить AI.", name: "Дмитро", role: "підприємець" },
+      { text: "Вивантажив усе в Obsidian і зрозумів — це справді моє. Я не прив'язаний до сервісу, мої спогади завжди зі мною.", name: "Сергій", role: "інженер" },
+      { text: "Роблю це для доньки. Хочу, щоб одного дня вона змогла прочитати, про що я думала, коли вона була маленькою.", name: "Марія", role: "мама в декреті" },
+    ],
+
+    trust_own: "Дані — ваші назавжди",
+    trust_own_d: "Вивантаження в Markdown і Obsidian в один клік. Ваша книга життя залишиться з вами — навіть без інтернету і без нашого сервісу.",
+    trust_open: "Відкритий код",
+    trust_open_d: "Проєкт публічний — можна перевірити, як усе влаштовано.",
+    trust_priv: "Чесна приватність",
+    trust_priv_d: "Щоденник бачиш лише ти. Завантажити або видалити все — в один клік.",
+
+    final_title: "Почни першу сторінку своєї книги життя",
+    final_sub: "Безкоштовно. Через Google або пошту.",
+
+    foot_priv: "Приватність",
+    foot_code: "Код на GitHub",
+    design_a: "Класика",
+    design_b: "Новий",
+  },
+  fr: {
+    nav_login: "Se connecter",
+    back_to_app: "Vers l'app",
+    hero_badge: "Un système d'exploitation personnel pour ta vie",
+    hero_title: "Ta vie mérite d'être sauvegardée",
+    hero_sub:
+      "Tu racontes simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
+    cta_create: "Créer un compte",
+    cta_tg: "Ouvrir dans Telegram",
+    cta_hint: "Avec Google ou un e-mail ordinaire — en une minute",
+
+    idea_kicker: "Pourquoi",
+    idea_title: "On ne se souvient presque de rien",
+    idea_p1:
+      "Dans une semaine, tu auras oublié à quoi tu pensais aujourd'hui. Dans un an — comment était ce mois. On photographie nos vacances, mais on ne garde presque jamais nos pensées, décisions et idées — pourtant c'est de cela qu'est faite la vie.",
+    idea_p2:
+      "LIFE OS supprime toute friction. Rien à remplir ni à organiser. Tu parles — l'IA fait le reste. Avec le temps, elle apprend à te comprendre : ce qui te donne de l'énergie, quelles habitudes marchent, quelles décisions ont changé ta vie.",
+
+    how_kicker: "Comment ça marche",
+    how: [
+      { n: "1", t: "Tu racontes", d: "À la voix ou au texte — au bot Telegram ou directement sur le site. Comme à un ami : « aujourd'hui… »." },
+      { n: "2", t: "L'IA comprend", d: "Transcrit la parole, dégage insights, tâches, humeur, gens et lieux, relie aux projets." },
+      { n: "3", t: "Tu vois ta vie", d: "Fil, analytique, livre de vie, carte de santé et d'objectifs. Tu demandes — le biographe IA répond d'après tes entrées." },
+    ],
+
+    feat_kicker: "Ce qu'il y a dedans",
+    feats: [
+      { i: "ti-book", t: "Livre de vie", d: "L'IA fait de tes journées une vraie chronique, par chapitres et par années." },
+      { i: "ti-heart-rate-monitor", t: "Santé", d: "Poids, énergie, bien-être — suivis dans le temps, sans saisie manuelle." },
+      { i: "ti-target", t: "Objectifs et rêves", d: "Une carte des envies et des tâches — l'IA les tire de ce que tu as dit." },
+      { i: "ti-users", t: "Gens et lieux", d: "Qui est là et où tu es allé — la carte de ta vie se construit seule." },
+      { i: "ti-sparkles", t: "Ce que l'IA a remarqué", d: "Des tendances, ce qui te donne énergie et bonheur — un regard extérieur." },
+      { i: "ti-message-chatbot", t: "Biographe IA", d: "« Quand étais-je le plus heureux ? » — réponse en secondes d'après tes entrées." },
+    ],
+
+    founder_kicker: "À propos du fondateur",
+    founder_title: "Pourquoi je crée LIFE OS",
+    founder_paras: [
+      "Je m'appelle Igor. J'ai commencé à créer LIFE OS non comme une entreprise, mais comme une lettre à ceux qui viendront après moi.",
+      "Un jour, une pensée simple et un peu effrayante m'a saisi : je ne me souviens presque pas de ma propre vie. Vacances, conversations, décisions importantes, idées qui me faisaient autrefois briller les yeux — tout cela s'efface peu à peu. Les photos restent, mais on ne se rappelle plus ce qui se passait hors champ ni pourquoi ce jour comptait.",
+      "Et j'ai compris autre chose : tout ce que j'ai appris dans ma vie — mes erreurs, mes découvertes et les moments pour lesquels il valait la peine de vivre — pourrait un jour partir avec moi. Mes enfants et petits-enfants verront des photos, mais ne connaîtront pas le vrai moi. On sauvegarde les images de notre vie, mais on ne se sauvegarde presque pas soi-même.",
+      "Je voulais un outil qui n'exige aucune discipline. Où il suffit de parler — comme à un proche — et où la technologie comprend ce qui s'est passé, repère l'essentiel et en fait une histoire de vie. Ça n'existait pas. Alors je l'ai créé moi-même — pour moi et ma famille.",
+      "LIFE OS, c'est mon journal personnel, ma mémoire et mon futur livre de vie. Et maintenant je l'ouvre à tous ceux qui, eux aussi, ne veulent pas que leur expérience et leurs moments les plus précieux disparaissent un jour.",
+    ],
+    founder_quote:
+      "Je ne suis pas programmeur et je ne veux pas plier ma vie à des systèmes complexes. Je veux simplement parler — et que la technologie fasse le reste. LIFE OS n'est pas conçu pour les spécialistes techniques, mais pour les gens ordinaires.",
+    founder_sign: "Igor, fondateur de LIFE OS",
+
+    testi_kicker: "Témoignages",
+    testi_title: "Les gens adorent LIFE OS",
+    testi: [
+      { text: "Je tiens LIFE OS depuis trois mois et, pour la première fois, je n'ai pas abandonné mon journal. Je parle simplement dans Telegram en rentrant — et le soir je relis ma vie, bien rangée.", name: "Anna", role: "marketeuse" },
+      { text: "J'ai essayé des dizaines d'applis de notes — je les ai toutes lâchées. Ici, rien à configurer : tu parles comme à un ami, l'IA fait le reste.", name: "Dmitri", role: "entrepreneur" },
+      { text: "J'ai tout exporté vers Obsidian et j'ai compris — c'est vraiment à moi. Je ne dépends pas du service, mes souvenirs sont toujours avec moi.", name: "Sergueï", role: "ingénieur" },
+      { text: "Je le fais pour ma fille. Je veux qu'un jour elle puisse lire ce à quoi je pensais quand elle était petite.", name: "Maria", role: "maman en congé" },
+    ],
+
+    trust_own: "Tes données, à toi pour toujours",
+    trust_own_d: "Export vers Markdown et Obsidian en un clic. Ton livre de vie reste avec toi — même sans internet et sans notre service.",
+    trust_open: "Code ouvert",
+    trust_open_d: "Le projet est public — tu peux vérifier comment tout fonctionne.",
+    trust_priv: "Une vraie confidentialité",
+    trust_priv_d: "Toi seul vois ton journal. Télécharge ou supprime tout en un clic.",
+
+    final_title: "Commence la première page de ton livre de vie",
+    final_sub: "Gratuit. Avec Google ou e-mail.",
+
+    foot_priv: "Confidentialité",
+    foot_code: "Code sur GitHub",
+    design_a: "Classique",
+    design_b: "Nouveau",
+  },
+};
+
+export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string; d?: string }> }) {
+  const sp = await searchParams;
+  const locale = await getLocale();
+  const t = C[locale] || C.ru;
+  const GH = "https://github.com/top15igor/life-os";
+  // Залогиненный гость пришёл по логотипу — прячем призывы «войти/создать аккаунт».
+  const isAuthed = !!(await getCurrentUser());
+  // Реферал: пробрасываем метку на страницу входа, чтобы пригласивший засчитался.
+  const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? sp.ref : "";
+  const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
+  // Какой дизайн показывать: B (новый) или A (классический, по умолчанию).
+  const design = sp.d === "b" ? "b" : "a";
+
+  // Новый дизайн (Дизайн B) — отдельный компонент.
+  if (design === "b") {
+    return (
+      <>
+        <DesignSwitch active="b" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
+        <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} />
+      </>
+    );
+  }
+
+  const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
+  const kicker: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--accent)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    marginBottom: 10,
+  };
+
+  return (
+    <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh" }}>
+      <DesignSwitch active="a" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
+      {/* Top bar */}
+      <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
+          <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
+        </div>
+        <a
+          href={isAuthed ? "/" : loginHref}
+          style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
+        >
+          {isAuthed ? t.back_to_app : t.nav_login}
+        </a>
+      </div>
+
+      {/* Hero */}
+      <div style={{ ...section, textAlign: "center", padding: "44px 22px 28px" }}>
+        <div
+          style={{
+            display: "inline-block",
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "var(--accent-text)",
+            background: "var(--accent-bg)",
+            padding: "6px 13px",
+            borderRadius: 999,
+            marginBottom: 22,
+          }}
+        >
+          {t.hero_badge}
+        </div>
+        <h1 style={{ fontSize: "clamp(30px, 6.5vw, 52px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.025em", margin: "0 0 18px" }}>
+          {t.hero_title}
+        </h1>
+        <p style={{ fontSize: "clamp(16px, 2.4vw, 19px)", color: "var(--text-2)", lineHeight: 1.55, maxWidth: 620, margin: "0 auto 28px" }}>
+          {t.hero_sub}
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <a href={isAuthed ? "/" : loginHref} style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
+            {isAuthed ? t.back_to_app : t.cta_create}
+          </a>
+        </div>
+        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 14 }}>{t.cta_hint}</div>}
+      </div>
+
+      {/* Idea */}
+      <div style={{ ...section, padding: "48px 22px" }}>
+        <div style={kicker}>{t.idea_kicker}</div>
+        <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 18px" }}>{t.idea_title}</h2>
+        <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 700 }}>{t.idea_p1}</p>
+        <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: 0, maxWidth: 700 }}>{t.idea_p2}</p>
+      </div>
+
+      {/* How */}
+      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
+        <div style={section}>
+          <div style={kicker}>{t.how_kicker}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 8 }}>
+            {t.how.map((s) => (
+              <div key={s.n}>
+                <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, marginBottom: 12 }}>
+                  {s.n}
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{s.t}</div>
+                <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55 }}>{s.d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div style={{ ...section, padding: "48px 22px" }}>
+        <div style={kicker}>{t.feat_kicker}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16, marginTop: 8 }}>
+          {t.feats.map((f) => (
+            <div key={f.t} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px" }}>
+              <i className={`ti ${f.i}`} style={{ fontSize: 24, color: "var(--accent)" }} />
+              <div style={{ fontSize: 17, fontWeight: 600, margin: "12px 0 6px" }}>{f.t}</div>
+              <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55 }}>{f.d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Founder */}
+      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "52px 0" }}>
+        <div style={{ ...section, maxWidth: 720 }}>
+          <div style={kicker}>{t.founder_kicker}</div>
+          <h2 style={{ fontSize: "clamp(23px, 3.6vw, 30px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 18px" }}>{t.founder_title}</h2>
+          {t.founder_paras.map((p, i) => (
+            <p key={i} style={{ fontSize: 17, color: i === 0 ? "var(--text)" : "var(--text-2)", lineHeight: 1.65, margin: "0 0 14px" }}>{p}</p>
+          ))}
+          <blockquote
+            style={{
+              borderLeft: "3px solid var(--accent)",
+              background: "var(--accent-bg)",
+              borderRadius: "0 12px 12px 0",
+              padding: "16px 20px",
+              margin: "22px 0",
+              fontSize: 17.5,
+              fontWeight: 500,
+              fontStyle: "italic",
+              color: "var(--text)",
+              lineHeight: 1.6,
+            }}
+          >
+            {t.founder_quote}
+          </blockquote>
+          <div style={{ display: "flex", alignItems: "center", gap: 13, marginTop: 24 }}>
+            <div style={{ width: 46, height: 46, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700 }}>
+              И
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{t.founder_sign}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials */}
+      <div style={{ ...section, padding: "48px 22px" }}>
+        <div style={kicker}>{t.testi_kicker}</div>
+        <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 24px" }}>{t.testi_title}</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          {t.testi.map((r, i) => (
+            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 20px", display: "flex", flexDirection: "column" }}>
+              <div style={{ color: "var(--accent)", fontSize: 14, marginBottom: 10 }}>★★★★★</div>
+              <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 16px", flex: 1 }}>«{r.text}»</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
+                  {r.name.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)" }}>{r.name}</div>
+                  <div style={{ fontSize: 13, color: "var(--text-3)" }}>{r.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Trust */}
+      <div style={{ ...section, padding: "44px 22px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+          <div style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", color: "var(--text)" }}>
+            <i className="ti ti-download" style={{ fontSize: 22, color: "var(--accent)" }} />
+            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_own}</div>
+            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_own_d}</div>
+          </div>
+          <a href={GH} target="_blank" rel="noreferrer" style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", textDecoration: "none", color: "var(--text)" }}>
+            <i className="ti ti-brand-github" style={{ fontSize: 22 }} />
+            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_open}</div>
+            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_open_d}</div>
+          </a>
+          <a href="/privacy" style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", textDecoration: "none", color: "var(--text)" }}>
+            <span style={{ fontSize: 22 }}>🔒</span>
+            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_priv}</div>
+            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_priv_d}</div>
+          </a>
+        </div>
+      </div>
+
+      {/* Final CTA */}
+      <div style={{ ...section, textAlign: "center", padding: "20px 22px 64px" }}>
+        <h2 style={{ fontSize: "clamp(23px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{t.final_title}</h2>
+        {!isAuthed && <p style={{ fontSize: 16, color: "var(--text-2)", margin: "0 0 24px" }}>{t.final_sub}</p>}
+        <a href={isAuthed ? "/" : loginHref} style={{ display: "inline-block", marginTop: isAuthed ? 12 : 0, padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
+          {isAuthed ? t.back_to_app : t.cta_create}
+        </a>
+      </div>
+
+      {/* Footer */}
+      <div style={{ borderTop: "1px solid var(--border)", padding: "24px 22px" }}>
+        <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-2)", fontSize: 14 }}>
+            <i className="ti ti-flower" style={{ fontSize: 16, color: "var(--accent)" }} />
+            LIFE OS
+          </div>
+          <div style={{ display: "flex", gap: 18 }}>
+            <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_priv}</a>
+            <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

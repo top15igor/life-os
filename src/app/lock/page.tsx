@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LockPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/welcome");
+  if (!user) redirect("/about");
 
   let hasPin = false;
   try {

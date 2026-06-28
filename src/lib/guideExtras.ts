@@ -43,6 +43,11 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Подключение Fitbit", d: "Если у тебя браслет или часы Fitbit — теперь их можно подключить в один клик: «Здоровье» → «Подключить Fitbit» (вход через твой аккаунт Google, к которому привязан Fitbit). Дальше шаги, активность, сон и пульс покоя подтягиваются автоматически раз в день, без возни на телефоне. Можно обновить вручную кнопкой «Обновить сейчас» и отключить в любой момент.", tag: "new" },
+      { t: "Синхронизация с Apple «Здоровье»", d: "На вкладке «Здоровье» появились шаги и активность, сон и пульс прямо из Apple «Здоровье». Два способа подключить — на выбор: 1) бесплатно через приложение «Команды» на айфоне (один раз настраиваешь по инструкции на странице — и данные приходят сами каждый вечер по твоей личной ссылке); 2) загрузить архив export.zip из «Здоровья» и подтянуть всю историю разом. Архив разбирается прямо в браузере — сам файл к нам не уходит, на сервер попадают только итоги по дням. Открой «Здоровье» → «Подключить Apple Здоровье».", tag: "new" },
+      { t: "Страница «О проекте» — наша история", d: "Появилась страница «О проекте»: зачем нужен LIFE OS, личная история основателя (зачем я это создаю — чтобы сохранить свой опыт и память для близких и следующих поколений), отзывы людей и честные гарантии безопасности. Главное — твои данные навсегда твои: их можно в один клик выгрузить в Markdown и Obsidian, и они останутся с тобой даже без интернета и без нашего сервиса. Открыть страницу можно в любой момент — нажми на логотип «LIFE OS» слева вверху.", tag: "new" },
+      { t: "Помощник на каждой странице", d: "Внизу справа появилась кнопка-помощник. Открой её на любой странице — увидишь, что здесь можно сделать и куда пойти дальше, найдёшь нужный раздел по названию или спросишь у AI «как мне…», и он подскажет, куда нажать. А ещё прямо из помощника можно оставить пожелание — попросить доработку или синхронизацию с другим сервисом: я прочитаю это лично.", tag: "new" },
+      { t: "Деньги: учёт доходов и расходов", d: "Новый раздел «Деньги»: записывай траты и доходы, выбирай категорию — и сразу видишь баланс месяца, доходы, расходы и куда уходят деньги (наглядные полоски по категориям). Можно листать по месяцам, задавать месячные бюджеты-лимиты по категориям (предупреждение при превышении) и вести учёт в нескольких валютах с пересчётом в основную. А ещё проще: скажи боту «потратил 500 на продукты» или «получил зарплату 50000» — AI сам внесёт операцию в учёт.", tag: "new" },
       { t: "Поделиться: карточки, публичная книга и пути", d: "Теперь можно делиться успехами наружу: красивые карточки достижений в Telegram/Instagram/WhatsApp, публикация отдельных записей (AI готовит публичную версию и прячет личное), публичная страница-витрина /p/имя и «Пути» — длинные истории с публичным таймлайном. Дневник остаётся приватным: публикуешь только вручную.", tag: "new" },
       { t: "Дневник стал календарём", d: "Вместо длинной ленты — календарь по месяцам и неделям: дни с записями подсвечены, выбираешь день и видишь только его записи. Так удобнее находить нужную дату.", tag: "new" },
       { t: "Книга жизни стала полностью твоей", d: "Теперь можно править текст любой главы и дописывать свои истории, прятать и переставлять главы, чистить людей и места (переименовать, объединить дубли, скрыть) и добавлять фото из «Визуальной памяти». На странице книги — пошаговая инструкция «Как создать свою книгу».", tag: "new" },
@@ -55,12 +60,41 @@ const E: Record<Locale, Extras> = {
       { t: "Профиль: понятная безопасность", d: "В разделе «Безопасность» честно расписано, как защищены твои данные: записи видишь только ты, люди их не читают, текст обрабатывает лишь AI для твоих резюме. Дубль настройки главной убран — она и так на главной.", tag: "improved" },
       { t: "Аккуратные ссылки-приглашения", d: "Ссылка «Пригласить друга» стала короткой и понятной (вида …/i/ab3k9z) вместо длинного кода — не пугает и легко делиться. Старые ссылки тоже работают.", tag: "improved" },
       { t: "Инсайты: поиск и вид списком", d: "На вкладке «Инсайты» (Цели и задачи) появился поиск по тексту и переключатель «Блоки / Список» — когда инсайтов много, нужное находится быстро.", tag: "improved" },
+      { t: "Экспорт в Obsidian", d: "В «Профиле» можно скачать весь дневник папкой Markdown-файлов и открыть в Obsidian: ежедневные заметки, люди и места связаны ссылками, есть граф. Данные становятся полностью твоими — храни у себя.", tag: "new" },
       { t: "Виджет книги на главной", d: "Сразу видно, как наполняется твоя книга за год: готовность в % и сколько записей уже стали её страницами.", tag: "new" },
       { t: "Мечты / Карта желаний", d: "Доска желаний по сферам жизни с фото или эмодзи и статусами Мечтаю → В процессе → Сбылось ✨. AI сам достаёт мечты из записей.", tag: "new" },
       { t: "«Что заметил AI» — свежие рекорды", d: "Аналитика показывает твои актуальные максимумы (вес, дистанции, отжимания) с датами, а не зависает на старых числах.", tag: "improved" },
       { t: "Новый дизайн «Осознанность»", d: "Голос-first главная с большим живым микрофоном. Включается тумблером вверху главной — можно сравнить с классическим.", tag: "new" },
     ],
     features: [
+      {
+        key: "finance", icon: "ti-wallet", color: "#10b981", title: "Деньги: доходы и расходы",
+        short: "Простой и понятный учёт денег. Видно баланс месяца и на что уходят деньги.",
+        sections: [
+          { p: "Раздел «Деньги» помогает держать финансы под контролем без таблиц. Записывай доход или трату в одну форму, а приложение само считает баланс месяца и показывает расходы по категориям." },
+          { h: "Как пользоваться", steps: [
+            "Открой «Деньги» в меню (группа «Жизнь и цели»).",
+            "Нажми «Добавить» → выбери Доход или Расход, впиши сумму, валюту, категорию и (если нужно) заметку.",
+            "Сверху — баланс месяца, доходы и расходы; ниже — разбивка расходов по категориям и лента операций по дням.",
+            "Листай месяцы стрелками ← →. Лишнюю операцию удали значком корзины.",
+          ] },
+          { h: "Через бота — само", examples: [
+            "«Потратил 500 на продукты» → расход 500, категория «Продукты».",
+            "«Купил кофе за 80 грн» → расход 80 ₴, «Кафе».",
+            "«Получил зарплату 50000» → доход 50000, «Зарплата».",
+          ] },
+          { h: "Бюджеты и валюты", steps: [
+            "Лимиты: у каждой категории расходов нажми на 🎯 и задай месячный лимит — полоска станет жёлтой ближе к пределу и красной при превышении. Сверху появится сводный «Бюджет на месяц».",
+            "Несколько валют: нажми ⚙ вверху → выбери основную валюту и впиши курсы остальных к ней. Итоги (баланс, доходы, расходы, бюджеты) считаются в основной валюте, а каждая операция в списке остаётся в своей.",
+          ] },
+          { h: "Подсказки", tips: [
+            "AI вносит операцию, только если в записи названа конкретная сумма.",
+            "Поддерживается 10 валют ($ € ₴ ₽ £ zł ₸ ₾ ₺ AED) — символ или слово (грн/руб) распознаётся автоматически.",
+            "Пока курсы не заданы, итоги по разным валютам считаются примерно — вверху появится подсказка.",
+            "Все операции попадают в общий экспорт данных, а удаление записи убирает и связанные с ней траты.",
+          ] },
+        ],
+      },
       {
         key: "social", icon: "ti-share-2", color: "#4f46e5", title: "Поделиться: карточки, книга и пути",
         short: "Делись успехами и веди публичную книгу жизни — приватность остаётся за тобой.",
@@ -167,6 +201,11 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Connect Fitbit", d: "Got a Fitbit band or watch? Connect it in one click: Health → “Connect Fitbit” (sign in with the Google account your Fitbit is linked to). Steps, activity, sleep and resting heart rate then sync automatically once a day — no phone fiddling. You can also refresh manually with “Sync now” and disconnect anytime.", tag: "new" },
+      { t: "Apple Health sync", d: "The Health tab now shows steps & activity, sleep and heart rate straight from Apple Health. Two ways to connect: 1) free, via the Shortcuts app on your iPhone (set it up once with the on-page guide and data arrives automatically each evening through your personal link); 2) upload the export.zip archive from Health to pull your whole history at once. The archive is parsed right in your browser — the file never leaves it, only daily totals reach the server. Open Health → “Connect Apple Health”.", tag: "new" },
+      { t: "About page — our story", d: "A new About page: why LIFE OS exists, the founder's personal story (why I'm building this — to preserve my experience and memory for loved ones and the next generations), people's testimonials and honest safety guarantees. The main thing — your data is yours forever: export it to Markdown and Obsidian in one click, and it stays with you even without internet or our service. Open it anytime — tap the “LIFE OS” logo at the top left.", tag: "new" },
+      { t: "Helper on every page", d: "A helper button now sits at the bottom-right. Open it on any page to see what you can do here and where to go next, find a section by name, or ask the AI “how do I…” and it tells you where to tap. You can also send a wish right from the helper — ask for a feature or a sync with another service: I read it personally.", tag: "new" },
+      { t: "Money: income & expense tracking", d: "A new “Money” section: log expenses and income, pick a category — and instantly see your monthly balance, income, expenses and where the money goes (clear per-category bars). Flip between months, set monthly category budgets (with an over-limit warning) and track several currencies converted into a base one. Even easier: tell the bot “spent 500 on groceries” or “got my salary 50000” and AI logs the transaction for you.", tag: "new" },
       { t: "Share: cards, public book & paths", d: "You can now share your wins outward: beautiful achievement cards to Telegram/Instagram/WhatsApp, publishing individual entries (AI prepares a public version and hides personal data), a public showcase page /p/name and “Paths” — long stories with a public timeline. Your diary stays private: you publish only manually.", tag: "new" },
       { t: "Diary is now a calendar", d: "Instead of an endless feed — a month/week calendar: days with entries are highlighted, pick a day to see just its entries. Easier to find a specific date.", tag: "new" },
       { t: "Your Book of Life is now truly yours", d: "Edit any chapter's text and add your own stories, hide and reorder chapters, clean up people and places (rename, merge duplicates, hide) and add photos from Visual Memory. The book page has a step-by-step “How to create your book” guide.", tag: "new" },
@@ -179,12 +218,41 @@ const E: Record<Locale, Extras> = {
       { t: "Profile: clear security", d: "The “Security” section now honestly explains how your data is protected: only you see entries, people don't read them, only the AI processes the text for your own summaries. The duplicate home-accent setting was removed — it already lives on the home screen.", tag: "improved" },
       { t: "Tidy invite links", d: "The “Invite a friend” link is now short and friendly (like …/i/ab3k9z) instead of a long code — easy to share, less scary. Old links still work.", tag: "improved" },
       { t: "Insights: search & list view", d: "The Insights tab (Goals & tasks) now has text search and a Cards/List toggle — find what you need fast when there are many.", tag: "improved" },
+      { t: "Export to Obsidian", d: "In Profile you can download your whole diary as a folder of Markdown files and open it in Obsidian: daily notes, people and places linked, with a graph. Your data becomes fully yours — keep it on your own device.", tag: "new" },
       { t: "Book widget on the home screen", d: "See your book filling up in real time: readiness % and how many entries already became its pages.", tag: "new" },
       { t: "Dreams / Wish board", d: "A board of dreams by life area with photos or emoji and statuses Dreaming → In progress → Came true ✨. AI pulls dreams from your entries.", tag: "new" },
       { t: "“Life Intelligence” — fresh records", d: "Analytics now shows your current maximums (weight, distances, push-ups) with dates instead of getting stuck on old numbers.", tag: "improved" },
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "finance", icon: "ti-wallet", color: "#10b981", title: "Money: income & expenses",
+        short: "Simple, clear money tracking. See your monthly balance and where money goes.",
+        sections: [
+          { p: "The “Money” section keeps your finances in check without spreadsheets. Log income or an expense in one form, and the app computes your monthly balance and shows spending by category." },
+          { h: "How to use", steps: [
+            "Open “Money” in the menu (the “Life & goals” group).",
+            "Tap “Add” → choose Income or Expense, enter the amount, currency, category and an optional note.",
+            "Up top — monthly balance, income and expenses; below — a per-category breakdown and a day-by-day transaction list.",
+            "Flip months with the ← → arrows. Remove a transaction with the trash icon.",
+          ] },
+          { h: "Via the bot — automatic", examples: [
+            "“Spent 500 on groceries” → expense 500, “Groceries”.",
+            "“Bought coffee for 80” → expense 80, “Eating out”.",
+            "“Got my salary 50000” → income 50000, “Salary”.",
+          ] },
+          { h: "Budgets & currencies", steps: [
+            "Limits: on any expense category tap 🎯 and set a monthly limit — the bar turns amber near the limit and red once exceeded. A combined “Monthly budget” appears on top.",
+            "Multiple currencies: tap ⚙ on top → pick a base currency and enter rates for the others. Totals (balance, income, expenses, budgets) are computed in the base currency, while each transaction keeps its own.",
+          ] },
+          { h: "Tips", tips: [
+            "AI logs a transaction only when a concrete amount is mentioned.",
+            "10 currencies supported ($ € ₴ ₽ £ zł ₸ ₾ ₺ AED) — a symbol or word is recognized automatically.",
+            "Until rates are set, totals across currencies are approximate — a hint shows up on top.",
+            "Every transaction is included in your data export, and deleting an entry also removes its linked spending.",
+          ] },
+        ],
+      },
       {
         key: "social", icon: "ti-share-2", color: "#4f46e5", title: "Share: cards, book & paths",
         short: "Share your wins and keep a public book of life — privacy stays yours.",

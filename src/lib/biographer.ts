@@ -1,23 +1,64 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
+import { getFinanceSummary } from "./finance";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
 export async function askLife(userId: string, question: string): Promise<string> {
   const db = supabaseAdmin();
-  const { data: entries } = await db
-    .from("entries")
-    .select("entry_date, summary, raw_text")
-    .eq("user_id", userId)
-    .order("entry_date", { ascending: true })
-    .limit(200);
+  const [{ data: entries }, finance] = await Promise.all([
+    db
+      .from("entries")
+      .select("entry_date, summary, raw_text")
+      .eq("user_id", userId)
+      .order("entry_date", { ascending: true })
+      .limit(200),
+    getFinanceSummary(userId).catch(() => ""),
+  ]);
 
   const list = (entries || []).map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n") || "(записей пока нет)";
 
-  const prompt = `Ты — личный AI-ассистент в дневнике LIFE OS. Пользователь задаёт вопрос о своей жизни. Ответь ПО СУЩЕСТВУ и по делу, на языке вопроса, опираясь ТОЛЬКО на записи ниже. Если уместно — ссылайся на даты. Если в записях нет ответа — честно скажи об этом, не выдумывай. Пиши живо, по-человечески, без воды.
+  // Также подмешиваем личную Базу знаний (сохранённое из Instagram/YouTube: рецепты,
+  // тренировки, советы), чтобы ассистент отвечал и по ней, а не только по дневнику.
+  let saved = "(пусто)";
+  try {
+    const { data: items } = await db
+      .from("saved_items")
+      .select("title, topic, summary, key_points")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (items?.length) {
+      saved = items
+        .map((it: any) => {
+          const pts = Array.isArray(it.key_points) && it.key_points.length ? "; " + it.key_points.join("; ") : "";
+          return `• ${it.title || "—"}${it.topic ? ` [${it.topic}]` : ""}: ${(it.summary || "").slice(0, 500)}${pts}`.slice(0, 900);
+        })
+        .join("\n");
+    }
+  } catch {
+    // таблицы может не быть — не страшно
+  }
 
-ЗАПИСИ (дата: текст):
+  const prompt = `Ты — личный AI-ассистент в LIFE OS. Пользователь задаёт вопрос. Ответь ПО СУЩЕСТВУ и по делу, на языке вопроса, опираясь на источники ниже: ДНЕВНИК (что с пользователем происходило), БАЗА ЗНАНИЙ (полезные материалы, сохранённые из Instagram/YouTube — рецепты, тренировки, советы) и ФИНАНСЫ (сводка доходов и расходов по годам и статьям).
+
+ВАЖНО:
+- НИКОГДА не отвечай, что «не можешь открыть ссылку» или «нет доступа к интернету». Ты НЕ ходишь по ссылкам — весь нужный контент уже извлечён и лежит ниже в БАЗЕ ЗНАНИЙ. Отвечай по нему.
+- Если пользователь говорит «это видео / этот пост / этот ролик / отсюда» без уточнения — он почти наверняка про САМЫЙ ПЕРВЫЙ (самый свежий) материал в БАЗЕ ЗНАНИЙ ниже. Бери его.
+- Материалы могут быть на другом языке — ты их понимаешь и переводишь смысл.
+- «как сделать / дай рецепт / всю информацию из видео» — ищи в БАЗЕ ЗНАНИЙ.
+- Для вопросов про деньги, доходы, расходы, заработок, траты по годам и категориям — используй блок ФИНАНСЫ и приводи суммы с валютой.
+- Если уместно — ссылайся на даты записей дневника.
+- Если в источниках реально нет ответа — честно скажи об этом (но не ссылайся на «отсутствие доступа»). Не выдумывай.
+Пиши живо, по-человечески, без воды.
+
+ДНЕВНИК (дата: текст):
 ${list}
+
+БАЗА ЗНАНИЙ (сохранённое из Instagram/YouTube):
+${saved}
+
+${finance || "ФИНАНСЫ: операций пока нет."}
 
 ВОПРОС: ${question}`;
 

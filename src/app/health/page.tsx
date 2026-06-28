@@ -12,6 +12,10 @@ import { hints } from "@/lib/hints";
 import { getHealthFocus, type HealthTrend } from "@/lib/health";
 import { getWeightData } from "@/lib/weight";
 import WeightTracker from "@/components/WeightTracker";
+import { getHealthMetrics } from "@/lib/healthMetrics";
+import HealthSync from "@/components/HealthSync";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { isGoogleHealthConnected, googleHealthConfigured } from "@/lib/googleHealth";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +96,7 @@ function HealthNow({ focus, s, locale }: any) {
   );
 }
 
-export default async function WellnessPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function WellnessPage({ searchParams }: { searchParams: Promise<{ tab?: string; fitbit?: string }> }) {
   const sp = await searchParams;
   const tab = ["health", "energy", "sport", "food"].includes(sp.tab || "") ? sp.tab! : "health";
   const user = await requireUser();
@@ -105,6 +109,14 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const energy = dailyTrend(all, [{ name: "energy", color: "#f59e0b", key: "energy" }]);
   const focus = tab === "health" ? await getHealthFocus(user.id) : null;
   const weight = tab === "health" ? await getWeightData(user.id) : null;
+  const metrics = tab === "health" ? await getHealthMetrics(user.id) : null;
+  let healthToken = "";
+  let fbConnected = false;
+  if (tab === "health") {
+    const { data: u } = await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle();
+    healthToken = (u as any)?.token || "";
+    fbConnected = await isGoogleHealthConnected(user.id);
+  }
 
   const healthEntries = all.filter((e: Entry) => cats(e).some((c: any) => ["health", "sport", "food"].includes(c.slug)));
   const sportEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "sport"));
@@ -128,6 +140,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
           <>
             <HealthNow focus={focus} s={s} locale={locale} />
             {weight && <WeightTracker data={weight} locale={locale} />}
+            {metrics && <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} />}
 
             <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 8 }}>{s.entries}</div>
             {healthEntries.length === 0 ? (

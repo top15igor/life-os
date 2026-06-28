@@ -156,7 +156,8 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
           ← {data.next === "Next" ? "Back" : data.next === "Suivant" ? "Retour" : "Назад"}
         </button>
         <div style={{ display: "flex", gap: 18, marginTop: 2, alignItems: "center" }}>
-          <a href={botLink} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>{data.login}</a>
+          <a href="/login" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>{data.login}</a>
+          <a href="/about" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>{data.next === "Next" || data.next === "Suivant" ? "About" : "О проекте"}</a>
           <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>🔒 {data.privacy}</a>
         </div>
       </div>

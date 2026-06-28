@@ -76,7 +76,7 @@ export default async function PlacesPage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main">
+      <main className="main wide">
         <PageHead icon="ti-map-pin" color="#06b6d4" title={t.nav.places} hint={h.places} />
 
         {nothing ? (

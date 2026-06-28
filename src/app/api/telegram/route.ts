@@ -4,10 +4,13 @@ import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage } from "@/lib/memory";
+import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
+import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
+import { financeReview } from "@/lib/financeCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -77,11 +80,14 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent" },
 };
+
+// Символы валют для подтверждения в боте.
+const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
 
 const FIXED: Record<string, string> = {
   ru: "✏️ Поправил предыдущую запись:",
@@ -95,6 +101,13 @@ const MEM_MSG: Record<string, { recognizing: string; saved: string; open: string
   en: { recognizing: "📸 Reading the photo…", saved: "Saved to Visual Memory:", open: "📂 Open memory", failed: "Couldn't read the photo, try again." },
   uk: { recognizing: "📸 Розпізнаю фото…", saved: "Зберіг у Візуальну пам'ять:", open: "📂 Відкрити пам'ять", failed: "Не вдалося розібрати фото, спробуй ще раз." },
   fr: { recognizing: "📸 Je lis la photo…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie." },
+};
+
+const IG_MSG: Record<string, { working: string; saved: string; open: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
+  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из Instagram. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор Instagram. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
+  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this Instagram post. Try another link or send a screenshot/video.", limited: "📉 Monthly Instagram limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
+  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з Instagram. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір Instagram. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
+  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post Instagram. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle Instagram atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
 };
 
 const MILE: Record<string, any> = {
@@ -127,24 +140,24 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 }
 
 // Постоянная клавиатура с кнопками под полем ввода.
-const KB: Record<string, { ask: string; invite: string; diary: string; help: string }> = {
-  ru: { ask: "🧠 Спросить", invite: "🎁 Пригласить друга", diary: "📖 Открыть дневник", help: "❓ Помощь" },
-  en: { ask: "🧠 Ask", invite: "🎁 Invite a friend", diary: "📖 Open diary", help: "❓ Help" },
-  uk: { ask: "🧠 Запитати", invite: "🎁 Запросити друга", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
-  fr: { ask: "🧠 Demander", invite: "🎁 Inviter un ami", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
+const KB: Record<string, { ask: string; money: string; diary: string; help: string }> = {
+  ru: { ask: "🧠 Спросить", money: "📊 Финансы", diary: "📖 Открыть дневник", help: "❓ Помощь" },
+  en: { ask: "🧠 Ask", money: "📊 Finances", diary: "📖 Open diary", help: "❓ Help" },
+  uk: { ask: "🧠 Запитати", money: "📊 Фінанси", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
+  fr: { ask: "🧠 Demander", money: "📊 Finances", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
 };
 
 function mainKeyboard(lang: string) {
   const k = KB[lang] || KB.ru;
-  return { keyboard: [[{ text: k.ask }, { text: k.invite }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
+  return { keyboard: [[{ text: k.ask }, { text: k.money }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
 }
 
-function buttonAction(text?: string): "ask" | "invite" | "diary" | "help" | null {
+function buttonAction(text?: string): "ask" | "money" | "diary" | "help" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
     if (text === k.ask) return "ask";
-    if (text === k.invite) return "invite";
+    if (text === k.money) return "money";
     if (text === k.diary) return "diary";
     if (text === k.help) return "help";
   }
@@ -166,6 +179,7 @@ const ASK_PROMPT: Record<string, string> = {
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
+const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent" };
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
@@ -253,11 +267,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
+  if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await sendChatAction(chatId, "typing");
+    try {
+      const report = await financeReview(user.id, lang);
+      await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+    } catch (e) {
+      console.error("money cmd", e);
+      await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   // Нажатия кнопок постоянной клавиатуры.
   const ba = buttonAction(msg.text);
   if (ba) {
     const lang = pickLang(msg.from?.language_code);
-    if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
+    if (ba === "money") {
+      await sendChatAction(chatId, "typing");
+      try {
+        const report = await financeReview(user.id, lang);
+        await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+      } catch (e) {
+        console.error("money btn", e);
+        await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
+      }
+    }
     else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     else if (ba === "help") await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     else await sendMessage(chatId, ASK_PROMPT[lang] || ASK_PROMPT.ru);
@@ -322,6 +359,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // 🔖 Ссылка Instagram / YouTube → сохраняем в личную Базу знаний (НЕ в дневник).
+    const igUrl = extractInstagramUrl(text);
+    const yt = extractYoutubeUrl(text);
+    if (igUrl || yt) {
+      const lang = pickLang(msg.from?.language_code);
+      const L = IG_MSG[lang] || IG_MSG.ru;
+      await sendMessage(chatId, L.working);
+      try {
+        const r = igUrl ? await importInstagram(user.id, igUrl, lang) : await importYoutube(user.id, yt!.url, yt!.kind, lang);
+        if (r.ok === false) {
+          await sendMessage(chatId, r.reason === "limited" ? L.limited : L.failed);
+          return NextResponse.json({ ok: true });
+        }
+        // Разбор удался, но запись в базу упала — честно предупреждаем, а не врём «сохранил».
+        if (!r.saved) {
+          await sendMessage(chatId, L.saveFail);
+          return NextResponse.json({ ok: true });
+        }
+        const a = r.analysis;
+        let body = `🔖 <b>${L.saved}</b>\n\n<b>${esc(a.title)}</b>`;
+        if (a.topic) body += `\n📂 ${esc(a.topic)}`;
+        if (a.summary) body += `\n\n${esc(a.summary)}`;
+        if (a.key_points?.length) body += "\n\n" + a.key_points.slice(0, 5).map((p) => "• " + esc(p)).join("\n");
+        if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
+        if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
+        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
+      } catch (e) {
+        console.error("instagram", e);
+        await sendMessage(chatId, L.failed);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     // /save <текст> — принудительно сохранить как запись (минуя авто-определение смысла).
     let forceSave = false;
     if (text.startsWith("/save")) {
@@ -383,17 +453,15 @@ export async function POST(req: NextRequest) {
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
     const refLink = `${origin}/i/${await getInviteCode(user.id)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
-    await sendMessage(chatId, body, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
-            { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
-          ],
-          [{ text: L.share, url: shareUrl }],
-        ],
-      },
-    });
+    const rows: any[] = [
+      [
+        { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
+        { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
+      ],
+    ];
+    if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/u/${user.token}?next=/finance` }]);
+    rows.push([{ text: L.share, url: shareUrl }]);
+    await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
   } catch (e: any) {
     console.error(e);
     await sendMessage(chatId, "Упс, что-то пошло не так при сохранении. Попробуй ещё раз.");
@@ -420,6 +488,15 @@ function formatConfirm(a: Analysis, streak: number, lang: string): string {
   if (a.insights?.length) {
     lines.push("", `💡 <b>${L.insightsTitle}</b>`);
     a.insights.slice(0, 2).forEach((it) => lines.push("• " + esc(it)));
+  }
+  if (a.finance?.length) {
+    lines.push("", `💰 <b>${L.moneyTitle}</b>`);
+    a.finance.slice(0, 5).forEach((f) => {
+      const sym = CUR_SYM[f.currency || "USD"] || f.currency || "";
+      const sign = f.kind === "income" ? "+" : "−";
+      const note = f.note ? ` · ${esc(f.note)}` : "";
+      lines.push(`• ${f.kind === "income" ? "📈" : "💸"} ${sign}${esc(String(f.amount))} ${sym}${note}`);
+    });
   }
   const m = [
     a.mood != null ? `😊 ${a.mood}` : null,

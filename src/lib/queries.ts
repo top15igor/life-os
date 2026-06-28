@@ -213,6 +213,29 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
   }
 }
 
+export type SavedItem = { id: string; source: string; url: string | null; author: string | null; kind: string; title: string; topic: string | null; summary: string | null; key_points: string[] | null; tags: string[] | null; image_url: string | null; note: string | null; favorite: boolean; done: boolean; position: number; created_at: string };
+
+const SAVED_FULL = "id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, note, favorite, done, position, created_at";
+const SAVED_BASIC = "id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, created_at";
+
+export async function getSavedItems(userId: string): Promise<SavedItem[]> {
+  const db = supabaseAdmin();
+  // Полный select; если колонки управления ещё не созданы (миграция не запущена) —
+  // деградируем к базовому набору, чтобы страница не ломалась.
+  try {
+    const { data, error } = await db.from("saved_items").select(SAVED_FULL).eq("user_id", userId).order("created_at", { ascending: false }).limit(500);
+    if (error) throw error;
+    return (data as any) || [];
+  } catch {
+    try {
+      const { data } = await db.from("saved_items").select(SAVED_BASIC).eq("user_id", userId).order("created_at", { ascending: false }).limit(500);
+      return ((data as any[]) || []).map((d) => ({ ...d, note: null, favorite: false, done: false, position: 0 }));
+    } catch {
+      return [];
+    }
+  }
+}
+
 // Мета сущностей (люди/места) по имени: id + hidden. Для управления (rename/merge/hide).
 // Грациозно деградирует, если колонки hidden ещё нет (вернёт hidden:false).
 export async function getEntityMeta(userId: string, kind: "people" | "places"): Promise<Record<string, { id: number; hidden: boolean }>> {

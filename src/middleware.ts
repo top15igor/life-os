@@ -7,13 +7,13 @@ export function middleware(req: NextRequest) {
   if (token) return NextResponse.next();
 
   const url = req.nextUrl.clone();
-  url.pathname = "/welcome";
+  url.pathname = "/about";
   return NextResponse.redirect(url);
 }
 
 export const config = {
-  // Защищаем страницы, кроме публичных: /welcome, /login, /privacy, /u/* (вход по ссылке),
+  // Защищаем страницы, кроме публичных: /welcome, /login, /about (лендинг), /privacy, /u/* (вход по ссылке),
   // /i/* (приглашение), /p/* (публичная книга-витрина), /path/* (публичный путь), /api/* и статики.
   // Слэш в p/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /paths, /insights.
-  matcher: ["/((?!welcome|login|privacy|u|api|p/|path/|i/|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!welcome|login|about|privacy|u|api|p/|path/|i/|_next/static|_next/image|favicon.ico).*)"],
 };
