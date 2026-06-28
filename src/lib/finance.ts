@@ -33,6 +33,15 @@ export type Tx = {
   note: string | null;
 };
 
+// Сводка по одному дню месяца (в основной валюте) — для календаря.
+export type DaySlice = {
+  day: string; // YYYY-MM-DD
+  count: number; // число операций за день
+  income: number; // доход за день
+  expense: number; // расход за день
+  net: number; // сальдо дня (доход − расход)
+};
+
 // Категория расходов за месяц: сумма (в основной валюте), доля от расходов и бюджет (если задан).
 export type CatSlice = {
   category: string;
@@ -53,6 +62,7 @@ export type FinanceData = {
   expense: number; // расход за месяц (в основной валюте)
   balance: number; // доход − расход за месяц
   byCategory: CatSlice[]; // расходы по категориям за месяц (по убыванию)
+  byDay: DaySlice[]; // сводка по дням месяца — для календаря
   budgetTotal: { limit: number; spent: number; pct: number; over: boolean } | null; // сводный бюджет
   txs: Tx[]; // операции за месяц (свежие сверху, в исходной валюте)
   monthsWithData: string[]; // месяцы, где есть операции
@@ -155,17 +165,26 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   let income = 0,
     expense = 0;
   const catMap = new Map<string, number>();
+  // Агрегаты по дням месяца — для календаря (сальдо и число операций на дне).
+  const dayMap = new Map<string, { count: number; income: number; expense: number }>();
   for (const t of txs) {
     const v = toBase(t.amount, t.currency);
-    if (t.kind === "income") income += v;
+    const d = dayMap.get(t.day) || { count: 0, income: 0, expense: 0 };
+    d.count++;
+    if (t.kind === "income") { income += v; d.income += v; }
     else {
       expense += v;
+      d.expense += v;
       const c = t.category || "other";
       catMap.set(c, (catMap.get(c) || 0) + v);
     }
+    dayMap.set(t.day, d);
   }
   income = round2(income);
   expense = round2(expense);
+  const byDay: DaySlice[] = [...dayMap.entries()]
+    .map(([day, o]) => ({ day, count: o.count, income: round2(o.income), expense: round2(o.expense), net: round2(o.income - o.expense) }))
+    .sort((a, b) => a.day.localeCompare(b.day));
 
   // Бюджеты по категориям (лимиты — в основной валюте).
   const budgets = new Map<string, number>();
@@ -212,6 +231,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     expense,
     balance: round2(income - expense),
     byCategory,
+    byDay,
     budgetTotal,
     txs,
     monthsWithData,
