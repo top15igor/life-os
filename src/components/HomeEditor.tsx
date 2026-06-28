@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-const ORDER = ["mindful", "focus", "trace", "balance", "minimal", "custom"];
+const ORDER = ["minimal", "mindful", "focus", "trace", "balance", "custom"];
 const ICON: Record<string, string> = { mindful: "ti-sun-high", focus: "ti-target", trace: "ti-heart-handshake", balance: "ti-yin-yang", minimal: "ti-minus", custom: "ti-adjustments" };
 const BLOCK_ORDER = ["book", "habit", "trace", "promises", "traceWeek", "context", "metrics", "changes", "focus", "stories", "tasks", "gratitude"];
 

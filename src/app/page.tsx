@@ -51,7 +51,7 @@ export default async function HomePage() {
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
   let hasPin = false;
-  let preset = "mindful";
+  let preset = "minimal";
   let blocks: string[] | null = null;
   try {
     const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
