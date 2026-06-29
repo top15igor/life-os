@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage } from "@/lib/telegram";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
+import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
 import { getBookPrompt, bookPromptMessage } from "@/lib/bookPrompts";
 import Anthropic from "@anthropic-ai/sdk";
@@ -71,6 +72,13 @@ const MSG: Record<Lang, {
 
 const dayMs = 86400000;
 const isoOf = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+const RECUR_HEAD: Record<Lang, string> = {
+  ru: "📅 <b>Регулярные платежи на сегодня</b>\nНапоминаю — записать можно одним нажатием на команду ниже:",
+  en: "📅 <b>Recurring payments due today</b>\nA reminder — log each by tapping the command below:",
+  uk: "📅 <b>Регулярні платежі на сьогодні</b>\nНагадую — записати можна одним натисканням на команду нижче:",
+  fr: "📅 <b>Paiements récurrents du jour</b>\nUn rappel — enregistre chacun en touchant la commande ci-dessous :",
+};
 
 async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> {
   const db = supabaseAdmin();
@@ -156,7 +164,7 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0 };
 
   for (const u of users || []) {
     try {
@@ -180,6 +188,25 @@ export async function GET(req: NextRequest) {
           if (fin) { await sendMessage(u.chat_id, fin); stats.financeDigests++; }
         } catch (e) { console.error("finance digest", u.id, e); }
       }
+
+      // Напоминания о регулярных платежах, у которых сегодня день списания.
+      try {
+        const due = await getDueRecurring(u.id, today);
+        if (due.length) {
+          const sym: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
+          const head = RECUR_HEAD[lang] || RECUR_HEAD.ru;
+          const lines = [head];
+          for (const r of due) {
+            const cmd = r.kind === "income" ? "/income" : "/spend";
+            const cat = [r.category, r.subcategory].filter(Boolean).join(" / ");
+            const title = r.note || cat || "—";
+            lines.push(`• ${r.kind === "income" ? "📈" : "💸"} <b>${r.amount} ${sym[r.currency] || r.currency}</b> — ${title}\n  <code>${cmd} ${r.amount} ${r.currency.toLowerCase()} ${cat}</code>`);
+          }
+          await sendMessage(u.chat_id, lines.join("\n"));
+          await markReminded(due.map((r) => r.id), today);
+          stats.recurringReminders++;
+        }
+      } catch (e) { console.error("recurring", u.id, e); }
 
       // Воскресный AI-обзор недели — всем, кто писал на этой неделе.
       if (isSunday) {

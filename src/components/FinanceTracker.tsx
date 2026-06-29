@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
@@ -15,19 +15,19 @@ type Data = {
 };
 
 const STR: Record<string, any> = {
-  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта", pickPeriod: "Выбрать месяц и год", earliest: "К самым ранним", thisMonth: "Текущий месяц", calendar: "Календарь месяца", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показать все дни", selectedDayLabel: "Операции за день", subcategoryPh: "Подкатегория (напр. Спорт) — необязательно", subSuggest: ["Спорт", "Обучение", "Одежда", "Здоровье", "Еда", "Развлечения", "Подарки", "Транспорт"], exportCsv: "Экспорт в CSV", trendTitle: "Динамика по месяцам", trendShow: "Показать график", trendLoading: "Загружаю…", trendEmpty: "Пока недостаточно данных для графика.", adviceTitle: "AI-советник по финансам", adviceGet: "Получить разбор и советы", adviceThinking: "Анализирую твои финансы…", adviceAgain: "Обновить", adviceErr: "Не получилось собрать разбор. Попробуй чуть позже.",
+  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта", pickPeriod: "Выбрать месяц и год", earliest: "К самым ранним", thisMonth: "Текущий месяц", calendar: "Календарь месяца", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показать все дни", selectedDayLabel: "Операции за день", subcategoryPh: "Подкатегория (напр. Спорт) — необязательно", subSuggest: ["Спорт", "Обучение", "Одежда", "Здоровье", "Еда", "Развлечения", "Подарки", "Транспорт"], exportCsv: "Экспорт в CSV", trendTitle: "Динамика по месяцам", trendShow: "Показать график", trendLoading: "Загружаю…", trendEmpty: "Пока недостаточно данных для графика.", adviceTitle: "AI-советник по финансам", adviceGet: "Получить разбор и советы", adviceThinking: "Анализирую твои финансы…", adviceAgain: "Обновить", adviceErr: "Не получилось собрать разбор. Попробуй чуть позже.", recurTitle: "Регулярные платежи", recurHint: "Аренда, подписки, кредиты. Бот напомнит в день платежа — записывать ли, решаешь ты.", recurAdd: "Добавить платёж", recurEmpty: "Пока нет регулярных платежей.", recurDay: "Число месяца", recurEvery: (d: number) => `${d}-го числа каждого месяца`, recurDelConfirm: "Удалить этот регулярный платёж?",
     budgets: "Бюджеты по категориям", limit: "Лимит", setLimit: "Задать лимит", editLimit: "Изменить лимит", removeLimit: "Убрать лимит", ofLimit: "из", over: "превышен на", leftWord: "осталось", addBudget: "Добавить лимит", budgetTotalT: "Бюджет на месяц", spent: "потрачено",
     settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Эти курсы — запасные: применяются, только если курс НБУ на месяц операции недоступен.", histNote: "Суммы в разных валютах сводятся к основной по официальному курсу НБУ на месяц каждой операции — операции 2020 и 2023 годов считаются по своим курсам, а не по сегодняшнему.",
     importTitle: "Перенос из MoneyOK", importBtn: "Выбрать файл MoneyOK.csv", importing: "Переносим операции…", importHint: "В MoneyOK: Меню → «Экспорт в CSV» → пришли себе файл и загрузи его здесь. Перенесутся все доходы и расходы. Повторная загрузка того же файла не создаёт дублей.", importDone: (n: number, dup: number, skip: number) => `Перенесено операций: ${n}${dup ? `, дублей пропущено: ${dup}` : ""}${skip ? `, переводов/остатков пропущено: ${skip}` : ""}.`, importEmpty: "Не удалось распознать операции в файле. Это точно экспорт MoneyOK в CSV?", importErr: "Не получилось загрузить файл. Попробуй ещё раз.", importUntagged: " Внимание: пометить операции не удалось (старая база), откат в один клик будет недоступен — обнови схему supabase/finance.sql.", undoBtn: "Откатить импорт MoneyOK", undoConfirm: "Удалить все операции, перенесённые из MoneyOK? Добавленные вручную останутся.", undoDone: (n: number) => `Откат выполнен: удалено операций — ${n}.`, undoNone: "Импортированных операций не найдено — удалять нечего.", undoErr: "Не удалось откатить. Попробуй ещё раз." },
-  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency", pickPeriod: "Pick month and year", earliest: "To earliest", thisMonth: "Current month", calendar: "Month calendar", weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], ops: "ops", dayBalance: "Day balance", allDays: "Show all days", selectedDayLabel: "Transactions for the day", subcategoryPh: "Subcategory (e.g. Sport) — optional", subSuggest: ["Sport", "Education", "Clothing", "Health", "Food", "Fun", "Gifts", "Transport"], exportCsv: "Export to CSV", trendTitle: "Monthly trend", trendShow: "Show chart", trendLoading: "Loading…", trendEmpty: "Not enough data for a chart yet.", adviceTitle: "AI money advisor", adviceGet: "Get review & tips", adviceThinking: "Analysing your finances…", adviceAgain: "Refresh", adviceErr: "Couldn't build the review. Try again later.",
+  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency", pickPeriod: "Pick month and year", earliest: "To earliest", thisMonth: "Current month", calendar: "Month calendar", weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], ops: "ops", dayBalance: "Day balance", allDays: "Show all days", selectedDayLabel: "Transactions for the day", subcategoryPh: "Subcategory (e.g. Sport) — optional", subSuggest: ["Sport", "Education", "Clothing", "Health", "Food", "Fun", "Gifts", "Transport"], exportCsv: "Export to CSV", trendTitle: "Monthly trend", trendShow: "Show chart", trendLoading: "Loading…", trendEmpty: "Not enough data for a chart yet.", adviceTitle: "AI money advisor", adviceGet: "Get review & tips", adviceThinking: "Analysing your finances…", adviceAgain: "Refresh", adviceErr: "Couldn't build the review. Try again later.", recurTitle: "Recurring payments", recurHint: "Rent, subscriptions, loans. The bot reminds you on the due day — you decide whether to log it.", recurAdd: "Add payment", recurEmpty: "No recurring payments yet.", recurDay: "Day of month", recurEvery: (d: number) => `every month on the ${d}${d === 1 ? "st" : d === 2 ? "nd" : d === 3 ? "rd" : "th"}`, recurDelConfirm: "Delete this recurring payment?",
     budgets: "Category budgets", limit: "Limit", setLimit: "Set a limit", editLimit: "Edit limit", removeLimit: "Remove limit", ofLimit: "of", over: "over by", leftWord: "left", addBudget: "Add a limit", budgetTotalT: "Monthly budget", spent: "spent",
     settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "These rates are a fallback — used only when the NBU rate for an operation's month is unavailable.", histNote: "Amounts in different currencies are converted to the base one using the official NBU rate for each operation's month — 2020 and 2023 operations are counted at their own rates, not today's.",
     importTitle: "Migrate from MoneyOK", importBtn: "Choose MoneyOK.csv file", importing: "Importing transactions…", importHint: "In MoneyOK: Menu → “Export to CSV” → send the file to yourself and upload it here. All income and expenses will be migrated. Re-uploading the same file won't create duplicates.", importDone: (n: number, dup: number, skip: number) => `Imported ${n} transactions${dup ? `, ${dup} duplicates skipped` : ""}${skip ? `, ${skip} transfers/balances skipped` : ""}.`, importEmpty: "Couldn't recognise any transactions. Is this a MoneyOK CSV export?", importErr: "Upload failed. Please try again.", importUntagged: " Note: couldn't tag the transactions (old database), one-click undo won't be available — update the schema supabase/finance.sql.", undoBtn: "Undo MoneyOK import", undoConfirm: "Delete all transactions migrated from MoneyOK? Manually added ones stay.", undoDone: (n: number) => `Undone: ${n} transactions removed.`, undoNone: "No imported transactions found — nothing to remove.", undoErr: "Undo failed. Please try again." },
-  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта", pickPeriod: "Обрати місяць і рік", earliest: "До найраніших", thisMonth: "Поточний місяць", calendar: "Календар місяця", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показати всі дні", selectedDayLabel: "Операції за день", subcategoryPh: "Підкатегорія (напр. Спорт) — необов'язково", subSuggest: ["Спорт", "Навчання", "Одяг", "Здоров'я", "Їжа", "Розваги", "Подарунки", "Транспорт"], exportCsv: "Експорт у CSV", trendTitle: "Динаміка по місяцях", trendShow: "Показати графік", trendLoading: "Завантажую…", trendEmpty: "Поки недостатньо даних для графіка.", adviceTitle: "AI-радник з фінансів", adviceGet: "Отримати розбір і поради", adviceThinking: "Аналізую твої фінанси…", adviceAgain: "Оновити", adviceErr: "Не вдалося зібрати розбір. Спробуй пізніше.",
+  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта", pickPeriod: "Обрати місяць і рік", earliest: "До найраніших", thisMonth: "Поточний місяць", calendar: "Календар місяця", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показати всі дні", selectedDayLabel: "Операції за день", subcategoryPh: "Підкатегорія (напр. Спорт) — необов'язково", subSuggest: ["Спорт", "Навчання", "Одяг", "Здоров'я", "Їжа", "Розваги", "Подарунки", "Транспорт"], exportCsv: "Експорт у CSV", trendTitle: "Динаміка по місяцях", trendShow: "Показати графік", trendLoading: "Завантажую…", trendEmpty: "Поки недостатньо даних для графіка.", adviceTitle: "AI-радник з фінансів", adviceGet: "Отримати розбір і поради", adviceThinking: "Аналізую твої фінанси…", adviceAgain: "Оновити", adviceErr: "Не вдалося зібрати розбір. Спробуй пізніше.", recurTitle: "Регулярні платежі", recurHint: "Оренда, підписки, кредити. Бот нагадає в день платежу — записувати чи ні, вирішуєш ти.", recurAdd: "Додати платіж", recurEmpty: "Поки немає регулярних платежів.", recurDay: "Число місяця", recurEvery: (d: number) => `${d}-го числа щомісяця`, recurDelConfirm: "Видалити цей регулярний платіж?",
     budgets: "Бюджети за категоріями", limit: "Ліміт", setLimit: "Задати ліміт", editLimit: "Змінити ліміт", removeLimit: "Прибрати ліміт", ofLimit: "з", over: "перевищено на", leftWord: "залишилось", addBudget: "Додати ліміт", budgetTotalT: "Бюджет на місяць", spent: "витрачено",
     settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Ці курси — запасні: застосовуються, лише якщо курс НБУ на місяць операції недоступний.", histNote: "Суми в різних валютах зводяться до основної за офіційним курсом НБУ на місяць кожної операції — операції 2020 і 2023 років рахуються за своїми курсами, а не за сьогоднішнім.",
     importTitle: "Перенесення з MoneyOK", importBtn: "Обрати файл MoneyOK.csv", importing: "Переносимо операції…", importHint: "У MoneyOK: Меню → «Експорт у CSV» → надішли собі файл і завантаж його тут. Перенесуться всі доходи й витрати. Повторне завантаження того ж файлу не створює дублів.", importDone: (n: number, dup: number, skip: number) => `Перенесено операцій: ${n}${dup ? `, дублів пропущено: ${dup}` : ""}${skip ? `, переказів/залишків пропущено: ${skip}` : ""}.`, importEmpty: "Не вдалося розпізнати операції у файлі. Це точно експорт MoneyOK у CSV?", importErr: "Не вдалося завантажити файл. Спробуй ще раз.", importUntagged: " Увага: позначити операції не вдалося (стара база), відкат в один клік буде недоступний — онови схему supabase/finance.sql.", undoBtn: "Відкотити імпорт MoneyOK", undoConfirm: "Видалити всі операції, перенесені з MoneyOK? Додані вручну залишаться.", undoDone: (n: number) => `Відкат виконано: видалено операцій — ${n}.`, undoNone: "Імпортованих операцій не знайдено — видаляти нічого.", undoErr: "Не вдалося відкотити. Спробуй ще раз." },
-  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise", pickPeriod: "Choisir mois et année", earliest: "Au plus tôt", thisMonth: "Mois courant", calendar: "Calendrier du mois", weekdays: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"], ops: "op.", dayBalance: "Solde du jour", allDays: "Voir tous les jours", selectedDayLabel: "Opérations du jour", subcategoryPh: "Sous-catégorie (ex. Sport) — facultatif", subSuggest: ["Sport", "Éducation", "Vêtements", "Santé", "Nourriture", "Loisirs", "Cadeaux", "Transport"], exportCsv: "Export CSV", trendTitle: "Évolution mensuelle", trendShow: "Voir le graphique", trendLoading: "Chargement…", trendEmpty: "Pas encore assez de données pour un graphique.", adviceTitle: "Conseiller financier IA", adviceGet: "Obtenir l'analyse et des conseils", adviceThinking: "J'analyse tes finances…", adviceAgain: "Actualiser", adviceErr: "Impossible de générer l'analyse. Réessaie plus tard.",
+  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise", pickPeriod: "Choisir mois et année", earliest: "Au plus tôt", thisMonth: "Mois courant", calendar: "Calendrier du mois", weekdays: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"], ops: "op.", dayBalance: "Solde du jour", allDays: "Voir tous les jours", selectedDayLabel: "Opérations du jour", subcategoryPh: "Sous-catégorie (ex. Sport) — facultatif", subSuggest: ["Sport", "Éducation", "Vêtements", "Santé", "Nourriture", "Loisirs", "Cadeaux", "Transport"], exportCsv: "Export CSV", trendTitle: "Évolution mensuelle", trendShow: "Voir le graphique", trendLoading: "Chargement…", trendEmpty: "Pas encore assez de données pour un graphique.", adviceTitle: "Conseiller financier IA", adviceGet: "Obtenir l'analyse et des conseils", adviceThinking: "J'analyse tes finances…", adviceAgain: "Actualiser", adviceErr: "Impossible de générer l'analyse. Réessaie plus tard.", recurTitle: "Paiements récurrents", recurHint: "Loyer, abonnements, crédits. Le bot te rappelle le jour J — à toi de décider de l'enregistrer.", recurAdd: "Ajouter un paiement", recurEmpty: "Aucun paiement récurrent pour l'instant.", recurDay: "Jour du mois", recurEvery: (d: number) => `le ${d} de chaque mois`, recurDelConfirm: "Supprimer ce paiement récurrent ?",
     budgets: "Budgets par catégorie", limit: "Limite", setLimit: "Définir une limite", editLimit: "Modifier la limite", removeLimit: "Retirer la limite", ofLimit: "sur", over: "dépassé de", leftWord: "restant", addBudget: "Ajouter une limite", budgetTotalT: "Budget du mois", spent: "dépensé",
     settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Ces taux sont un secours — utilisés uniquement si le taux NBU du mois de l'opération est indisponible.", histNote: "Les montants en différentes devises sont convertis dans la devise principale au taux officiel NBU du mois de chaque opération — les opérations de 2020 et 2023 sont comptées à leurs propres taux, pas celui d'aujourd'hui.",
     importTitle: "Migrer depuis MoneyOK", importBtn: "Choisir le fichier MoneyOK.csv", importing: "Import des opérations…", importHint: "Dans MoneyOK : Menu → « Export CSV » → envoie-toi le fichier et charge-le ici. Tous les revenus et dépenses seront migrés. Recharger le même fichier ne crée pas de doublons.", importDone: (n: number, dup: number, skip: number) => `${n} opérations importées${dup ? `, ${dup} doublons ignorés` : ""}${skip ? `, ${skip} transferts/soldes ignorés` : ""}.`, importEmpty: "Aucune opération reconnue. S'agit-il bien d'un export CSV de MoneyOK ?", importErr: "Échec du chargement. Réessaie.", importUntagged: " Note : impossible de marquer les opérations (ancienne base), l'annulation en un clic sera indisponible — mets à jour le schéma supabase/finance.sql.", undoBtn: "Annuler l'import MoneyOK", undoConfirm: "Supprimer toutes les opérations importées de MoneyOK ? Celles ajoutées à la main restent.", undoDone: (n: number) => `Annulé : ${n} opérations supprimées.`, undoNone: "Aucune opération importée trouvée — rien à supprimer.", undoErr: "Échec de l'annulation. Réessaie." },
@@ -193,6 +193,42 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       setAdvice(j?.ok ? j.text : s.adviceErr);
     } catch { setAdvice(s.adviceErr); }
     setAdviceLoading(false);
+  }
+
+  // Регулярные платежи (подписки) — управление.
+  type Recur = { id: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; day_of_month: number; active: boolean };
+  const [recur, setRecur] = useState<Recur[] | null>(null);
+  const [recAddOpen, setRecAddOpen] = useState(false);
+  const [rKind, setRKind] = useState<"income" | "expense">("expense");
+  const [rAmount, setRAmount] = useState("");
+  const [rCurrency, setRCurrency] = useState(base);
+  const [rCategory, setRCategory] = useState("");
+  const [rNote, setRNote] = useState("");
+  const [rDay, setRDay] = useState("1");
+  async function loadRecur() {
+    try { const j = await (await fetch("/api/finance/recurring")).json(); setRecur(j?.items || []); }
+    catch { setRecur([]); }
+  }
+  useEffect(() => { loadRecur(); /* eslint-disable-next-line */ }, []);
+  async function addRecur() {
+    const v = parseFloat(rAmount.replace(",", "."));
+    const d = parseInt(rDay, 10);
+    if (!isFinite(v) || v <= 0 || !(d >= 1 && d <= 31)) return;
+    setBusy(true);
+    const r = await fetch("/api/finance/recurring", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: rKind, amount: v, currency: rCurrency, category: rCategory.trim() || null, note: rNote.trim() || null, day_of_month: d }) });
+    setBusy(false);
+    if (r.ok) { setRecAddOpen(false); setRAmount(""); setRCategory(""); setRNote(""); loadRecur(); }
+  }
+  async function toggleRecur(it: Recur) {
+    setBusy(true);
+    await fetch("/api/finance/recurring", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: it.id, active: !it.active }) });
+    setBusy(false); loadRecur();
+  }
+  async function delRecur(id: string) {
+    if (!window.confirm(s.recurDelConfirm)) return;
+    setBusy(true);
+    await fetch("/api/finance/recurring", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
+    setBusy(false); loadRecur();
   }
 
   // Бюджеты.
@@ -768,6 +804,70 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           </div>
         </div>
       )}
+
+      {/* Регулярные платежи (подписки) */}
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6 }}>
+          <i className="ti ti-repeat" style={{ fontSize: 15, color: "var(--accent)" }} />{s.recurTitle}
+          <button onClick={() => { if (recur == null) loadRecur(); setRecAddOpen((o) => !o); setRKind("expense"); setRCurrency(base); }} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+            <i className="ti ti-plus" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.recurAdd}
+          </button>
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6, lineHeight: 1.5 }}>{s.recurHint}</div>
+
+        {recAddOpen && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 8 }}>
+              {(["expense", "income"] as const).map((k) => (
+                <button key={k} onClick={() => setRKind(k)} style={{ flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500, background: rKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent", color: rKind === k ? "#fff" : "var(--text-2)" }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+              <input type="number" inputMode="decimal" placeholder={s.amount} value={rAmount} onChange={(e) => setRAmount(e.target.value)} style={{ ...input, flex: "2 1 100px", fontSize: 16, fontWeight: 600 }} />
+              <select value={rCurrency} onChange={(e) => setRCurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+              </select>
+              <select value={rDay} onChange={(e) => setRDay(e.target.value)} style={{ ...input, flex: "1 1 100px" }} title={s.recurDay}>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{s.recurDay}: {d}</option>)}
+              </select>
+            </div>
+            <input type="text" placeholder={s.category} value={rCategory} onChange={(e) => setRCategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+            <input type="text" placeholder={s.note} value={rNote} onChange={(e) => setRNote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button disabled={busy} onClick={addRecur} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+              <button disabled={busy} onClick={() => setRecAddOpen(false)} style={btnG}>{s.cancel}</button>
+            </div>
+          </div>
+        )}
+
+        {recur != null && recur.length > 0 && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            {recur.map((it) => (
+              <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, opacity: it.active ? 1 : 0.5 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: it.kind === "income" ? "#10b9811f" : "#ef44441f", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>{it.kind === "income" ? "📈" : "💸"}</span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {it.note || [it.category, it.subcategory].filter(Boolean).join(" / ") || "—"}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{s.recurEvery(it.day_of_month)}</div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: it.kind === "income" ? "#10b981" : "var(--text)", whiteSpace: "nowrap" }}>
+                  {it.kind === "income" ? "+" : "−"}{fmtMoney(it.amount, it.currency, locale)}
+                </div>
+                <button onClick={() => toggleRecur(it)} title={it.active ? "off" : "on"} style={{ background: "none", border: "none", cursor: "pointer", color: it.active ? "var(--accent)" : "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                  <i className={`ti ${it.active ? "ti-bell" : "ti-bell-off"}`} style={{ fontSize: 16 }} />
+                </button>
+                <button onClick={() => delRecur(it.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                  <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {recur != null && recur.length === 0 && !recAddOpen && (
+          <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 10 }}>{s.recurEmpty}</div>
+        )}
+      </div>
 
       {/* Календарь месяца по дням: сальдо и число операций на каждом дне */}
       {data.byDay.length > 0 && (
