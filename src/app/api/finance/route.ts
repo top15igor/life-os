@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   const amount = Number(body?.amount);
   const currency = CURRENCIES.includes(String(body?.currency)) ? String(body.currency) : "USD";
   const category = body?.category ? String(body.category).slice(0, 40) : null;
+  const subcategory = body?.subcategory ? String(body.subcategory).slice(0, 40) : null;
   const note = body?.note ? String(body.note).slice(0, 200) : null;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !isFinite(amount) || amount <= 0 || amount > 1e12) {
@@ -24,7 +25,13 @@ export async function POST(req: NextRequest) {
   }
 
   const db = supabaseAdmin();
-  const { error } = await db.from("finance_tx").insert({ user_id: user.id, day, kind, amount, currency, category, note });
+  const row: any = { user_id: user.id, day, kind, amount, currency, category, subcategory, note };
+  let { error } = await db.from("finance_tx").insert(row);
+  // Старая база без колонки subcategory — вставляем без неё.
+  if (error && /subcategory|column|schema cache/i.test(error.message)) {
+    const { subcategory: _s, ...bare } = row;
+    ({ error } = await db.from("finance_tx").insert(bare));
+  }
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
