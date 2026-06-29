@@ -27,6 +27,7 @@ const STR: Record<string, any> = {
     note: "Память общая с Telegram — можно продолжить там же.",
     mic: "Сказать голосом", stop: "Остановить", collapse: "Свернуть чат",
     tipWrite: "Сохранить мысль в дневник", tipChat: "Спроси AI-друга — он знает всё о тебе и заглядывает в интернет за свежим", tipSend: "Отправить",
+    reply: "Ответь голосом или текстом…", micChat: "Скажи голосом — так быстрее",
     showAll: (n: number) => `↑ Показать всю переписку (${n})`,
   },
   en: {
@@ -37,6 +38,7 @@ const STR: Record<string, any> = {
     note: "Memory is shared with Telegram — continue there anytime.",
     mic: "Speak", stop: "Stop", collapse: "Collapse chat",
     tipWrite: "Save a thought to your diary", tipChat: "Ask your AI friend — it knows all about you and checks the web", tipSend: "Send",
+    reply: "Reply by voice or text…", micChat: "Speak — it's faster",
     showAll: (n: number) => `↑ Show full conversation (${n})`,
   },
   uk: {
@@ -47,6 +49,7 @@ const STR: Record<string, any> = {
     note: "Пам'ять спільна з Telegram — можна продовжити там.",
     mic: "Сказати голосом", stop: "Зупинити", collapse: "Згорнути чат",
     tipWrite: "Зберегти думку у щоденник", tipChat: "Запитай AI-друга — він знає все про тебе і заглядає в інтернет", tipSend: "Надіслати",
+    reply: "Відповідай голосом або текстом…", micChat: "Скажи голосом — так швидше",
     showAll: (n: number) => `↑ Показати всю переписку (${n})`,
   },
   fr: {
@@ -57,6 +60,7 @@ const STR: Record<string, any> = {
     note: "La mémoire est partagée avec Telegram — continue là-bas quand tu veux.",
     mic: "Parler", stop: "Arrêter", collapse: "Réduire le chat",
     tipWrite: "Enregistrer dans ton journal", tipChat: "Demande à ton ami IA — il sait tout de toi et consulte le web", tipSend: "Envoyer",
+    reply: "Réponds à la voix ou au texte…", micChat: "Parle — c'est plus rapide",
     showAll: (n: number) => `↑ Voir toute la conversation (${n})`,
   },
 };
@@ -66,14 +70,18 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   const router = useRouter();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [recording, setRecording] = useState(false);
+  const [recSrc, setRecSrc] = useState<null | "bar" | "reply">(null);
   const [saved, setSaved] = useState<{ id?: string } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [replyOpen, setReplyOpen] = useState(false);
+  const recording = recSrc !== null;
 
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -133,15 +141,15 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     }
   }
 
-  async function sendChat(raw?: string) {
-    const m = (raw ?? text).trim();
-    if (!m || busy) return;
+  // Ядро: отправить реплику другу (используется и верхней строкой, и нижним полем).
+  async function postToFriend(m: string) {
+    const t = m.trim();
+    if (!t) return;
     if (!chatOpen) openChat();
-    setText("");
-    setMsgs((p) => [...p, { role: "user", content: m }]);
+    setMsgs((p) => [...p, { role: "user", content: t }]);
     setBusy(true);
     try {
-      const r = await fetch("/api/companion", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: m }) });
+      const r = await fetch("/api/companion", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t }) });
       const d = await r.json().catch(() => null);
       setMsgs((p) => [...p, { role: "assistant", content: d?.answer || s.err }]);
     } catch {
@@ -150,8 +158,23 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     setBusy(false);
   }
 
-  async function toggleMic() {
-    if (recording) { try { mediaRef.current?.stop(); } catch {} return; }
+  function sendChat() {
+    const m = text.trim();
+    if (!m || busy) return;
+    setText("");
+    postToFriend(m);
+  }
+  function sendReply(raw?: string) {
+    const m = (raw ?? replyText).trim();
+    if (!m || busy) return;
+    setReplyText("");
+    postToFriend(m);
+  }
+
+  // Запись голоса. src — какой микрофон, onDone — что сделать с расшифровкой
+  // (верхняя строка заполняет поле; нижнее поле сразу отправляет — упор на голос).
+  async function startRec(src: "bar" | "reply", onDone: (t: string) => void) {
+    if (recSrc) { try { mediaRef.current?.stop(); } catch {} return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
@@ -159,7 +182,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       mr.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        setRecording(false);
+        setRecSrc(null);
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/webm" });
         const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : blob.type.includes("webm") ? "webm" : "m4a";
         const fd = new FormData();
@@ -168,13 +191,15 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
         try {
           const r = await fetch("/api/transcribe", { method: "POST", body: fd });
           const d = await r.json().catch(() => null);
-          if (d?.text) { setText((prev) => (prev ? prev + " " : "") + d.text); setTimeout(() => taRef.current?.focus(), 20); }
-        } catch {}
-        setBusy(false);
+          setBusy(false);
+          if (d?.text) onDone(d.text);
+        } catch {
+          setBusy(false);
+        }
       };
       mediaRef.current = mr;
       mr.start();
-      setRecording(true);
+      setRecSrc(src);
     } catch {
       // нет доступа к микрофону
     }
@@ -204,10 +229,10 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           disabled={busy && recording}
           style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 120 }}
         />
-        <span className="cc-tip" data-tip={recording ? s.stop : s.mic}>
-          <button onClick={toggleMic} aria-label={recording ? s.stop : s.mic}
-            style={{ background: "none", border: "none", cursor: "pointer", color: recording ? "#ef4444" : "var(--accent)", padding: 0, display: "inline-flex" }}>
-            <i className={`ti ${recording ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 19 }} />
+        <span className="cc-tip" data-tip={recSrc === "bar" ? s.stop : s.mic}>
+          <button onClick={() => startRec("bar", (t) => { setText((p) => (p ? p + " " : "") + t); setTimeout(() => taRef.current?.focus(), 20); })} aria-label={recSrc === "bar" ? s.stop : s.mic}
+            style={{ background: "none", border: "none", cursor: "pointer", color: recSrc === "bar" ? "#ef4444" : "var(--accent)", padding: 0, display: "inline-flex" }}>
+            <i className={`ti ${recSrc === "bar" ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 19 }} />
           </button>
         </span>
       </div>
@@ -291,7 +316,34 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
               </div>
             )}
           </div>
-          <div style={{ fontSize: 11.5, color: "var(--text-3)", padding: "6px 12px 9px", display: "flex", alignItems: "center", gap: 5, borderTop: "1px solid var(--border)" }}>
+          {/* Ответ прямо здесь, внизу — не нужно подниматься к верхней строке. Упор на голос. */}
+          <div style={{ borderTop: "1px solid var(--border)", padding: "10px 12px", display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0, border: "1px solid var(--border)", borderRadius: 20, background: "var(--surface-2)", display: "flex", alignItems: "flex-end" }}>
+              {replyOpen ? (
+                <textarea ref={replyRef} value={replyText} onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+                  onBlur={() => { if (!replyText.trim()) setReplyOpen(false); }}
+                  placeholder={s.reply} rows={1}
+                  style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 110, padding: "10px 14px" }} />
+              ) : (
+                <button onClick={() => { setReplyOpen(true); setTimeout(() => replyRef.current?.focus(), 20); }}
+                  style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "text", color: "var(--text-3)", fontSize: 14, padding: "11px 14px" }}>{s.reply}</button>
+              )}
+              {replyOpen && replyText.trim() && (
+                <button onClick={() => sendReply()} disabled={busy} aria-label={s.tipSend}
+                  style={{ flexShrink: 0, margin: 4, width: 32, height: 32, borderRadius: 999, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className="ti ti-arrow-up" style={{ fontSize: 16 }} />
+                </button>
+              )}
+            </div>
+            <span className="cc-tip" data-tip={recSrc === "reply" ? s.stop : s.micChat}>
+              <button onClick={() => startRec("reply", (t) => sendReply(t))} aria-label={recSrc === "reply" ? s.stop : s.micChat}
+                style={{ width: 44, height: 44, borderRadius: 999, border: "none", background: recSrc === "reply" ? "#ef4444" : "var(--accent)", color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(79,70,229,.35)" }}>
+                <i className={`ti ${recSrc === "reply" ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 21 }} />
+              </button>
+            </span>
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", padding: "6px 12px 9px", display: "flex", alignItems: "center", gap: 5 }}>
             <i className="ti ti-brand-telegram" style={{ fontSize: 13 }} />{s.note}
           </div>
         </div>
