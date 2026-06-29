@@ -30,11 +30,15 @@ function dueNow(prefs: MorningPrefs, now: Date): { todayKey: string } | null {
   if (prefs.hour != null && prefs.tz) {
     try {
       const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: prefs.tz, hour: "2-digit", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+        timeZone: prefs.tz, hour: "2-digit", hourCycle: "h23", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
       }).formatToParts(now);
       const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
       const h = parseInt(get("hour"), 10);
-      if (h === prefs.hour) return { todayKey: `${get("year")}-${get("month")}-${get("day")}` };
+      const wd = get("weekday");
+      const isWeekend = wd === "Sat" || wd === "Sun";
+      // В выходные — отдельный час, если задан; иначе как в будни.
+      const target = (isWeekend && prefs.hourWeekend != null) ? prefs.hourWeekend : prefs.hour;
+      if (h === target) return { todayKey: `${get("year")}-${get("month")}-${get("day")}` };
       return null;
     } catch {
       // невалидная таймзона → падаем на дефолтное время
@@ -115,6 +119,7 @@ export async function GET(req: NextRequest) {
     while (idx < list.length) {
       const u = list[idx++];
       const prefs = normalizeMorningPrefs(u.morning_prefs);
+      if (!prefs.morningEnabled) continue; // утренний пуш выключен в профиле
       const due = dueNow(prefs, now);
       if (!due) continue; // не его час
 
