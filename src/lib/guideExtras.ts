@@ -175,6 +175,18 @@ const E: Record<Locale, Extras> = {
         ],
       },
       {
+        key: "ai-compare", icon: "ti-versions", color: "var(--insight)", title: "Три AI-помощника — в чём разница",
+        short: "«Что заметил AI», «Биограф» и «Лаборатория» — одни данные, но три разные задачи. Когда что использовать.",
+        sections: [
+          { p: "Все три читают один и тот же твой дневник, но делают совершенно разное — как три специалиста, изучивших одну твою жизнь с разных сторон. Вот честная разница." },
+          { h: "✨ Что заметил AI — зеркало (тариф Pro)", p: "Сам, без вопросов, показывает что с тобой происходит сейчас: на чём горишь, что даёт и забирает энергию, что делает счастливым, какие закономерности повторяются. Обновляется каждый день. Ты ничего не спрашиваешь — он показывает панораму со стороны." },
+          { h: "📖 Биограф — рассказчик (тариф Премиум)", p: "Ты задаёшь конкретный вопрос — «расскажи историю моего проекта», «когда я был счастливее всего» — и получаешь продуманный ответ-историю из всех записей за всё время. Это глубина по теме и по запросу, а не общая картина." },
+          { h: "🧪 Лаборатория — учёный (тариф Премиум)", p: "AI предлагает гипотезу-связь («прогулки → лучше сон»), а ты проверяешь её реальным экспериментом (например, 21 день) с честным сравнением «до и во время». Это про действие и проверку, а не просто наблюдение." },
+          { h: "Когда что открывать", steps: ["Хочешь понять, что с тобой происходит сейчас → «Что заметил AI».", "Хочешь спросить о прошлом или услышать историю → «Биограф».", "Хочешь что-то изменить и проверить, работает ли → «Лаборатория»."] },
+          { h: "Коротко", tips: ["Что заметил AI = наблюдает и показывает (пассивно, каждый день).", "Биограф = отвечает на твой вопрос историей (по запросу).", "Лаборатория = помогает проверить гипотезу делом (эксперимент).", "Все опираются только на твои реальные записи — без выдумок."] },
+        ],
+      },
+      {
         key: "ai", icon: "ti-sparkles", color: "var(--insight)", title: "Что заметил AI · Лаборатория",
         short: "Закономерности твоей жизни и честная проверка гипотез.",
         sections: [
@@ -323,6 +335,18 @@ const E: Record<Locale, Extras> = {
           { h: "How it works", steps: ["Just mention in entries what kind thing you did or what you promised.", "AI moves it into “My Trace”.", "Check off kept promises."] },
           { h: "Examples", examples: ["“Helped my neighbor carry her bags.”", "“Promised my son a trip to the park this weekend.”", "“Donated to charity.”"] },
           { h: "Tips", tips: ["A debt or payment is NOT a good deed — AI tells them apart.", "Check “Trace this week” weekly — it's motivating."] },
+        ],
+      },
+      {
+        key: "ai-compare", icon: "ti-versions", color: "var(--insight)", title: "Three AI helpers — how they differ",
+        short: "“What AI noticed”, “Biographer” and “Lab” — same data, three different jobs. When to use which.",
+        sections: [
+          { p: "All three read the same diary of yours, but do completely different things — like three specialists who studied your one life from different angles. Here's the honest difference." },
+          { h: "✨ What AI noticed — the mirror (Pro plan)", p: "On its own, without questions, it shows what's happening with you now: what you're on fire about, what gives and drains energy, what makes you happy, which patterns repeat. Refreshed daily. You ask nothing — it shows you the panorama from outside." },
+          { h: "📖 Biographer — the storyteller (Premium plan)", p: "You ask a specific question — “tell the story of my project”, “when was I happiest” — and get a thoughtful narrative answer from all your entries across all time. Depth on a topic, on demand — not the general picture." },
+          { h: "🧪 Lab — the scientist (Premium plan)", p: "AI proposes a hypothesis-link (“walks → better sleep”), and you test it with a real experiment (e.g. 21 days) with an honest before-vs-during comparison. It's about acting and verifying, not just observing." },
+          { h: "When to open which", steps: ["Want to understand what's happening with you now → “What AI noticed”.", "Want to ask about the past or hear a story → “Biographer”.", "Want to change something and check if it works → “Lab”."] },
+          { h: "In short", tips: ["What AI noticed = observes and shows (passive, daily).", "Biographer = answers your question with a story (on demand).", "Lab = helps you test a hypothesis by doing (experiment).", "All rely only on your real entries — no invention."] },
         ],
       },
       {
