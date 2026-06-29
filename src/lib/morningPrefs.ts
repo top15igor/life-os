@@ -2,7 +2,7 @@
 // утро (тон, темы, время, стиль, длина, обращение, вкл/выкл), вечер
 // («вопросы для книги»), тихие дни и недельный итог.
 
-export type MorningTone = "friend" | "coach" | "calm" | "mentor" | "funny";
+export type MorningTone = "auto" | "friend" | "direct" | "calm" | "business" | "energetic" | "coach" | "mentor" | "funny";
 export type MorningTopic = "motivation" | "goals" | "tasks" | "diary" | "insight" | "gratitude" | "movement";
 export type MorningLength = "short" | "normal" | "long";
 
@@ -37,7 +37,10 @@ export interface MorningPrefs {
   evening: EveningPrefs;      // настройки вечерних пушей
 }
 
-export const MORNING_TONES: MorningTone[] = ["friend", "coach", "calm", "mentor", "funny"];
+// Для UI профиля (порядок чипов). Старые тоны (coach/mentor/funny) остаются
+// валидными для совместимости, но в списке не показываются.
+export const MORNING_TONES: MorningTone[] = ["auto", "friend", "direct", "calm", "business", "energetic"];
+const ALL_TONES: MorningTone[] = ["auto", "friend", "direct", "calm", "business", "energetic", "coach", "mentor", "funny"];
 export const MORNING_TOPICS: MorningTopic[] = ["motivation", "goals", "tasks", "diary", "insight", "gratitude", "movement"];
 export const MORNING_LENGTHS: MorningLength[] = ["short", "normal", "long"];
 export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]; // 0=Вс … 6=Сб
@@ -70,7 +73,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   if (!raw || typeof raw !== "object") {
     return { ...DEFAULT_MORNING_PREFS, topics: [...DEFAULT_MORNING_PREFS.topics], quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS } };
   }
-  const tone: MorningTone = MORNING_TONES.includes(raw.tone) ? raw.tone : DEFAULT_MORNING_PREFS.tone;
+  const tone: MorningTone = ALL_TONES.includes(raw.tone) ? raw.tone : DEFAULT_MORNING_PREFS.tone;
   const topics: MorningTopic[] = Array.isArray(raw.topics) ? MORNING_TOPICS.filter((t) => raw.topics.includes(t)) : [...DEFAULT_MORNING_PREFS.topics];
   const length: MorningLength = MORNING_LENGTHS.includes(raw.length) ? raw.length : "normal";
   const address: string = typeof raw.address === "string" ? raw.address.slice(0, 40).trim() : "";
@@ -92,9 +95,13 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
 
 // Описание тона для промпта (модель сама пишет на языке пользователя).
 export const TONE_PROMPT: Record<MorningTone, string> = {
-  friend: "как тёплый близкий друг — по-доброму, поддерживающе, на «ты»",
+  auto: "в манере самого пользователя — говори примерно как он сам (см. блок про его слова ниже)",
+  friend: "тёплый и поддерживающий — по-доброму, как близкий человек, на «ты»",
+  direct: "прямой и мотивирующий — по делу, коротко, подталкиваешь к одному конкретному действию, без воды",
+  calm: "спокойный и нейтральный — ровно, без лишних эмоций и пафоса",
+  business: "деловой и структурный — конкретно, по приоритетам, спокойно и без сантиментов",
+  energetic: "энергичный — бодро и заряжающе, но без наигранности и кринжа",
   coach: "как энергичный коуч — заряжаешь, мотивируешь и мягко подталкиваешь к действию",
-  calm: "спокойно и осознанно, в духе майндфулнес — без суеты, мягко и умиротворённо",
   mentor: "как мудрый наставник — вдумчиво, по делу, с уважением",
   funny: "с лёгким добрым юмором — улыбчиво, но без сарказма и не нелепо",
 };
