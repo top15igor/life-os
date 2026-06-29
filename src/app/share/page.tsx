@@ -8,7 +8,7 @@ import { getWeightData } from "@/lib/weight";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
-import { getInviteCode } from "@/lib/users";
+import { getHandle } from "@/lib/handle";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +49,7 @@ export default async function SharePage() {
   const hdrs = await headers();
   const host = hdrs.get("host") || "mylifebookai.vercel.app";
   const proto = hdrs.get("x-forwarded-proto") || "https";
-  const refLink = `${proto}://${host}/i/${await getInviteCode(user.id)}`;
+  const refLink = `${proto}://${host}/i/${await getHandle(user.id, user.name)}`;
 
   const pubConfig = await getPublicConfig(user.id);
   const suggestedSlug = slugifyName(user.name) || user.id.slice(0, 8);

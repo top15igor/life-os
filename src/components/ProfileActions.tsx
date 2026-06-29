@@ -121,3 +121,42 @@ export function PinSettings({ locale, hasPin }: { locale: string; hasPin: boolea
     </div>
   );
 }
+
+const NOTIF_STR: Record<string, { title: string; sub: string }> = {
+  ru: { title: "Уведомления в Telegram", sub: "Утренняя мотивация и вечерние «вопросы для книги». Можно выключить в любой момент." },
+  en: { title: "Telegram notifications", sub: "Morning motivation and evening “book questions”. You can turn it off anytime." },
+  uk: { title: "Сповіщення в Telegram", sub: "Ранкова мотивація та вечірні «питання для книги». Можна вимкнути будь-коли." },
+  fr: { title: "Notifications Telegram", sub: "Motivation du matin et « questions pour ton livre » le soir. Désactivable à tout moment." },
+};
+
+export function NotificationToggle({ locale, enabled }: { locale: string; enabled: boolean }) {
+  const s = NOTIF_STR[locale] || NOTIF_STR.ru;
+  const [on, setOn] = useState(enabled);
+  const [busy, setBusy] = useState(false);
+
+  async function toggle() {
+    if (busy) return;
+    const next = !on;
+    setOn(next);
+    setBusy(true);
+    try {
+      await fetch("/api/push-pref", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ enabled: next }) });
+    } catch {
+      setOn(!next);
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>{s.title}</div>
+        <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 2 }}>{s.sub}</div>
+      </div>
+      <button onClick={toggle} disabled={busy} role="switch" aria-checked={on} aria-label={s.title}
+        style={{ flexShrink: 0, width: 46, height: 28, borderRadius: 999, border: "none", cursor: "pointer", background: on ? "var(--accent)" : "var(--border)", position: "relative", transition: "background .15s", opacity: busy ? 0.7 : 1 }}>
+        <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: 999, background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+      </button>
+    </div>
+  );
+}

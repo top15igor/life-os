@@ -30,6 +30,7 @@ export type Tx = {
   amount: number;
   currency: string;
   category: string | null;
+  subcategory: string | null;
   note: string | null;
 };
 
@@ -50,6 +51,7 @@ export type CatSlice = {
   limit: number | null; // месячный лимит, если задан
   budgetPct: number | null; // потрачено / лимит, %
   over: boolean; // превышен ли лимит
+  subs: { name: string; amount: number }[]; // разбивка по подкатегориям (по убыванию)
 };
 
 export type FinanceData = {
@@ -98,20 +100,28 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     // таблицы ещё нет — отдаём пустую сводку
   }
 
-  // Операции выбранного месяца — запрашиваем напрямую по диапазону дат,
-  // поэтому месяц всегда полный, даже если в истории десятки тысяч записей.
+  // Операции выбранного месяца — запрашиваем напрямую по диапазону дат
+  // [1-е число месяца; 1-е число следующего месяца). Через «< следующий месяц»,
+  // а не «<= m-31»: 31-го числа нет в 30-дневных месяцах и феврале, и такой
+  // запрос Postgres отклоняет (invalid date) — из-за чего месяц казался пустым.
+  const monthEnd = `${shiftMonth(m, 1)}-01`;
   let txsRaw: Tx[] = [];
   try {
-    const { data } = await db
+    const q = (cols: string) => db
       .from("finance_tx")
-      .select("id, day, kind, amount, currency, category, note")
+      .select(cols)
       .eq("user_id", userId)
       .gte("day", `${m}-01`)
-      .lte("day", `${m}-31`)
+      .lt("day", monthEnd)
       .order("day", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5000);
-    txsRaw = (data || []).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+    let { data, error } = await q("id, day, kind, amount, currency, category, subcategory, note");
+    // Старая база без колонки subcategory — повторяем запрос без неё.
+    if (error && /subcategory|column|schema cache/i.test(error.message)) {
+      ({ data, error } = await q("id, day, kind, amount, currency, category, note"));
+    }
+    txsRaw = (data || []).map((t: any) => ({ subcategory: null, ...t, amount: Number(t.amount) }));
   } catch {
     // нет таблицы — пустой месяц
   }
@@ -165,6 +175,8 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   let income = 0,
     expense = 0;
   const catMap = new Map<string, number>();
+  // Разбивка по подкатегориям внутри категории: cat → (subcat → сумма).
+  const subMap = new Map<string, Map<string, number>>();
   // Агрегаты по дням месяца — для календаря (сальдо и число операций на дне).
   const dayMap = new Map<string, { count: number; income: number; expense: number }>();
   for (const t of txs) {
@@ -177,6 +189,11 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
       d.expense += v;
       const c = t.category || "other";
       catMap.set(c, (catMap.get(c) || 0) + v);
+      if (t.subcategory) {
+        const sm = subMap.get(c) || new Map<string, number>();
+        sm.set(t.subcategory, (sm.get(t.subcategory) || 0) + v);
+        subMap.set(c, sm);
+      }
     }
     dayMap.set(t.day, d);
   }
@@ -202,6 +219,9 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
       const amount = round2(catMap.get(category) || 0);
       const limit = budgets.has(category) ? round2(budgets.get(category)!) : null;
       const budgetPct = limit && limit > 0 ? Math.round((amount / limit) * 100) : null;
+      const subs = [...(subMap.get(category)?.entries() || [])]
+        .map(([name, amt]) => ({ name, amount: round2(amt) }))
+        .sort((a, b) => b.amount - a.amount);
       return {
         category,
         amount,
@@ -209,6 +229,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
         limit,
         budgetPct,
         over: limit != null && amount > limit,
+        subs,
       };
     })
     .sort((a, b) => b.amount - a.amount);
@@ -239,15 +260,64 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   };
 }
 
+// Динамика по месяцам (доход/расход/баланс в основной валюте, по историческому
+// курсу) — для графика. Последние `n` месяцев с данными, по возрастанию.
+export async function getMonthlyTrend(userId: string, n = 12): Promise<{ month: string; income: number; expense: number; net: number; currency: string }[]> {
+  const db = supabaseAdmin();
+  let all: Array<{ day: string; kind: string; amount: number; currency: string }> = [];
+  try {
+    all = (await fetchAllTx(db, "day, kind, amount, currency", userId)).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+  } catch {
+    return [];
+  }
+  if (!all.length) return [];
+
+  let base = "USD";
+  const freq = new Map<string, number>();
+  for (const t of all) freq.set(t.currency, (freq.get(t.currency) || 0) + 1);
+  if (freq.size) base = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  try {
+    const { data: st } = await db.from("finance_settings").select("base_currency").eq("user_id", userId).maybeSingle();
+    if (st?.base_currency) base = st.base_currency as string;
+  } catch { /* дефолт */ }
+
+  const months = [...new Set(all.map((t) => t.day.slice(0, 7)))];
+  const curs = [...new Set([base, ...all.map((t) => t.currency)])];
+  let usdPer = new Map<string, number>();
+  try { usdPer = await getUsdPerUnit(db, months, curs, { live: false }); } catch { /* 1:1 */ }
+  const toBase = (amount: number, cur: string, mo: string) => {
+    if (cur === base) return amount;
+    const uc = usdPer.get(`${mo}|${cur}`), ub = usdPer.get(`${mo}|${base}`);
+    if (uc && ub && uc > 0 && ub > 0) return (amount * uc) / ub;
+    return amount;
+  };
+
+  const byMonth = new Map<string, { income: number; expense: number }>();
+  for (const t of all) {
+    const mo = t.day.slice(0, 7);
+    const o = byMonth.get(mo) || { income: 0, expense: 0 };
+    const v = toBase(t.amount, t.currency, mo);
+    if (t.kind === "income") o.income += v; else o.expense += v;
+    byMonth.set(mo, o);
+  }
+  return [...byMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-n)
+    .map(([month, o]) => ({ month, income: round2(o.income), expense: round2(o.expense), net: round2(o.income - o.expense), currency: base }));
+}
+
 // Компактная сводка по финансам для AI-ассистента: итоги по годам и статьям
 // в основной валюте (разные валюты сведены по историческому курсу). Пустая
 // строка, если операций нет. Не делает живых запросов к НБУ — кэш + запасные
 // курсы, чтобы ответ бота не тормозил.
 export async function getFinanceSummary(userId: string): Promise<string> {
   const db = supabaseAdmin();
-  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null }> = [];
+  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null; subcategory: string | null }> = [];
   try {
-    all = (await fetchAllTx(db, "day, kind, amount, currency, category", userId)).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+    let raw = await fetchAllTx(db, "day, kind, amount, currency, category, subcategory", userId);
+    // Старая база без колонки subcategory — повторяем без неё.
+    if (!raw.length) raw = await fetchAllTx(db, "day, kind, amount, currency, category", userId);
+    all = raw.map((t: any) => ({ subcategory: null, ...t, amount: Number(t.amount) }));
   } catch {
     return "";
   }
@@ -278,6 +348,8 @@ export async function getFinanceSummary(userId: string): Promise<string> {
   const mkAgg = (): Agg => ({ inc: 0, exp: 0, incCat: new Map(), expCat: new Map() });
   const years = new Map<string, Agg>();
   const monthsAgg = new Map<string, Agg>();
+  // Категория → подкатегория → сумма расходов за всё время (для разрезов вида «Вова → Спорт»).
+  const catSub = new Map<string, Map<string, number>>();
   for (const t of all) {
     const y = t.day.slice(0, 4), mo = t.day.slice(0, 7);
     const v = toBase(t.amount, t.currency, mo);
@@ -285,6 +357,11 @@ export async function getFinanceSummary(userId: string): Promise<string> {
     for (const o of [years.get(y) || years.set(y, mkAgg()).get(y)!, monthsAgg.get(mo) || monthsAgg.set(mo, mkAgg()).get(mo)!]) {
       if (t.kind === "income") { o.inc += v; o.incCat.set(c, (o.incCat.get(c) || 0) + v); }
       else { o.exp += v; o.expCat.set(c, (o.expCat.get(c) || 0) + v); }
+    }
+    if (t.kind === "expense" && t.subcategory) {
+      const sm = catSub.get(c) || new Map<string, number>();
+      sm.set(t.subcategory, (sm.get(t.subcategory) || 0) + v);
+      catSub.set(c, sm);
     }
   }
   const top = (mp: Map<string, number>, n: number) =>
@@ -309,6 +386,17 @@ export async function getFinanceSummary(userId: string): Promise<string> {
     const incPart = o.inc > 0 ? `, доходы: ${top(o.incCat, 2)}` : "";
     const expPart = o.exp > 0 ? `, расходы: ${top(o.expCat, 3)}` : "";
     lines.push(`${mo}: ${Math.round(o.inc)} / ${Math.round(o.exp)} / ${Math.round(o.inc - o.exp)}${incPart}${expPart}`);
+  }
+
+  // Разбивка категорий с подкатегориями (за всё время) — для вопросов вида
+  // «сколько на Вову на спорт».
+  const withSubs = [...catSub.entries()].filter(([, sm]) => sm.size);
+  if (withSubs.length) {
+    lines.push("", "ПОДКАТЕГОРИИ (категория → подкатегория: сумма расхода за всё время):");
+    for (const [cat, sm] of withSubs) {
+      const tot = Math.round([...sm.values()].reduce((a, b) => a + b, 0));
+      lines.push(`${cat} (всего ${tot}): ${top(sm, 8)}`);
+    }
   }
   return lines.join("\n");
 }

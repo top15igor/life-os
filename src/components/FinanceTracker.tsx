@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
-type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; note: string | null };
-type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean };
+type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null };
+type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number }[] };
 type DaySlice = { day: string; count: number; income: number; expense: number; net: number };
 type Data = {
   month: string; currency: string; rates: Record<string, number>; currenciesUsed: string[]; needsRates: boolean;
@@ -15,19 +15,19 @@ type Data = {
 };
 
 const STR: Record<string, any> = {
-  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта", pickPeriod: "Выбрать месяц и год", earliest: "К самым ранним", thisMonth: "Текущий месяц", calendar: "Календарь месяца", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показать все дни", selectedDayLabel: "Операции за день",
+  ru: { balance: "Баланс за месяц", income: "Доходы", expense: "Расходы", add: "Добавить", addIncome: "Доход", addExpense: "Расход", amount: "Сумма", category: "Категория", date: "Дата", note: "Заметка (необязательно)", save: "Сохранить", cancel: "Отмена", byCategory: "Расходы по категориям", operations: "Операции", empty: "За этот месяц операций нет. Нажми «Добавить», чтобы записать доход или расход.", emptyAll: "Здесь будут твои доходы и расходы. Добавь первую операцию — и появится понятная картина денег.", delConfirm: "Удалить эту операцию?", noCat: "Без категории", today: "Сегодня", yesterday: "Вчера", currency: "Валюта", pickPeriod: "Выбрать месяц и год", earliest: "К самым ранним", thisMonth: "Текущий месяц", calendar: "Календарь месяца", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показать все дни", selectedDayLabel: "Операции за день", subcategoryPh: "Подкатегория (напр. Спорт) — необязательно", subSuggest: ["Спорт", "Обучение", "Одежда", "Здоровье", "Еда", "Развлечения", "Подарки", "Транспорт"], exportCsv: "Экспорт в CSV", trendTitle: "Динамика по месяцам", trendShow: "Показать график", trendLoading: "Загружаю…", trendEmpty: "Пока недостаточно данных для графика.", adviceTitle: "AI-советник по финансам", adviceGet: "Получить разбор и советы", adviceThinking: "Анализирую твои финансы…", adviceAgain: "Обновить", adviceErr: "Не получилось собрать разбор. Попробуй чуть позже.", recurTitle: "Регулярные платежи", recurHint: "Аренда, подписки, кредиты. Бот напомнит в день платежа — записывать ли, решаешь ты.", recurAdd: "Добавить платёж", recurEmpty: "Пока нет регулярных платежей.", recurDay: "Число месяца", recurEvery: (d: number) => `${d}-го числа каждого месяца`, recurDelConfirm: "Удалить этот регулярный платёж?", monoTitle: "Банк Monobank", monoHint: "Подключи карту — новые покупки и поступления будут автоматически попадать в «Деньги».", monoTokenPh: "Вставь токен Monobank", monoGetToken: "Получить токен на api.monobank.ua", monoConnect: "Подключить", monoConnected: (n: string | null) => `✅ Подключено${n ? `: ${n}` : ""}. Новые операции появятся автоматически.`, monoDisconnect: "Отключить", monoDisconnectConfirm: "Отключить Monobank? Уже добавленные операции останутся.", monoErr: "Не получилось подключить. Проверь токен и попробуй ещё раз.", monoBadToken: "Токен неверный. Скопируй его заново с api.monobank.ua.", monoRate: "Monobank просит подождать минуту — попробуй чуть позже.", monoWebhookWarn: "Токен сохранён, но вебхук пока не встал. Операции подтянутся позже — попробуй переподключить через минуту.", monoImportBtn: "Импорт за 30 дней", monoImported: (n: number) => `Импортировано операций: ${n}.`, goalsTitle: "Цели по накоплениям", goalsHint: "Копи на цель — следи за прогрессом. Пополняй вручную или после поступлений.", goalAdd: "Новая цель", goalsEmpty: "Пока нет целей. Добавь первую — например «Отпуск, 2000 €».", goalTitlePh: "Название (напр. Новая машина)", goalTargetPh: "Цель, сумма", goalLeft: (rest: string) => `осталось ${rest}`, goalDone: "Цель достигнута! 🎉", goalContribute: "Пополнить", goalContributePrompt: (cur: string) => `На сколько пополнить (${cur})? Можно отрицательное, чтобы убрать:`, goalDelConfirm: "Удалить эту цель?",
     budgets: "Бюджеты по категориям", limit: "Лимит", setLimit: "Задать лимит", editLimit: "Изменить лимит", removeLimit: "Убрать лимит", ofLimit: "из", over: "превышен на", leftWord: "осталось", addBudget: "Добавить лимит", budgetTotalT: "Бюджет на месяц", spent: "потрачено",
     settings: "Настройки и валюты", baseCurrency: "Основная валюта", ratesT: "Курсы к основной валюте", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Итоги примерные: укажи курсы валют в настройках, чтобы считать всё в одной валюте.", ratesHint: "Эти курсы — запасные: применяются, только если курс НБУ на месяц операции недоступен.", histNote: "Суммы в разных валютах сводятся к основной по официальному курсу НБУ на месяц каждой операции — операции 2020 и 2023 годов считаются по своим курсам, а не по сегодняшнему.",
     importTitle: "Перенос из MoneyOK", importBtn: "Выбрать файл MoneyOK.csv", importing: "Переносим операции…", importHint: "В MoneyOK: Меню → «Экспорт в CSV» → пришли себе файл и загрузи его здесь. Перенесутся все доходы и расходы. Повторная загрузка того же файла не создаёт дублей.", importDone: (n: number, dup: number, skip: number) => `Перенесено операций: ${n}${dup ? `, дублей пропущено: ${dup}` : ""}${skip ? `, переводов/остатков пропущено: ${skip}` : ""}.`, importEmpty: "Не удалось распознать операции в файле. Это точно экспорт MoneyOK в CSV?", importErr: "Не получилось загрузить файл. Попробуй ещё раз.", importUntagged: " Внимание: пометить операции не удалось (старая база), откат в один клик будет недоступен — обнови схему supabase/finance.sql.", undoBtn: "Откатить импорт MoneyOK", undoConfirm: "Удалить все операции, перенесённые из MoneyOK? Добавленные вручную останутся.", undoDone: (n: number) => `Откат выполнен: удалено операций — ${n}.`, undoNone: "Импортированных операций не найдено — удалять нечего.", undoErr: "Не удалось откатить. Попробуй ещё раз." },
-  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency", pickPeriod: "Pick month and year", earliest: "To earliest", thisMonth: "Current month", calendar: "Month calendar", weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], ops: "ops", dayBalance: "Day balance", allDays: "Show all days", selectedDayLabel: "Transactions for the day",
+  en: { balance: "Monthly balance", income: "Income", expense: "Expenses", add: "Add", addIncome: "Income", addExpense: "Expense", amount: "Amount", category: "Category", date: "Date", note: "Note (optional)", save: "Save", cancel: "Cancel", byCategory: "Spending by category", operations: "Transactions", empty: "No transactions this month. Tap “Add” to log income or an expense.", emptyAll: "Your income and expenses will live here. Add your first transaction to see a clear money picture.", delConfirm: "Delete this transaction?", noCat: "No category", today: "Today", yesterday: "Yesterday", currency: "Currency", pickPeriod: "Pick month and year", earliest: "To earliest", thisMonth: "Current month", calendar: "Month calendar", weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], ops: "ops", dayBalance: "Day balance", allDays: "Show all days", selectedDayLabel: "Transactions for the day", subcategoryPh: "Subcategory (e.g. Sport) — optional", subSuggest: ["Sport", "Education", "Clothing", "Health", "Food", "Fun", "Gifts", "Transport"], exportCsv: "Export to CSV", trendTitle: "Monthly trend", trendShow: "Show chart", trendLoading: "Loading…", trendEmpty: "Not enough data for a chart yet.", adviceTitle: "AI money advisor", adviceGet: "Get review & tips", adviceThinking: "Analysing your finances…", adviceAgain: "Refresh", adviceErr: "Couldn't build the review. Try again later.", recurTitle: "Recurring payments", recurHint: "Rent, subscriptions, loans. The bot reminds you on the due day — you decide whether to log it.", recurAdd: "Add payment", recurEmpty: "No recurring payments yet.", recurDay: "Day of month", recurEvery: (d: number) => `every month on the ${d}${d === 1 ? "st" : d === 2 ? "nd" : d === 3 ? "rd" : "th"}`, recurDelConfirm: "Delete this recurring payment?", monoTitle: "Monobank", monoHint: "Connect your card — new purchases and income flow into Money automatically.", monoTokenPh: "Paste your Monobank token", monoGetToken: "Get a token at api.monobank.ua", monoConnect: "Connect", monoConnected: (n: string | null) => `✅ Connected${n ? `: ${n}` : ""}. New transactions will appear automatically.`, monoDisconnect: "Disconnect", monoDisconnectConfirm: "Disconnect Monobank? Already-added transactions stay.", monoErr: "Couldn't connect. Check the token and try again.", monoBadToken: "Invalid token. Copy it again from api.monobank.ua.", monoRate: "Monobank asks to wait a minute — try again shortly.", monoWebhookWarn: "Token saved, but the webhook didn't register yet. Transactions will sync later — try reconnecting in a minute.", monoImportBtn: "Import last 30 days", monoImported: (n: number) => `Imported ${n} transactions.`, goalsTitle: "Savings goals", goalsHint: "Save toward a goal and track progress. Top up manually or after income.", goalAdd: "New goal", goalsEmpty: "No goals yet. Add one — e.g. “Vacation, 2000 €”.", goalTitlePh: "Title (e.g. New car)", goalTargetPh: "Target amount", goalLeft: (rest: string) => `${rest} to go`, goalDone: "Goal reached! 🎉", goalContribute: "Top up", goalContributePrompt: (cur: string) => `How much to add (${cur})? Negative to remove:`, goalDelConfirm: "Delete this goal?",
     budgets: "Category budgets", limit: "Limit", setLimit: "Set a limit", editLimit: "Edit limit", removeLimit: "Remove limit", ofLimit: "of", over: "over by", leftWord: "left", addBudget: "Add a limit", budgetTotalT: "Monthly budget", spent: "spent",
     settings: "Settings & currencies", baseCurrency: "Base currency", ratesT: "Rates to base currency", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totals are approximate: set currency rates in settings to count everything in one currency.", ratesHint: "These rates are a fallback — used only when the NBU rate for an operation's month is unavailable.", histNote: "Amounts in different currencies are converted to the base one using the official NBU rate for each operation's month — 2020 and 2023 operations are counted at their own rates, not today's.",
     importTitle: "Migrate from MoneyOK", importBtn: "Choose MoneyOK.csv file", importing: "Importing transactions…", importHint: "In MoneyOK: Menu → “Export to CSV” → send the file to yourself and upload it here. All income and expenses will be migrated. Re-uploading the same file won't create duplicates.", importDone: (n: number, dup: number, skip: number) => `Imported ${n} transactions${dup ? `, ${dup} duplicates skipped` : ""}${skip ? `, ${skip} transfers/balances skipped` : ""}.`, importEmpty: "Couldn't recognise any transactions. Is this a MoneyOK CSV export?", importErr: "Upload failed. Please try again.", importUntagged: " Note: couldn't tag the transactions (old database), one-click undo won't be available — update the schema supabase/finance.sql.", undoBtn: "Undo MoneyOK import", undoConfirm: "Delete all transactions migrated from MoneyOK? Manually added ones stay.", undoDone: (n: number) => `Undone: ${n} transactions removed.`, undoNone: "No imported transactions found — nothing to remove.", undoErr: "Undo failed. Please try again." },
-  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта", pickPeriod: "Обрати місяць і рік", earliest: "До найраніших", thisMonth: "Поточний місяць", calendar: "Календар місяця", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показати всі дні", selectedDayLabel: "Операції за день",
+  uk: { balance: "Баланс за місяць", income: "Доходи", expense: "Витрати", add: "Додати", addIncome: "Дохід", addExpense: "Витрата", amount: "Сума", category: "Категорія", date: "Дата", note: "Нотатка (необов'язково)", save: "Зберегти", cancel: "Скасувати", byCategory: "Витрати за категоріями", operations: "Операції", empty: "За цей місяць операцій немає. Натисни «Додати», щоб записати дохід або витрату.", emptyAll: "Тут будуть твої доходи й витрати. Додай першу операцію — і з'явиться зрозуміла картина грошей.", delConfirm: "Видалити цю операцію?", noCat: "Без категорії", today: "Сьогодні", yesterday: "Вчора", currency: "Валюта", pickPeriod: "Обрати місяць і рік", earliest: "До найраніших", thisMonth: "Поточний місяць", calendar: "Календар місяця", weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"], ops: "операц.", dayBalance: "Сальдо дня", allDays: "Показати всі дні", selectedDayLabel: "Операції за день", subcategoryPh: "Підкатегорія (напр. Спорт) — необов'язково", subSuggest: ["Спорт", "Навчання", "Одяг", "Здоров'я", "Їжа", "Розваги", "Подарунки", "Транспорт"], exportCsv: "Експорт у CSV", trendTitle: "Динаміка по місяцях", trendShow: "Показати графік", trendLoading: "Завантажую…", trendEmpty: "Поки недостатньо даних для графіка.", adviceTitle: "AI-радник з фінансів", adviceGet: "Отримати розбір і поради", adviceThinking: "Аналізую твої фінанси…", adviceAgain: "Оновити", adviceErr: "Не вдалося зібрати розбір. Спробуй пізніше.", recurTitle: "Регулярні платежі", recurHint: "Оренда, підписки, кредити. Бот нагадає в день платежу — записувати чи ні, вирішуєш ти.", recurAdd: "Додати платіж", recurEmpty: "Поки немає регулярних платежів.", recurDay: "Число місяця", recurEvery: (d: number) => `${d}-го числа щомісяця`, recurDelConfirm: "Видалити цей регулярний платіж?", monoTitle: "Банк Monobank", monoHint: "Підключи картку — нові покупки й надходження автоматично потраплятимуть у «Гроші».", monoTokenPh: "Встав токен Monobank", monoGetToken: "Отримати токен на api.monobank.ua", monoConnect: "Підключити", monoConnected: (n: string | null) => `✅ Підключено${n ? `: ${n}` : ""}. Нові операції з'являться автоматично.`, monoDisconnect: "Відключити", monoDisconnectConfirm: "Відключити Monobank? Вже додані операції залишаться.", monoErr: "Не вдалося підключити. Перевір токен і спробуй ще раз.", monoBadToken: "Токен невірний. Скопіюй його заново з api.monobank.ua.", monoRate: "Monobank просить зачекати хвилину — спробуй трохи пізніше.", monoWebhookWarn: "Токен збережено, але вебхук поки не став. Операції підтягнуться згодом — спробуй перепідключити за хвилину.", monoImportBtn: "Імпорт за 30 днів", monoImported: (n: number) => `Імпортовано операцій: ${n}.`, goalsTitle: "Цілі накопичень", goalsHint: "Накопичуй на ціль — стеж за прогресом. Поповнюй вручну або після надходжень.", goalAdd: "Нова ціль", goalsEmpty: "Поки немає цілей. Додай першу — напр. «Відпустка, 2000 €».", goalTitlePh: "Назва (напр. Нова машина)", goalTargetPh: "Ціль, сума", goalLeft: (rest: string) => `залишилось ${rest}`, goalDone: "Ціль досягнута! 🎉", goalContribute: "Поповнити", goalContributePrompt: (cur: string) => `На скільки поповнити (${cur})? Можна від'ємне, щоб прибрати:`, goalDelConfirm: "Видалити цю ціль?",
     budgets: "Бюджети за категоріями", limit: "Ліміт", setLimit: "Задати ліміт", editLimit: "Змінити ліміт", removeLimit: "Прибрати ліміт", ofLimit: "з", over: "перевищено на", leftWord: "залишилось", addBudget: "Додати ліміт", budgetTotalT: "Бюджет на місяць", spent: "витрачено",
     settings: "Налаштування та валюти", baseCurrency: "Основна валюта", ratesT: "Курси до основної валюти", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Підсумки приблизні: вкажи курси валют у налаштуваннях, щоб рахувати все в одній валюті.", ratesHint: "Ці курси — запасні: застосовуються, лише якщо курс НБУ на місяць операції недоступний.", histNote: "Суми в різних валютах зводяться до основної за офіційним курсом НБУ на місяць кожної операції — операції 2020 і 2023 років рахуються за своїми курсами, а не за сьогоднішнім.",
     importTitle: "Перенесення з MoneyOK", importBtn: "Обрати файл MoneyOK.csv", importing: "Переносимо операції…", importHint: "У MoneyOK: Меню → «Експорт у CSV» → надішли собі файл і завантаж його тут. Перенесуться всі доходи й витрати. Повторне завантаження того ж файлу не створює дублів.", importDone: (n: number, dup: number, skip: number) => `Перенесено операцій: ${n}${dup ? `, дублів пропущено: ${dup}` : ""}${skip ? `, переказів/залишків пропущено: ${skip}` : ""}.`, importEmpty: "Не вдалося розпізнати операції у файлі. Це точно експорт MoneyOK у CSV?", importErr: "Не вдалося завантажити файл. Спробуй ще раз.", importUntagged: " Увага: позначити операції не вдалося (стара база), відкат в один клік буде недоступний — онови схему supabase/finance.sql.", undoBtn: "Відкотити імпорт MoneyOK", undoConfirm: "Видалити всі операції, перенесені з MoneyOK? Додані вручну залишаться.", undoDone: (n: number) => `Відкат виконано: видалено операцій — ${n}.`, undoNone: "Імпортованих операцій не знайдено — видаляти нічого.", undoErr: "Не вдалося відкотити. Спробуй ще раз." },
-  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise", pickPeriod: "Choisir mois et année", earliest: "Au plus tôt", thisMonth: "Mois courant", calendar: "Calendrier du mois", weekdays: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"], ops: "op.", dayBalance: "Solde du jour", allDays: "Voir tous les jours", selectedDayLabel: "Opérations du jour",
+  fr: { balance: "Solde du mois", income: "Revenus", expense: "Dépenses", add: "Ajouter", addIncome: "Revenu", addExpense: "Dépense", amount: "Montant", category: "Catégorie", date: "Date", note: "Note (facultatif)", save: "Enregistrer", cancel: "Annuler", byCategory: "Dépenses par catégorie", operations: "Opérations", empty: "Aucune opération ce mois-ci. Touchez « Ajouter » pour noter un revenu ou une dépense.", emptyAll: "Tes revenus et dépenses apparaîtront ici. Ajoute ta première opération pour une vision claire de ton argent.", delConfirm: "Supprimer cette opération ?", noCat: "Sans catégorie", today: "Aujourd'hui", yesterday: "Hier", currency: "Devise", pickPeriod: "Choisir mois et année", earliest: "Au plus tôt", thisMonth: "Mois courant", calendar: "Calendrier du mois", weekdays: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"], ops: "op.", dayBalance: "Solde du jour", allDays: "Voir tous les jours", selectedDayLabel: "Opérations du jour", subcategoryPh: "Sous-catégorie (ex. Sport) — facultatif", subSuggest: ["Sport", "Éducation", "Vêtements", "Santé", "Nourriture", "Loisirs", "Cadeaux", "Transport"], exportCsv: "Export CSV", trendTitle: "Évolution mensuelle", trendShow: "Voir le graphique", trendLoading: "Chargement…", trendEmpty: "Pas encore assez de données pour un graphique.", adviceTitle: "Conseiller financier IA", adviceGet: "Obtenir l'analyse et des conseils", adviceThinking: "J'analyse tes finances…", adviceAgain: "Actualiser", adviceErr: "Impossible de générer l'analyse. Réessaie plus tard.", recurTitle: "Paiements récurrents", recurHint: "Loyer, abonnements, crédits. Le bot te rappelle le jour J — à toi de décider de l'enregistrer.", recurAdd: "Ajouter un paiement", recurEmpty: "Aucun paiement récurrent pour l'instant.", recurDay: "Jour du mois", recurEvery: (d: number) => `le ${d} de chaque mois`, recurDelConfirm: "Supprimer ce paiement récurrent ?", monoTitle: "Monobank", monoHint: "Connecte ta carte — les nouveaux achats et revenus arrivent automatiquement dans Argent.", monoTokenPh: "Colle ton token Monobank", monoGetToken: "Obtenir un token sur api.monobank.ua", monoConnect: "Connecter", monoConnected: (n: string | null) => `✅ Connecté${n ? ` : ${n}` : ""}. Les nouvelles opérations apparaîtront automatiquement.`, monoDisconnect: "Déconnecter", monoDisconnectConfirm: "Déconnecter Monobank ? Les opérations déjà ajoutées restent.", monoErr: "Échec de la connexion. Vérifie le token et réessaie.", monoBadToken: "Token invalide. Copie-le à nouveau depuis api.monobank.ua.", monoRate: "Monobank demande d'attendre une minute — réessaie bientôt.", monoWebhookWarn: "Token enregistré, mais le webhook n'est pas encore actif. Les opérations se synchroniseront plus tard — reconnecte dans une minute.", monoImportBtn: "Importer 30 derniers jours", monoImported: (n: number) => `${n} opérations importées.`, goalsTitle: "Objectifs d'épargne", goalAdd: "Nouvel objectif", goalsHint: "Épargne pour un objectif et suis la progression. Ajoute manuellement ou après un revenu.", goalsEmpty: "Aucun objectif. Ajoute le premier — ex. « Vacances, 2000 € ».", goalTitlePh: "Titre (ex. Nouvelle voiture)", goalTargetPh: "Montant cible", goalLeft: (rest: string) => `reste ${rest}`, goalDone: "Objectif atteint ! 🎉", goalContribute: "Ajouter", goalContributePrompt: (cur: string) => `Combien ajouter (${cur}) ? Négatif pour retirer :`, goalDelConfirm: "Supprimer cet objectif ?",
     budgets: "Budgets par catégorie", limit: "Limite", setLimit: "Définir une limite", editLimit: "Modifier la limite", removeLimit: "Retirer la limite", ofLimit: "sur", over: "dépassé de", leftWord: "restant", addBudget: "Ajouter une limite", budgetTotalT: "Budget du mois", spent: "dépensé",
     settings: "Réglages & devises", baseCurrency: "Devise principale", ratesT: "Taux vers la devise principale", rateLine: (c: string, b: string) => `1 ${c} =`, needsRatesWarn: "Totaux approximatifs : indique les taux de change dans les réglages pour tout compter dans une seule devise.", ratesHint: "Ces taux sont un secours — utilisés uniquement si le taux NBU du mois de l'opération est indisponible.", histNote: "Les montants en différentes devises sont convertis dans la devise principale au taux officiel NBU du mois de chaque opération — les opérations de 2020 et 2023 sont comptées à leurs propres taux, pas celui d'aujourd'hui.",
     importTitle: "Migrer depuis MoneyOK", importBtn: "Choisir le fichier MoneyOK.csv", importing: "Import des opérations…", importHint: "Dans MoneyOK : Menu → « Export CSV » → envoie-toi le fichier et charge-le ici. Tous les revenus et dépenses seront migrés. Recharger le même fichier ne crée pas de doublons.", importDone: (n: number, dup: number, skip: number) => `${n} opérations importées${dup ? `, ${dup} doublons ignorés` : ""}${skip ? `, ${skip} transferts/soldes ignorés` : ""}.`, importEmpty: "Aucune opération reconnue. S'agit-il bien d'un export CSV de MoneyOK ?", importErr: "Échec du chargement. Réessaie.", importUntagged: " Note : impossible de marquer les opérations (ancienne base), l'annulation en un clic sera indisponible — mets à jour le schéma supabase/finance.sql.", undoBtn: "Annuler l'import MoneyOK", undoConfirm: "Supprimer toutes les opérations importées de MoneyOK ? Celles ajoutées à la main restent.", undoDone: (n: number) => `Annulé : ${n} opérations supprimées.`, undoNone: "Aucune opération importée trouvée — rien à supprimer.", undoErr: "Échec de l'annulation. Réessaie." },
@@ -146,14 +146,166 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState(base);
   const [category, setCategory] = useState("food");
+  const [subcategory, setSubcategory] = useState("");
   const [day, setDay] = useState(todayISO());
   const [note, setNote] = useState("");
+
+  // Редактирование существующей операции.
+  const [editTx, setEditTx] = useState<string | null>(null);
+  const [eAmount, setEAmount] = useState("");
+  const [eCurrency, setECurrency] = useState(base);
+  const [eKind, setEKind] = useState<"income" | "expense">("expense");
+  const [eCategory, setECategory] = useState("");
+  const [eSubcategory, setESubcategory] = useState("");
+  const [eNote, setENote] = useState("");
+  const [eDay, setEDay] = useState(todayISO());
 
   // Календарь-выбор месяца/года.
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => Number(month.slice(0, 4)));
   // Календарь по дням: выбранный день месяца (фильтрует список операций).
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  // График динамики по месяцам (грузится по требованию).
+  type TrendPoint = { month: string; income: number; expense: number; net: number; currency: string };
+  const [trend, setTrend] = useState<TrendPoint[] | null>(null);
+  const [trendLoading, setTrendLoading] = useState(false);
+  async function loadTrend() {
+    if (trend || trendLoading) return;
+    setTrendLoading(true);
+    try {
+      const r = await fetch("/api/finance/trend?n=12");
+      const j = await r.json();
+      setTrend(j?.trend || []);
+    } catch { setTrend([]); }
+    setTrendLoading(false);
+  }
+
+  // AI-советник по финансам (грузится по требованию).
+  const [advice, setAdvice] = useState<string | null>(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  async function loadAdvice() {
+    if (adviceLoading) return;
+    setAdviceLoading(true);
+    try {
+      const r = await fetch(`/api/finance/advice?lang=${locale}`);
+      const j = await r.json();
+      setAdvice(j?.ok ? j.text : s.adviceErr);
+    } catch { setAdvice(s.adviceErr); }
+    setAdviceLoading(false);
+  }
+
+  // Регулярные платежи (подписки) — управление.
+  type Recur = { id: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; day_of_month: number; active: boolean };
+  const [recur, setRecur] = useState<Recur[] | null>(null);
+  const [recAddOpen, setRecAddOpen] = useState(false);
+  const [rKind, setRKind] = useState<"income" | "expense">("expense");
+  const [rAmount, setRAmount] = useState("");
+  const [rCurrency, setRCurrency] = useState(base);
+  const [rCategory, setRCategory] = useState("");
+  const [rNote, setRNote] = useState("");
+  const [rDay, setRDay] = useState("1");
+  async function loadRecur() {
+    try { const j = await (await fetch("/api/finance/recurring")).json(); setRecur(j?.items || []); }
+    catch { setRecur([]); }
+  }
+  useEffect(() => { loadRecur(); /* eslint-disable-next-line */ }, []);
+
+  // Подключение Monobank.
+  type MonoStatus = { connected: boolean; clientName: string | null; webhookSet?: boolean };
+  const [mono, setMono] = useState<MonoStatus | null>(null);
+  const [monoToken, setMonoToken] = useState("");
+  const [monoBusy, setMonoBusy] = useState(false);
+  const [monoMsg, setMonoMsg] = useState<string | null>(null);
+  async function loadMono() {
+    try { const j = await (await fetch("/api/bank/monobank")).json(); setMono(j?.ok ? j : { connected: false, clientName: null }); }
+    catch { setMono({ connected: false, clientName: null }); }
+  }
+  useEffect(() => { loadMono(); /* eslint-disable-next-line */ }, []);
+  async function connectMono() {
+    const t = monoToken.trim();
+    if (t.length < 20) { setMonoMsg(s.monoErr); return; }
+    setMonoBusy(true); setMonoMsg(null);
+    try {
+      const r = await fetch("/api/bank/monobank", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: t }) });
+      const j = await r.json();
+      if (r.ok && j?.ok) { setMonoToken(""); setMono({ connected: true, clientName: j.clientName, webhookSet: j.webhookSet }); if (!j.webhookSet) setMonoMsg(s.monoWebhookWarn); }
+      else setMonoMsg(j?.error === "invalid_token" ? s.monoBadToken : j?.error === "rate_limited" ? s.monoRate : s.monoErr);
+    } catch { setMonoMsg(s.monoErr); }
+    setMonoBusy(false);
+  }
+  async function disconnectMono() {
+    if (!window.confirm(s.monoDisconnectConfirm)) return;
+    setMonoBusy(true);
+    await fetch("/api/bank/monobank", { method: "DELETE" });
+    setMonoBusy(false); setMono({ connected: false, clientName: null }); setMonoMsg(null);
+  }
+  async function importMono() {
+    setMonoBusy(true); setMonoMsg(null);
+    try {
+      const j = await (await fetch("/api/bank/monobank/import", { method: "POST" })).json();
+      if (j?.ok) { setMonoMsg(s.monoImported(j.inserted || 0)); router.refresh(); }
+      else setMonoMsg(j?.error === "rate_limited" ? s.monoRate : s.monoErr);
+    } catch { setMonoMsg(s.monoErr); }
+    setMonoBusy(false);
+  }
+
+  // Цели по накоплениям.
+  type Goal = { id: string; title: string; target_amount: number; current_amount: number; currency: string; deadline: string | null; achieved: boolean };
+  const [goals, setGoals] = useState<Goal[] | null>(null);
+  const [goalAddOpen, setGoalAddOpen] = useState(false);
+  const [gTitle, setGTitle] = useState("");
+  const [gTarget, setGTarget] = useState("");
+  const [gCurrency, setGCurrency] = useState(base);
+  const [gDeadline, setGDeadline] = useState("");
+  async function loadGoals() {
+    try { const j = await (await fetch("/api/finance/goals")).json(); setGoals(j?.items || []); }
+    catch { setGoals([]); }
+  }
+  useEffect(() => { loadGoals(); /* eslint-disable-next-line */ }, []);
+  async function addGoal() {
+    const t = parseFloat(gTarget.replace(",", "."));
+    if (!gTitle.trim() || !isFinite(t) || t <= 0) return;
+    setBusy(true);
+    const r = await fetch("/api/finance/goals", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: gTitle.trim(), target_amount: t, currency: gCurrency, deadline: gDeadline || null }) });
+    setBusy(false);
+    if (r.ok) { setGoalAddOpen(false); setGTitle(""); setGTarget(""); setGDeadline(""); loadGoals(); }
+  }
+  async function contributeGoal(g: Goal) {
+    const raw = window.prompt(s.goalContributePrompt(g.currency));
+    if (raw == null) return;
+    const v = parseFloat(raw.replace(",", "."));
+    if (!isFinite(v) || v === 0) return;
+    setBusy(true);
+    await fetch("/api/finance/goals", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: g.id, add: v }) });
+    setBusy(false); loadGoals();
+  }
+  async function delGoal(id: string) {
+    if (!window.confirm(s.goalDelConfirm)) return;
+    setBusy(true);
+    await fetch("/api/finance/goals", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
+    setBusy(false); loadGoals();
+  }
+  async function addRecur() {
+    const v = parseFloat(rAmount.replace(",", "."));
+    const d = parseInt(rDay, 10);
+    if (!isFinite(v) || v <= 0 || !(d >= 1 && d <= 31)) return;
+    setBusy(true);
+    const r = await fetch("/api/finance/recurring", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind: rKind, amount: v, currency: rCurrency, category: rCategory.trim() || null, note: rNote.trim() || null, day_of_month: d }) });
+    setBusy(false);
+    if (r.ok) { setRecAddOpen(false); setRAmount(""); setRCategory(""); setRNote(""); loadRecur(); }
+  }
+  async function toggleRecur(it: Recur) {
+    setBusy(true);
+    await fetch("/api/finance/recurring", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: it.id, active: !it.active }) });
+    setBusy(false); loadRecur();
+  }
+  async function delRecur(id: string) {
+    if (!window.confirm(s.recurDelConfirm)) return;
+    setBusy(true);
+    await fetch("/api/finance/recurring", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
+    setBusy(false); loadRecur();
+  }
 
   // Бюджеты.
   const [editBudget, setEditBudget] = useState<string | null>(null);
@@ -208,9 +360,33 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const v = parseFloat(amount.replace(",", "."));
     if (!isFinite(v) || v <= 0) return;
     setBusy(true);
-    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category, note: note.trim() || null }) });
+    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category, subcategory: subcategory.trim() || null, note: note.trim() || null }) });
     setBusy(false);
-    if (r.ok) { setOpen(false); setAmount(""); setNote(""); router.refresh(); }
+    if (r.ok) { setOpen(false); setAmount(""); setNote(""); setSubcategory(""); router.refresh(); }
+  }
+
+  function startEdit(t: Tx) {
+    setEditTx(t.id);
+    setEAmount(String(t.amount));
+    setECurrency(t.currency);
+    setEKind(t.kind);
+    setECategory(t.category || "");
+    setESubcategory(t.subcategory || "");
+    setENote(t.note || "");
+    setEDay(t.day);
+  }
+
+  async function saveEdit() {
+    if (!editTx) return;
+    const v = parseFloat(eAmount.replace(",", "."));
+    if (!isFinite(v) || v <= 0) return;
+    setBusy(true);
+    const r = await fetch("/api/finance", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eCategory.trim() || null, subcategory: eSubcategory.trim() || null, note: eNote.trim() || null }),
+    });
+    setBusy(false);
+    if (r.ok) { setEditTx(null); router.refresh(); }
   }
 
   async function del(id: string) {
@@ -289,9 +465,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     if (r.ok) { setSetOpenS(false); router.refresh(); }
   }
 
-  const input: any = { fontSize: 14, padding: "9px 11px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
-  const btnP: any = { fontSize: 13.5, padding: "9px 16px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", fontWeight: 500 };
-  const btnG: any = { fontSize: 13.5, padding: "9px 14px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer" };
+  const input: any = { fontSize: 14, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
+  const btnP: any = { fontSize: 13.5, padding: "10px 18px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+  const btnG: any = { fontSize: 13.5, padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", fontWeight: 500, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+  // Компактная «пилюля» — для главных действий вместо кнопок во всю ширину.
+  const btnPill: any = { ...btnP, padding: "10px 22px", borderRadius: 999 };
 
   // Календарь по дням месяца.
   const dayMap = new Map(data.byDay.map((d) => [d.day, d]));
@@ -431,6 +609,43 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             <button disabled={busy} onClick={() => setSetOpenS(false)} style={btnG}>{s.cancel}</button>
           </div>
 
+          {/* Подключение Monobank */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <i className="ti ti-building-bank" style={{ fontSize: 15, color: "var(--accent)" }} />{s.monoTitle}
+            </div>
+            {mono?.connected ? (
+              <div>
+                <div style={{ fontSize: 12.5, color: "#065f46", background: "#10b9811a", border: "1px solid #6ee7b7", borderRadius: 9, padding: "8px 11px", marginBottom: 8 }}>{s.monoConnected(mono.clientName)}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button disabled={monoBusy} onClick={importMono} style={btnG}>
+                    <i className="ti ti-history" style={{ fontSize: 14 }} /> {s.monoImportBtn}
+                  </button>
+                  <button disabled={monoBusy} onClick={disconnectMono} style={{ ...btnG, color: "#ef4444" }}>{s.monoDisconnect}</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{s.monoHint}</div>
+                <input type="password" placeholder={s.monoTokenPh} value={monoToken} onChange={(e) => setMonoToken(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <button disabled={monoBusy} onClick={connectMono} style={{ ...btnP, opacity: monoBusy ? 0.7 : 1 }}>
+                    <i className="ti ti-plug" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.monoConnect}
+                  </button>
+                  <a href="https://api.monobank.ua/" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--accent)" }}>{s.monoGetToken}</a>
+                </div>
+              </div>
+            )}
+            {monoMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{monoMsg}</div>}
+          </div>
+
+          {/* Экспорт операций в CSV */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+            <a href="/api/finance/export" style={{ ...btnG, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+              <i className="ti ti-download" style={{ fontSize: 14 }} /> {s.exportCsv}
+            </a>
+          </div>
+
           {/* Перенос данных из MoneyOK */}
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
             <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
@@ -463,26 +678,28 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5 }}>
           <i className="ti ti-wallet" style={{ fontSize: 14, color: "var(--accent)" }} />{s.balance}
         </div>
-        <div style={{ fontSize: 32, fontWeight: 700, marginTop: 3, lineHeight: 1.1, color: balance < 0 ? "#ef4444" : "var(--text)" }}>
+        <div style={{ fontSize: 38, fontWeight: 750, marginTop: 4, lineHeight: 1.05, letterSpacing: "-0.02em", color: balance < 0 ? "#ef4444" : "var(--text)" }}>
           {balance > 0 ? "+" : ""}{fmtMoney(balance, base, locale)}
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 120px", background: "#10b9811a", borderRadius: 10, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11.5, color: "#10b981", display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 120px", background: "#10b9811a", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, color: "#10b981", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
               <i className="ti ti-arrow-down-left" style={{ fontSize: 14 }} />{s.income}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 600, marginTop: 2 }}>{fmtMoney(income, base, locale)}</div>
+            <div style={{ fontSize: 20, fontWeight: 650, marginTop: 3 }}>{fmtMoney(income, base, locale)}</div>
           </div>
-          <div style={{ flex: "1 1 120px", background: "#ef44441a", borderRadius: 10, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11.5, color: "#ef4444", display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ flex: "1 1 120px", background: "#ef44441a", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, color: "#ef4444", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
               <i className="ti ti-arrow-up-right" style={{ fontSize: 14 }} />{s.expense}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 600, marginTop: 2 }}>{fmtMoney(expense, base, locale)}</div>
+            <div style={{ fontSize: 20, fontWeight: 650, marginTop: 3 }}>{fmtMoney(expense, base, locale)}</div>
           </div>
         </div>
-        <button onClick={() => setOpen((o) => !o)} style={{ ...btnP, width: "100%", marginTop: 14 }}>
-          <i className="ti ti-plus" style={{ fontSize: 15, verticalAlign: "-2px" }} /> {s.add}
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+          <button onClick={() => setOpen((o) => !o)} style={{ ...btnPill, fontSize: 14, padding: "11px 28px", background: open ? "var(--surface-2)" : "var(--accent)", color: open ? "var(--text-2)" : "#fff", border: open ? "1px solid var(--border)" : "none", boxShadow: open ? "none" : "0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent)" }}>
+            <i className={`ti ${open ? "ti-x" : "ti-plus"}`} style={{ fontSize: 16 }} /> {open ? s.cancel : s.add}
+          </button>
+        </div>
 
         {/* Форма добавления */}
         {open && (
@@ -515,6 +732,17 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                 }}><span>{c.icon}</span>{(c.l as any)[locale] || c.l.ru}</button>
               ))}
             </div>
+            <input type="text" placeholder={s.subcategoryPh} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 6, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+              {(s.subSuggest as string[]).map((sg) => (
+                <button key={sg} onClick={() => setSubcategory(sg)} style={{
+                  fontSize: 11.5, padding: "3px 10px", borderRadius: 20, cursor: "pointer",
+                  border: `1px solid ${subcategory === sg ? "var(--accent)" : "var(--border)"}`,
+                  background: subcategory === sg ? "var(--accent)" : "var(--surface)",
+                  color: subcategory === sg ? "#fff" : "var(--text-2)",
+                }}>{sg}</button>
+              ))}
+            </div>
             <input type="text" placeholder={s.note} value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 12, boxSizing: "border-box" }} />
             <div style={{ display: "flex", gap: 8 }}>
               <button disabled={busy} onClick={save} style={{ ...btnP, flex: 1 }}>{s.save}</button>
@@ -524,50 +752,136 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         )}
       </div>
 
-      {/* Календарь месяца по дням: сальдо и число операций на каждом дне */}
-      {data.byDay.length > 0 && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-calendar-month" style={{ fontSize: 15, color: "var(--accent)" }} />{s.calendar}
-            {selDay && (
-              <button onClick={() => setSelectedDay(null)} style={{ ...btnG, padding: "3px 10px", fontSize: 11.5, marginLeft: "auto" }}>
-                <i className="ti ti-x" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.allDays}
+      {/* AI-советник по финансам (по требованию) */}
+      {data.hasAny && (
+        <div className="card" style={{ marginBottom: 14, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: advice ? 10 : 0 }}>
+            <i className="ti ti-sparkles" style={{ fontSize: 16, color: "var(--accent)" }} />{s.adviceTitle}
+            {advice && !adviceLoading && (
+              <button onClick={() => { setAdvice(null); loadAdvice(); }} style={{ ...btnG, padding: "3px 10px", fontSize: 11.5, marginLeft: "auto" }}>
+                <i className="ti ti-refresh" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.adviceAgain}
               </button>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 5 }}>
-            {s.weekdays.map((w: string) => <div key={w} style={{ textAlign: "center", fontSize: 10.5, color: "var(--text-3)" }}>{w}</div>)}
+          {advice ? (
+            <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text)", whiteSpace: "pre-wrap" }}>{advice}</div>
+          ) : (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+              <button onClick={loadAdvice} disabled={adviceLoading} style={{ ...btnPill, opacity: adviceLoading ? 0.7 : 1, boxShadow: "0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent)" }}>
+                <i className="ti ti-sparkles" style={{ fontSize: 15 }} /> {adviceLoading ? s.adviceThinking : s.adviceGet}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Цели по накоплениям */}
+      {goals != null && (goals.length > 0 || goalAddOpen) && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+            <i className="ti ti-target-arrow" style={{ fontSize: 15, color: "var(--accent)" }} />{s.goalsTitle}
+            <button onClick={() => { setGoalAddOpen((o) => !o); setGCurrency(base); }} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+              <i className="ti ti-plus" style={{ fontSize: 13 }} /> {s.goalAdd}
+            </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-            {cells.map((cell, i) => {
-              if (!cell) return <div key={i} />;
-              const slice = dayMap.get(cell);
-              const has = !!slice;
-              const isSel = selDay === cell;
-              const isToday = cell === todayISO();
-              const net = slice?.net ?? 0;
+          {goalAddOpen && (
+            <div style={{ paddingBottom: 12, marginBottom: 12, borderBottom: "1px solid var(--border)" }}>
+              <input type="text" placeholder={s.goalTitlePh} value={gTitle} onChange={(e) => setGTitle(e.target.value)} maxLength={80} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                <input type="number" inputMode="decimal" placeholder={s.goalTargetPh} value={gTarget} onChange={(e) => setGTarget(e.target.value)} style={{ ...input, flex: "2 1 110px", fontWeight: 600 }} />
+                <select value={gCurrency} onChange={(e) => setGCurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                  {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+                </select>
+                <input type="date" value={gDeadline} onChange={(e) => setGDeadline(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button disabled={busy} onClick={addGoal} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+                <button disabled={busy} onClick={() => setGoalAddOpen(false)} style={btnG}>{s.cancel}</button>
+              </div>
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {goals.map((g) => {
+              const pct = g.target_amount > 0 ? Math.min(100, Math.round((g.current_amount / g.target_amount) * 100)) : 0;
+              const rest = Math.max(0, Math.round((g.target_amount - g.current_amount) * 100) / 100);
               return (
-                <button key={i} onClick={() => has && setSelectedDay(isSel ? null : cell)} disabled={!has} title={isToday ? s.today : undefined}
-                  style={{
-                    minHeight: 50, padding: "3px 4px", borderRadius: 8, cursor: has ? "pointer" : "default",
-                    border: `1px solid ${isSel || (isToday && !has) ? "var(--accent)" : "var(--border)"}`,
-                    background: isSel ? "var(--accent)" : has ? "var(--surface-2)" : "var(--surface)",
-                    display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, textAlign: "left", overflow: "hidden",
-                    opacity: has ? 1 : 0.45,
-                  }}>
-                  <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isSel ? "#fff" : isToday ? "var(--accent)" : "var(--text)" }}>{Number(cell.slice(8, 10))}</span>
-                  {has && (
-                    <>
-                      <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isSel ? "#fff" : net >= 0 ? "#10b981" : "#ef4444" }}>
-                        {net > 0 ? "+" : net < 0 ? "−" : ""}{compactMoney(net, base)}
-                      </span>
-                      <span style={{ fontSize: 9, color: isSel ? "rgba(255,255,255,.85)" : "var(--text-3)" }}>{slice!.count} {s.ops}</span>
-                    </>
-                  )}
-                </button>
+                <div key={g.id}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {g.achieved && <span>🎉</span>}{g.title}
+                      {g.deadline && <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 400 }}>· {g.deadline}</span>}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{fmtMoney(g.current_amount, g.currency, locale)} <span style={{ color: "var(--text-3)", fontWeight: 400 }}>/ {fmtMoney(g.target_amount, g.currency, locale)}</span></span>
+                  </div>
+                  <div style={{ height: 9, background: "var(--surface-2)", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", background: g.achieved ? "#10b981" : "var(--accent)", borderRadius: 6, transition: "width .3s" }} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                    <span style={{ fontSize: 12, color: g.achieved ? "#10b981" : "var(--text-3)" }}>{g.achieved ? s.goalDone : `${pct}% · ${s.goalLeft(fmtMoney(rest, g.currency, locale))}`}</span>
+                    <button onClick={() => contributeGoal(g)} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+                      <i className="ti ti-plus" style={{ fontSize: 13 }} /> {s.goalContribute}
+                    </button>
+                    <button onClick={() => delGoal(g.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4 }}>
+                      <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
+          {goals.length === 0 && !goalAddOpen && (
+            <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{s.goalsEmpty}</div>
+          )}
+        </div>
+      )}
+
+      {/* Кнопка «добавить первую цель», если целей ещё нет */}
+      {goals != null && goals.length === 0 && !goalAddOpen && (
+        <div className="card" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <i className="ti ti-target-arrow" style={{ fontSize: 18, color: "var(--accent)" }} />
+          <span style={{ fontSize: 13, color: "var(--text-2)", flex: 1, minWidth: 140 }}>{s.goalsHint}</span>
+          <button onClick={() => { setGoalAddOpen(true); setGCurrency(base); }} style={{ ...btnG, padding: "6px 14px", fontSize: 12.5 }}>
+            <i className="ti ti-plus" style={{ fontSize: 13 }} /> {s.goalAdd}
+          </button>
+        </div>
+      )}
+
+      {/* График динамики по месяцам (по требованию) */}
+      {data.hasAny && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: trend ? 12 : 0, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-chart-bar" style={{ fontSize: 15, color: "var(--accent)" }} />{s.trendTitle}
+            {!trend && (
+              <button onClick={loadTrend} disabled={trendLoading} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+                {trendLoading ? s.trendLoading : s.trendShow}
+              </button>
+            )}
+          </div>
+          {trend && (trend.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{s.trendEmpty}</div>
+          ) : (() => {
+            const maxV = Math.max(1, ...trend.map((p) => Math.max(p.income, p.expense)));
+            return (
+              <div style={{ display: "flex", alignItems: "flex-end", gap: trend.length > 8 ? 4 : 8, height: 130, overflowX: "auto", paddingBottom: 4 }}>
+                {trend.map((p) => (
+                  <div key={p.month} style={{ flex: "1 0 auto", minWidth: 26, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 96 }}>
+                      <div title={`${s.income}: ${fmtMoney(p.income, base, locale)}`} style={{ width: 8, height: `max(${(p.income / maxV) * 100}%, 2px)`, background: "#10b981", borderRadius: "3px 3px 0 0" }} />
+                      <div title={`${s.expense}: ${fmtMoney(p.expense, base, locale)}`} style={{ width: 8, height: `max(${(p.expense / maxV) * 100}%, 2px)`, background: "#ef4444", borderRadius: "3px 3px 0 0" }} />
+                    </div>
+                    <span style={{ fontSize: 9.5, color: p.net < 0 ? "#ef4444" : "#10b981", fontWeight: 600 }}>{p.net >= 0 ? "+" : "−"}{compactMoney(p.net, base)}</span>
+                    <span style={{ fontSize: 9, color: "var(--text-3)" }}>{p.month.slice(2).replace("-", "·")}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })())}
+          {trend && trend.length > 0 && (
+            <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 11, color: "var(--text-3)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#10b981", borderRadius: 2 }} />{s.income}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: 2 }} />{s.expense}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -624,6 +938,20 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                   <div style={{ height: 7, background: "var(--surface-2)", borderRadius: 5, overflow: "hidden" }}>
                     <div style={{ width: `max(${barPct}%, 4px)`, height: "100%", background: barColor, borderRadius: 5 }} />
                   </div>
+                  {c.subs.length > 0 && (
+                    <div style={{ marginTop: 6, marginLeft: 8, display: "flex", flexDirection: "column", gap: 3 }}>
+                      {c.subs.map((sub) => (
+                        <div key={sub.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--text-2)", gap: 8 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                            <span style={{ color: m.color }}>›</span>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</span>
+                            <span style={{ color: "var(--text-3)", fontSize: 11, flexShrink: 0 }}>{c.amount > 0 ? Math.round((sub.amount / c.amount) * 100) : 0}%</span>
+                          </span>
+                          <span style={{ flexShrink: 0 }}>{fmtMoney(sub.amount, base, locale)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {editBudget === c.category && (
                     <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 12.5, color: "var(--text-2)" }}>{s.limit}, {symOf(base)}</span>
@@ -660,6 +988,117 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         </div>
       )}
 
+      {/* Регулярные платежи (подписки) */}
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6 }}>
+          <i className="ti ti-repeat" style={{ fontSize: 15, color: "var(--accent)" }} />{s.recurTitle}
+          <button onClick={() => { if (recur == null) loadRecur(); setRecAddOpen((o) => !o); setRKind("expense"); setRCurrency(base); }} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+            <i className="ti ti-plus" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.recurAdd}
+          </button>
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6, lineHeight: 1.5 }}>{s.recurHint}</div>
+
+        {recAddOpen && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 8 }}>
+              {(["expense", "income"] as const).map((k) => (
+                <button key={k} onClick={() => setRKind(k)} style={{ flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500, background: rKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent", color: rKind === k ? "#fff" : "var(--text-2)" }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+              <input type="number" inputMode="decimal" placeholder={s.amount} value={rAmount} onChange={(e) => setRAmount(e.target.value)} style={{ ...input, flex: "2 1 100px", fontSize: 16, fontWeight: 600 }} />
+              <select value={rCurrency} onChange={(e) => setRCurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+              </select>
+              <select value={rDay} onChange={(e) => setRDay(e.target.value)} style={{ ...input, flex: "1 1 100px" }} title={s.recurDay}>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{s.recurDay}: {d}</option>)}
+              </select>
+            </div>
+            <input type="text" placeholder={s.category} value={rCategory} onChange={(e) => setRCategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+            <input type="text" placeholder={s.note} value={rNote} onChange={(e) => setRNote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button disabled={busy} onClick={addRecur} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+              <button disabled={busy} onClick={() => setRecAddOpen(false)} style={btnG}>{s.cancel}</button>
+            </div>
+          </div>
+        )}
+
+        {recur != null && recur.length > 0 && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            {recur.map((it) => (
+              <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, opacity: it.active ? 1 : 0.5 }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: it.kind === "income" ? "#10b9811f" : "#ef44441f", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>{it.kind === "income" ? "📈" : "💸"}</span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {it.note || [it.category, it.subcategory].filter(Boolean).join(" / ") || "—"}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{s.recurEvery(it.day_of_month)}</div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: it.kind === "income" ? "#10b981" : "var(--text)", whiteSpace: "nowrap" }}>
+                  {it.kind === "income" ? "+" : "−"}{fmtMoney(it.amount, it.currency, locale)}
+                </div>
+                <button onClick={() => toggleRecur(it)} title={it.active ? "off" : "on"} style={{ background: "none", border: "none", cursor: "pointer", color: it.active ? "var(--accent)" : "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                  <i className={`ti ${it.active ? "ti-bell" : "ti-bell-off"}`} style={{ fontSize: 16 }} />
+                </button>
+                <button onClick={() => delRecur(it.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                  <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {recur != null && recur.length === 0 && !recAddOpen && (
+          <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 10 }}>{s.recurEmpty}</div>
+        )}
+      </div>
+
+      {/* Календарь месяца по дням: сальдо и число операций на каждом дне */}
+      {data.byDay.length > 0 && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-calendar-month" style={{ fontSize: 15, color: "var(--accent)" }} />{s.calendar}
+            {selDay && (
+              <button onClick={() => setSelectedDay(null)} style={{ ...btnG, padding: "3px 10px", fontSize: 11.5, marginLeft: "auto" }}>
+                <i className="ti ti-x" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.allDays}
+              </button>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 5 }}>
+            {s.weekdays.map((w: string) => <div key={w} style={{ textAlign: "center", fontSize: 10.5, color: "var(--text-3)" }}>{w}</div>)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+            {cells.map((cell, i) => {
+              if (!cell) return <div key={i} />;
+              const slice = dayMap.get(cell);
+              const has = !!slice;
+              const isSel = selDay === cell;
+              const isToday = cell === todayISO();
+              const net = slice?.net ?? 0;
+              return (
+                <button key={i} onClick={() => has && setSelectedDay(isSel ? null : cell)} disabled={!has} title={isToday ? s.today : undefined}
+                  style={{
+                    minHeight: 50, padding: "3px 4px", borderRadius: 8, cursor: has ? "pointer" : "default",
+                    border: `1px solid ${isSel || (isToday && !has) ? "var(--accent)" : "var(--border)"}`,
+                    background: isSel ? "var(--accent)" : has ? "var(--surface-2)" : "var(--surface)",
+                    display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, textAlign: "left", overflow: "hidden",
+                    opacity: has ? 1 : 0.45,
+                  }}>
+                  <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isSel ? "#fff" : isToday ? "var(--accent)" : "var(--text)" }}>{Number(cell.slice(8, 10))}</span>
+                  {has && (
+                    <>
+                      <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isSel ? "#fff" : net >= 0 ? "#10b981" : "#ef4444" }}>
+                        {net > 0 ? "+" : net < 0 ? "−" : ""}{compactMoney(net, base)}
+                      </span>
+                      <span style={{ fontSize: 9, color: isSel ? "rgba(255,255,255,.85)" : "var(--text-3)" }}>{slice!.count} {s.ops}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Список операций */}
       {txs.length === 0 ? (
         <div className="card" style={{ color: "var(--text-2)", fontSize: 14, textAlign: "center", padding: "26px 16px" }}>
@@ -676,18 +1115,53 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               {byDay.get(d)!.map((t) => {
                 const m = catView(t.kind, t.category, locale);
                 const pos = t.kind === "income";
+                if (editTx === t.id) {
+                  return (
+                    <div key={t.id} style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
+                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                        {(["expense", "income"] as const).map((k) => (
+                          <button key={k} onClick={() => setEKind(k)} style={{
+                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
+                            color: eKind === k ? "#fff" : "var(--text-2)",
+                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
+                        <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+                        </select>
+                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+                      </div>
+                      <input type="text" placeholder={s.category} value={eCategory} onChange={(e) => setECategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+                        <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
+                        <button disabled={busy} onClick={() => { setEditTx(null); del(t.id); }} title={s.delConfirm} style={{ ...btnG, color: "#ef4444" }}>
+                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
-                    <span style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</span>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</div>
+                    <button onClick={() => startEdit(t)} style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</button>
+                    <div onClick={() => startEdit(t)} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {m.label}
+                        {t.subcategory && <span style={{ fontSize: 11.5, fontWeight: 500, color: m.color, background: `${m.color}1f`, padding: "1px 7px", borderRadius: 10, marginLeft: 6 }}>{t.subcategory}</span>}
+                      </div>
                       {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
                     </div>
-                    <div style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap" }}>
+                    <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer" }}>
                       {pos ? "+" : "−"}{fmtMoney(t.amount, t.currency, locale)}
                     </div>
-                    <button onClick={() => del(t.id)} aria-label="delete" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
-                      <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                    <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                      <i className="ti ti-pencil" style={{ fontSize: 15 }} />
                     </button>
                   </div>
                 );

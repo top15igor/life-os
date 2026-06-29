@@ -24,6 +24,9 @@ alter table if exists finance_tx add column if not exists entry_id uuid;
 -- Нужно, чтобы откатить импорт одним действием.
 alter table if exists finance_tx add column if not exists source text;
 
+-- Подкатегория: второй уровень группировки (Категория «Вова» → Подкатегория «Спорт»).
+alter table if exists finance_tx add column if not exists subcategory text;
+
 create index if not exists finance_tx_user_idx  on finance_tx (user_id, day desc);
 create index if not exists finance_tx_entry_idx on finance_tx (entry_id);
 

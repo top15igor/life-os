@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LangSwitcher from "./LangSwitcher";
 import MobileNav from "./MobileNav";
 import InviteButton from "./InviteButton";
 import Feedback from "./Feedback";
@@ -44,7 +43,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   const el = ED_L[locale] || ED_L.ru;
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.refCode || d.ref || null); }).catch(() => {});
+    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.handle || d.refCode || d.ref || null); }).catch(() => {});
     try {
       const o = JSON.parse(localStorage.getItem(K_ORDER) || "null");
       const h = JSON.parse(localStorage.getItem(K_HIDDEN) || "null");
@@ -76,8 +75,11 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
 
   const NavLink = (key: string) => {
     const n = NAV_BY[key]; if (!n) return null;
+    // «Сегодня» живёт по красивому адресу /i/<username> (как @имя в Instagram); корень / редиректит туда же.
+    const href = key === "today" && refCode ? `/i/${refCode}` : n.href;
+    const active = href === path || (key === "today" && path === "/");
     return (
-      <Link key={key} href={n.href} className={`navlink${n.href === path ? " active" : ""}`}>
+      <Link key={key} href={href} className={`navlink${active ? " active" : ""}`}>
         <i className={`ti ${n.icon}`} />
         <span className="navlabel">{navLabels[key] || key}</span>
       </Link>
@@ -96,7 +98,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
           /* ===== РЕЖИМ НАСТРОЙКИ ===== */
           <div>
             <div style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "4px 4px 8px" }}>{el.title}</div>
-            {order.map((key, idx) => {
+            {order.filter((k) => k !== "guide").map((key, idx, arr) => {
               const n = NAV_BY[key]; if (!n) return null;
               const isHidden = hidden.includes(key);
               return (
@@ -104,7 +106,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
                   <i className={`ti ${n.icon}`} style={{ fontSize: 16, color: "var(--text-2)", width: 18, flexShrink: 0 }} />
                   <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{navLabels[key] || key}</span>
                   <button onClick={() => move(key, -1)} disabled={idx === 0} aria-label="up" style={miniBtn(idx === 0)}><i className="ti ti-chevron-up" style={{ fontSize: 15 }} /></button>
-                  <button onClick={() => move(key, 1)} disabled={idx === order.length - 1} aria-label="down" style={miniBtn(idx === order.length - 1)}><i className="ti ti-chevron-down" style={{ fontSize: 15 }} /></button>
+                  <button onClick={() => move(key, 1)} disabled={idx === arr.length - 1} aria-label="down" style={miniBtn(idx === arr.length - 1)}><i className="ti ti-chevron-down" style={{ fontSize: 15 }} /></button>
                   <button onClick={() => toggleHide(key)} aria-label="hide" style={miniBtn(false)}><i className={`ti ${isHidden ? "ti-eye-off" : "ti-eye"}`} style={{ fontSize: 15, color: isHidden ? "var(--text-3)" : "var(--accent)" }} /></button>
                 </div>
               );
@@ -116,7 +118,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
           </div>
         ) : reordered ? (
           /* ===== СВОЙ ПОРЯДОК (плоский список) ===== */
-          <div>{order.filter((k) => !hidden.includes(k)).map((k) => NavLink(k))}</div>
+          <div>{order.filter((k) => !hidden.includes(k) && k !== "guide").map((k) => NavLink(k))}</div>
         ) : (
           /* ===== ПО БЛОКАМ (по умолчанию) ===== */
           <div>
@@ -151,13 +153,16 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         )}
 
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          <Link href="/guide" className={`navlink${path === "/guide" ? " active" : ""}`}>
+            <i className="ti ti-help" />
+            <span className="navlabel">{navLabels.guide || "Инструкция"}</span>
+          </Link>
           <Feedback locale={locale} variant="sidebar" />
           {inviteLink && <InviteButton link={inviteLink} locale={locale} />}
-          <LangSwitcher current={locale} />
         </div>
       </aside>
 
-      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} />
+      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} homeHref={refCode ? `/i/${refCode}` : "/"} />
     </>
   );
 }

@@ -64,6 +64,23 @@ export async function clearHistory(userId: string): Promise<void> {
   }
 }
 
+// История диалога для веб-чата (та же таблица, что и в боте — сквозная беседа).
+export async function getCompanionHistory(userId: string, limit = 40): Promise<{ role: "user" | "assistant"; content: string }[]> {
+  try {
+    const { data } = await supabaseAdmin()
+      .from("companion_messages")
+      .select("role, content")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return (data || [])
+      .reverse()
+      .map((r: any) => ({ role: r.role === "assistant" ? "assistant" : "user", content: String(r.content || "") }));
+  } catch {
+    return [];
+  }
+}
+
 // ===== Контекст «что я знаю о тебе» (дневник + база знаний + финансы) =====
 async function gatherContext(userId: string): Promise<string> {
   const db = supabaseAdmin();

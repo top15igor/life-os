@@ -30,13 +30,16 @@ export async function saveEntry(opts: {
     .single();
   if (error) throw error;
 
-  await attachDerived(owner, entry.id, a, entry.entry_date);
-  return entry;
+  const derived = await attachDerived(owner, entry.id, a, entry.entry_date);
+  return { ...entry, financeSaved: derived.financeSaved, financeError: derived.financeError };
 }
 
 // Привязать производные данные (категории/теги/люди/задачи/дела/обещания…) к записи.
-export async function attachDerived(owner: string, id: string, a: Analysis, day?: string) {
+// Возвращает результат записи финансов, чтобы бот мог честно подтвердить операции.
+export async function attachDerived(owner: string, id: string, a: Analysis, day?: string): Promise<{ financeSaved: number; financeError: string | null }> {
   const db = supabaseAdmin();
+  let financeSaved = 0;
+  let financeError: string | null = null;
 
   if (a.categories?.length) {
     const { data: cs } = await db.from("categories").select("id,slug").in("slug", a.categories);
@@ -83,8 +86,18 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
         const currency = f.currency && FINANCE_CURRENCIES.includes(f.currency) ? f.currency : "USD";
         return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
       });
-    if (rows.length) { try { await db.from("finance_tx").insert(rows); } catch {} }
+    if (rows.length) {
+      let { error: finErr } = await db.from("finance_tx").insert(rows);
+      // Старая схема без колонки entry_id — повторяем вставку без неё.
+      if (finErr && /entry_id|column|schema cache/i.test(finErr.message)) {
+        const bare = rows.map(({ entry_id, ...rest }) => rest);
+        ({ error: finErr } = await db.from("finance_tx").insert(bare));
+      }
+      if (finErr) { financeError = finErr.message; console.error("finance insert failed", finErr); }
+      else financeSaved = rows.length;
+    }
   }
+  return { financeSaved, financeError };
 }
 
 // Удалить все производные данные записи (для пере-разбора при правке или для удаления записи).

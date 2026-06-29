@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
@@ -8,6 +8,7 @@ import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
+import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
@@ -82,10 +83,10 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»", moneyFail: "Не удалось записать в «Деньги» — попробуй команду /spend" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend" },
 };
 
 // Символы валют для подтверждения в боте.
@@ -193,7 +194,7 @@ const CUR_TOKEN: Record<string, string> = {
 
 // Быстрый ввод траты/дохода: «/spend 250 eur уроки сёрфа», «/income 1000 зарплата».
 // Возвращает { amount, currency, label } или null. defaultCur — если валюта не указана.
-function parseQuickFinance(rest: string, defaultCur: string): { amount: number; currency: string; label: string } | null {
+function parseQuickFinance(rest: string, defaultCur: string): { amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null } | null {
   const m = rest.trim().match(/^([\d][\d\s.,]*)\s*(\S*)\s*([\s\S]*)$/);
   if (!m) return null;
   const amount = Number(m[1].replace(/[\s ]/g, "").replace(",", "."));
@@ -203,7 +204,22 @@ function parseQuickFinance(rest: string, defaultCur: string): { amount: number; 
   const tok = (m[2] || "").toLowerCase().replace(/\.$/, "");
   if (tok && CUR_TOKEN[tok]) currency = CUR_TOKEN[tok];
   else if (m[2]) label = (m[2] + " " + label).trim(); // не валюта — часть названия
-  return { amount: Math.round(amount * 100) / 100, currency, label: label.slice(0, 60) };
+  // Формат: «Категория / Подкатегория : комментарий». «:»/«—»/« - » отделяют комментарий,
+  // «/» внутри категории — подкатегорию. Все части необязательны.
+  let head = label, note: string | null = null;
+  const sep = label.match(/^(.+?)\s*[:—]\s*([\s\S]+)$/) || label.match(/^(.+?)\s+-\s+([\s\S]+)$/);
+  if (sep) { head = sep[1].trim(); note = sep[2].trim() || null; }
+  let category: string | null = head || null;
+  let subcategory: string | null = null;
+  const slash = head.match(/^(.+?)\s*\/\s*(.+)$/);
+  if (slash) { category = slash[1].trim() || null; subcategory = slash[2].trim() || null; }
+  return {
+    amount: Math.round(amount * 100) / 100,
+    currency,
+    category: category ? category.slice(0, 40) : null,
+    subcategory: subcategory ? subcategory.slice(0, 40) : null,
+    note: note ? note.slice(0, 200) : null,
+  };
 }
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
 function openBtn(lang: string, link: string) {
@@ -212,7 +228,7 @@ function openBtn(lang: string, link: string) {
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
   const I = INVITE[lang] || INVITE.ru;
-  const inviteLink = `${origin}/i/${await getInviteCode(userId)}`;
+  const inviteLink = `${origin}/i/${await getHandle(userId)}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
 }
@@ -354,7 +370,7 @@ export async function POST(req: NextRequest) {
     if (!rest.trim()) {
       await sendMessage(chatId, kind === "income"
         ? "Напиши сумму и источник, например:\n<code>/income 1000 eur зарплата</code>"
-        : "Напиши сумму и на что, например:\n<code>/spend 250 eur уроки сёрфа</code>");
+        : "Напиши сумму и на что, например:\n<code>/spend 250 eur сёрф</code>\n\nМожно вести по структуре <b>Категория / Подкатегория : комментарий</b>:\n<code>/spend 250 eur Вова / Спорт: серф-уроки</code>\n→ категория «Вова», подкатегория «Спорт», комментарий «серф-уроки».\nПо «Вова» считается общая сумма, внутри — по подкатегориям.\n\nЧастые подкатегории: Спорт · Обучение · Одежда · Здоровье · Еда · Развлечения · Подарки · Транспорт.");
       return NextResponse.json({ ok: true });
     }
     // Основная валюта по умолчанию — из настроек финансов, иначе EUR.
@@ -370,14 +386,24 @@ export async function POST(req: NextRequest) {
     }
     const today = new Date().toISOString().slice(0, 10);
     try {
-      await supabaseAdmin().from("finance_tx").insert({
+      const row: any = {
         user_id: user.id, day: today, kind, amount: parsed.amount, currency: parsed.currency,
-        category: parsed.label || null, note: null,
-      });
+        category: parsed.category, subcategory: parsed.subcategory, note: parsed.note,
+      };
+      let { error } = await supabaseAdmin().from("finance_tx").insert(row);
+      // Старая база без колонки subcategory — вставляем без неё.
+      if (error && /subcategory|column|schema cache/i.test(error.message)) {
+        const { subcategory, ...bare } = row;
+        ({ error } = await supabaseAdmin().from("finance_tx").insert(bare));
+      }
+      if (error) throw new Error(error.message);
       const sym = CUR_SYM[parsed.currency] || parsed.currency;
       const sign = kind === "income" ? "+" : "−";
       const head = kind === "income" ? "✅ Доход записан:" : "✅ Расход записан:";
-      await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${parsed.label ? ` · ${esc(parsed.label)}` : ""}`,
+      const cat = parsed.category ? ` · ${esc(parsed.category)}` : "";
+      const sub = parsed.subcategory ? ` › ${esc(parsed.subcategory)}` : "";
+      const note = parsed.note ? `\n📝 ${esc(parsed.note)}` : "";
+      await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${cat}${sub}${note}`,
         { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
     } catch (e) {
       console.error("quick finance", e);
@@ -417,7 +443,7 @@ export async function POST(req: NextRequest) {
     try {
       const ans = await askLife(user.id, q);
       await saveChat(user.id, q, ans);
-      await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
+      await sendMessage(chatId, mdToTelegram(ans) || "—");
     } catch (e) {
       console.error(e);
       await sendMessage(chatId, "Не получилось ответить, попробуй ещё раз.");
@@ -498,7 +524,7 @@ export async function POST(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await talkToCompanion(user.id, user.name ?? null, text);
-        await sendMessage(chatId, esc(reply).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "…");
+        await sendMessage(chatId, mdToTelegram(reply) || "…");
       } catch (e) {
         console.error("companion", e);
         await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
@@ -577,7 +603,7 @@ export async function POST(req: NextRequest) {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
-        await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
+        await sendMessage(chatId, mdToTelegram(ans) || "—");
         return NextResponse.json({ ok: true });
       }
     }
@@ -593,12 +619,14 @@ export async function POST(req: NextRequest) {
     const streak = await getStreak(user.id);
     const count = await getEntryCount(user.id);
     const L = CONFIRM[lang] || CONFIRM.ru;
-    let body = formatConfirm(analysis, streak, lang);
+    const financeOk = !analysis.finance?.length || ((entry as any).financeSaved ?? 0) > 0;
+    if (analysis.finance?.length && !financeOk) console.error("finance not saved", (entry as any).financeError);
+    let body = formatConfirm(analysis, streak, lang, financeOk);
     const ms = milestoneFor(count, streak, lang);
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
-    const refLink = `${origin}/i/${await getInviteCode(user.id)}`;
+    const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
       [
@@ -621,7 +649,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function formatConfirm(a: Analysis, streak: number, lang: string): string {
+function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true): string {
   const L = CONFIRM[lang] || CONFIRM.ru;
   const lines = [`✅ <b>${L.saved}</b>`, "", esc(a.summary || "")];
 
@@ -644,6 +672,7 @@ function formatConfirm(a: Analysis, streak: number, lang: string): string {
       const note = f.note ? ` · ${esc(f.note)}` : "";
       lines.push(`• ${f.kind === "income" ? "📈" : "💸"} ${sign}${esc(String(f.amount))} ${sym}${note}`);
     });
+    if (!financeSaved) lines.push(`⚠️ ${L.moneyFail}`);
   }
   const m = [
     a.mood != null ? `😊 ${a.mood}` : null,

@@ -16,6 +16,31 @@ export async function sendChatAction(chatId: number, action = "typing"): Promise
   });
 }
 
+// Преобразовать markdown из ответа AI в безопасный для Telegram HTML:
+// убирает ## заголовки, таблицы | a | b |, цитаты >, превращает **жирный** в <b>.
+// Применять ТОЛЬКО к свободному тексту модели (askLife/companion), а не к
+// сообщениям, где мы сами уже расставляем HTML-теги.
+export function mdToTelegram(s: string): string {
+  if (!s) return s;
+  // Сначала экранируем спецсимволы HTML, чтобы стрелки/амперсанды не ломали разметку.
+  let t = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Строки-разделители таблиц (|---|---|) — убрать.
+  t = t.replace(/^\s*\|?[\s:|]*-{2,}[\s:|-]*\|?\s*$/gm, "");
+  // Строки таблицы | a | b | → «a — b».
+  t = t.replace(/^\s*\|(.+)\|\s*$/gm, (_m, row: string) => row.split("|").map((c) => c.trim()).filter(Boolean).join(" — "));
+  // Заголовки ## Текст → жирная строка.
+  t = t.replace(/^\s{0,3}#{1,6}\s*(.+?)\s*$/gm, "<b>$1</b>");
+  // Цитаты «> » (после экранирования это «&gt; ») — убрать маркер.
+  t = t.replace(/^\s*&gt;\s?/gm, "");
+  // **жирный** / __жирный__ → <b>.
+  t = t.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/__(.+?)__/g, "<b>$1</b>");
+  // Маркеры списков -, * в начале строки → •.
+  t = t.replace(/^\s*[-*]\s+/gm, "• ");
+  // Лишние пустые строки.
+  t = t.replace(/\n{3,}/g, "\n\n");
+  return t.trim();
+}
+
 // Отправить сообщение пользователю (extra — доп. поля, напр. reply_markup с кнопками).
 export async function sendMessage(chatId: number, text: string, extra?: Record<string, any>): Promise<void> {
   await fetch(`${API}/sendMessage`, {

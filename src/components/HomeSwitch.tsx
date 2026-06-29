@@ -4,21 +4,10 @@ import { useState, useEffect } from "react";
 import HomeTabs from "./HomeTabs";
 import AwarenessHomeV2 from "./AwarenessHomeV2";
 import LangMenu from "./LangMenu";
-
-const LBL: Record<string, { aware: string; classic: string }> = {
-  ru: { aware: "Новый", classic: "Классический" },
-  en: { aware: "New", classic: "Classic" },
-  uk: { aware: "Новий", classic: "Класичний" },
-  fr: { aware: "Nouveau", classic: "Classique" },
-};
-
-function pill(active: boolean): any {
-  return { fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: active ? "var(--surface)" : "transparent", color: active ? "var(--text)" : "var(--text-2)" };
-}
+import DesignToggle from "./DesignToggle";
 
 export default function HomeSwitch(props: any) {
   const locale = props.locale;
-  const l = LBL[locale] || LBL.ru;
   const [design, setDesign] = useState<"classic" | "aware">("classic");
 
   useEffect(() => {
@@ -30,16 +19,18 @@ export default function HomeSwitch(props: any) {
     try { localStorage.setItem("lifeos_home_design", d); } catch {}
   }
 
-  return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <LangMenu current={locale} />
-        <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, background: "var(--surface-2)", gap: 2 }}>
-          <button onClick={() => set("classic")} style={pill(design === "classic")}>{l.classic}</button>
-          <button onClick={() => set("aware")} style={pill(design === "aware")}>✨ {l.aware}</button>
+  // В классике язык + переключатель дизайна живут в шапке HomeTabs (рядом с «Настроить»).
+  // В «Новом» дизайне у HomeTabs нет шапки — показываем компактный ряд сверху.
+  if (design === "aware") {
+    return (
+      <>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <LangMenu current={locale} align="right" />
+          <DesignToggle locale={locale} design={design} onSet={set} />
         </div>
-      </div>
-      {design === "aware" ? <AwarenessHomeV2 data={props.data} locale={locale} /> : <HomeTabs {...props} />}
-    </>
-  );
+        <AwarenessHomeV2 data={props.data} locale={locale} />
+      </>
+    );
+  }
+  return <HomeTabs {...props} design={design} onSetDesign={set} />;
 }

@@ -47,7 +47,7 @@ const S: Record<Locale, AssistantStrings> = {
     hereNow: "Ты сейчас здесь",
     canDo: "Что здесь можно",
     goNext: "Куда дальше",
-    searchPh: "Найти раздел…",
+    searchPh: "Поиск по всему — записи, люди, разделы…",
     searchNone: "Ничего не нашлось",
     askTitle: "Спросить AI",
     askPh: "Например: как записать вес? где мои мечты?",
@@ -75,7 +75,7 @@ const S: Record<Locale, AssistantStrings> = {
     hereNow: "You are here",
     canDo: "What you can do",
     goNext: "Where to go next",
-    searchPh: "Find a section…",
+    searchPh: "Search everything — entries, people, sections…",
     searchNone: "Nothing found",
     askTitle: "Ask AI",
     askPh: "e.g. how do I log my weight? where are my dreams?",
@@ -106,7 +106,7 @@ S.uk = {
   hereNow: "Ти зараз тут",
   canDo: "Що тут можна",
   goNext: "Куди далі",
-  searchPh: "Знайти розділ…",
+  searchPh: "Пошук по всьому — записи, люди, розділи…",
   searchNone: "Нічого не знайдено",
   askTitle: "Запитати AI",
   askPh: "Напр.: як записати вагу? де мої мрії?",
@@ -134,7 +134,7 @@ S.fr = {
   hereNow: "Vous êtes ici",
   canDo: "Ce que vous pouvez faire",
   goNext: "Où aller ensuite",
-  searchPh: "Trouver une section…",
+  searchPh: "Tout chercher — entrées, personnes, sections…",
   searchNone: "Rien trouvé",
   askTitle: "Demander à l'IA",
   askPh: "ex. : comment noter mon poids ? où sont mes rêves ?",
@@ -356,6 +356,36 @@ const GUIDES: Record<Locale, Record<string, PageGuide>> = {
 };
 GUIDES.uk = GUIDES.ru;
 GUIDES.fr = GUIDES.en;
+
+// Вкладки и под-разделы, которых нет в верхнем меню (NAV) — чтобы их тоже
+// находил поиск по названию: «Карта желаний», «Задачи», «Инсайты», «Энергия» и т.д.
+export type Dest = { label: string; keys: string[]; href: string; icon: string };
+
+const DESTS_RU: Dest[] = [
+  { label: "Карта желаний", keys: ["карта желаний", "карта жел", "мечты", "мечта", "желания", "wish"], href: "/goals?tab=dreams", icon: "ti-cloud" },
+  { label: "Задачи", keys: ["задачи", "задача", "дела", "todo"], href: "/goals?tab=tasks", icon: "ti-checkbox" },
+  { label: "Инсайты", keys: ["инсайты", "инсайт", "идеи", "мысли"], href: "/goals?tab=ideas", icon: "ti-bulb" },
+  { label: "Цели", keys: ["цели", "цель"], href: "/goals?tab=goals", icon: "ti-target" },
+  { label: "Энергия", keys: ["энергия"], href: "/health?tab=energy", icon: "ti-bolt" },
+  { label: "Спорт", keys: ["спорт", "тренировки", "тренировка"], href: "/health?tab=sport", icon: "ti-run" },
+  { label: "Питание", keys: ["питание", "еда"], href: "/health?tab=food", icon: "ti-salad" },
+  { label: "Здоровье", keys: ["здоровье", "вес", "самочувствие"], href: "/health", icon: "ti-heartbeat" },
+];
+
+const DESTS_EN: Dest[] = [
+  { label: "Wish Map", keys: ["wish map", "wish", "dreams", "dream"], href: "/goals?tab=dreams", icon: "ti-cloud" },
+  { label: "Tasks", keys: ["tasks", "task", "todo"], href: "/goals?tab=tasks", icon: "ti-checkbox" },
+  { label: "Insights", keys: ["insights", "ideas", "insight"], href: "/goals?tab=ideas", icon: "ti-bulb" },
+  { label: "Goals", keys: ["goals", "goal"], href: "/goals?tab=goals", icon: "ti-target" },
+  { label: "Energy", keys: ["energy"], href: "/health?tab=energy", icon: "ti-bolt" },
+  { label: "Sport", keys: ["sport", "workout", "training"], href: "/health?tab=sport", icon: "ti-run" },
+  { label: "Food", keys: ["food", "nutrition", "eating"], href: "/health?tab=food", icon: "ti-salad" },
+  { label: "Health", keys: ["health", "weight", "wellbeing"], href: "/health", icon: "ti-heartbeat" },
+];
+
+export function searchDestinations(locale: Locale): Dest[] {
+  return locale === "en" || locale === "fr" ? DESTS_EN : DESTS_RU;
+}
 
 export function pageGuide(locale: Locale, path: string): PageGuide | null {
   const map = GUIDES[locale] || GUIDES.ru;
