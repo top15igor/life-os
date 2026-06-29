@@ -495,7 +495,25 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const addableCats = EXPENSE_CATS.filter((c) => !budgetedCats.has(c.key));
 
   return (
-    <div>
+    <div className="fin-wrap" style={{ position: "relative", paddingBottom: 72 }}>
+      <style>{`
+        .fin-wrap button { transition: transform .08s ease, filter .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease; }
+        .fin-wrap button:hover:not(:disabled) { filter: brightness(1.04); }
+        .fin-wrap button:active:not(:disabled) { transform: scale(.97); }
+        .fin-wrap .card { transition: box-shadow .2s ease; }
+        .fin-row { border-radius: 10px; padding-left: 6px; padding-right: 6px; margin-left: -6px; margin-right: -6px; transition: background .15s ease; }
+        .fin-row:hover { background: var(--surface-2); }
+        .fin-fab { position: fixed; right: 24px; bottom: 92px; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--accent); color: #fff; font-size: 26px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent); z-index: 40; transition: transform .12s ease, box-shadow .2s ease; }
+        .fin-fab:hover { transform: translateY(-2px) scale(1.04); }
+        .fin-fab:active { transform: scale(.95); }
+      `}</style>
+
+      {/* Плавающая кнопка быстрого добавления */}
+      <button className="fin-fab" aria-label={s.add} title={s.add}
+        onClick={() => { setOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+        <i className="ti ti-plus" />
+      </button>
+
       {/* Шапка: переключатель месяца + настройки */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 8 }}>
         <button onClick={() => gotoMonth(-1)} aria-label="prev" style={{ ...btnG, padding: "6px 10px" }}>
