@@ -5,8 +5,11 @@ import { sendMessage } from "@/lib/telegram";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
-import { getBookPrompt, bookPromptMessage } from "@/lib/bookPrompts";
+import { bookPromptMessage } from "@/lib/bookPrompts";
+import { personalEvening } from "@/lib/eveningPersonal";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
+import { localParts } from "@/lib/pushSchedule";
+import { logPush } from "@/lib/pushLog";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -172,9 +175,12 @@ export async function GET(req: NextRequest) {
       if (u.push_enabled === false) continue; // пользователь выключил пуши в Профиле
       const lang: Lang = (["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru") as Lang;
       const m = MSG[lang];
-      // Настройки вечерних «вопросов для книги»: вкл/выкл, выбранные темы, свои подсказки.
-      const ev = normalizeMorningPrefs(u.morning_prefs).evening;
-      const bookOpts = { themes: ev.themes, customPrompts: ev.customPrompts };
+      const prefs = normalizeMorningPrefs(u.morning_prefs);
+      const lp = localParts(prefs.tz, nowD);
+      if (prefs.quietDays.includes(lp.weekday)) continue; // тихий день — никаких пушей
+      const ev = prefs.evening;
+      // Недельный AI-итог — в выбранный пользователем день (по умолчанию воскресенье).
+      const isWeeklyDay = prefs.weekly.enabled && lp.weekday === prefs.weekly.day;
 
       const { data: ents } = await db
         .from("entries")
@@ -212,11 +218,12 @@ export async function GET(req: NextRequest) {
         }
       } catch (e) { console.error("recurring", u.id, e); }
 
-      // Воскресный AI-обзор недели — всем, кто писал на этой неделе.
-      if (isSunday) {
+      // AI-обзор недели — в выбранный день (по умолчанию воскресенье).
+      if (isWeeklyDay) {
         const digest = await weeklyDigest(u.id, lang);
         if (digest) {
           await sendMessage(u.chat_id, digest);
+          logPush(u.id, "weekly").catch(() => {});
           stats.digests++;
         }
       }
@@ -225,10 +232,10 @@ export async function GET(req: NextRequest) {
       // даём тёплый «вопрос для книги» — приглашение дополнить главу, без нудёжа.
       // На воскресенье не дублируем (там AI-обзор недели).
       if (wroteToday) {
-        if (ev.enabled && isBookQuestionDay && !isSunday) {
+        if (ev.enabled && isBookQuestionDay && !isWeeklyDay) {
           try {
-            const bp = await getBookPrompt(u.id, lang, doy, bookOpts);
-            if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; }
+            const q = await personalEvening(u.id, lang, prefs);
+            if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; }
           } catch (e) { console.error("book prompt active", u.id, e); }
         }
         continue;
@@ -260,8 +267,8 @@ export async function GET(req: NextRequest) {
           let asked = false;
           if (ev.enabled && isBookQuestionDay) {
             try {
-              const bp = await getBookPrompt(u.id, lang, doy, bookOpts);
-              if (bp) { await sendMessage(u.chat_id, bookPromptMessage(lang, bp.question)); stats.bookQuestions++; asked = true; }
+              const q = await personalEvening(u.id, lang, prefs);
+              if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; asked = true; }
             } catch (e) { console.error("book prompt", u.id, e); }
           }
           if (!asked) { await sendMessage(u.chat_id, m.reminder); stats.reminders++; }
