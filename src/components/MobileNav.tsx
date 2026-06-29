@@ -11,11 +11,11 @@ import type { Locale } from "@/lib/i18n";
 
 const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu" };
 
-export default function MobileNav({ navLabels, locale, isOwner, inviteLink, profileHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; profileHref?: string }) {
+export default function MobileNav({ navLabels, locale, isOwner, inviteLink, homeHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; homeHref?: string }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const primary = MOBILE_PRIMARY.map((k) => NAV.find((n) => n.key === k)).filter(Boolean) as typeof NAV;
-  const hrefOf = (n: { key: string; href: string }) => (n.key === "profile" && profileHref ? profileHref : n.href);
+  const hrefOf = (n: { key: string; href: string }) => (n.key === "today" && homeHref ? homeHref : n.href);
 
   return (
     <>
@@ -29,7 +29,7 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink, prof
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
               {NAV.map((n) => {
                 const href = hrefOf(n);
-                const active = href === path || (n.key === "profile" && path === "/profile");
+                const active = href === path || (n.key === "today" && path === "/");
                 return (
                   <Link key={n.key} href={href} onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 10, background: active ? "var(--accent-bg)" : "var(--surface-2)", color: active ? "var(--accent-text)" : "var(--text)" }}>
                     <i className={`ti ${n.icon}`} style={{ fontSize: 19 }} />
@@ -54,7 +54,7 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink, prof
       <nav className="mobilenav">
         {primary.map((n) => {
           const href = hrefOf(n);
-          const active = href === path || (n.key === "profile" && path === "/profile");
+          const active = href === path || (n.key === "today" && path === "/");
           return (
             <Link key={n.key} href={href} className={active ? "active" : ""}>
               <i className={`ti ${n.icon}`} />

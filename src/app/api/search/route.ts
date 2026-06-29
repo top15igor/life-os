@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     // Инсайты
     run(async () => {
       const { data } = await db.from("insights").select("text").eq("user_id", uid).ilike("text", like).limit(4);
-      return (data || []).map((i: any) => ({ type: "insight", title: (i.text || "").slice(0, 80), href: "/goals?tab=insights" }));
+      return (data || []).map((i: any) => ({ type: "insight", title: (i.text || "").slice(0, 80), href: "/goals?tab=ideas" }));
     }),
     // Люди / Места
     simple("people", "name", "person", "/people"),

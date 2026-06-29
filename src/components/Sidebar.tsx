@@ -75,9 +75,9 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
 
   const NavLink = (key: string) => {
     const n = NAV_BY[key]; if (!n) return null;
-    // «Профиль» живёт по красивому адресу /i/<username> (как @имя в Instagram).
-    const href = key === "profile" && refCode ? `/i/${refCode}` : n.href;
-    const active = href === path || (key === "profile" && path === "/profile");
+    // «Сегодня» живёт по красивому адресу /i/<username> (как @имя в Instagram); корень / редиректит туда же.
+    const href = key === "today" && refCode ? `/i/${refCode}` : n.href;
+    const active = href === path || (key === "today" && path === "/");
     return (
       <Link key={key} href={href} className={`navlink${active ? " active" : ""}`}>
         <i className={`ti ${n.icon}`} />
@@ -158,7 +158,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         </div>
       </aside>
 
-      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} profileHref={refCode ? `/i/${refCode}` : "/profile"} />
+      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} homeHref={refCode ? `/i/${refCode}` : "/"} />
     </>
   );
 }

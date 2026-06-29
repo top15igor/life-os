@@ -1,15 +1,13 @@
 import Onboarding from "@/components/Onboarding";
-import Sidebar from "@/components/Sidebar";
-import ProfileBody from "@/components/ProfileBody";
+import HomeBody from "@/components/HomeBody";
 import { getCurrentUser } from "@/lib/auth";
 import { resolveRefToId } from "@/lib/users";
 import { getLocale } from "@/lib/locale";
-import { getDict } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 // Умная ссылка-имя: mylifebookai.vercel.app/i/<username>
-//  - владелец (вошёл в свой аккаунт)  -> открывается его профиль (как @имя в Instagram);
+//  - владелец (вошёл в свой аккаунт)  -> его домашняя лента «Сегодня» (как @имя в Instagram);
 //  - кто угодно другой / гость         -> экран приветствия с переходом в бота (приглашение).
 
 async function getBotLink(): Promise<string> {
@@ -28,20 +26,12 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
   const { code } = await params;
   const locale = await getLocale();
 
-  // Если это сам владелец ссылки и он вошёл — показываем его профиль (URL остаётся /i/<username>).
+  // Если это сам владелец ссылки и он вошёл — показываем его ленту «Сегодня» (URL остаётся /i/<username>).
   const me = await getCurrentUser();
   if (me) {
     const ownerId = await resolveRefToId(code);
     if (ownerId && ownerId === me.id) {
-      const t = getDict(locale);
-      return (
-        <div className="shell">
-          <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-          <main className="main">
-            <ProfileBody user={me} locale={locale} />
-          </main>
-        </div>
-      );
+      return <HomeBody />;
     }
   }
 

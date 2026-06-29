@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { NAV } from "@/lib/nav";
 import { getDict, isLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
-import { assistantStrings, pageGuide } from "@/lib/assistant";
+import { assistantStrings, pageGuide, searchDestinations } from "@/lib/assistant";
 
 // Публичные роуты, где помощник не нужен (гость, без логина).
 const PUBLIC = /^\/(welcome|login|privacy|lock|u|p|path|i)(\/|$)/;
@@ -86,12 +86,17 @@ export default function Assistant() {
 
   const guide = useMemo(() => pageGuide(locale, path), [locale, path]);
 
-  // Список разделов для поиска (мгновенно, по NAV).
+  // Разделы + вкладки/под-разделы для поиска (мгновенно, по названию).
   const results = useMemo(() => {
     const ql = query.trim().toLowerCase();
     if (!ql) return [];
-    return NAV.filter((n) => (nav[n.key] || n.key).toLowerCase().includes(ql)).slice(0, 6);
-  }, [query, nav]);
+    const navHits = NAV.filter((n) => (nav[n.key] || n.key).toLowerCase().includes(ql)).map((n) => ({ label: navLabel(n.key), href: n.href, icon: n.icon }));
+    const destHits = searchDestinations(locale)
+      .filter((d) => d.label.toLowerCase().includes(ql) || d.keys.some((k) => k.includes(ql)))
+      .map((d) => ({ label: d.label, href: d.href, icon: d.icon }));
+    const seen = new Set<string>();
+    return [...navHits, ...destHits].filter((x) => (seen.has(x.href) ? false : (seen.add(x.href), true))).slice(0, 8);
+  }, [query, nav, locale]);
 
   // Полный поиск по содержимому (записи, люди, места, цели, инсайты, знания, память).
   const [hits, setHits] = useState<any[]>([]);
@@ -222,10 +227,10 @@ export default function Assistant() {
               </div>
               {query && (
                 <div className="asst-results">
-                  {results.map((n) => (
-                    <button key={n.key} className="asst-res" onClick={() => go(n.href)}>
+                  {results.map((n, i) => (
+                    <button key={`s${i}`} className="asst-res" onClick={() => go(n.href)}>
                       <i className={`ti ${n.icon}`} />
-                      <span>{navLabel(n.key)}</span>
+                      <span>{n.label}</span>
                       <i className="ti ti-arrow-right" style={{ marginLeft: "auto", color: "var(--text-3)" }} />
                     </button>
                   ))}
