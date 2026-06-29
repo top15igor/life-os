@@ -1,14 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 type Goal = { id: string; title: string; progress: number; year?: number };
 
 const STR: Record<string, any> = {
-  ru: { addBtn: "Добавить", placeholder: "Новая цель на год…", empty: "Целей пока нет. Добавь первую — например «Создать LIFE OS»." },
-  en: { addBtn: "Add", placeholder: "New goal for the year…", empty: "No goals yet. Add your first — e.g. “Build LIFE OS”." },
-  uk: { addBtn: "Додати", placeholder: "Нова ціль на рік…", empty: "Цілей поки немає. Додай першу — наприклад «Створити LIFE OS»." },
-  fr: { addBtn: "Ajouter", placeholder: "Nouvel objectif pour l'année…", empty: "Pas encore d'objectifs. Ajoute le premier — ex. « Créer LIFE OS »." },
+  ru: {
+    addBtn: "Добавить", placeholder: "Новая цель на год…",
+    emptyTitle: "С чего начать?",
+    emptyHint: "Цель — это то, чего хочешь достичь за год. Нажми на пример, чтобы подставить его в поле, или напиши свою.",
+    examples: [
+      "🏃 Пробежать полумарафон", "📚 Прочитать 24 книги за год", "🇬🇧 Свободно заговорить на английском",
+      "💰 Накопить подушку на 6 месяцев", "🧘 Медитировать каждый день", "💪 Прийти в форму, минус 10 кг",
+      "✈️ Съездить в страну, где не был", "🎸 Научиться играть на гитаре", "🚭 Бросить курить",
+      "👨‍👩‍👧 Больше времени с семьёй без телефона",
+    ],
+  },
+  en: {
+    addBtn: "Add", placeholder: "New goal for the year…",
+    emptyTitle: "Where to start?",
+    emptyHint: "A goal is something you want to achieve this year. Tap an example to drop it into the field, or write your own.",
+    examples: [
+      "🏃 Run a half-marathon", "📚 Read 24 books this year", "🇬🇧 Become fluent in English",
+      "💰 Save a 6-month safety cushion", "🧘 Meditate every day", "💪 Get in shape, lose 10 kg",
+      "✈️ Visit a country I've never been to", "🎸 Learn to play the guitar", "🚭 Quit smoking",
+      "👨‍👩‍👧 More time with family, phone away",
+    ],
+  },
+  uk: {
+    addBtn: "Додати", placeholder: "Нова ціль на рік…",
+    emptyTitle: "З чого почати?",
+    emptyHint: "Ціль — це те, чого хочеш досягти за рік. Натисни на приклад, щоб підставити його в поле, або напиши свою.",
+    examples: [
+      "🏃 Пробігти напівмарафон", "📚 Прочитати 24 книги за рік", "🇬🇧 Вільно заговорити англійською",
+      "💰 Накопити подушку на 6 місяців", "🧘 Медитувати щодня", "💪 Прийти у форму, мінус 10 кг",
+      "✈️ Поїхати в країну, де не був", "🎸 Навчитися грати на гітарі", "🚭 Кинути палити",
+      "👨‍👩‍👧 Більше часу з родиною без телефону",
+    ],
+  },
+  fr: {
+    addBtn: "Ajouter", placeholder: "Nouvel objectif pour l'année…",
+    emptyTitle: "Par où commencer ?",
+    emptyHint: "Un objectif, c'est ce que tu veux accomplir cette année. Touche un exemple pour l'insérer dans le champ, ou écris le tien.",
+    examples: [
+      "🏃 Courir un semi-marathon", "📚 Lire 24 livres cette année", "🇬🇧 Devenir à l'aise en anglais",
+      "💰 Épargner 6 mois de sécurité", "🧘 Méditer chaque jour", "💪 Se remettre en forme, −10 kg",
+      "✈️ Visiter un pays inconnu", "🎸 Apprendre la guitare", "🚭 Arrêter de fumer",
+      "👨‍👩‍👧 Plus de temps en famille, sans téléphone",
+    ],
+  },
 };
 
 const COLORS = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
@@ -17,6 +57,12 @@ export default function GoalsManager({ initial, locale }: { initial: Goal[]; loc
   const s = STR[locale] || STR.ru;
   const [goals, setGoals] = useState<Goal[]>(initial);
   const [title, setTitle] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function pickExample(text: string) {
+    setTitle(text);
+    inputRef.current?.focus();
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -40,12 +86,31 @@ export default function GoalsManager({ initial, locale }: { initial: Goal[]; loc
   return (
     <div>
       <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={s.placeholder} style={{ flex: 1, height: 42, padding: "0 13px", fontSize: 14.5, borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }} />
+        <input ref={inputRef} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={s.placeholder} style={{ flex: 1, height: 42, padding: "0 13px", fontSize: 14.5, borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }} />
         <button type="submit" disabled={!title.trim()} style={{ padding: "0 18px", borderRadius: 11, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500, cursor: "pointer", opacity: title.trim() ? 1 : 0.6 }}>{s.addBtn}</button>
       </form>
 
       {goals.length === 0 ? (
-        <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
+        <div className="card">
+          <div style={{ fontSize: 15.5, fontWeight: 600, marginBottom: 5 }}>{s.emptyTitle}</div>
+          <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 14 }}>{s.emptyHint}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {s.examples.map((ex: string) => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => pickExample(ex)}
+                style={{
+                  padding: "8px 13px", fontSize: 13.5, borderRadius: 99, cursor: "pointer",
+                  border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--text)",
+                  lineHeight: 1.3, textAlign: "left",
+                }}
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         goals.map((goal, i) => (
           <div key={goal.id} className="card" style={{ marginBottom: 10 }}>
