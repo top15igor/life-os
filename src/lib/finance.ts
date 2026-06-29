@@ -260,6 +260,52 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   };
 }
 
+// Динамика по месяцам (доход/расход/баланс в основной валюте, по историческому
+// курсу) — для графика. Последние `n` месяцев с данными, по возрастанию.
+export async function getMonthlyTrend(userId: string, n = 12): Promise<{ month: string; income: number; expense: number; net: number; currency: string }[]> {
+  const db = supabaseAdmin();
+  let all: Array<{ day: string; kind: string; amount: number; currency: string }> = [];
+  try {
+    all = (await fetchAllTx(db, "day, kind, amount, currency", userId)).map((t: any) => ({ ...t, amount: Number(t.amount) }));
+  } catch {
+    return [];
+  }
+  if (!all.length) return [];
+
+  let base = "USD";
+  const freq = new Map<string, number>();
+  for (const t of all) freq.set(t.currency, (freq.get(t.currency) || 0) + 1);
+  if (freq.size) base = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  try {
+    const { data: st } = await db.from("finance_settings").select("base_currency").eq("user_id", userId).maybeSingle();
+    if (st?.base_currency) base = st.base_currency as string;
+  } catch { /* дефолт */ }
+
+  const months = [...new Set(all.map((t) => t.day.slice(0, 7)))];
+  const curs = [...new Set([base, ...all.map((t) => t.currency)])];
+  let usdPer = new Map<string, number>();
+  try { usdPer = await getUsdPerUnit(db, months, curs, { live: false }); } catch { /* 1:1 */ }
+  const toBase = (amount: number, cur: string, mo: string) => {
+    if (cur === base) return amount;
+    const uc = usdPer.get(`${mo}|${cur}`), ub = usdPer.get(`${mo}|${base}`);
+    if (uc && ub && uc > 0 && ub > 0) return (amount * uc) / ub;
+    return amount;
+  };
+
+  const byMonth = new Map<string, { income: number; expense: number }>();
+  for (const t of all) {
+    const mo = t.day.slice(0, 7);
+    const o = byMonth.get(mo) || { income: 0, expense: 0 };
+    const v = toBase(t.amount, t.currency, mo);
+    if (t.kind === "income") o.income += v; else o.expense += v;
+    byMonth.set(mo, o);
+  }
+  return [...byMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-n)
+    .map(([month, o]) => ({ month, income: round2(o.income), expense: round2(o.expense), net: round2(o.income - o.expense), currency: base }));
+}
+
 // Компактная сводка по финансам для AI-ассистента: итоги по годам и статьям
 // в основной валюте (разные валюты сведены по историческому курсу). Пустая
 // строка, если операций нет. Не делает живых запросов к НБУ — кэш + запасные
