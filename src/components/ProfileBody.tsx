@@ -54,12 +54,15 @@ export default async function ProfileBody({ user, locale, notice }: { user: Curr
         </div>
       </div>
 
-      {/* Личная ссылка (для тех, у кого есть Google/почта — подаём как запасной вход) */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{email ? s.backupT : s.yourLink}</div>
-        <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 11, lineHeight: 1.5 }}>{email ? s.backupS : s.linkHint}</div>
-        <CopyLink link={link} locale={locale} />
-      </div>
+      {/* Личная ссылка — показываем только тем, у кого НЕТ почты/Google (для них это
+          единственный вход). У кого уже есть Google/почта — карточка не нужна, прячем. */}
+      {!email && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>{s.yourLink}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 11, lineHeight: 1.5 }}>{s.linkHint}</div>
+          <CopyLink link={link} locale={locale} />
+        </div>
+      )}
 
       {/* Имя-ссылка (@username): реф-ссылка + публичная страница */}
       <UsernameEditor locale={locale} baseUrl={baseUrl} initialHandle={handle} />
