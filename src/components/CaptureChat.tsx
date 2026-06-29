@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import DictationHints from "./DictationHints";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -355,8 +354,6 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           {saved.id && <Link href={`/entry/${saved.id}`} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.open}</Link>}
         </div>
       )}
-
-      {!chatOpen && <DictationHints locale={locale} />}
     </div>
   );
 }

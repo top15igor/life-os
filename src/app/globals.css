@@ -200,8 +200,28 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 /* На узких экранах кнопки «Записать»/«Поболтать» сжимаются до иконок — всё в одну строку. */
 @media (max-width: 560px) { .cc-lbl { display: none; } }
 
-/* Обёртка кнопок поля захвата (всплывающие подсказки убраны по просьбе). */
+/* Тултип-подсказка на наведение (для кнопок поля захвата). */
 .cc-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+.cc-tip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 9px); left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--text); color: var(--surface);
+  font-size: 12px; line-height: 1.4; font-weight: 400;
+  padding: 7px 11px; border-radius: 10px;
+  width: max-content; max-width: 230px; text-align: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .14s ease, transform .14s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,.20); z-index: 95;
+}
+.cc-tip:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Вариант для кнопок у правого края — подсказка растёт влево, не обрезается. */
+.cc-tip-r::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
+.cc-tip-r:hover::after { transform: translateX(0) translateY(0); }
+/* Вариант «вниз-вправо» — для крестика вверху карточки (вверх некуда — там строка ввода). */
+.cc-tip-br::after { bottom: auto; top: calc(100% + 9px); left: auto; right: 0; transform: translateY(-4px); }
+.cc-tip-br:hover::after { transform: translateY(0); }
+@media (hover: none) { .cc-tip::after { display: none; } }
 
 /* Лента AI-друга: мягкое появление сообщений + индикатор «печатает». */
 @keyframes ccIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
