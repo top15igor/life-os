@@ -64,12 +64,22 @@ export function places(e: Entry): string[] {
 }
 
 export async function getInsights(userId: string) {
-  const { data } = await supabaseAdmin()
+  const { data, error } = await supabaseAdmin()
     .from("insights")
-    .select("text, created_at, entry_id, entries ( entry_date )")
+    .select("id, text, category, created_at, entry_id, entries ( entry_date )")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(300);
+  // Мягкая деградация: до миграции колонки category может не быть.
+  if (error) {
+    const { data: d2 } = await supabaseAdmin()
+      .from("insights")
+      .select("id, text, created_at, entry_id, entries ( entry_date )")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(300);
+    return d2 || [];
+  }
   return data || [];
 }
 
