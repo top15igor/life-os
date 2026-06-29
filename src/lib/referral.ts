@@ -61,6 +61,107 @@ export async function getReferralStatus(userId: string): Promise<ReferralStatus>
   }
 }
 
+// ===== Дерево приглашений конкретного пользователя =====
+// Кого пригласил он, кого пригласили те, и так вглубь — чтобы показать всю
+// «сеть» наглядно и честно. Активность каждого = по числу записей и свежести.
+export type RefActivity = "active" | "warm" | "started" | "idle";
+export type RefNode = {
+  id: string;
+  name: string;
+  joined: string | null; // когда зарегистрировался
+  entries: number; // сколько всего записей в дневнике
+  lastEntry: string | null; // дата последней записи (YYYY-MM-DD)
+  activity: RefActivity;
+  children: RefNode[];
+};
+export type ReferralTree = {
+  nodes: RefNode[]; // те, кого пользователь пригласил напрямую (корни ветвей)
+  direct: number; // сколько приглашено напрямую
+  network: number; // вся сеть (все потомки на всех уровнях)
+  active: number; // из них активных (>= порога записей)
+  capped: boolean; // true — упёрлись в лимит обхода (сеть больше, показана часть)
+};
+
+function todayStr(): string {
+  return new Date(Date.now()).toISOString().slice(0, 10);
+}
+
+// Строит дерево приглашённых вглубь (BFS по уровням). Лимиты — защита от
+// гигантских сетей: глубина и общее число узлов ограничены.
+export async function getReferralTree(userId: string, maxDepth = 6, maxNodes = 400): Promise<ReferralTree> {
+  const empty: ReferralTree = { nodes: [], direct: 0, network: 0, active: 0, capped: false };
+  const db = supabaseAdmin();
+  try {
+    const all: Record<string, any> = {};
+    const childrenOf: Record<string, string[]> = {};
+    let frontier = [userId];
+    let depth = 0;
+    let capped = false;
+    while (frontier.length && depth < maxDepth) {
+      const { data } = await db
+        .from("users")
+        .select("id, name, created_at, referred_by")
+        .in("referred_by", frontier);
+      const rows = data || [];
+      const next: string[] = [];
+      for (const u of rows) {
+        if (all[u.id] || u.id === userId) continue; // защита от циклов/самоссылки
+        if (Object.keys(all).length >= maxNodes) { capped = true; break; }
+        all[u.id] = u;
+        (childrenOf[u.referred_by] ||= []).push(u.id);
+        next.push(u.id);
+      }
+      if (capped) break;
+      frontier = next;
+      depth++;
+    }
+    const ids = Object.keys(all);
+    if (!ids.length) return empty;
+
+    // Статистика записей одним проходом (чанками по 200 id) — счётчик и последняя дата.
+    const cnt: Record<string, number> = {};
+    const last: Record<string, string> = {};
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const { data: rows } = await db.from("entries").select("user_id, entry_date").in("user_id", chunk);
+      for (const r of rows || []) {
+        const uid = (r as any).user_id as string;
+        cnt[uid] = (cnt[uid] || 0) + 1;
+        const d = ((r as any).entry_date || "") as string;
+        if (d && (!last[uid] || d > last[uid])) last[uid] = d;
+      }
+    }
+
+    const today = todayStr();
+    const daysSince = (d?: string): number =>
+      d ? Math.max(0, Math.floor((Date.parse(today) - Date.parse(d)) / 86400000)) : Infinity;
+    const activityOf = (id: string): RefActivity => {
+      const c = cnt[id] || 0;
+      const ds = daysSince(last[id]);
+      if (c === 0) return "idle"; // зарегистрировался, но ещё не писал
+      if (ds <= 7 && c >= 3) return "active"; // пишет регулярно и недавно
+      if (ds <= 30 || c >= ACTIVE_THRESHOLD) return "warm"; // живой, но реже
+      return "started"; // начал, но давно не заходил
+    };
+
+    const build = (id: string): RefNode => ({
+      id,
+      name: all[id]?.name || "—",
+      joined: all[id]?.created_at || null,
+      entries: cnt[id] || 0,
+      lastEntry: last[id] || null,
+      activity: activityOf(id),
+      children: (childrenOf[id] || []).map(build),
+    });
+
+    const nodes = (childrenOf[userId] || []).map(build);
+    const active = ids.filter((id) => (cnt[id] || 0) >= ACTIVE_THRESHOLD).length;
+    return { nodes, direct: nodes.length, network: ids.length, active, capped };
+  } catch {
+    return empty;
+  }
+}
+
 // Списывает одну бесплатную книгу (расходует кредит). true — если получилось.
 export async function claimFreeBook(userId: string): Promise<boolean> {
   const st = await getReferralStatus(userId);
