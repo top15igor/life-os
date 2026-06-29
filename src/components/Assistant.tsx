@@ -19,12 +19,20 @@ function readLocale(): Locale {
 
 const HIT_ICON: Record<string, string> = {
   entry: "ti-notebook",
+  dream: "ti-cloud",
+  goal: "ti-target",
+  task: "ti-checkbox",
+  insight: "ti-bulb",
   person: "ti-user",
   place: "ti-map-pin",
-  goal: "ti-target",
-  insight: "ti-bulb",
+  project: "ti-briefcase",
+  path: "ti-route",
+  deed: "ti-heart-handshake",
+  promise: "ti-flag",
+  gratitude: "ti-heart",
   knowledge: "ti-bookmark",
   memory: "ti-camera",
+  finance: "ti-wallet",
 };
 
 export default function Assistant() {
