@@ -9,7 +9,7 @@ import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
-import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
+import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { financeReview } from "@/lib/financeCoach";
@@ -143,24 +143,35 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 }
 
 // Постоянная клавиатура с кнопками под полем ввода.
-const KB: Record<string, { money: string; diary: string; help: string }> = {
-  ru: { money: "📊 Финансы", diary: "📖 Дневник", help: "❓ Помощь" },
-  en: { money: "📊 Finances", diary: "📖 Diary", help: "❓ Help" },
-  uk: { money: "📊 Фінанси", diary: "📖 Щоденник", help: "❓ Допомога" },
-  fr: { money: "📊 Finances", diary: "📖 Journal", help: "❓ Aide" },
+const KB: Record<string, { diary: string; tasks: string; money: string; motiv: string; invite: string; help: string }> = {
+  ru: { diary: "📖 Дневник", tasks: "✅ Мои задачи", money: "📊 Финансы", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга", help: "❓ Помощь" },
+  en: { diary: "📖 Diary", tasks: "✅ My tasks", money: "📊 Finances", motiv: "🔥 My motivation", invite: "🤝 Invite a friend", help: "❓ Help" },
+  uk: { diary: "📖 Щоденник", tasks: "✅ Мої завдання", money: "📊 Фінанси", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга", help: "❓ Допомога" },
+  fr: { diary: "📖 Journal", tasks: "✅ Mes tâches", money: "📊 Finances", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami", help: "❓ Aide" },
 };
 
 function mainKeyboard(lang: string) {
   const k = KB[lang] || KB.ru;
-  return { keyboard: [[{ text: k.diary }, { text: k.money }], [{ text: k.help }]], resize_keyboard: true, is_persistent: true };
+  return {
+    keyboard: [
+      [{ text: k.diary }, { text: k.tasks }],
+      [{ text: k.money }, { text: k.motiv }],
+      [{ text: k.invite }, { text: k.help }],
+    ],
+    resize_keyboard: true,
+    is_persistent: true,
+  };
 }
 
-function buttonAction(text?: string): "money" | "diary" | "help" | null {
+function buttonAction(text?: string): "diary" | "tasks" | "money" | "motiv" | "invite" | "help" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (text === k.money) return "money";
     if (text === k.diary) return "diary";
+    if (text === k.tasks) return "tasks";
+    if (text === k.money) return "money";
+    if (text === k.motiv) return "motiv";
+    if (text === k.invite) return "invite";
     if (text === k.help) return "help";
   }
   return null;
@@ -223,6 +234,58 @@ async function sendInvite(chatId: number, lang: string, origin: string, userId: 
   const inviteLink = `${origin}/i/${await getHandle(userId)}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
+}
+
+// Кнопка «Мои задачи»: список открытых задач прямо в чат.
+const TASKS_MSG: Record<string, { title: string; empty: string; open: string }> = {
+  ru: { title: "✅ <b>Твои открытые задачи:</b>", empty: "Открытых задач пока нет 🎉\nОни появятся сами, когда в записи мелькнёт что-то вроде «надо сделать…».", open: "✅ Открыть все задачи" },
+  en: { title: "✅ <b>Your open tasks:</b>", empty: "No open tasks yet 🎉\nThey'll show up on their own when you mention something like “need to do…”.", open: "✅ Open all tasks" },
+  uk: { title: "✅ <b>Твої відкриті завдання:</b>", empty: "Відкритих завдань поки немає 🎉\nВони з'являться самі, коли в записі промайне щось на кшталт «треба зробити…».", open: "✅ Відкрити всі завдання" },
+  fr: { title: "✅ <b>Tes tâches en cours :</b>", empty: "Pas encore de tâches 🎉\nElles apparaîtront quand tu mentionneras « à faire… ».", open: "✅ Voir toutes les tâches" },
+};
+
+// Кнопка «Моя мотивация»: стрик + цели + свежий инсайт прямо в чат.
+const GOALS_BTN: Record<string, string> = { ru: "🎯 Открыть цели", en: "🎯 Open goals", uk: "🎯 Відкрити цілі", fr: "🎯 Voir les objectifs" };
+const MOTIV: Record<string, { streak: (n: number) => string; noStreak: string; goals: string; noGoals: string; insight: string; footer: string }> = {
+  ru: {
+    streak: (n) => `🔥 <b>${n} дней подряд</b> — ты в потоке, держи темп!`,
+    noStreak: "🔥 Серия пока не началась — сделай запись сегодня и запусти счётчик!",
+    goals: "🎯 <b>Твои цели:</b>", noGoals: "🎯 Целей пока нет — добавь, к чему стремишься, чтобы видеть прогресс.",
+    insight: "💡 <b>Недавний инсайт:</b>", footer: "Маленький шаг сегодня — большая история через год. 🌱",
+  },
+  en: {
+    streak: (n) => `🔥 <b>${n} days in a row</b> — you're in the flow, keep it up!`,
+    noStreak: "🔥 No streak yet — make an entry today and start the counter!",
+    goals: "🎯 <b>Your goals:</b>", noGoals: "🎯 No goals yet — add what you're aiming for to track progress.",
+    insight: "💡 <b>Recent insight:</b>", footer: "A small step today — a big story in a year. 🌱",
+  },
+  uk: {
+    streak: (n) => `🔥 <b>${n} днів поспіль</b> — ти в потоці, тримай темп!`,
+    noStreak: "🔥 Серія ще не почалася — зроби запис сьогодні й запусти лічильник!",
+    goals: "🎯 <b>Твої цілі:</b>", noGoals: "🎯 Цілей поки немає — додай, до чого прагнеш, щоб бачити прогрес.",
+    insight: "💡 <b>Нещодавній інсайт:</b>", footer: "Маленький крок сьогодні — велика історія за рік. 🌱",
+  },
+  fr: {
+    streak: (n) => `🔥 <b>${n} jours d'affilée</b> — tu es dans le flow, continue !`,
+    noStreak: "🔥 Pas encore de série — fais une entrée aujourd'hui et lance le compteur !",
+    goals: "🎯 <b>Tes objectifs :</b>", noGoals: "🎯 Pas encore d'objectifs — ajoute ce que tu vises pour suivre tes progrès.",
+    insight: "💡 <b>Insight récent :</b>", footer: "Un petit pas aujourd'hui — une grande histoire dans un an. 🌱",
+  },
+};
+
+async function motivationReport(userId: string, lang: string): Promise<string> {
+  const M = MOTIV[lang] || MOTIV.ru;
+  const [streak, goals, insights] = await Promise.all([getStreak(userId), getGoals(userId), getInsights(userId)]);
+  const parts: string[] = [streak > 0 ? M.streak(streak) : M.noStreak];
+  if (goals.length) {
+    const top = goals.slice(0, 3).map((g: any) => `• ${esc(g.title || "")} — ${g.progress ?? 0}%`).join("\n");
+    parts.push(`${M.goals}\n${top}`);
+  } else {
+    parts.push(M.noGoals);
+  }
+  if (insights.length) parts.push(`${M.insight}\n«${esc(insights[0].text || "")}»`);
+  parts.push(M.footer);
+  return parts.join("\n\n");
 }
 
 // Один раз на «тёплый» инстанс синхронизируем меню команд бота с кодом,
@@ -418,6 +481,27 @@ export async function POST(req: NextRequest) {
         await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
       }
     }
+    else if (ba === "tasks") {
+      const tasks = await getOpenTasks(user.id, 7);
+      const T = TASKS_MSG[lang] || TASKS_MSG.ru;
+      if (!tasks.length) await sendMessage(chatId, T.empty);
+      else {
+        const list = tasks.map((t: any) => `• ${esc(t.text || "")}`).join("\n");
+        const url = `${origin}/u/${user.token}?next=${encodeURIComponent("/goals?tab=tasks")}`;
+        await sendMessage(chatId, `${T.title}\n${list}`, { reply_markup: { inline_keyboard: [[{ text: T.open, url }]] } });
+      }
+    }
+    else if (ba === "motiv") {
+      await sendChatAction(chatId, "typing");
+      try {
+        const report = await motivationReport(user.id, lang);
+        await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lang] || GOALS_BTN.ru, url: `${origin}/u/${user.token}?next=/goals` }]] } });
+      } catch (e) {
+        console.error("motiv btn", e);
+        await sendMessage(chatId, "Не получилось собрать сводку. Попробуй чуть позже 🙂");
+      }
+    }
+    else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
     else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     else await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     return NextResponse.json({ ok: true });
