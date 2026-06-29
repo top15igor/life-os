@@ -5,13 +5,13 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 const STR: Record<string, any> = {
-  ru: { publish: "Опубликовать", published: "Опубликовано", edit: "Изменить", remove: "Убрать", modalTitle: "Опубликовать в Книгу жизни", sub: "AI подготовил публичную версию — личное не уйдёт. Проверь и поправь под себя.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI спрятал ради приватности:", save: "Опубликовать", saveEdit: "Сохранить", cancel: "Отмена", preparing: "AI готовит…", bookNote: "Появится в твоей публичной книге /p/… (если она включена в «Поделиться»).", confirmRemove: "Убрать запись из публичной книги?", empty: "Текст не может быть пустым.", pathLabel: "Добавить в путь (необязательно)", pathNone: "Без пути" },
-  en: { publish: "Publish", published: "Published", edit: "Edit", remove: "Remove", modalTitle: "Publish to your Book of Life", sub: "AI prepared a public version — nothing personal leaks. Review and tweak.", lTitle: "Title", lText: "Text", aiHid: "🔒 AI hid for privacy:", save: "Publish", saveEdit: "Save", cancel: "Cancel", preparing: "AI is preparing…", bookNote: "It'll appear in your public book /p/… (if it's on in Share).", confirmRemove: "Remove this entry from your public book?", empty: "Text can't be empty.", pathLabel: "Add to a path (optional)", pathNone: "No path" },
-  uk: { publish: "Опублікувати", published: "Опубліковано", edit: "Змінити", remove: "Прибрати", modalTitle: "Опублікувати в Книгу життя", sub: "AI підготував публічну версію — особисте не піде. Перевір і поправ.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI сховав заради приватності:", save: "Опублікувати", saveEdit: "Зберегти", cancel: "Скасувати", preparing: "AI готує…", bookNote: "З'явиться у твоїй публічній книзі /p/… (якщо її ввімкнено в «Поділитися»).", confirmRemove: "Прибрати запис із публічної книги?", empty: "Текст не може бути порожнім.", pathLabel: "Додати в шлях (необов'язково)", pathNone: "Без шляху" },
-  fr: { publish: "Publier", published: "Publié", edit: "Modifier", remove: "Retirer", modalTitle: "Publier dans ton Livre de vie", sub: "L'IA a préparé une version publique — rien de personnel ne sort. Vérifie et ajuste.", lTitle: "Titre", lText: "Texte", aiHid: "🔒 L'IA a masqué pour la confidentialité :", save: "Publier", saveEdit: "Enregistrer", cancel: "Annuler", preparing: "L'IA prépare…", bookNote: "Apparaîtra dans ton livre public /p/… (s'il est activé dans Partager).", confirmRemove: "Retirer cette entrée du livre public ?", empty: "Le texte ne peut pas être vide.", pathLabel: "Ajouter à un chemin (optionnel)", pathNone: "Sans chemin" },
+  ru: { publish: "Опубликовать", published: "Опубликовано", edit: "Изменить", remove: "Убрать", modalTitle: "Опубликовать в Книгу жизни", sub: "AI подготовил публичную версию — личное не уйдёт. Проверь и поправь под себя.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI спрятал ради приватности:", save: "Опубликовать", saveEdit: "Сохранить", cancel: "Отмена", preparing: "AI готовит…", bookNote: "После публикации запись появится на твоей публичной странице — ссылку увидишь сразу здесь. Выключить страницу целиком можно в «Поделиться».", confirmRemove: "Убрать запись из публичной книги?", empty: "Текст не может быть пустым.", pathLabel: "Добавить в путь (необязательно)", pathNone: "Без пути", viewPage: "Открыть публичную страницу", copied: "Ссылка скопирована" },
+  en: { publish: "Publish", published: "Published", edit: "Edit", remove: "Remove", modalTitle: "Publish to your Book of Life", sub: "AI prepared a public version — nothing personal leaks. Review and tweak.", lTitle: "Title", lText: "Text", aiHid: "🔒 AI hid for privacy:", save: "Publish", saveEdit: "Save", cancel: "Cancel", preparing: "AI is preparing…", bookNote: "Once published, the entry appears on your public page — you'll get the link right here. You can turn the whole page off in Share.", confirmRemove: "Remove this entry from your public book?", empty: "Text can't be empty.", pathLabel: "Add to a path (optional)", pathNone: "No path", viewPage: "Open public page", copied: "Link copied" },
+  uk: { publish: "Опублікувати", published: "Опубліковано", edit: "Змінити", remove: "Прибрати", modalTitle: "Опублікувати в Книгу життя", sub: "AI підготував публічну версію — особисте не піде. Перевір і поправ.", lTitle: "Заголовок", lText: "Текст", aiHid: "🔒 AI сховав заради приватності:", save: "Опублікувати", saveEdit: "Зберегти", cancel: "Скасувати", preparing: "AI готує…", bookNote: "Після публікації запис з'явиться на твоїй публічній сторінці — посилання побачиш одразу тут. Вимкнути сторінку цілком можна в «Поділитися».", confirmRemove: "Прибрати запис із публічної книги?", empty: "Текст не може бути порожнім.", pathLabel: "Додати в шлях (необов'язково)", pathNone: "Без шляху", viewPage: "Відкрити публічну сторінку", copied: "Посилання скопійовано" },
+  fr: { publish: "Publier", published: "Publié", edit: "Modifier", remove: "Retirer", modalTitle: "Publier dans ton Livre de vie", sub: "L'IA a préparé une version publique — rien de personnel ne sort. Vérifie et ajuste.", lTitle: "Titre", lText: "Texte", aiHid: "🔒 L'IA a masqué pour la confidentialité :", save: "Publier", saveEdit: "Enregistrer", cancel: "Annuler", preparing: "L'IA prépare…", bookNote: "Une fois publiée, l'entrée apparaît sur ta page publique — tu auras le lien ici même. Tu peux désactiver toute la page dans Partager.", confirmRemove: "Retirer cette entrée du livre public ?", empty: "Le texte ne peut pas être vide.", pathLabel: "Ajouter à un chemin (optionnel)", pathNone: "Sans chemin", viewPage: "Ouvrir la page publique", copied: "Lien copié" },
 };
 
-export default function PublishEntry({ entryId, initial, paths = [], locale }: { entryId: string; initial: { published: boolean; title: string; text: string }; paths?: { id: string; title: string; emoji?: string }[]; locale: string }) {
+export default function PublishEntry({ entryId, initial, paths = [], locale, handle: handleProp = "", baseUrl = "" }: { entryId: string; initial: { published: boolean; title: string; text: string }; paths?: { id: string; title: string; emoji?: string }[]; locale: string; handle?: string; baseUrl?: string }) {
   const L = STR[locale] || STR.ru;
   const router = useRouter();
   const [published, setPublished] = useState(initial.published);
@@ -22,7 +22,10 @@ export default function PublishEntry({ entryId, initial, paths = [], locale }: {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [handle, setHandle] = useState(handleProp);
   useEffect(() => setMounted(true), []);
+
+  const pageUrl = handle ? `${baseUrl}/p/${handle}` : "";
 
   async function openNew() {
     setBusy(true);
@@ -42,7 +45,8 @@ export default function PublishEntry({ entryId, initial, paths = [], locale }: {
       const payload: any = { id: entryId, action: "publish", title: title.trim(), text: t, privacy: "public" };
       if (paths.length) payload.path_id = pathId || null;
       const r = await fetch("/api/publish", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      if (r.ok) { setPublished(true); setOpen(false); router.refresh(); }
+      const j = await r.json().catch(() => null);
+      if (r.ok) { if (j?.handle) setHandle(j.handle); setPublished(true); setOpen(false); router.refresh(); }
     } finally { setBusy(false); }
   }
   async function remove() {
@@ -66,6 +70,11 @@ export default function PublishEntry({ entryId, initial, paths = [], locale }: {
       ) : (
         <div style={{ display: "inline-flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#10b981", fontWeight: 500 }}><i className="ti ti-circle-check" style={{ fontSize: 16 }} />{L.published}</span>
+          {pageUrl && (
+            <a href={pageUrl} target="_blank" rel="noreferrer" style={{ ...btn, color: "var(--accent)", borderColor: "var(--accent)", textDecoration: "none" }}>
+              <i className="ti ti-external-link" style={{ fontSize: 15 }} />{L.viewPage}
+            </a>
+          )}
           <button onClick={openEdit} disabled={busy} style={btn}><i className="ti ti-pencil" style={{ fontSize: 15 }} />{L.edit}</button>
           <button onClick={remove} disabled={busy} style={{ ...btn, color: "#ef4444" }}><i className="ti ti-eye-off" style={{ fontSize: 15 }} />{L.remove}</button>
         </div>

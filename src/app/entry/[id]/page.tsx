@@ -10,6 +10,8 @@ import EntryActions from "@/components/EntryActions";
 import PublishEntry from "@/components/PublishEntry";
 import { getPublishStatus } from "@/lib/publish";
 import { getPaths } from "@/lib/paths";
+import { getHandle } from "@/lib/handle";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +72,9 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const catNames = cats(e).map((c: any) => t.cats[c.slug] || c.slug);
   const pub = (await getPublishStatus(user.id, id)) || { published: false, title: "", text: "" };
   const userPaths = await getPaths(user.id);
+  const handle = await getHandle(user.id, user.name);
+  const hdrs = await headers();
+  const baseUrl = `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || "mylifebookai.vercel.app"}`;
 
   return (
     <div className="shell">
@@ -150,7 +155,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
         )}
 
         <div style={{ marginTop: 26, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-          <PublishEntry entryId={id} initial={{ published: pub.published, title: pub.title || "", text: pub.text || "" }} paths={userPaths.map((p) => ({ id: p.id, title: p.title, emoji: p.emoji }))} locale={locale} />
+          <PublishEntry entryId={id} initial={{ published: pub.published, title: pub.title || "", text: pub.text || "" }} paths={userPaths.map((p) => ({ id: p.id, title: p.title, emoji: p.emoji }))} locale={locale} handle={handle} baseUrl={baseUrl} />
           <EntryActions id={id} locale={locale} rawText={e.raw_text || ""} />
         </div>
       </main>

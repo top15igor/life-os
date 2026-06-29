@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { preparePublicVersion } from "@/lib/publish";
+import { getHandle } from "@/lib/handle";
 
 export const runtime = "nodejs";
 
@@ -36,7 +37,16 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json({ ok: false, error: "no_table" }, { status: 500 });
     }
-    return NextResponse.json({ ok: true });
+    // Публикация = явное согласие сделать видимым. Авто-включаем публичную
+    // страницу (если ещё выключена), чтобы опубликованная запись реально
+    // появилась на /p/<handle>, а не молча терялась за скрытым тумблером.
+    // Отключить целиком можно в «Поделиться». Возвращаем handle для ссылки.
+    let handle = "";
+    try {
+      handle = await getHandle(user.id, user.name);
+      await db.from("public_profile").update({ enabled: true }).eq("user_id", user.id);
+    } catch {}
+    return NextResponse.json({ ok: true, handle });
   }
 
   if (action === "unpublish") {
