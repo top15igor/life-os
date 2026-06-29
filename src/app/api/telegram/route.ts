@@ -411,6 +411,8 @@ export async function POST(req: NextRequest) {
     const lang = pickLang(msg.from?.language_code);
     const text = (await personalMorning(user.id, user.name ?? null, lang)) || morningMessage(lang, Math.floor(Date.now() / 86400000));
     await sendMessage(chatId, text, { reply_markup: mainKeyboard(lang) });
+    // Сохраняем в историю — чтобы на «а что за…» ассистент связал с этим сообщением.
+    saveChat(user.id, "☀️ (моё утреннее сообщение пользователю)", text).catch(() => {});
     return NextResponse.json({ ok: true });
   }
 
