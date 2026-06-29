@@ -13,6 +13,7 @@ const STR: Record<string, any> = {
     mic: "Сказать голосом",
     stop: "Остановить",
     err: "Связь сорвалась, скажи ещё раз 🙂",
+    showAll: (n: number) => `↑ Показать всю переписку (${n})`,
   },
   en: {
     intro: "Hi! I'm your friend — I know all about you from your diary and I check the web for fresh facts. What's on your mind?",
@@ -46,6 +47,7 @@ const STR: Record<string, any> = {
 export default function CompanionChat({ locale = "ru" }: { locale?: string }) {
   const s = STR[locale] || STR.ru;
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [showAll, setShowAll] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -124,7 +126,12 @@ export default function CompanionChat({ locale = "ru" }: { locale?: string }) {
         {msgs.length === 0 && (
           <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5, padding: "8px 2px" }}>{s.intro}</div>
         )}
-        {msgs.map((m, i) => (
+        {!showAll && msgs.length > 2 && (
+          <button onClick={() => setShowAll(true)} style={{ alignSelf: "center", background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontSize: 12.5, fontWeight: 500, padding: "2px 0" }}>
+            {(s.showAll || STR.ru.showAll)(msgs.length - 2)}
+          </button>
+        )}
+        {(showAll ? msgs : msgs.slice(-2)).map((m, i) => (
           <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", padding: "9px 13px", borderRadius: 14, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: m.role === "user" ? "var(--accent)" : "var(--surface-2)", color: m.role === "user" ? "#fff" : "var(--text)" }}>
             {m.content}
           </div>
