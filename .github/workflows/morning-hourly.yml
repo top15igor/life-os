@@ -1,0 +1,29 @@
+# Почасовой триггер утренних пушей — чтобы работало «время на выбор».
+# На тарифе Vercel Hobby крон может срабатывать только раз в день, поэтому
+# индивидуальное время отправки обеспечивает этот workflow: каждый час он
+# дёргает /api/cron-morning, а эндпоинт сам решает, кому уже пора, и шлёт
+# не больше одного раза в день (защита morning_sent_on).
+#
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions):
+#   APP_URL      — https://mylifebookai.vercel.app (без слэша в конце)
+#   CRON_SECRET  — то же значение, что в переменных окружения Vercel
+#
+# Если workflow не настроен — всё работает по дефолтному времени через Vercel Cron.
+name: Morning push (hourly)
+
+on:
+  schedule:
+    - cron: "0 * * * *" # каждый час, в начале часа (UTC)
+  workflow_dispatch: {} # можно запустить вручную из вкладки Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger morning cron
+        run: |
+          curl -fsS -X GET "${APP_URL}/api/cron-morning" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
