@@ -27,7 +27,7 @@ export const NAV_GROUPS: { id: string; keys: string[] }[] = [
   { id: "life", keys: ["plans", "finance", "trace", "family", "projects"] },
   { id: "memory", keys: ["lifebook", "knowledge", "memory", "people", "places"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
-  { id: "more", keys: ["share", "paths", "guide", "profile"] },
+  { id: "more", keys: ["share", "paths", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
 ];
 
 // Главные разделы для нижнего таб-бара на мобильном.

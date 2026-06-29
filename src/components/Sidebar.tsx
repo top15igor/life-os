@@ -98,7 +98,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
           /* ===== РЕЖИМ НАСТРОЙКИ ===== */
           <div>
             <div style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.04em", margin: "4px 4px 8px" }}>{el.title}</div>
-            {order.map((key, idx) => {
+            {order.filter((k) => k !== "guide").map((key, idx, arr) => {
               const n = NAV_BY[key]; if (!n) return null;
               const isHidden = hidden.includes(key);
               return (
@@ -106,7 +106,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
                   <i className={`ti ${n.icon}`} style={{ fontSize: 16, color: "var(--text-2)", width: 18, flexShrink: 0 }} />
                   <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{navLabels[key] || key}</span>
                   <button onClick={() => move(key, -1)} disabled={idx === 0} aria-label="up" style={miniBtn(idx === 0)}><i className="ti ti-chevron-up" style={{ fontSize: 15 }} /></button>
-                  <button onClick={() => move(key, 1)} disabled={idx === order.length - 1} aria-label="down" style={miniBtn(idx === order.length - 1)}><i className="ti ti-chevron-down" style={{ fontSize: 15 }} /></button>
+                  <button onClick={() => move(key, 1)} disabled={idx === arr.length - 1} aria-label="down" style={miniBtn(idx === arr.length - 1)}><i className="ti ti-chevron-down" style={{ fontSize: 15 }} /></button>
                   <button onClick={() => toggleHide(key)} aria-label="hide" style={miniBtn(false)}><i className={`ti ${isHidden ? "ti-eye-off" : "ti-eye"}`} style={{ fontSize: 15, color: isHidden ? "var(--text-3)" : "var(--accent)" }} /></button>
                 </div>
               );
@@ -118,7 +118,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
           </div>
         ) : reordered ? (
           /* ===== СВОЙ ПОРЯДОК (плоский список) ===== */
-          <div>{order.filter((k) => !hidden.includes(k)).map((k) => NavLink(k))}</div>
+          <div>{order.filter((k) => !hidden.includes(k) && k !== "guide").map((k) => NavLink(k))}</div>
         ) : (
           /* ===== ПО БЛОКАМ (по умолчанию) ===== */
           <div>
@@ -153,6 +153,10 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         )}
 
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          <Link href="/guide" className={`navlink${path === "/guide" ? " active" : ""}`}>
+            <i className="ti ti-help" />
+            <span className="navlabel">{navLabels.guide || "Инструкция"}</span>
+          </Link>
           <Feedback locale={locale} variant="sidebar" />
           {inviteLink && <InviteButton link={inviteLink} locale={locale} />}
         </div>
