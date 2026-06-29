@@ -87,10 +87,10 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»", moneyFail: "Не удалось записать в «Деньги» — попробуй команду /spend" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»", moneyFail: "Не удалось записать в «Деньги» — попробуй команду /spend", heard: "Записал твоими словами", gist: "Коротко" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command", heard: "Saved in your words", gist: "In short" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend", heard: "Записав твоїми словами", gist: "Коротко" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend", heard: "Enregistré avec tes mots", gist: "En bref" },
 };
 
 // Символы валют для подтверждения в боте.
@@ -703,7 +703,7 @@ export async function POST(req: NextRequest) {
     const L = CONFIRM[lang] || CONFIRM.ru;
     const financeOk = !analysis.finance?.length || ((entry as any).financeSaved ?? 0) > 0;
     if (analysis.finance?.length && !financeOk) console.error("finance not saved", (entry as any).financeError);
-    let body = formatConfirm(analysis, streak, lang, financeOk);
+    let body = formatConfirm(analysis, streak, lang, financeOk, isVoice ? text : undefined);
     const ms = milestoneFor(count, streak, lang);
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
@@ -730,9 +730,20 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true): string {
+function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true, fullText?: string): string {
   const L = CONFIRM[lang] || CONFIRM.ru;
-  const lines = [`✅ <b>${L.saved}</b>`, "", esc(a.summary || "")];
+  const lines = [`✅ <b>${L.saved}</b>`, ""];
+  // Для голосовых показываем ПОЛНУЮ расшифровку (то, что человек реально наговорил),
+  // чтобы не казалось, что часть потерялась. Резюме — отдельной короткой строкой ниже.
+  if (fullText && fullText.trim()) {
+    const ft = fullText.trim();
+    // Запас под теги/задачи/метрики и лимит Telegram (4096). Полный текст всё равно в записи.
+    const shown = ft.length > 3000 ? ft.slice(0, 3000).trimEnd() + "…" : ft;
+    lines.push(`📝 <b>${L.heard}:</b>`, esc(shown));
+    if (a.summary && a.summary.trim()) lines.push("", `💬 <b>${L.gist}:</b> ${esc(a.summary.trim())}`);
+  } else {
+    lines.push(esc(a.summary || ""));
+  }
 
   if (a.tags?.length) {
     lines.push("", a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" "));
