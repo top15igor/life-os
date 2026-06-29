@@ -58,6 +58,15 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Deep-link: /guide?card=<key> сразу открывает нужную карточку (напр. сравнение AI-помощников).
+  useEffect(() => {
+    try {
+      const key = new URLSearchParams(window.location.search).get("card");
+      if (key) { const f = ex.features.find((x) => x.key === key); if (f) setActive(f); }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const FEAT_LIMIT = 6;
   const shownFeatures = featuresOpen ? ex.features : ex.features.slice(0, FEAT_LIMIT);
 

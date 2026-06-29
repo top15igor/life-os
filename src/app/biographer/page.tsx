@@ -2,6 +2,7 @@ import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
 import Biographer from "@/components/Biographer";
 import BiographerPitch from "@/components/BiographerPitch";
+import AiHelperBanner from "@/components/AiHelperBanner";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -28,7 +29,10 @@ export default async function BiographerPage({ searchParams }: { searchParams: P
       <main className="main narrow">
         <PageHead icon="ti-messages" color="var(--insight)" title={t.nav.biographer} hint={h.biographer} />
         {premium ? (
-          <Biographer locale={locale} initialHistory={history as any} />
+          <>
+            <AiHelperBanner which="biographer" locale={locale} />
+            <Biographer locale={locale} initialHistory={history as any} />
+          </>
         ) : (
           <BiographerPitch locale={locale} />
         )}

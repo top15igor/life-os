@@ -3,6 +3,7 @@ import Link from "next/link";
 import PageHead from "@/components/PageHead";
 import IntelligenceOverview from "@/components/IntelligenceOverview";
 import AnalyticsPitch from "@/components/AnalyticsPitch";
+import AiHelperBanner from "@/components/AiHelperBanner";
 import { getEntries, getOnThisDay, cats, tagList, projects as projectsOf, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -97,6 +98,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       <main className="main">
         <PageHead icon="ti-sparkles" color="var(--insight)" title={t.nav.analytics} hint={h.analytics} />
 
+        <AiHelperBanner which="analytics" locale={locale} />
         <IntelligenceOverview locale={locale} />
 
         {hasMap && (
