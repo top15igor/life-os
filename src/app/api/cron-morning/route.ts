@@ -5,6 +5,11 @@ import { morningMessage } from "@/lib/morningPush";
 import { personalMorning } from "@/lib/morningPersonal";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { mainKeyboard } from "@/lib/botKeyboard";
+import { saveChat } from "@/lib/biographer";
+
+// Метка утреннего пуша в истории диалога — чтобы ассистент потом связывал
+// уточняющие вопросы пользователя с тем, что сам прислал утром.
+const MORNING_TAG = "☀️ (моё утреннее сообщение пользователю)";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -34,16 +39,20 @@ export async function GET(req: NextRequest) {
     try {
       let text: string | null = null;
       let lang = "ru";
+      let uid: string | null = null;
       try {
         const { data: u } = await supabaseAdmin().from("users").select("id, name, lang").eq("chat_id", Number(chat)).maybeSingle();
         if (u) {
+          uid = (u as any).id;
           lang = pickLang((u as any).lang);
           text = await personalMorning((u as any).id, (u as any).name ?? null, lang);
         }
       } catch { /* нет такого юзера — уйдёт статичная фраза */ }
+      const personalized = !!text;
       text = text || morningMessage(lang, doy);
       await sendMessage(Number(chat), text, { reply_markup: mainKeyboard(lang) });
-      return NextResponse.json({ ok: true, test: true, personalized: !!text });
+      if (uid) saveChat(uid, MORNING_TAG, text).catch(() => {});
+      return NextResponse.json({ ok: true, test: true, personalized });
     } catch (e: any) {
       return NextResponse.json({ ok: false, test: true, error: String(e?.message || e) });
     }
@@ -84,6 +93,7 @@ export async function GET(req: NextRequest) {
         }
         if (!text) text = morningMessage(lang, doy); // мало данных / лимит времени / ошибка
         await sendMessage(u.chat_id, text, { reply_markup: mainKeyboard(lang) });
+        saveChat(u.id, MORNING_TAG, text).catch(() => {}); // в историю, не тормозя рассылку
         sent++;
       } catch (e) {
         console.error("morning push", u.chat_id, e);
