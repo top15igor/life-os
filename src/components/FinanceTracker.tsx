@@ -419,9 +419,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     if (r.ok) { setSetOpenS(false); router.refresh(); }
   }
 
-  const input: any = { fontSize: 14, padding: "9px 11px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
-  const btnP: any = { fontSize: 13.5, padding: "9px 16px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", fontWeight: 500 };
-  const btnG: any = { fontSize: 13.5, padding: "9px 14px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer" };
+  const input: any = { fontSize: 14, padding: "10px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" };
+  const btnP: any = { fontSize: 13.5, padding: "10px 18px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+  const btnG: any = { fontSize: 13.5, padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", fontWeight: 500, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
+  // Компактная «пилюля» — для главных действий вместо кнопок во всю ширину.
+  const btnPill: any = { ...btnP, padding: "10px 22px", borderRadius: 999 };
 
   // Календарь по дням месяца.
   const dayMap = new Map(data.byDay.map((d) => [d.day, d]));
@@ -625,26 +627,28 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5 }}>
           <i className="ti ti-wallet" style={{ fontSize: 14, color: "var(--accent)" }} />{s.balance}
         </div>
-        <div style={{ fontSize: 32, fontWeight: 700, marginTop: 3, lineHeight: 1.1, color: balance < 0 ? "#ef4444" : "var(--text)" }}>
+        <div style={{ fontSize: 38, fontWeight: 750, marginTop: 4, lineHeight: 1.05, letterSpacing: "-0.02em", color: balance < 0 ? "#ef4444" : "var(--text)" }}>
           {balance > 0 ? "+" : ""}{fmtMoney(balance, base, locale)}
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <div style={{ flex: "1 1 120px", background: "#10b9811a", borderRadius: 10, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11.5, color: "#10b981", display: "flex", alignItems: "center", gap: 4 }}>
+        <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 120px", background: "#10b9811a", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, color: "#10b981", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
               <i className="ti ti-arrow-down-left" style={{ fontSize: 14 }} />{s.income}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 600, marginTop: 2 }}>{fmtMoney(income, base, locale)}</div>
+            <div style={{ fontSize: 20, fontWeight: 650, marginTop: 3 }}>{fmtMoney(income, base, locale)}</div>
           </div>
-          <div style={{ flex: "1 1 120px", background: "#ef44441a", borderRadius: 10, padding: "10px 12px" }}>
-            <div style={{ fontSize: 11.5, color: "#ef4444", display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ flex: "1 1 120px", background: "#ef44441a", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ fontSize: 11.5, color: "#ef4444", display: "flex", alignItems: "center", gap: 4, fontWeight: 500 }}>
               <i className="ti ti-arrow-up-right" style={{ fontSize: 14 }} />{s.expense}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 600, marginTop: 2 }}>{fmtMoney(expense, base, locale)}</div>
+            <div style={{ fontSize: 20, fontWeight: 650, marginTop: 3 }}>{fmtMoney(expense, base, locale)}</div>
           </div>
         </div>
-        <button onClick={() => setOpen((o) => !o)} style={{ ...btnP, width: "100%", marginTop: 14 }}>
-          <i className="ti ti-plus" style={{ fontSize: 15, verticalAlign: "-2px" }} /> {s.add}
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+          <button onClick={() => setOpen((o) => !o)} style={{ ...btnPill, fontSize: 14, padding: "11px 28px", background: open ? "var(--surface-2)" : "var(--accent)", color: open ? "var(--text-2)" : "#fff", border: open ? "1px solid var(--border)" : "none", boxShadow: open ? "none" : "0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent)" }}>
+            <i className={`ti ${open ? "ti-x" : "ti-plus"}`} style={{ fontSize: 16 }} /> {open ? s.cancel : s.add}
+          </button>
+        </div>
 
         {/* Форма добавления */}
         {open && (
@@ -711,9 +715,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           {advice ? (
             <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "var(--text)", whiteSpace: "pre-wrap" }}>{advice}</div>
           ) : (
-            <button onClick={loadAdvice} disabled={adviceLoading} style={{ ...btnP, width: "100%", marginTop: 10, opacity: adviceLoading ? 0.7 : 1 }}>
-              <i className="ti ti-sparkles" style={{ fontSize: 15, verticalAlign: "-2px" }} /> {adviceLoading ? s.adviceThinking : s.adviceGet}
-            </button>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
+              <button onClick={loadAdvice} disabled={adviceLoading} style={{ ...btnPill, opacity: adviceLoading ? 0.7 : 1, boxShadow: "0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent)" }}>
+                <i className="ti ti-sparkles" style={{ fontSize: 15 }} /> {adviceLoading ? s.adviceThinking : s.adviceGet}
+              </button>
+            </div>
           )}
         </div>
       )}
