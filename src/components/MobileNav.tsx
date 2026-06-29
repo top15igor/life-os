@@ -11,10 +11,11 @@ import type { Locale } from "@/lib/i18n";
 
 const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu" };
 
-export default function MobileNav({ navLabels, locale, isOwner, inviteLink }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string }) {
+export default function MobileNav({ navLabels, locale, isOwner, inviteLink, profileHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; profileHref?: string }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const primary = MOBILE_PRIMARY.map((k) => NAV.find((n) => n.key === k)).filter(Boolean) as typeof NAV;
+  const hrefOf = (n: { key: string; href: string }) => (n.key === "profile" && profileHref ? profileHref : n.href);
 
   return (
     <>
@@ -27,9 +28,10 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink }: { 
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
               {NAV.map((n) => {
-                const active = n.href === path;
+                const href = hrefOf(n);
+                const active = href === path || (n.key === "profile" && path === "/profile");
                 return (
-                  <Link key={n.key} href={n.href} onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 10, background: active ? "var(--accent-bg)" : "var(--surface-2)", color: active ? "var(--accent-text)" : "var(--text)" }}>
+                  <Link key={n.key} href={href} onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 10, background: active ? "var(--accent-bg)" : "var(--surface-2)", color: active ? "var(--accent-text)" : "var(--text)" }}>
                     <i className={`ti ${n.icon}`} style={{ fontSize: 19 }} />
                     <span style={{ fontSize: 13.5, fontWeight: active ? 500 : 400 }}>{navLabels[n.key] || n.key}</span>
                   </Link>
@@ -51,9 +53,10 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink }: { 
 
       <nav className="mobilenav">
         {primary.map((n) => {
-          const active = n.href === path;
+          const href = hrefOf(n);
+          const active = href === path || (n.key === "profile" && path === "/profile");
           return (
-            <Link key={n.key} href={n.href} className={active ? "active" : ""}>
+            <Link key={n.key} href={href} className={active ? "active" : ""}>
               <i className={`ti ${n.icon}`} />
               <span>{navLabels[n.key] || n.key}</span>
             </Link>

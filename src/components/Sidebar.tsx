@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LangSwitcher from "./LangSwitcher";
 import MobileNav from "./MobileNav";
 import InviteButton from "./InviteButton";
 import Feedback from "./Feedback";
@@ -76,8 +75,11 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
 
   const NavLink = (key: string) => {
     const n = NAV_BY[key]; if (!n) return null;
+    // «Профиль» живёт по красивому адресу /i/<username> (как @имя в Instagram).
+    const href = key === "profile" && refCode ? `/i/${refCode}` : n.href;
+    const active = href === path || (key === "profile" && path === "/profile");
     return (
-      <Link key={key} href={n.href} className={`navlink${n.href === path ? " active" : ""}`}>
+      <Link key={key} href={href} className={`navlink${active ? " active" : ""}`}>
         <i className={`ti ${n.icon}`} />
         <span className="navlabel">{navLabels[key] || key}</span>
       </Link>
@@ -153,11 +155,10 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
           <Feedback locale={locale} variant="sidebar" />
           {inviteLink && <InviteButton link={inviteLink} locale={locale} />}
-          <LangSwitcher current={locale} />
         </div>
       </aside>
 
-      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} />
+      <MobileNav navLabels={navLabels} locale={locale} isOwner={isOwner} inviteLink={inviteLink} profileHref={refCode ? `/i/${refCode}` : "/profile"} />
     </>
   );
 }
