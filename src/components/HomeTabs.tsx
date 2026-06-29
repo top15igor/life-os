@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import QuickAdd from "./QuickAdd";
+import CaptureChat from "./CaptureChat";
 import LifeBalance from "./LifeBalance";
 import Hint from "./Hint";
-import DictationHints from "./DictationHints";
 import PromiseList from "./PromiseList";
 import HomeEditor from "./HomeEditor";
 import AwarenessCard from "./AwarenessCard";
@@ -191,8 +190,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
 
       {tab === 0 && (
         <div className="fade-up">
-          <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />
-          <DictationHints locale={locale} />
+          <CaptureChat qa={qa} locale={locale} />
 
           {data.bookPrompt && (
             <button
