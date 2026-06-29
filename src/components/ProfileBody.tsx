@@ -1,6 +1,8 @@
 import { headers, cookies } from "next/headers";
 import Link from "next/link";
 import { CopyLink, ProfileButtons, PinSettings, NotificationToggle } from "@/components/ProfileActions";
+import MorningSettings from "@/components/MorningSettings";
+import { normalizeMorningPrefs, type MorningPrefs } from "@/lib/morningPrefs";
 import LangSwitcher from "@/components/LangSwitcher";
 import LoginMethods from "@/components/LoginMethods";
 import UsernameEditor from "@/components/UsernameEditor";
@@ -30,11 +32,13 @@ export default async function ProfileBody({ user, locale, notice }: { user: Curr
   let hasPin = false;
   let email: string | null = null;
   let pushEnabled = true;
+  let morningPrefs: MorningPrefs = normalizeMorningPrefs(null);
   try {
-    const { data } = await supabaseAdmin().from("users").select("pin_hash, email, push_enabled").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("pin_hash, email, push_enabled, morning_prefs").eq("id", user.id).maybeSingle();
     hasPin = !!data?.pin_hash;
     email = (data as any)?.email || null;
     pushEnabled = (data as any)?.push_enabled !== false; // только явный false = выкл; null/нет колонки = вкл
+    morningPrefs = normalizeMorningPrefs((data as any)?.morning_prefs);
   } catch {
     try {
       const { data } = await supabaseAdmin().from("users").select("pin_hash, email").eq("id", user.id).maybeSingle();
@@ -98,6 +102,9 @@ export default async function ProfileBody({ user, locale, notice }: { user: Curr
 
       {/* Уведомления (только для Telegram-аккаунтов — им приходят пуши) */}
       {showPushToggle && <NotificationToggle locale={locale} enabled={pushEnabled} />}
+
+      {/* Персонализация утреннего пуша: тон + темы (что ИИ присылает утром) */}
+      {showPushToggle && <MorningSettings locale={locale} initial={morningPrefs} />}
 
       {/* Твои данные */}
       <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.yourData}</div>

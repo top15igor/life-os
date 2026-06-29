@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMessage } from "@/lib/telegram";
 import { morningMessage } from "@/lib/morningPush";
 import { personalMorning } from "@/lib/morningPersonal";
+import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { mainKeyboard } from "@/lib/botKeyboard";
 
 export const runtime = "nodejs";
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
   // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
   let users: any[] | null = null;
   {
-    const r = await db.from("users").select("id, name, chat_id, lang, push_enabled").not("chat_id", "is", null);
+    const r = await db.from("users").select("id, name, chat_id, lang, push_enabled, morning_prefs").not("chat_id", "is", null);
     if (r.error) {
       const r2 = await db.from("users").select("id, name, chat_id, lang").not("chat_id", "is", null);
       users = r2.data as any;
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
       try {
         let text: string | null = null;
         if (Date.now() < deadline) {
-          text = await personalMorning(u.id, u.name ?? null, lang);
+          text = await personalMorning(u.id, u.name ?? null, lang, normalizeMorningPrefs(u.morning_prefs));
           if (text) personalized++;
         }
         if (!text) text = morningMessage(lang, doy); // мало данных / лимит времени / ошибка
