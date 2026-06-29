@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import AdminPlanSelect from "@/components/AdminPlanSelect";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -266,6 +267,7 @@ export default async function AdminPage() {
                 <th style={{ padding: "10px 12px", fontWeight: 500 }}>Последняя</th>
                 <th style={{ padding: "10px 12px", fontWeight: 500 }}>Пришёл</th>
                 <th style={{ padding: "10px 12px", fontWeight: 500 }}>Пригласил</th>
+                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Тариф</th>
                 <th style={{ padding: "10px 12px", fontWeight: 500 }}>Статус</th>
               </tr>
             </thead>
@@ -277,6 +279,9 @@ export default async function AdminPage() {
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.last || "—"}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.joined || "—"}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.referrer || "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <AdminPlanSelect id={u.id} plan={(u as any).plan || "free"} />
+                  </td>
                   <td style={{ padding: "10px 12px" }}>
                     <span style={{ fontSize: 11.5, padding: "2px 9px", borderRadius: 99, background: u.active ? "rgba(5,150,105,0.12)" : "var(--surface-2)", color: u.active ? "var(--positive)" : "var(--text-3)" }}>
                       {u.active ? "активен" : u.entries === 0 ? "не писал" : "тихо"}

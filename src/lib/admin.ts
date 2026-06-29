@@ -5,14 +5,19 @@ const dayStr = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 export async function getAdminData() {
   const db = supabaseAdmin();
 
-  // referred_by может ещё не существовать (если не запущен referral.sql) — мягкий фолбэк.
+  // referred_by/plan могут ещё не существовать (миграции не запущены) — мягкий фолбэк по убыванию.
   let users: any[] | null = null;
-  const r1 = await db.from("users").select("id, name, chat_id, created_at, referred_by");
-  if (r1.error) {
-    const r2 = await db.from("users").select("id, name, chat_id, created_at");
-    users = r2.data;
+  const rA = await db.from("users").select("id, name, chat_id, created_at, referred_by, plan");
+  if (!rA.error) {
+    users = rA.data;
   } else {
-    users = r1.data;
+    const r1 = await db.from("users").select("id, name, chat_id, created_at, referred_by");
+    if (!r1.error) {
+      users = r1.data;
+    } else {
+      const r2 = await db.from("users").select("id, name, chat_id, created_at");
+      users = r2.data;
+    }
   }
 
   // Только агрегаты — НИКАКОГО текста записей.
@@ -44,6 +49,7 @@ export async function getAdminData() {
       last: st.last || null,
       active: Boolean(st.last && st.last >= weekAgo),
       referrer: u.referred_by ? nameById[u.referred_by] || "—" : null,
+      plan: (u.plan === "pro" || u.plan === "premium") ? u.plan : "free",
     };
   });
   list.sort((a, b) => b.entries - a.entries);
