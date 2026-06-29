@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { askLife, saveChat } from "@/lib/biographer";
+import { isPremium } from "@/lib/plan";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+
+  // Биограф — премиальная фича.
+  if (!(await isPremium(user.id))) return NextResponse.json({ ok: false, error: "premium" }, { status: 403 });
 
   const body = await req.json().catch(() => null);
   const question = String(body?.question || "").trim();
