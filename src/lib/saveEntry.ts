@@ -6,6 +6,8 @@ export async function saveEntry(opts: {
   raw_text: string;
   source: string;
   analysis: Analysis;
+  entry_date?: string; // местная дата клиента YYYY-MM-DD (иначе дефолт БД = UTC)
+  entry_time?: string; // местное время клиента HH:MM[:SS]
 }) {
   const db = supabaseAdmin();
   const owner = opts.userId;
@@ -17,6 +19,8 @@ export async function saveEntry(opts: {
       user_id: owner,
       raw_text: opts.raw_text,
       source: opts.source,
+      ...(opts.entry_date ? { entry_date: opts.entry_date } : {}),
+      ...(opts.entry_time ? { entry_time: opts.entry_time } : {}),
       summary: a.summary ?? null,
       focus: a.focus ?? null,
       mood: a.mood ?? null,

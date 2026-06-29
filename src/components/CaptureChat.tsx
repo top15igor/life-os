@@ -126,7 +126,11 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     if (!t || busy) return;
     setBusy(true);
     try {
-      const r = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t }) });
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      const r = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t, date, time }) });
       const d = await r.json().catch(() => null);
       if (r.ok && d?.ok) {
         setText("");

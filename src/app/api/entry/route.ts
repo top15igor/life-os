@@ -14,9 +14,13 @@ export async function POST(req: NextRequest) {
   const text = String(body?.text || "").trim();
   if (!text) return NextResponse.json({ ok: false }, { status: 400 });
 
+  // Местные дата/время клиента — чтобы запись была по времени пользователя, а не сервера (UTC).
+  const entry_date = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.date || "")) ? body.date : undefined;
+  const entry_time = /^\d{2}:\d{2}(:\d{2})?$/.test(String(body?.time || "")) ? body.time : undefined;
+
   try {
     const analysis = await analyze(text, user.id);
-    const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web", analysis });
+    const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web", analysis, entry_date, entry_time });
     return NextResponse.json({ ok: true, id: entry.id });
   } catch (e) {
     console.error(e);
