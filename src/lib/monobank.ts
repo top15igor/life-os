@@ -43,15 +43,16 @@ export type MonoMapped = {
 };
 
 // Преобразовать statementItem из вебхука/выписки Monobank в операцию.
-// Возвращает null, если данные неполные. Переводы между своими счетами не фильтруем
-// (у Monobank это обычные операции); пользователь может поправить вручную.
-export function mapStatementItem(item: any): MonoMapped | null {
+// ВАЖНО: item.amount — в валюте СЧЁТА, поэтому валюту берём по счёту
+// (accountCurrency), а не по item.currencyCode (это может быть валюта операции).
+// Возвращает null, если данные неполные.
+export function mapStatementItem(item: any, accountCurrency?: string): MonoMapped | null {
   if (!item || typeof item.amount !== "number" || !item.id) return null;
   const amountMinor = item.amount; // в копейках, со знаком (расход < 0)
   const kind: "income" | "expense" = amountMinor < 0 ? "expense" : "income";
   const amount = Math.round((Math.abs(amountMinor) / 100) * 100) / 100;
   if (!(amount > 0)) return null;
-  const currency = currencyAlpha(Number(item.currencyCode));
+  const currency = accountCurrency || currencyAlpha(Number(item.currencyCode));
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();

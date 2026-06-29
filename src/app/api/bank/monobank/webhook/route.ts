@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { mapStatementItem } from "@/lib/monobank";
+import { mapStatementItem, currencyAlpha } from "@/lib/monobank";
 
 export const runtime = "nodejs";
 
@@ -15,17 +15,25 @@ export async function POST(req: NextRequest) {
   if (!secret) return NextResponse.json({ ok: true }); // всегда 200, чтобы Monobank не отключал вебхук
 
   const db = supabaseAdmin();
-  // По секрету из URL находим владельца.
+  // По секрету из URL находим владельца и его счета.
   let userId: string | null = null;
+  let accounts: any[] = [];
   try {
-    const { data } = await db.from("bank_monobank").select("user_id").eq("hook_secret", secret).maybeSingle();
+    const { data } = await db.from("bank_monobank").select("user_id, accounts").eq("hook_secret", secret).maybeSingle();
     userId = (data as any)?.user_id || null;
-  } catch { /* нет таблицы */ }
+    accounts = Array.isArray((data as any)?.accounts) ? (data as any).accounts : [];
+  } catch {
+    try { const { data } = await db.from("bank_monobank").select("user_id").eq("hook_secret", secret).maybeSingle(); userId = (data as any)?.user_id || null; } catch { /* нет таблицы */ }
+  }
   if (!userId) return NextResponse.json({ ok: true });
 
   const body = await req.json().catch(() => null);
   const item = body?.data?.statementItem;
-  const mapped = item ? mapStatementItem(item) : null;
+  const accountId = body?.data?.account;
+  // Валюта — по счёту операции (amount у Monobank в валюте счёта).
+  const acc = accounts.find((a: any) => a?.id === accountId);
+  const accCurrency = acc ? currencyAlpha(Number(acc.currencyCode)) : undefined;
+  const mapped = item ? mapStatementItem(item, accCurrency) : null;
   if (!mapped) return NextResponse.json({ ok: true });
 
   try {

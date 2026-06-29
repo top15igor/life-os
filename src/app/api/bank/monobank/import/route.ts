@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { mapStatementItem } from "@/lib/monobank";
+import { mapStatementItem, currencyAlpha } from "@/lib/monobank";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,15 +21,17 @@ export async function POST() {
   const token = row?.token;
   if (!token) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
 
-  // Счета: сначала сохранённые при подключении (без лишнего client-info ради лимита).
-  let accounts: string[] = Array.isArray(row?.accounts) ? row.accounts.map((a: any) => a?.id).filter(Boolean) : [];
+  // Счета (id + валюта счёта). Сначала сохранённые при подключении (без лишнего client-info ради лимита).
+  let accounts: { id: string; currency: string }[] = Array.isArray(row?.accounts)
+    ? row.accounts.filter((a: any) => a?.id).map((a: any) => ({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)) }))
+    : [];
   if (!accounts.length) {
     try {
       const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
       if (r.status === 429) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
       if (!r.ok) return NextResponse.json({ ok: false, error: "mono_error" }, { status: 400 });
       const info = await r.json();
-      accounts = (info?.accounts || []).map((a: any) => a.id).filter(Boolean);
+      accounts = (info?.accounts || []).filter((a: any) => a?.id).map((a: any) => ({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)) }));
     } catch {
       return NextResponse.json({ ok: false, error: "network" }, { status: 502 });
     }
@@ -39,29 +41,42 @@ export async function POST() {
   const to = Math.floor(Date.now() / 1000);
   const from = to - 30 * 24 * 60 * 60;
 
-  // Уже сохранённые ext_id (анти-дубль).
-  const existing = new Set<string>();
+  // Уже сохранённые операции (ext_id → текущая валюта) — для анти-дубля и починки валюты.
+  const existing = new Map<string, string>();
   try {
-    const { data } = await db.from("finance_tx").select("ext_id").eq("user_id", user.id).eq("source", "monobank").limit(20000);
-    for (const t of data || []) if ((t as any).ext_id) existing.add((t as any).ext_id);
+    const { data } = await db.from("finance_tx").select("ext_id, currency").eq("user_id", user.id).eq("source", "monobank").limit(20000);
+    for (const t of data || []) if ((t as any).ext_id) existing.set((t as any).ext_id, (t as any).currency);
   } catch { /* нет колонок — дублей по определению нет */ }
 
   let inserted = 0;
+  let fixed = 0;
   let rateLimited = false;
   const toInsert: any[] = [];
+  const toFix: { ext_id: string; currency: string }[] = [];
   for (const acc of accounts) {
     let res: Response;
-    try { res = await fetch(`${MONO}/personal/statement/${acc}/${from}/${to}`, { headers: { "X-Token": token }, cache: "no-store" }); }
+    try { res = await fetch(`${MONO}/personal/statement/${acc.id}/${from}/${to}`, { headers: { "X-Token": token }, cache: "no-store" }); }
     catch { continue; }
     if (res.status === 429) { rateLimited = true; break; }
     if (!res.ok) continue;
     const items = await res.json().catch(() => []);
     for (const it of items as any[]) {
-      const m = mapStatementItem(it);
-      if (!m || existing.has(m.ext_id)) continue;
-      existing.add(m.ext_id);
+      const m = mapStatementItem(it, acc.currency); // валюта — по счёту
+      if (!m) continue;
+      if (existing.has(m.ext_id)) {
+        // Уже есть: чиним валюту, если была сохранена неверно (баг с EUR).
+        if (existing.get(m.ext_id) !== m.currency) { toFix.push({ ext_id: m.ext_id, currency: m.currency }); existing.set(m.ext_id, m.currency); }
+        continue;
+      }
+      existing.set(m.ext_id, m.currency);
       toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id });
     }
+  }
+
+  // Починка валюты у ранее импортированных операций.
+  for (const f of toFix) {
+    const { error } = await db.from("finance_tx").update({ currency: f.currency }).eq("user_id", user.id).eq("ext_id", f.ext_id).eq("source", "monobank");
+    if (!error) fixed++;
   }
 
   for (let i = 0; i < toInsert.length; i += 500) {
@@ -75,5 +90,5 @@ export async function POST() {
     inserted += chunk.length;
   }
 
-  return NextResponse.json({ ok: true, inserted, rateLimited });
+  return NextResponse.json({ ok: true, inserted, fixed, rateLimited });
 }
