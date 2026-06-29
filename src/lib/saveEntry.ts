@@ -13,14 +13,33 @@ export async function saveEntry(opts: {
   const owner = opts.userId;
   const a = opts.analysis;
 
+  // Время записи: если клиент не передал (бот/сервер) — берём из сохранённой
+  // таймзоны пользователя (tz_offset, минуты к UTC). Иначе остаётся дефолт БД (UTC).
+  let entry_date = opts.entry_date;
+  let entry_time = opts.entry_time;
+  if (!entry_date || !entry_time) {
+    try {
+      const { data: u } = await db.from("users").select("tz_offset").eq("id", owner).maybeSingle();
+      const off = (u as any)?.tz_offset;
+      if (typeof off === "number") {
+        const local = new Date(Date.now() + off * 60000);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        if (!entry_date) entry_date = `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}`;
+        if (!entry_time) entry_time = `${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:${pad(local.getUTCSeconds())}`;
+      }
+    } catch {
+      // нет колонки tz_offset — оставляем дефолт БД
+    }
+  }
+
   const { data: entry, error } = await db
     .from("entries")
     .insert({
       user_id: owner,
       raw_text: opts.raw_text,
       source: opts.source,
-      ...(opts.entry_date ? { entry_date: opts.entry_date } : {}),
-      ...(opts.entry_time ? { entry_time: opts.entry_time } : {}),
+      ...(entry_date ? { entry_date } : {}),
+      ...(entry_time ? { entry_time } : {}),
       summary: a.summary ?? null,
       focus: a.focus ?? null,
       mood: a.mood ?? null,

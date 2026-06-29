@@ -86,6 +86,13 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   const chunksRef = useRef<Blob[]>([]);
   const savedTimer = useRef<any>(null);
 
+  // Сообщить серверу таймзону (минуты к UTC) — чтобы записи из бота тоже были по местному.
+  useEffect(() => {
+    try {
+      fetch("/api/tz", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ offset: -new Date().getTimezoneOffset() }) });
+    } catch {}
+  }, []);
+
   // Восстановить «активный» чат + реагировать на «Вопрос для книги» (зовёт в запись).
   useEffect(() => {
     try { if (localStorage.getItem("lifeos_chat_open") === "1") openChat(); } catch {}
