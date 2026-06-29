@@ -143,11 +143,11 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 }
 
 // Постоянная клавиатура с кнопками под полем ввода.
-const KB: Record<string, { diary: string; tasks: string; money: string; motiv: string; invite: string; help: string }> = {
-  ru: { diary: "📖 Дневник", tasks: "✅ Мои задачи", money: "📊 Финансы", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга", help: "❓ Помощь" },
-  en: { diary: "📖 Diary", tasks: "✅ My tasks", money: "📊 Finances", motiv: "🔥 My motivation", invite: "🤝 Invite a friend", help: "❓ Help" },
-  uk: { diary: "📖 Щоденник", tasks: "✅ Мої завдання", money: "📊 Фінанси", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга", help: "❓ Допомога" },
-  fr: { diary: "📖 Journal", tasks: "✅ Mes tâches", money: "📊 Finances", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami", help: "❓ Aide" },
+const KB: Record<string, { diary: string; tasks: string; motiv: string; invite: string }> = {
+  ru: { diary: "📖 Дневник", tasks: "✅ Мои задачи", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга" },
+  en: { diary: "📖 Diary", tasks: "✅ My tasks", motiv: "🔥 My motivation", invite: "🤝 Invite a friend" },
+  uk: { diary: "📖 Щоденник", tasks: "✅ Мої завдання", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга" },
+  fr: { diary: "📖 Journal", tasks: "✅ Mes tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
 };
 
 function mainKeyboard(lang: string) {
@@ -155,24 +155,21 @@ function mainKeyboard(lang: string) {
   return {
     keyboard: [
       [{ text: k.diary }, { text: k.tasks }],
-      [{ text: k.money }, { text: k.motiv }],
-      [{ text: k.invite }, { text: k.help }],
+      [{ text: k.motiv }, { text: k.invite }],
     ],
     resize_keyboard: true,
     is_persistent: true,
   };
 }
 
-function buttonAction(text?: string): "diary" | "tasks" | "money" | "motiv" | "invite" | "help" | null {
+function buttonAction(text?: string): "diary" | "tasks" | "motiv" | "invite" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
     if (text === k.diary) return "diary";
     if (text === k.tasks) return "tasks";
-    if (text === k.money) return "money";
     if (text === k.motiv) return "motiv";
     if (text === k.invite) return "invite";
-    if (text === k.help) return "help";
   }
   return null;
 }
@@ -403,6 +400,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Помощь: команда /help|/guide (помощь живёт в меню команд бота).
+  if (typeof msg.text === "string" && /^\/(help|guide|помощь|допомога|aide)\b/i.test(msg.text.trim())) {
+    const lang = pickLang(msg.from?.language_code);
+    await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
+    return NextResponse.json({ ok: true });
+  }
+
   // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
   if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
     const lang = pickLang(msg.from?.language_code);
@@ -471,17 +475,7 @@ export async function POST(req: NextRequest) {
   const ba = buttonAction(msg.text);
   if (ba) {
     const lang = pickLang(msg.from?.language_code);
-    if (ba === "money") {
-      await sendChatAction(chatId, "typing");
-      try {
-        const report = await financeReview(user.id, lang);
-        await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
-      } catch (e) {
-        console.error("money btn", e);
-        await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
-      }
-    }
-    else if (ba === "tasks") {
+    if (ba === "tasks") {
       const tasks = await getOpenTasks(user.id, 7);
       const T = TASKS_MSG[lang] || TASKS_MSG.ru;
       if (!tasks.length) await sendMessage(chatId, T.empty);
@@ -502,8 +496,7 @@ export async function POST(req: NextRequest) {
       }
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
-    else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
-    else await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
+    else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     return NextResponse.json({ ok: true });
   }
 
