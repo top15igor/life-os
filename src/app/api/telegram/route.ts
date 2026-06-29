@@ -16,6 +16,8 @@ import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
+import { personalMorning } from "@/lib/morningPersonal";
+import { morningMessage } from "@/lib/morningPush";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -397,6 +399,18 @@ export async function POST(req: NextRequest) {
       console.error("pushmenu", e);
       await sendMessage(chatId, "Не получилось разослать. Загляни в логи 🙂");
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  // Превью персонального утреннего пуша — ТОЛЬКО владелец: /morning.
+  if (typeof msg.text === "string" && /^\/morning\b/i.test(msg.text.trim())) {
+    if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+      return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
+    }
+    await sendChatAction(chatId, "typing");
+    const lang = pickLang(msg.from?.language_code);
+    const text = (await personalMorning(user.id, user.name ?? null, lang)) || morningMessage(lang, Math.floor(Date.now() / 86400000));
+    await sendMessage(chatId, text, { reply_markup: mainKeyboard(lang) });
     return NextResponse.json({ ok: true });
   }
 
