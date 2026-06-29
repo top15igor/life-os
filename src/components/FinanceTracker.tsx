@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
 type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null };
-type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number }[] };
+type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number; limit: number | null; over: boolean; budgetPct: number | null }[] };
 type DaySlice = { day: string; count: number; income: number; expense: number; net: number };
 type Data = {
   month: string; currency: string; rates: Record<string, number>; currenciesUsed: string[]; needsRates: boolean;
@@ -411,6 +411,24 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const r = await fetch("/api/finance-budget", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ category: cat }) });
     setBusy(false);
     if (r.ok) { setEditBudget(null); router.refresh(); }
+  }
+
+  // Лимит на подкатегорию: editSubBudget = "категория|подкатегория".
+  const [editSubBudget, setEditSubBudget] = useState<string | null>(null);
+  const [subBudgetVal, setSubBudgetVal] = useState("");
+  async function saveSubBudget(cat: string, sub: string, raw: string) {
+    const v = parseFloat(raw.replace(",", "."));
+    if (!isFinite(v) || v <= 0) return;
+    setBusy(true);
+    const r = await fetch("/api/finance-budget", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ category: cat, subcategory: sub, amount: v }) });
+    setBusy(false);
+    if (r.ok) { setEditSubBudget(null); router.refresh(); }
+  }
+  async function removeSubBudget(cat: string, sub: string) {
+    setBusy(true);
+    const r = await fetch("/api/finance-budget", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ category: cat, subcategory: sub }) });
+    setBusy(false);
+    if (r.ok) { setEditSubBudget(null); router.refresh(); }
   }
 
   async function importMoneyOk(file: File) {
@@ -957,17 +975,42 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                     <div style={{ width: `max(${barPct}%, 4px)`, height: "100%", background: barColor, borderRadius: 5 }} />
                   </div>
                   {c.subs.length > 0 && (
-                    <div style={{ marginTop: 6, marginLeft: 8, display: "flex", flexDirection: "column", gap: 3 }}>
-                      {c.subs.map((sub) => (
-                        <div key={sub.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--text-2)", gap: 8 }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-                            <span style={{ color: m.color }}>›</span>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</span>
-                            <span style={{ color: "var(--text-3)", fontSize: 11, flexShrink: 0 }}>{c.amount > 0 ? Math.round((sub.amount / c.amount) * 100) : 0}%</span>
-                          </span>
-                          <span style={{ flexShrink: 0 }}>{fmtMoney(sub.amount, base, locale)}</span>
+                    <div style={{ marginTop: 6, marginLeft: 8, display: "flex", flexDirection: "column", gap: 5 }}>
+                      {c.subs.map((sub) => {
+                        const subKey = `${c.category}|${sub.name}`;
+                        const sHas = sub.limit != null;
+                        return (
+                        <div key={sub.name}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: "var(--text-2)", gap: 8 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                              <span style={{ color: m.color }}>›</span>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</span>
+                              {sub.over && <span style={{ fontSize: 10, color: "#ef4444", background: "#ef44441a", padding: "0 6px", borderRadius: 8, flexShrink: 0 }}>{s.over}</span>}
+                            </span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                              <span>{fmtMoney(sub.amount, base, locale)}</span>
+                              {sHas && <span style={{ color: "var(--text-3)", fontSize: 11 }}>{s.ofLimit} {fmtMoney(sub.limit!, base, locale)}</span>}
+                              <button onClick={() => { setEditSubBudget(editSubBudget === subKey ? null : subKey); setSubBudgetVal(sub.limit != null ? String(sub.limit) : ""); }} title={sHas ? s.editLimit : s.setLimit} style={{ background: "none", border: "none", cursor: "pointer", color: sHas ? "var(--accent)" : "var(--text-3)", padding: 1 }}>
+                                <i className={`ti ${sHas ? "ti-edit" : "ti-target"}`} style={{ fontSize: 12 }} />
+                              </button>
+                            </span>
+                          </div>
+                          {sHas && (
+                            <div style={{ height: 4, background: "var(--surface-2)", borderRadius: 3, overflow: "hidden", marginTop: 3 }}>
+                              <div style={{ width: `max(${Math.min(100, sub.budgetPct || 0)}%, 3px)`, height: "100%", background: budgetColor(sub.budgetPct || 0), borderRadius: 3 }} />
+                            </div>
+                          )}
+                          {editSubBudget === subKey && (
+                            <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 5, flexWrap: "wrap" }}>
+                              <input autoFocus type="number" inputMode="decimal" placeholder={`${s.limit}, ${symOf(base)}`} value={subBudgetVal} onChange={(e) => setSubBudgetVal(e.target.value)} style={{ ...input, width: 110, padding: "5px 8px", fontSize: 12.5 }} />
+                              <button disabled={busy} onClick={() => saveSubBudget(c.category, sub.name, subBudgetVal)} style={{ ...btnP, padding: "5px 11px", fontSize: 12 }}>{s.save}</button>
+                              {sHas && <button disabled={busy} onClick={() => removeSubBudget(c.category, sub.name)} style={{ ...btnG, padding: "5px 11px", fontSize: 12, color: "#ef4444" }}>{s.removeLimit}</button>}
+                              <button disabled={busy} onClick={() => setEditSubBudget(null)} style={{ ...btnG, padding: "5px 11px", fontSize: 12 }}>{s.cancel}</button>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                   {editBudget === c.category && (

@@ -31,13 +31,20 @@ create index if not exists finance_tx_user_idx  on finance_tx (user_id, day desc
 create index if not exists finance_tx_entry_idx on finance_tx (entry_id);
 
 -- Месячные лимиты (бюджеты) по категориям расходов. Сумма — в основной валюте.
+-- subcategory = '' — лимит на категорию целиком; иначе — на подкатегорию.
 create table if not exists finance_budget (
-  user_id    uuid not null,
-  category   text not null,
-  amount     numeric not null check (amount > 0),
-  updated_at timestamptz default now(),
-  primary key (user_id, category)
+  user_id     uuid not null,
+  category    text not null,
+  subcategory text not null default '',
+  amount      numeric not null check (amount > 0),
+  updated_at  timestamptz default now(),
+  primary key (user_id, category, subcategory)
 );
+
+-- Для уже существующих установок: добавить подкатегорию и расширить первичный ключ.
+alter table if exists finance_budget add column if not exists subcategory text not null default '';
+alter table if exists finance_budget drop constraint if exists finance_budget_pkey;
+alter table if exists finance_budget add constraint finance_budget_pkey primary key (user_id, category, subcategory);
 
 -- Настройки финансов: основная валюта + курсы остальных валют к ней (jsonb: {"USD": 41.5, ...}).
 create table if not exists finance_settings (

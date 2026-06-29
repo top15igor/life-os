@@ -51,7 +51,7 @@ export type CatSlice = {
   limit: number | null; // месячный лимит, если задан
   budgetPct: number | null; // потрачено / лимит, %
   over: boolean; // превышен ли лимит
-  subs: { name: string; amount: number }[]; // разбивка по подкатегориям (по убыванию)
+  subs: { name: string; amount: number; limit: number | null; over: boolean; budgetPct: number | null }[]; // подкатегории (по убыванию), с лимитами
 };
 
 export type FinanceData = {
@@ -203,24 +203,36 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
     .map(([day, o]) => ({ day, count: o.count, income: round2(o.income), expense: round2(o.expense), net: round2(o.income - o.expense) }))
     .sort((a, b) => a.day.localeCompare(b.day));
 
-  // Бюджеты по категориям (лимиты — в основной валюте).
-  const budgets = new Map<string, number>();
+  // Бюджеты по категориям и подкатегориям (лимиты — в основной валюте).
+  const budgets = new Map<string, number>();              // лимит на категорию целиком
+  const subBudgets = new Map<string, number>();           // лимит на «категория|подкатегория»
   try {
-    const { data: bs } = await db.from("finance_budget").select("category, amount").eq("user_id", userId);
-    for (const b of bs || []) budgets.set(b.category as string, Number(b.amount));
+    let { data: bs, error } = await db.from("finance_budget").select("category, subcategory, amount").eq("user_id", userId);
+    if (error && /subcategory|column|schema cache/i.test(error.message)) {
+      ({ data: bs } = await db.from("finance_budget").select("category, amount").eq("user_id", userId));
+    }
+    for (const b of bs || []) {
+      const sub = ((b as any).subcategory || "") as string;
+      if (sub) subBudgets.set(`${b.category}|${sub}`, Number(b.amount));
+      else budgets.set(b.category as string, Number(b.amount));
+    }
   } catch {
     // нет таблицы — без бюджетов
   }
 
   // Категории = все, где были траты, плюс все, на которые задан бюджет (даже без трат).
-  const allCats = new Set<string>([...catMap.keys(), ...budgets.keys()]);
+  const allCats = new Set<string>([...catMap.keys(), ...budgets.keys(), ...[...subBudgets.keys()].map((k) => k.split("|")[0])]);
   const byCategory: CatSlice[] = [...allCats]
     .map((category) => {
       const amount = round2(catMap.get(category) || 0);
       const limit = budgets.has(category) ? round2(budgets.get(category)!) : null;
       const budgetPct = limit && limit > 0 ? Math.round((amount / limit) * 100) : null;
       const subs = [...(subMap.get(category)?.entries() || [])]
-        .map(([name, amt]) => ({ name, amount: round2(amt) }))
+        .map(([name, amt]) => {
+          const sLimit = subBudgets.has(`${category}|${name}`) ? round2(subBudgets.get(`${category}|${name}`)!) : null;
+          const a = round2(amt);
+          return { name, amount: a, limit: sLimit, over: sLimit != null && a > sLimit, budgetPct: sLimit && sLimit > 0 ? Math.round((a / sLimit) * 100) : null };
+        })
         .sort((a, b) => b.amount - a.amount);
       return {
         category,
