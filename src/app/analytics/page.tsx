@@ -2,10 +2,12 @@ import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
 import PageHead from "@/components/PageHead";
 import IntelligenceOverview from "@/components/IntelligenceOverview";
+import AnalyticsPitch from "@/components/AnalyticsPitch";
 import { getEntries, getOnThisDay, cats, tagList, projects as projectsOf, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import { isPro } from "@/lib/plan";
 import { hints } from "@/lib/hints";
 
 export const dynamic = "force-dynamic";
@@ -35,12 +37,28 @@ function MapChip({ it, maxCount }: { it: MapItem; maxCount: number }) {
   );
 }
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
   const s = STR[locale] || STR.ru;
   const h = hints(locale);
+  const sp = await searchParams;
+
+  // «Что заметил AI» — фича тарифа Pro. ?preview=lock — продающая страница даже на Pro/Премиуме.
+  const pro = (await isPro(user.id)) && sp?.preview !== "lock";
+  if (!pro) {
+    return (
+      <div className="shell">
+        <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
+        <main className="main">
+          <PageHead icon="ti-sparkles" color="var(--insight)" title={t.nav.analytics} hint={h.analytics} />
+          <AnalyticsPitch locale={locale} />
+        </main>
+      </div>
+    );
+  }
+
   const entries = await getEntries(user.id, 200);
 
   // Карта жизни: главные темы из категорий, проектов и тегов.
