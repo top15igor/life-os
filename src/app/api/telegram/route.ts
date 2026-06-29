@@ -194,7 +194,7 @@ const CUR_TOKEN: Record<string, string> = {
 
 // Быстрый ввод траты/дохода: «/spend 250 eur уроки сёрфа», «/income 1000 зарплата».
 // Возвращает { amount, currency, label } или null. defaultCur — если валюта не указана.
-function parseQuickFinance(rest: string, defaultCur: string): { amount: number; currency: string; category: string | null; note: string | null } | null {
+function parseQuickFinance(rest: string, defaultCur: string): { amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null } | null {
   const m = rest.trim().match(/^([\d][\d\s.,]*)\s*(\S*)\s*([\s\S]*)$/);
   if (!m) return null;
   const amount = Number(m[1].replace(/[\s ]/g, "").replace(",", "."));
@@ -204,12 +204,22 @@ function parseQuickFinance(rest: string, defaultCur: string): { amount: number; 
   const tok = (m[2] || "").toLowerCase().replace(/\.$/, "");
   if (tok && CUR_TOKEN[tok]) currency = CUR_TOKEN[tok];
   else if (m[2]) label = (m[2] + " " + label).trim(); // не валюта — часть названия
-  // «Категория : комментарий» — делим по первому из разделителей «:», «—», « - ».
-  let category: string | null = label || null;
-  let note: string | null = null;
-  const sep = label.match(/^(.+?)\s*[:—]\s*(.+)$/) || label.match(/^(.+?)\s+-\s+(.+)$/);
-  if (sep) { category = sep[1].trim() || null; note = sep[2].trim() || null; }
-  return { amount: Math.round(amount * 100) / 100, currency, category: category ? category.slice(0, 40) : null, note: note ? note.slice(0, 200) : null };
+  // Формат: «Категория / Подкатегория : комментарий». «:»/«—»/« - » отделяют комментарий,
+  // «/» внутри категории — подкатегорию. Все части необязательны.
+  let head = label, note: string | null = null;
+  const sep = label.match(/^(.+?)\s*[:—]\s*([\s\S]+)$/) || label.match(/^(.+?)\s+-\s+([\s\S]+)$/);
+  if (sep) { head = sep[1].trim(); note = sep[2].trim() || null; }
+  let category: string | null = head || null;
+  let subcategory: string | null = null;
+  const slash = head.match(/^(.+?)\s*\/\s*(.+)$/);
+  if (slash) { category = slash[1].trim() || null; subcategory = slash[2].trim() || null; }
+  return {
+    amount: Math.round(amount * 100) / 100,
+    currency,
+    category: category ? category.slice(0, 40) : null,
+    subcategory: subcategory ? subcategory.slice(0, 40) : null,
+    note: note ? note.slice(0, 200) : null,
+  };
 }
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
 function openBtn(lang: string, link: string) {
@@ -360,7 +370,7 @@ export async function POST(req: NextRequest) {
     if (!rest.trim()) {
       await sendMessage(chatId, kind === "income"
         ? "Напиши сумму и источник, например:\n<code>/income 1000 eur зарплата</code>"
-        : "Напиши сумму и на что, например:\n<code>/spend 250 eur сёрф</code>\n\nЧтобы вести категорию и комментарий отдельно, ставь «:» —\n<code>/spend 250 eur Вова: сёрф, спорт</code>\nЗдесь «Вова» — категория (по ней считается сумма), «сёрф, спорт» — комментарий.");
+        : "Напиши сумму и на что, например:\n<code>/spend 250 eur сёрф</code>\n\nМожно вести по структуре <b>Категория / Подкатегория : комментарий</b>:\n<code>/spend 250 eur Вова / Спорт: серф-уроки</code>\n→ категория «Вова», подкатегория «Спорт», комментарий «серф-уроки».\nПо «Вова» считается общая сумма, внутри — по подкатегориям.");
       return NextResponse.json({ ok: true });
     }
     // Основная валюта по умолчанию — из настроек финансов, иначе EUR.
@@ -376,16 +386,24 @@ export async function POST(req: NextRequest) {
     }
     const today = new Date().toISOString().slice(0, 10);
     try {
-      await supabaseAdmin().from("finance_tx").insert({
+      const row: any = {
         user_id: user.id, day: today, kind, amount: parsed.amount, currency: parsed.currency,
-        category: parsed.category, note: parsed.note,
-      });
+        category: parsed.category, subcategory: parsed.subcategory, note: parsed.note,
+      };
+      let { error } = await supabaseAdmin().from("finance_tx").insert(row);
+      // Старая база без колонки subcategory — вставляем без неё.
+      if (error && /subcategory|column|schema cache/i.test(error.message)) {
+        const { subcategory, ...bare } = row;
+        ({ error } = await supabaseAdmin().from("finance_tx").insert(bare));
+      }
+      if (error) throw new Error(error.message);
       const sym = CUR_SYM[parsed.currency] || parsed.currency;
       const sign = kind === "income" ? "+" : "−";
       const head = kind === "income" ? "✅ Доход записан:" : "✅ Расход записан:";
       const cat = parsed.category ? ` · ${esc(parsed.category)}` : "";
+      const sub = parsed.subcategory ? ` › ${esc(parsed.subcategory)}` : "";
       const note = parsed.note ? `\n📝 ${esc(parsed.note)}` : "";
-      await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${cat}${note}`,
+      await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${cat}${sub}${note}`,
         { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
     } catch (e) {
       console.error("quick finance", e);
