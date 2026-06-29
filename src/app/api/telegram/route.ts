@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
@@ -418,7 +418,7 @@ export async function POST(req: NextRequest) {
     try {
       const ans = await askLife(user.id, q);
       await saveChat(user.id, q, ans);
-      await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
+      await sendMessage(chatId, mdToTelegram(ans) || "—");
     } catch (e) {
       console.error(e);
       await sendMessage(chatId, "Не получилось ответить, попробуй ещё раз.");
@@ -499,7 +499,7 @@ export async function POST(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await talkToCompanion(user.id, user.name ?? null, text);
-        await sendMessage(chatId, esc(reply).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "…");
+        await sendMessage(chatId, mdToTelegram(reply) || "…");
       } catch (e) {
         console.error("companion", e);
         await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
@@ -578,7 +578,7 @@ export async function POST(req: NextRequest) {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
-        await sendMessage(chatId, esc(ans).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>") || "—");
+        await sendMessage(chatId, mdToTelegram(ans) || "—");
         return NextResponse.json({ ok: true });
       }
     }
