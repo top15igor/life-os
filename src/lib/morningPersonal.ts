@@ -70,8 +70,12 @@ export async function personalMorning(
 
     const focus = effective.map((t) => TOPIC_PROMPT[t]).join("; ");
 
+    const styleLine = p.customStyle
+      ? `\nДополнительно учитывай пожелание пользователя по стилю: «${p.customStyle}». Если оно противоречит правилам про факты ниже — правила про факты важнее.`
+      : "";
+
     const prompt = `Сейчас утро. Составь ОДНО короткое личное утреннее сообщение для пользователя.
-Тон: ${TONE_PROMPT[p.tone]}.
+Тон: ${TONE_PROMPT[p.tone]}.${styleLine}
 Пиши на языке с кодом "${lang}" (ru — русский, en — English, uk — українська, fr — français).
 1–3 предложения, живо и по-человечески. Можно 1–2 эмодзи.
 Сообщение должно касаться ТОЛЬКО этих тем (и ничего лишнего): ${focus}.
