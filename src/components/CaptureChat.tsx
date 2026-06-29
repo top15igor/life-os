@@ -15,6 +15,7 @@ const STR: Record<string, any> = {
     intro: "Привет! Я твой AI-друг — знаю про тебя всё из дневника и заглядываю в интернет за свежим. О чём поговорим?",
     note: "Память общая с Telegram — можно продолжить там же.",
     mic: "Сказать голосом", stop: "Остановить", collapse: "Свернуть чат",
+    tipWrite: "Сохранить мысль в дневник", tipChat: "Спроси AI-друга — он знает всё о тебе и заглядывает в интернет за свежим", tipSend: "Отправить",
     showAll: (n: number) => `↑ Показать всю переписку (${n})`,
   },
   en: {
@@ -24,6 +25,7 @@ const STR: Record<string, any> = {
     intro: "Hi! I'm your AI friend — I know all about you from your diary and check the web for fresh facts. What's up?",
     note: "Memory is shared with Telegram — continue there anytime.",
     mic: "Speak", stop: "Stop", collapse: "Collapse chat",
+    tipWrite: "Save a thought to your diary", tipChat: "Ask your AI friend — it knows all about you and checks the web", tipSend: "Send",
     showAll: (n: number) => `↑ Show full conversation (${n})`,
   },
   uk: {
@@ -33,6 +35,7 @@ const STR: Record<string, any> = {
     intro: "Привіт! Я твій AI-друг — знаю про тебе все зі щоденника і заглядаю в інтернет за свіжим. Про що поговоримо?",
     note: "Пам'ять спільна з Telegram — можна продовжити там.",
     mic: "Сказати голосом", stop: "Зупинити", collapse: "Згорнути чат",
+    tipWrite: "Зберегти думку у щоденник", tipChat: "Запитай AI-друга — він знає все про тебе і заглядає в інтернет", tipSend: "Надіслати",
     showAll: (n: number) => `↑ Показати всю переписку (${n})`,
   },
   fr: {
@@ -42,6 +45,7 @@ const STR: Record<string, any> = {
     intro: "Salut ! Je suis ton ami IA — je sais tout de toi via ton journal et je consulte le web. De quoi parle-t-on ?",
     note: "La mémoire est partagée avec Telegram — continue là-bas quand tu veux.",
     mic: "Parler", stop: "Arrêter", collapse: "Réduire le chat",
+    tipWrite: "Enregistrer dans ton journal", tipChat: "Demande à ton ami IA — il sait tout de toi et consulte le web", tipSend: "Envoyer",
     showAll: (n: number) => `↑ Voir toute la conversation (${n})`,
   },
 };
@@ -187,42 +191,54 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           disabled={busy && recording}
           style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 120 }}
         />
-        <button onClick={toggleMic} aria-label={recording ? s.stop : s.mic} title={recording ? s.stop : s.mic}
-          style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: recording ? "#ef4444" : "var(--accent)", padding: 0, display: "inline-flex" }}>
-          <i className={`ti ${recording ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 19 }} />
-        </button>
+        <span className="cc-tip" data-tip={recording ? s.stop : s.mic}>
+          <button onClick={toggleMic} aria-label={recording ? s.stop : s.mic}
+            style={{ background: "none", border: "none", cursor: "pointer", color: recording ? "#ef4444" : "var(--accent)", padding: 0, display: "inline-flex" }}>
+            <i className={`ti ${recording ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 19 }} />
+          </button>
+        </span>
       </div>
 
-      <button onClick={saveEntry} disabled={!canSend} title={s.write}
-        style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: canSend ? "var(--text)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
-        <i className="ti ti-pencil" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.write}</span>
-      </button>
+      <span className="cc-tip" data-tip={s.tipWrite}>
+        <button onClick={saveEntry} disabled={!canSend} aria-label={s.write}
+          style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: canSend ? "var(--text)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+          <i className="ti ti-pencil" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.write}</span>
+        </button>
+      </span>
 
       {chatOpen ? (
-        <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat}
-          style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", cursor: canSend ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
-        </button>
+        <span className="cc-tip" data-tip={s.tipSend}>
+          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.tipSend}
+            style={{ width: 40, height: 40, borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", cursor: canSend ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
+          </button>
+        </span>
       ) : (
-        <button onClick={() => sendChat()} disabled={!canSend} title={s.chat}
-          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 13px", borderRadius: 10, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
-          <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
-        </button>
+        <span className="cc-tip" data-tip={s.tipChat}>
+          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+            <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
+          </button>
+        </span>
       )}
     </div>
   );
 
   return (
     <div style={{ marginBottom: 16 }}>
+      {bar}
+
       {chatOpen && (
-        <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 8 }}>
+        <div className="card" style={{ padding: 0, overflow: "hidden", marginTop: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
             <span style={{ fontSize: 12.5, color: "var(--text-2)", display: "inline-flex", alignItems: "center", gap: 6 }}>
               <i className="ti ti-sparkles" style={{ fontSize: 15, color: "var(--accent)" }} />{s.chat}
             </span>
-            <button onClick={closeChat} aria-label={s.collapse} title={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
-              <i className="ti ti-x" style={{ fontSize: 17 }} />
-            </button>
+            <span className="cc-tip" data-tip={s.collapse}>
+              <button onClick={closeChat} aria-label={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
+                <i className="ti ti-x" style={{ fontSize: 17 }} />
+              </button>
+            </span>
           </div>
           <div ref={scrollRef} style={{ maxHeight: 340, minHeight: 120, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
             {msgs.length === 0 && <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5, padding: "6px 2px" }}>{s.intro}</div>}
@@ -247,8 +263,6 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           </div>
         </div>
       )}
-
-      {bar}
 
       {saved && !chatOpen && (
         <div style={{ marginTop: 8, fontSize: 13, color: "var(--positive)", display: "inline-flex", alignItems: "center", gap: 7 }}>

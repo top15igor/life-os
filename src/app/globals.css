@@ -199,3 +199,20 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 
 /* На узких экранах кнопки «Записать»/«Поболтать» сжимаются до иконок — всё в одну строку. */
 @media (max-width: 560px) { .cc-lbl { display: none; } }
+
+/* Тултип-подсказка на наведение (для кнопок поля захвата). */
+.cc-tip { position: relative; display: inline-flex; flex-shrink: 0; }
+.cc-tip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 9px); left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--text); color: var(--surface);
+  font-size: 12px; line-height: 1.4; font-weight: 400;
+  padding: 7px 11px; border-radius: 10px;
+  width: max-content; max-width: 230px; text-align: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .14s ease, transform .14s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,.20); z-index: 95;
+}
+.cc-tip:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (hover: none) { .cc-tip::after { display: none; } }
