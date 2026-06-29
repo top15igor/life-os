@@ -17,6 +17,16 @@ function readLocale(): Locale {
   return isLocale(v) ? v : DEFAULT_LOCALE;
 }
 
+const HIT_ICON: Record<string, string> = {
+  entry: "ti-notebook",
+  person: "ti-user",
+  place: "ti-map-pin",
+  goal: "ti-target",
+  insight: "ti-bulb",
+  knowledge: "ti-bookmark",
+  memory: "ti-camera",
+};
+
 export default function Assistant() {
   const path = usePathname() || "/";
   const router = useRouter();
@@ -68,12 +78,30 @@ export default function Assistant() {
 
   const guide = useMemo(() => pageGuide(locale, path), [locale, path]);
 
-  // Список разделов для поиска.
+  // Список разделов для поиска (мгновенно, по NAV).
   const results = useMemo(() => {
     const ql = query.trim().toLowerCase();
     if (!ql) return [];
-    return NAV.filter((n) => (nav[n.key] || n.key).toLowerCase().includes(ql)).slice(0, 8);
+    return NAV.filter((n) => (nav[n.key] || n.key).toLowerCase().includes(ql)).slice(0, 6);
   }, [query, nav]);
+
+  // Полный поиск по содержимому (записи, люди, места, цели, инсайты, знания, память).
+  const [hits, setHits] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    const ql = query.trim();
+    if (ql.length < 2) { setHits([]); setSearching(false); return; }
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/search?q=${encodeURIComponent(ql)}`);
+        const d = await r.json().catch(() => null);
+        setHits(Array.isArray(d?.results) ? d.results : []);
+      } catch { setHits([]); }
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
   function go(href: string) {
     setOpen(false);
@@ -186,16 +214,24 @@ export default function Assistant() {
               </div>
               {query && (
                 <div className="asst-results">
-                  {results.length === 0 ? (
-                    <div className="asst-none">{s.searchNone}</div>
-                  ) : (
-                    results.map((n) => (
-                      <button key={n.key} className="asst-res" onClick={() => go(n.href)}>
-                        <i className={`ti ${n.icon}`} />
-                        <span>{navLabel(n.key)}</span>
-                        <i className="ti ti-arrow-right" style={{ marginLeft: "auto", color: "var(--text-3)" }} />
-                      </button>
-                    ))
+                  {results.map((n) => (
+                    <button key={n.key} className="asst-res" onClick={() => go(n.href)}>
+                      <i className={`ti ${n.icon}`} />
+                      <span>{navLabel(n.key)}</span>
+                      <i className="ti ti-arrow-right" style={{ marginLeft: "auto", color: "var(--text-3)" }} />
+                    </button>
+                  ))}
+                  {hits.map((h, i) => (
+                    <button key={`h${i}`} className="asst-res" onClick={() => go(h.href)}>
+                      <i className={`ti ${HIT_ICON[h.type] || "ti-search"}`} />
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {h.title}{h.sub ? <span style={{ color: "var(--text-3)", marginLeft: 6, fontSize: 11 }}>{h.sub}</span> : null}
+                      </span>
+                      <i className="ti ti-arrow-right" style={{ marginLeft: "auto", color: "var(--text-3)" }} />
+                    </button>
+                  ))}
+                  {results.length === 0 && hits.length === 0 && (
+                    <div className="asst-none">{searching ? "…" : s.searchNone}</div>
                   )}
                 </div>
               )}
