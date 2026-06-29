@@ -11,8 +11,12 @@ create table if not exists bank_monobank (
   hook_secret uuid not null default gen_random_uuid(),  -- секрет в URL вебхука
   client_name text,
   webhook_set boolean default false,
+  accounts    jsonb,                              -- список счетов [{id,currencyCode,type}]
   created_at  timestamptz default now()
 );
+
+-- Для уже существующих установок.
+alter table if exists bank_monobank add column if not exists accounts jsonb;
 
 alter table if exists bank_monobank enable row level security;
 -- Доступ только серверным ключом (service_role обходит RLS).

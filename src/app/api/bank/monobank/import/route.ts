@@ -15,20 +15,24 @@ export async function POST() {
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const db = supabaseAdmin();
 
-  const { data: row } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle();
-  const token = (row as any)?.token;
+  let row: any = null;
+  try { ({ data: row } = await db.from("bank_monobank").select("token, accounts").eq("user_id", user.id).maybeSingle()); }
+  catch { ({ data: row } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle()); }
+  const token = row?.token;
   if (!token) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
 
-  // Счета пользователя.
-  let accounts: string[] = [];
-  try {
-    const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
-    if (r.status === 429) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
-    if (!r.ok) return NextResponse.json({ ok: false, error: "mono_error" }, { status: 400 });
-    const info = await r.json();
-    accounts = (info?.accounts || []).map((a: any) => a.id).filter(Boolean);
-  } catch {
-    return NextResponse.json({ ok: false, error: "network" }, { status: 502 });
+  // Счета: сначала сохранённые при подключении (без лишнего client-info ради лимита).
+  let accounts: string[] = Array.isArray(row?.accounts) ? row.accounts.map((a: any) => a?.id).filter(Boolean) : [];
+  if (!accounts.length) {
+    try {
+      const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
+      if (r.status === 429) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+      if (!r.ok) return NextResponse.json({ ok: false, error: "mono_error" }, { status: 400 });
+      const info = await r.json();
+      accounts = (info?.accounts || []).map((a: any) => a.id).filter(Boolean);
+    } catch {
+      return NextResponse.json({ ok: false, error: "network" }, { status: 502 });
+    }
   }
   if (!accounts.length) return NextResponse.json({ ok: true, inserted: 0, accounts: 0 });
 
