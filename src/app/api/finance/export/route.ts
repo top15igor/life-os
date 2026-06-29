@@ -28,12 +28,12 @@ export async function GET() {
       .order("day", { ascending: false })
       .range(from, from + 999);
     if (error && /subcategory|column|schema cache/i.test(error.message)) {
-      ({ data, error } = await db
+      ({ data, error } = (await db
         .from("finance_tx")
         .select("day, kind, amount, currency, category, note")
         .eq("user_id", user.id)
         .order("day", { ascending: false })
-        .range(from, from + 999));
+        .range(from, from + 999)) as any);
     }
     if (error || !data || !data.length) break;
     rows.push(...data);

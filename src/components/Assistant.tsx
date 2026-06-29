@@ -41,6 +41,7 @@ export default function Assistant() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [inApp, setInApp] = useState(false);
   const [query, setQuery] = useState("");
   const [q, setQ] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
@@ -56,13 +57,16 @@ export default function Assistant() {
     setLocale(readLocale());
   }, []);
 
-  // Сбросить вопрос/ответ при смене страницы.
+  // Сбросить вопрос/ответ при смене страницы + определить, внутри ли мы приложения.
+  // Внутри приложения = есть оболочка .shell (например, домашняя лента на vanity-URL
+  // /i/<имя> — формально «публичный» роут, но это полноценное приложение владельца).
   useEffect(() => {
     setAnswer(null);
     setErr(false);
     setQuery("");
     setFbState("idle");
     setFbText("");
+    if (typeof document !== "undefined") setInApp(!!document.querySelector(".shell"));
   }, [path]);
 
   const t = useMemo(() => getDict(locale), [locale]);
@@ -161,7 +165,7 @@ export default function Assistant() {
     }
   }
 
-  if (!mounted || PUBLIC.test(path)) return null;
+  if (!mounted || (PUBLIC.test(path) && !inApp)) return null;
 
   const node = (
     <>
