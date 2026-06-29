@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendMessage } from "@/lib/telegram";
 import { morningMessage } from "@/lib/morningPush";
+import { mainKeyboard } from "@/lib/botKeyboard";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -51,7 +52,9 @@ export async function GET(req: NextRequest) {
     try {
       if (u.push_enabled === false) continue; // пользователь выключил пуши в Профиле
       const lang = ["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru";
-      await sendMessage(u.chat_id, morningMessage(lang, doy));
+      // Прикладываем актуальную клавиатуру — так кнопки у активных юзеров
+      // переобновляются сами при ближайшем утреннем пуше.
+      await sendMessage(u.chat_id, morningMessage(lang, doy), { reply_markup: mainKeyboard(lang) });
       sent++;
     } catch (e) {
       console.error("morning push", u.chat_id, e);
