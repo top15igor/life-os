@@ -4,6 +4,8 @@ import Sidebar from "@/components/Sidebar";
 import LangSwitcher from "@/components/LangSwitcher";
 import { CopyLink, ProfileButtons, PinSettings, NotificationToggle } from "@/components/ProfileActions";
 import LoginMethods from "@/components/LoginMethods";
+import UsernameEditor from "@/components/UsernameEditor";
+import { getHandle } from "@/lib/handle";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -30,6 +32,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const proto = hdrs.get("x-forwarded-proto") || "https";
   const token = (await cookies()).get("lifeos_token")?.value || "";
   const link = `${proto}://${host}/u/${token}`;
+  const baseUrl = `${proto}://${host}`;
+  const handle = await getHandle(user.id, user.name);
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
 
   let hasPin = false;
@@ -69,6 +73,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 11, lineHeight: 1.5 }}>{email ? s.backupS : s.linkHint}</div>
             <CopyLink link={link} locale={locale} />
           </div>
+
+          {/* Имя-ссылка (@username): реф-ссылка + публичная страница */}
+          <UsernameEditor locale={locale} baseUrl={baseUrl} initialHandle={handle} />
 
           {/* Способы входа */}
           <LoginMethods

@@ -8,6 +8,7 @@ import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
+import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
@@ -212,7 +213,7 @@ function openBtn(lang: string, link: string) {
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
   const I = INVITE[lang] || INVITE.ru;
-  const inviteLink = `${origin}/i/${await getInviteCode(userId)}`;
+  const inviteLink = `${origin}/i/${await getHandle(userId)}`;
   const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
 }
@@ -600,7 +601,7 @@ export async function POST(req: NextRequest) {
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
-    const refLink = `${origin}/i/${await getInviteCode(user.id)}`;
+    const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
       [

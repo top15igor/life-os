@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getPublicBySlug, getPublicStats } from "@/lib/public";
 import { getPublicPages } from "@/lib/publish";
-import { getInviteCode } from "@/lib/users";
+import { getHandle } from "@/lib/handle";
 import { getLocale } from "@/lib/locale";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   }
 
   const st = await getPublicStats(prof.userId);
-  const inviteCode = await getInviteCode(prof.userId);
+  const inviteCode = await getHandle(prof.userId, prof.name);
   const pages = await getPublicPages(prof.userId);
   const blocks = new Set(prof.blocks);
   const bookTitle = locale === "en" ? "Public book" : locale === "fr" ? "Livre public" : locale === "uk" ? "Публічна книга" : "Публичная книга";

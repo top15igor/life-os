@@ -44,7 +44,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   const el = ED_L[locale] || ED_L.ru;
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.refCode || d.ref || null); }).catch(() => {});
+    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.handle || d.refCode || d.ref || null); }).catch(() => {});
     try {
       const o = JSON.parse(localStorage.getItem(K_ORDER) || "null");
       const h = JSON.parse(localStorage.getItem(K_HIDDEN) || "null");

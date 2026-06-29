@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { resolveHandle } from "./handle";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
@@ -32,17 +33,22 @@ export async function getInviteCode(userId: string): Promise<string> {
   return userId;
 }
 
-// Преобразует код ИЛИ legacy-UUID из ссылки в id пригласившего.
+// Преобразует @username, короткий код ИЛИ legacy-UUID из ссылки в id пригласившего.
 export async function resolveRefToId(raw?: string | null): Promise<string | null> {
   if (!raw) return null;
   const db = supabaseAdmin();
+  // 1) короткий случайный ref_code
   if (/^[a-z0-9]{4,12}$/i.test(raw)) {
     try {
       const { data } = await db.from("users").select("id").eq("ref_code", raw).maybeSingle();
       if (data?.id) return data.id;
     } catch {}
   }
-  if (/^[0-9a-f-]{36}$/i.test(raw)) return raw; // legacy: ссылка со старым ?ref=<UUID>
+  // 2) человекочитаемый @username (public_profile.slug) — /i/igor
+  const viaHandle = await resolveHandle(raw);
+  if (viaHandle) return viaHandle;
+  // 3) legacy: ссылка со старым ?ref=<UUID>
+  if (/^[0-9a-f-]{36}$/i.test(raw)) return raw;
   return null;
 }
 
