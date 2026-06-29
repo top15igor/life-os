@@ -673,8 +673,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         </div>
       )}
 
+      {/* Баланс + AI-советник в одну строку: бюджет шире, советник уже (на мобиле — в столбик) */}
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
       {/* Баланс + доходы/расходы */}
-      <div className="card" style={{ marginBottom: 14 }}>
+      <div className="card" style={{ flex: "2 1 380px", minWidth: 0 }}>
         <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5 }}>
           <i className="ti ti-wallet" style={{ fontSize: 14, color: "var(--accent)" }} />{s.balance}
         </div>
@@ -754,7 +756,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* AI-советник по финансам (по требованию) */}
       {data.hasAny && (
-        <div className="card" style={{ marginBottom: 14, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
+        <div className="card" style={{ flex: "1 1 300px", minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: advice ? 10 : 0 }}>
             <i className="ti ti-sparkles" style={{ fontSize: 16, color: "var(--accent)" }} />{s.adviceTitle}
             {advice && !adviceLoading && (
@@ -774,6 +776,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           )}
         </div>
       )}
+      </div>
 
       {/* Цели по накоплениям */}
       {goals != null && (goals.length > 0 || goalAddOpen) && (
