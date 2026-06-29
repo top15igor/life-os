@@ -98,7 +98,9 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     try {
       const r = await fetch("/api/companion");
       const d = await r.json().catch(() => null);
-      if (Array.isArray(d?.messages)) setMsgs(d.messages);
+      // Подмешиваем историю ПЕРЕД локальными (только что отправленными) репликами,
+      // чтобы не затереть оптимистично добавленное сообщение пользователя.
+      if (Array.isArray(d?.messages)) setMsgs((prev) => [...d.messages, ...prev]);
     } catch {}
   }
 
@@ -186,7 +188,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     }
   }
 
-  const shown = showAll ? msgs : msgs.slice(-2);
+  const shown = showAll ? msgs : msgs.slice(-6);
   const canSend = !!text.trim() && !busy;
 
   const bar = (
@@ -256,15 +258,20 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           </div>
           <div ref={scrollRef} style={{ maxHeight: 340, minHeight: 120, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
             {msgs.length === 0 && <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5, padding: "6px 2px" }}>{s.intro}</div>}
-            {!showAll && msgs.length > 2 && (
+            {!showAll && msgs.length > 6 && (
               <button onClick={() => setShowAll(true)} style={{ alignSelf: "center", background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontSize: 12.5, fontWeight: 500 }}>
-                {s.showAll(msgs.length - 2)}
+                {s.showAll(msgs.length - 6)}
               </button>
             )}
             {shown.map((m, i) => (
               m.role === "user" ? (
-                <div key={i} className="cc-in" style={{ alignSelf: "flex-end", maxWidth: "82%", padding: "9px 13px", borderRadius: 16, borderBottomRightRadius: 5, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: "var(--accent)", color: "#fff" }}>
-                  {m.content}
+                <div key={i} className="cc-in" style={{ alignSelf: "flex-end", display: "flex", gap: 8, maxWidth: "90%", flexDirection: "row-reverse" }}>
+                  <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 999, background: "var(--accent)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 2, fontSize: 11, fontWeight: 600 }}>
+                    <i className="ti ti-user" style={{ fontSize: 14 }} />
+                  </span>
+                  <div style={{ padding: "9px 13px", borderRadius: 16, borderTopRightRadius: 5, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: "var(--accent)", color: "#fff" }}>
+                    {m.content}
+                  </div>
                 </div>
               ) : (
                 <div key={i} className="cc-in" style={{ alignSelf: "flex-start", display: "flex", gap: 8, maxWidth: "92%" }}>
