@@ -492,7 +492,7 @@ export async function POST(req: NextRequest) {
   if (ba) {
     const lang = pickLang(msg.from?.language_code);
     if (ba === "tasks") {
-      const tasks = await getOpenTasks(user.id, 7);
+      const tasks = await getOpenTasks(user.id, 100);
       const T = TASKS_MSG[lang] || TASKS_MSG.ru;
       if (!tasks.length) await sendMessage(chatId, T.empty);
       else {
