@@ -275,7 +275,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
               </span>
               <span style={{ fontSize: 13, fontWeight: 500 }}>{s.chat}</span>
             </span>
-            <span className="cc-tip cc-tip-r" data-tip={s.collapse}>
+            <span className="cc-tip cc-tip-br" data-tip={s.collapse}>
               <button onClick={closeChat} aria-label={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
                 <i className="ti ti-x" style={{ fontSize: 17 }} />
               </button>
