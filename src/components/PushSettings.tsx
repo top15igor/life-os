@@ -13,8 +13,8 @@ type L = {
   eTitle: string; eSub: string; eOn: string; eAi: string; themesLabel: string; allThemes: string;
   customLabel: string; customPh: string; add: string;
   schedTitle: string; quietLabel: string; quietHint: string; weeklyOn: string; weeklyDay: string;
-  preview: string; loading: string; saved: string;
-  tone: Record<MorningTone, string>; topic: Record<MorningTopic, string>; length: Record<MorningLength, string>;
+  preview: string; loading: string; saved: string; autoHint: string;
+  tone: Record<string, string>; topic: Record<MorningTopic, string>; length: Record<MorningLength, string>;
   theme: Record<EveningTheme, string>; dow: string[];
 };
 
@@ -31,8 +31,8 @@ const STR: Record<string, L> = {
     customLabel: "Свои подсказки", customPh: "Напиши свой вопрос или тему…", add: "Добавить",
     schedTitle: "Расписание и тишина", quietLabel: "Тихие дни (без пушей)", quietHint: "В эти дни не приходит ничего.",
     weeklyOn: "Недельный итог", weeklyDay: "День итога",
-    preview: "Показать пример", loading: "Собираю…", saved: "Сохранено",
-    tone: { friend: "Друг", coach: "Коуч", calm: "Спокойный", mentor: "Наставник", funny: "С юмором" },
+    preview: "Показать пример", loading: "Собираю…", saved: "Сохранено", autoHint: "Бот подстроится под твою манеру письма.",
+    tone: { auto: "Под мой стиль", friend: "Тёплый", direct: "Прямой", calm: "Спокойный", business: "Деловой", energetic: "Энергичный" },
     topic: { motivation: "Мотивация", goals: "Цели", tasks: "Задачи", diary: "Дневник", insight: "Инсайты", gratitude: "Благодарность", movement: "Зарядка" },
     length: { short: "Коротко", normal: "Обычно", long: "Подробно" },
     theme: { family: "Семья", health: "Здоровье", work: "Работа", travel: "Путешествия", growth: "О себе", gratitude: "Благодарность", emotions: "Чувства" },
@@ -50,8 +50,8 @@ const STR: Record<string, L> = {
     customLabel: "Your own prompts", customPh: "Write your own question or topic…", add: "Add",
     schedTitle: "Schedule & quiet", quietLabel: "Quiet days (no pushes)", quietHint: "Nothing is sent on these days.",
     weeklyOn: "Weekly summary", weeklyDay: "Summary day",
-    preview: "Show example", loading: "Building…", saved: "Saved",
-    tone: { friend: "Friend", coach: "Coach", calm: "Calm", mentor: "Mentor", funny: "Witty" },
+    preview: "Show example", loading: "Building…", saved: "Saved", autoHint: "The bot will mirror how you write.",
+    tone: { auto: "My style", friend: "Warm", direct: "Direct", calm: "Calm", business: "Business", energetic: "Energetic" },
     topic: { motivation: "Motivation", goals: "Goals", tasks: "Tasks", diary: "Diary", insight: "Insights", gratitude: "Gratitude", movement: "Movement" },
     length: { short: "Short", normal: "Normal", long: "Detailed" },
     theme: { family: "Family", health: "Health", work: "Work", travel: "Travel", growth: "About you", gratitude: "Gratitude", emotions: "Feelings" },
@@ -69,8 +69,8 @@ const STR: Record<string, L> = {
     customLabel: "Свої підказки", customPh: "Напиши своє питання чи тему…", add: "Додати",
     schedTitle: "Розклад і тиша", quietLabel: "Тихі дні (без пушів)", quietHint: "У ці дні не приходить нічого.",
     weeklyOn: "Тижневий підсумок", weeklyDay: "День підсумку",
-    preview: "Показати приклад", loading: "Збираю…", saved: "Збережено",
-    tone: { friend: "Друг", coach: "Коуч", calm: "Спокійний", mentor: "Наставник", funny: "З гумором" },
+    preview: "Показати приклад", loading: "Збираю…", saved: "Збережено", autoHint: "Бот підлаштується під твою манеру письма.",
+    tone: { auto: "Під мій стиль", friend: "Теплий", direct: "Прямий", calm: "Спокійний", business: "Діловий", energetic: "Енергійний" },
     topic: { motivation: "Мотивація", goals: "Цілі", tasks: "Завдання", diary: "Щоденник", insight: "Інсайти", gratitude: "Вдячність", movement: "Зарядка" },
     length: { short: "Коротко", normal: "Звичайно", long: "Детально" },
     theme: { family: "Сім'я", health: "Здоров'я", work: "Робота", travel: "Подорожі", growth: "Про себе", gratitude: "Вдячність", emotions: "Почуття" },
@@ -88,8 +88,8 @@ const STR: Record<string, L> = {
     customLabel: "Tes propres questions", customPh: "Écris ta question ou ton thème…", add: "Ajouter",
     schedTitle: "Planning & silence", quietLabel: "Jours sans push", quietHint: "Rien n'est envoyé ces jours-là.",
     weeklyOn: "Bilan hebdo", weeklyDay: "Jour du bilan",
-    preview: "Voir un exemple", loading: "Génération…", saved: "Enregistré",
-    tone: { friend: "Ami", coach: "Coach", calm: "Calme", mentor: "Mentor", funny: "Avec humour" },
+    preview: "Voir un exemple", loading: "Génération…", saved: "Enregistré", autoHint: "Le bot s'alignera sur ta façon d'écrire.",
+    tone: { auto: "Mon style", friend: "Chaleureux", direct: "Direct", calm: "Calme", business: "Pro", energetic: "Énergique" },
     topic: { motivation: "Motivation", goals: "Objectifs", tasks: "Tâches", diary: "Journal", insight: "Insights", gratitude: "Gratitude", movement: "Mouvement" },
     length: { short: "Court", normal: "Normal", long: "Détaillé" },
     theme: { family: "Famille", health: "Santé", work: "Travail", travel: "Voyages", growth: "Sur toi", gratitude: "Gratitude", emotions: "Émotions" },
@@ -189,9 +189,10 @@ export default function PushSettings({ locale, initial }: { locale: string; init
         {p.morningEnabled && (
           <>
             <div style={lbl}>{s.toneLabel}</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 15 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: p.tone === "auto" ? 6 : 15 }}>
               {MORNING_TONES.map((t) => chip(s.tone[t], p.tone === t, () => set({ tone: t })))}
             </div>
+            {p.tone === "auto" && <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 15 }}>{s.autoHint}</div>}
 
             <div style={lbl}>{s.lengthLabel}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 15 }}>
