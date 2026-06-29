@@ -215,7 +215,8 @@ function loc(locale?: string): string {
 export async function getBookPrompt(
   userId: string,
   locale: string,
-  seed: number
+  seed: number,
+  opts?: { themes?: Theme[]; customPrompts?: string[] }
 ): Promise<{ theme: Theme; title: string; question: string } | null> {
   const l = loc(locale);
   const year = new Date().getFullYear();
@@ -236,13 +237,17 @@ export async function getBookPrompt(
     // нет данных — ротация по дням ниже
   }
 
-  const totals = THEMES.map((t) => ({ t, n: THEME_CATS[t].reduce((a, s) => a + (counts[s] || 0), 0) }));
+  // Если пользователь выбрал темы в профиле — берём вопросы только из них.
+  const allowed = (opts?.themes && opts.themes.length) ? THEMES.filter((t) => opts.themes!.includes(t)) : THEMES;
+  const totals = allowed.map((t) => ({ t, n: THEME_CATS[t].reduce((a, s) => a + (counts[s] || 0), 0) }));
   const min = Math.min(...totals.map((x) => x.n));
   const thin = totals.filter((x) => x.n === min).map((x) => x.t);
   const theme = thin[Math.abs(seed) % thin.length];
 
-  const bank = QUESTIONS[l][theme];
-  const question = bank[Math.abs(seed) % bank.length];
+  // Свои подсказки пользователя подмешиваем в пул выбранной темы.
+  const custom = (opts?.customPrompts || []).filter(Boolean);
+  const candidates = [...QUESTIONS[l][theme], ...custom];
+  const question = candidates[Math.abs(seed) % candidates.length];
   return { theme, title: TITLES[l][theme], question };
 }
 

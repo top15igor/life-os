@@ -1,7 +1,7 @@
 import { headers, cookies } from "next/headers";
 import Link from "next/link";
 import { CopyLink, ProfileButtons, PinSettings, NotificationToggle } from "@/components/ProfileActions";
-import MorningSettings from "@/components/MorningSettings";
+import PushSettings from "@/components/PushSettings";
 import { normalizeMorningPrefs, type MorningPrefs } from "@/lib/morningPrefs";
 import LangSwitcher from "@/components/LangSwitcher";
 import LoginMethods from "@/components/LoginMethods";
@@ -103,8 +103,8 @@ export default async function ProfileBody({ user, locale, notice }: { user: Curr
       {/* Уведомления (только для Telegram-аккаунтов — им приходят пуши) */}
       {showPushToggle && <NotificationToggle locale={locale} enabled={pushEnabled} />}
 
-      {/* Персонализация утреннего пуша: тон + темы (что ИИ присылает утром) */}
-      {showPushToggle && <MorningSettings locale={locale} initial={morningPrefs} />}
+      {/* Персонализация пушей: утро (тон/темы/время/стиль) и вечер (вопросы для книги) */}
+      {showPushToggle && <PushSettings locale={locale} initial={morningPrefs} />}
 
       {/* Твои данные */}
       <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.yourData}</div>
