@@ -1,11 +1,13 @@
 :root {
-  --bg: #efece4;
+  --bg: #e7e3d9;
   --surface: #ffffff;
-  --surface-2: #f3f1ea;
+  --surface-2: #f1efe7;
   --text: #1f2933;
   --text-2: #6b7280;
   --text-3: #9ca3af;
-  --border: rgba(0,0,0,0.10);
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 1px 2px rgba(28,28,30,0.04), 0 5px 16px -4px rgba(28,28,30,0.08);
+  --shadow-hover: 0 2px 6px rgba(28,28,30,0.06), 0 14px 34px -8px rgba(28,28,30,0.16);
   --accent: #4f46e5;
   --accent-bg: #eef2ff;
   --accent-text: #3730a3;
@@ -70,7 +72,10 @@ a { color: inherit; text-decoration: none; }
 .main.wide { max-width: 1400px; }
 /* Узкий режим для чтения (Книга жизни, Биограф): комфортная длина строки. */
 .main.narrow { max-width: 820px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 17px; box-shadow: 0 1px 2px rgba(31,41,51,0.04), 0 6px 16px rgba(31,41,51,0.05); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 17px; box-shadow: var(--shadow); transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+/* Hover-подъём только у кликабельных карточек (ссылки/кнопки) — как у Apple: статичные блоки не дёргаются. */
+a.card:hover, button.card:hover, .card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: rgba(0,0,0,0.12); }
+a.card:active, button.card:active, .card-hover:active { transform: translateY(0); box-shadow: var(--shadow); }
 .tag { font-size: 12px; padding: 3px 9px; border-radius: 7px; }
 .mobilenav { display: none; }
 .mobile-drawer-backdrop { display: none; }
