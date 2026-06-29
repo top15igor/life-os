@@ -143,23 +143,22 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 }
 
 // Постоянная клавиатура с кнопками под полем ввода.
-const KB: Record<string, { ask: string; money: string; diary: string; help: string }> = {
-  ru: { ask: "🧠 Спросить", money: "📊 Финансы", diary: "📖 Открыть дневник", help: "❓ Помощь" },
-  en: { ask: "🧠 Ask", money: "📊 Finances", diary: "📖 Open diary", help: "❓ Help" },
-  uk: { ask: "🧠 Запитати", money: "📊 Фінанси", diary: "📖 Відкрити щоденник", help: "❓ Допомога" },
-  fr: { ask: "🧠 Demander", money: "📊 Finances", diary: "📖 Ouvrir le journal", help: "❓ Aide" },
+const KB: Record<string, { money: string; diary: string; help: string }> = {
+  ru: { money: "📊 Финансы", diary: "📖 Дневник", help: "❓ Помощь" },
+  en: { money: "📊 Finances", diary: "📖 Diary", help: "❓ Help" },
+  uk: { money: "📊 Фінанси", diary: "📖 Щоденник", help: "❓ Допомога" },
+  fr: { money: "📊 Finances", diary: "📖 Journal", help: "❓ Aide" },
 };
 
 function mainKeyboard(lang: string) {
   const k = KB[lang] || KB.ru;
-  return { keyboard: [[{ text: k.ask }, { text: k.money }], [{ text: k.diary }, { text: k.help }]], resize_keyboard: true, is_persistent: true };
+  return { keyboard: [[{ text: k.diary }, { text: k.money }], [{ text: k.help }]], resize_keyboard: true, is_persistent: true };
 }
 
-function buttonAction(text?: string): "ask" | "money" | "diary" | "help" | null {
+function buttonAction(text?: string): "money" | "diary" | "help" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (text === k.ask) return "ask";
     if (text === k.money) return "money";
     if (text === k.diary) return "diary";
     if (text === k.help) return "help";
@@ -172,13 +171,6 @@ const HELP: Record<string, (o: string) => string> = {
   en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
   uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
   fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n\nTout est dans le Guide :\n${o}/guide`,
-};
-
-const ASK_PROMPT: Record<string, string> = {
-  ru: "Напиши или наговори свой вопрос — отвечу по твоему дневнику 🙂",
-  en: "Type or say your question — I'll answer from your diary 🙂",
-  uk: "Напиши або наговори своє питання — відповім за твоїм щоденником 🙂",
-  fr: "Écris ou dis ta question — je réponds depuis ton journal 🙂",
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
@@ -427,8 +419,7 @@ export async function POST(req: NextRequest) {
       }
     }
     else if (ba === "diary") await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
-    else if (ba === "help") await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
-    else await sendMessage(chatId, ASK_PROMPT[lang] || ASK_PROMPT.ru);
+    else await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     return NextResponse.json({ ok: true });
   }
 
@@ -631,7 +622,6 @@ export async function POST(req: NextRequest) {
     const rows: any[] = [
       [
         { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
-        { text: L.ask, url: `${origin}/u/${user.token}?next=/biographer` },
       ],
     ];
     if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/u/${user.token}?next=/finance` }]);
