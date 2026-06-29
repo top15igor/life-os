@@ -15,6 +15,7 @@ import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/c
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
+import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -380,6 +381,22 @@ export async function POST(req: NextRequest) {
       chatId,
       lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  // Разовая рассылка обновлённой клавиатуры всем — ТОЛЬКО владелец: /pushmenu.
+  if (typeof msg.text === "string" && /^\/pushmenu\b/i.test(msg.text.trim())) {
+    if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+      return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
+    }
+    await sendMessage(chatId, "Рассылаю обновлённое меню всем пользователям… ⏳");
+    try {
+      const res = await broadcastKeyboard();
+      await sendMessage(chatId, `✅ Готово.\nОтправлено: ${res.sent}\nПропущено (выкл. пуши): ${res.skipped}\nОшибок: ${res.failed}`);
+    } catch (e) {
+      console.error("pushmenu", e);
+      await sendMessage(chatId, "Не получилось разослать. Загляни в логи 🙂");
+    }
     return NextResponse.json({ ok: true });
   }
 
