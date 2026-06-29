@@ -4,6 +4,8 @@ import { sendMessage } from "@/lib/telegram";
 import { morningMessage } from "@/lib/morningPush";
 import { personalMorning } from "@/lib/morningPersonal";
 import { normalizeMorningPrefs, type MorningPrefs } from "@/lib/morningPrefs";
+import { localParts } from "@/lib/pushSchedule";
+import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { saveChat } from "@/lib/biographer";
 
@@ -26,26 +28,15 @@ const pickLang = (l: any) => (["ru", "en", "uk", "fr"].includes(l) ? l : "ru");
 
 // «Пора ли слать этому пользователю прямо сейчас?» Возвращает локальный ключ-дату
 // (для защиты от повтора) или null, если ещё не его час.
-function dueNow(prefs: MorningPrefs, now: Date): { todayKey: string } | null {
+function dueNow(prefs: MorningPrefs, lp: { hour: number; weekday: number; dateKey: string }, now: Date): { todayKey: string } | null {
   if (prefs.hour != null && prefs.tz) {
-    try {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: prefs.tz, hour: "2-digit", hourCycle: "h23", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
-      }).formatToParts(now);
-      const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
-      const h = parseInt(get("hour"), 10);
-      const wd = get("weekday");
-      const isWeekend = wd === "Sat" || wd === "Sun";
-      // В выходные — отдельный час, если задан; иначе как в будни.
-      const target = (isWeekend && prefs.hourWeekend != null) ? prefs.hourWeekend : prefs.hour;
-      if (h === target) return { todayKey: `${get("year")}-${get("month")}-${get("day")}` };
-      return null;
-    } catch {
-      // невалидная таймзона → падаем на дефолтное время
-    }
+    const isWeekend = lp.weekday === 0 || lp.weekday === 6;
+    // В выходные — отдельный час, если задан; иначе как в будни.
+    const target = (isWeekend && prefs.hourWeekend != null) ? prefs.hourWeekend : prefs.hour;
+    return lp.hour === target ? { todayKey: lp.dateKey } : null;
   }
-  if (now.getUTCHours() === LEGACY_UTC_HOUR) return { todayKey: now.toISOString().slice(0, 10) };
-  return null;
+  // Дефолтное время — 05:00 UTC (~08:00 по Киеву).
+  return now.getUTCHours() === LEGACY_UTC_HOUR ? { todayKey: now.toISOString().slice(0, 10) } : null;
 }
 
 // Утренний пуш: персональное сообщение, составленное AI под каждого пользователя,
@@ -120,7 +111,9 @@ export async function GET(req: NextRequest) {
       const u = list[idx++];
       const prefs = normalizeMorningPrefs(u.morning_prefs);
       if (!prefs.morningEnabled) continue; // утренний пуш выключен в профиле
-      const due = dueNow(prefs, now);
+      const lp = localParts(prefs.tz, now);
+      if (prefs.quietDays.includes(lp.weekday)) continue; // тихий день
+      const due = dueNow(prefs, lp, now);
       if (!due) continue; // не его час
 
       // Защита от повторной отправки в этот день (атомарно «занимаем» слот).
@@ -144,6 +137,7 @@ export async function GET(req: NextRequest) {
         if (!text) text = morningMessage(lang, doy); // мало данных / лимит времени / ошибка
         await sendMessage(u.chat_id, text, { reply_markup: mainKeyboard(lang) });
         saveChat(u.id, MORNING_TAG, text).catch(() => {}); // в историю, не тормозя рассылку
+        logPush(u.id, "morning").catch(() => {});
         sent++;
       } catch (e) {
         console.error("morning push", u.chat_id, e);

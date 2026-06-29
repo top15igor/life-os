@@ -18,6 +18,7 @@ import { KB, mainKeyboard } from "@/lib/botKeyboard";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
 import { personalMorning } from "@/lib/morningPersonal";
 import { morningMessage } from "@/lib/morningPush";
+import { markPushResponded } from "@/lib/pushLog";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 
@@ -307,6 +308,9 @@ export async function POST(req: NextRequest) {
   }
 
   const link = `${origin}/u/${user.token}`;
+
+  // Пользователь что-то прислал → засчитываем отклик на недавние пуши (аналитика).
+  markPushResponded(user.id).catch(() => {});
 
   if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
     const lang = pickLang(msg.from?.language_code);

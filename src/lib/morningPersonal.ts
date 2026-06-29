@@ -4,7 +4,7 @@ import { logClaude } from "./usage";
 import { getStreak, getGoals, getOpenTasks, getInsights, getRecentGratitude } from "./queries";
 import {
   type MorningPrefs, type MorningTopic,
-  DEFAULT_MORNING_PREFS, normalizeMorningPrefs, TONE_PROMPT, TOPIC_PROMPT,
+  DEFAULT_MORNING_PREFS, normalizeMorningPrefs, TONE_PROMPT, TOPIC_PROMPT, LENGTH_PROMPT,
 } from "./morningPrefs";
 
 // Загрузить настройки утреннего пуша пользователя (мягкий фолбэк, если колонки нет).
@@ -73,11 +73,12 @@ export async function personalMorning(
     const styleLine = p.customStyle
       ? `\nДополнительно учитывай пожелание пользователя по стилю: «${p.customStyle}». Если оно противоречит правилам про факты ниже — правила про факты важнее.`
       : "";
+    const addressLine = p.address ? `\nОбращайся к пользователю так: «${p.address}».` : "";
 
-    const prompt = `Сейчас утро. Составь ОДНО короткое личное утреннее сообщение для пользователя.
-Тон: ${TONE_PROMPT[p.tone]}.${styleLine}
+    const prompt = `Сейчас утро. Составь ОДНО личное утреннее сообщение для пользователя.
+Тон: ${TONE_PROMPT[p.tone]}.${addressLine}${styleLine}
 Пиши на языке с кодом "${lang}" (ru — русский, en — English, uk — українська, fr — français).
-1–3 предложения, живо и по-человечески. Можно 1–2 эмодзи.
+${LENGTH_PROMPT[p.length]} Живо и по-человечески, можно 1–2 эмодзи.
 Сообщение должно касаться ТОЛЬКО этих тем (и ничего лишнего): ${focus}.
 
 СТРОГО про факты (это важно — пользователь не должен ловить тебя на выдумках):
