@@ -65,8 +65,8 @@ export async function GET(req: NextRequest) {
       const dest = !cur
         ? "/login" // сессия истекла — обычный вход
         : (await attachLoginToUser((cur as any).id, email)).ok
-        ? "/profile?linked=google"
-        : "/profile?e=emailtaken";
+        ? "/profile/account?linked=google"
+        : "/profile/account?e=emailtaken";
       const res = NextResponse.redirect(new URL(dest, req.url));
       res.cookies.delete("lifeos_oauth_state");
       res.cookies.delete("lifeos_oauth_ref");
