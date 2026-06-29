@@ -9,37 +9,37 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const STR: Record<string, any> = {
   ru: {
-    ph: "Запиши событие или спроси друга…", phChat: "Напиши другу…",
-    write: "Записать", chat: "Поболтать", saved: "Записано", open: "Открыть запись →",
+    ph: "Запиши событие или спроси AI-друга…", phChat: "Спроси своего AI-друга…",
+    write: "Записать", chat: "AI-друг", saved: "Записано", open: "Открыть запись →",
     thinking: "Думаю…", err: "Связь сорвалась, скажи ещё раз 🙂",
-    intro: "Привет! Я твой друг — знаю про тебя всё из дневника и заглядываю в интернет за свежим. О чём поговорим?",
+    intro: "Привет! Я твой AI-друг — знаю про тебя всё из дневника и заглядываю в интернет за свежим. О чём поговорим?",
     note: "Память общая с Telegram — можно продолжить там же.",
     mic: "Сказать голосом", stop: "Остановить", collapse: "Свернуть чат",
     showAll: (n: number) => `↑ Показать всю переписку (${n})`,
   },
   en: {
-    ph: "Note an event or ask your friend…", phChat: "Message your friend…",
-    write: "Note", chat: "Chat", saved: "Saved", open: "Open entry →",
+    ph: "Note an event or ask your AI friend…", phChat: "Ask your AI friend…",
+    write: "Note", chat: "AI friend", saved: "Saved", open: "Open entry →",
     thinking: "Thinking…", err: "Connection dropped, say it again 🙂",
-    intro: "Hi! I'm your friend — I know all about you from your diary and check the web for fresh facts. What's up?",
+    intro: "Hi! I'm your AI friend — I know all about you from your diary and check the web for fresh facts. What's up?",
     note: "Memory is shared with Telegram — continue there anytime.",
     mic: "Speak", stop: "Stop", collapse: "Collapse chat",
     showAll: (n: number) => `↑ Show full conversation (${n})`,
   },
   uk: {
-    ph: "Запиши подію або запитай друга…", phChat: "Напиши другу…",
-    write: "Записати", chat: "Поспілкуватись", saved: "Збережено", open: "Відкрити запис →",
+    ph: "Запиши подію або запитай AI-друга…", phChat: "Запитай свого AI-друга…",
+    write: "Записати", chat: "AI-друг", saved: "Збережено", open: "Відкрити запис →",
     thinking: "Думаю…", err: "Зв'язок обірвався, скажи ще раз 🙂",
-    intro: "Привіт! Я твій друг — знаю про тебе все зі щоденника і заглядаю в інтернет за свіжим. Про що поговоримо?",
+    intro: "Привіт! Я твій AI-друг — знаю про тебе все зі щоденника і заглядаю в інтернет за свіжим. Про що поговоримо?",
     note: "Пам'ять спільна з Telegram — можна продовжити там.",
     mic: "Сказати голосом", stop: "Зупинити", collapse: "Згорнути чат",
     showAll: (n: number) => `↑ Показати всю переписку (${n})`,
   },
   fr: {
-    ph: "Note un événement ou demande à ton ami…", phChat: "Écris à ton ami…",
-    write: "Noter", chat: "Discuter", saved: "Enregistré", open: "Ouvrir l'entrée →",
+    ph: "Note un événement ou demande à ton ami IA…", phChat: "Demande à ton ami IA…",
+    write: "Noter", chat: "Ami IA", saved: "Enregistré", open: "Ouvrir l'entrée →",
     thinking: "Je réfléchis…", err: "Connexion perdue, redis-le 🙂",
-    intro: "Salut ! Je suis ton ami — je sais tout de toi via ton journal et je consulte le web. De quoi parle-t-on ?",
+    intro: "Salut ! Je suis ton ami IA — je sais tout de toi via ton journal et je consulte le web. De quoi parle-t-on ?",
     note: "La mémoire est partagée avec Telegram — continue là-bas quand tu veux.",
     mic: "Parler", stop: "Arrêter", collapse: "Réduire le chat",
     showAll: (n: number) => `↑ Voir toute la conversation (${n})`,
@@ -204,9 +204,9 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
         </button>
       ) : (
-        <button onClick={() => { if (text.trim()) sendChat(); else openChat(); }} title={s.chat}
-          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 13px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}>
-          <i className="ti ti-message-circle" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
+        <button onClick={() => sendChat()} disabled={!canSend} title={s.chat}
+          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 13px", borderRadius: 10, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+          <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
         </button>
       )}
     </div>
@@ -218,7 +218,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
         <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
             <span style={{ fontSize: 12.5, color: "var(--text-2)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-message-circle" style={{ fontSize: 15, color: "var(--accent)" }} />AI-друг
+              <i className="ti ti-sparkles" style={{ fontSize: 15, color: "var(--accent)" }} />{s.chat}
             </span>
             <button onClick={closeChat} aria-label={s.collapse} title={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
               <i className="ti ti-x" style={{ fontSize: 17 }} />
