@@ -215,6 +215,9 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
   box-shadow: 0 8px 24px rgba(0,0,0,.20); z-index: 95;
 }
 .cc-tip:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Вариант для кнопок у правого края — подсказка растёт влево, не обрезается. */
+.cc-tip-r::after { left: auto; right: 0; transform: translateX(0) translateY(4px); }
+.cc-tip-r:hover::after { transform: translateX(0) translateY(0); }
 @media (hover: none) { .cc-tip::after { display: none; } }
 
 /* Лента AI-друга: мягкое появление сообщений + индикатор «печатает». */

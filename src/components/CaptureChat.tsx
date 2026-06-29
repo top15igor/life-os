@@ -245,14 +245,14 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       </span>
 
       {chatOpen ? (
-        <span className="cc-tip" data-tip={s.tipSend}>
+        <span className="cc-tip cc-tip-r" data-tip={s.tipSend}>
           <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.tipSend}
             style={{ width: 40, height: 40, borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", cursor: canSend ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
           </button>
         </span>
       ) : (
-        <span className="cc-tip" data-tip={s.tipChat}>
+        <span className="cc-tip cc-tip-r" data-tip={s.tipChat}>
           <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat}
             style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
             <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
@@ -267,7 +267,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       {bar}
 
       {chatOpen && (
-        <div className="card" style={{ padding: 0, overflow: "hidden", marginTop: 8 }}>
+        <div className="card" style={{ padding: 0, marginTop: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <span style={{ width: 24, height: 24, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
@@ -275,7 +275,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
               </span>
               <span style={{ fontSize: 13, fontWeight: 500 }}>{s.chat}</span>
             </span>
-            <span className="cc-tip" data-tip={s.collapse}>
+            <span className="cc-tip cc-tip-r" data-tip={s.collapse}>
               <button onClick={closeChat} aria-label={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
                 <i className="ti ti-x" style={{ fontSize: 17 }} />
               </button>
@@ -336,7 +336,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
                 </button>
               )}
             </div>
-            <span className="cc-tip" data-tip={recSrc === "reply" ? s.stop : s.micChat}>
+            <span className="cc-tip cc-tip-r" data-tip={recSrc === "reply" ? s.stop : s.micChat}>
               <button onClick={() => startRec("reply", (t) => sendReply(t))} aria-label={recSrc === "reply" ? s.stop : s.micChat}
                 style={{ width: 44, height: 44, borderRadius: 999, border: "none", background: recSrc === "reply" ? "#ef4444" : "var(--accent)", color: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(79,70,229,.35)" }}>
                 <i className={`ti ${recSrc === "reply" ? "ti-player-stop-filled" : "ti-microphone"}`} style={{ fontSize: 21 }} />
