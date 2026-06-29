@@ -106,6 +106,17 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     if (chatOpen) scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, busy, chatOpen]);
 
+  // Авто-рост поля ввода: высота подстраивается под текст (до 140px, дальше прокрутка),
+  // чтобы было видно всё написанное, а не одну строку. Срабатывает и при наборе,
+  // и при заполнении голосом, и при очистке.
+  function autosize(el: HTMLTextAreaElement | null) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }
+  useEffect(() => { autosize(taRef.current); }, [text, chatOpen]);
+  useEffect(() => { autosize(replyRef.current); }, [replyText, replyOpen]);
+
   async function loadHistory() {
     if (loaded) return;
     setLoaded(true);
@@ -237,7 +248,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           placeholder={chatOpen ? s.phChat : s.ph}
           rows={1}
           disabled={busy && recording}
-          style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 120 }}
+          style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 140, overflowY: "auto" }}
         />
         <span className="cc-tip" data-tip={recSrc === "bar" ? s.stop : s.mic}>
           <button onClick={() => startRec("bar", (t) => { setText((p) => (p ? p + " " : "") + t); setTimeout(() => taRef.current?.focus(), 20); })} aria-label={recSrc === "bar" ? s.stop : s.mic}
@@ -248,8 +259,8 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       </div>
 
       <span className="cc-tip" data-tip={s.tipWrite}>
-        <button onClick={saveEntry} disabled={!canSend} aria-label={s.write}
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: canSend ? "var(--text)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+        <button onClick={saveEntry} disabled={!canSend} aria-label={s.write} className="cc-act"
+          style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 16px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 600, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
           <i className="ti ti-pencil" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.write}</span>
         </button>
       </span>
@@ -263,8 +274,8 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
         </span>
       ) : (
         <span className="cc-tip cc-tip-r" data-tip={s.tipChat}>
-          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat}
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat} className="cc-act"
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "1px solid var(--accent)", background: "var(--surface)", color: canSend ? "var(--accent)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap", opacity: canSend ? 1 : 0.6 }}>
             <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
           </button>
         </span>

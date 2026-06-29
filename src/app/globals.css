@@ -197,8 +197,9 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
   .asst-panel { right: 12px; left: 12px; width: auto; max-width: none; bottom: calc(144px + env(safe-area-inset-bottom)); max-height: 64vh; }
 }
 
-/* На узких экранах кнопки «Записать»/«Поболтать» сжимаются до иконок — всё в одну строку. */
-@media (max-width: 560px) { .cc-lbl { display: none; } }
+/* Подписи кнопок «Записать»/«AI-друг» видны всегда (на мобиле чуть мельче) —
+   голые иконки путали пользователей, поэтому текст не прячем. */
+@media (max-width: 560px) { .cc-lbl { font-size: 12px; } .cc-act { padding-left: 11px !important; padding-right: 11px !important; } }
 
 /* Тултип-подсказка на наведение (для кнопок поля захвата). */
 .cc-tip { position: relative; display: inline-flex; flex-shrink: 0; }
