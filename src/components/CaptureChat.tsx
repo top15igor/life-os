@@ -7,6 +7,17 @@ import DictationHints from "./DictationHints";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// Лёгкий markdown в ответах друга: **жирный** → <b>. Переносы строк сохраняет pre-wrap.
+function fmt(t: string): any {
+  return t.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : part));
+}
+
+const Avatar = () => (
+  <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}>
+    <i className="ti ti-sparkles" style={{ fontSize: 14 }} />
+  </span>
+);
+
 const STR: Record<string, any> = {
   ru: {
     ph: "Запиши событие или спроси AI-друга…", phChat: "Спроси своего AI-друга…",
@@ -231,8 +242,11 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       {chatOpen && (
         <div className="card" style={{ padding: 0, overflow: "hidden", marginTop: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>
-            <span style={{ fontSize: 12.5, color: "var(--text-2)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-sparkles" style={{ fontSize: 15, color: "var(--accent)" }} />{s.chat}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 24, height: 24, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                <i className="ti ti-sparkles" style={{ fontSize: 13 }} />
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 500 }}>{s.chat}</span>
             </span>
             <span className="cc-tip" data-tip={s.collapse}>
               <button onClick={closeChat} aria-label={s.collapse} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2 }}>
@@ -248,13 +262,25 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
               </button>
             )}
             {shown.map((m, i) => (
-              <div key={i} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "85%", padding: "9px 13px", borderRadius: 14, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: m.role === "user" ? "var(--accent)" : "var(--surface-2)", color: m.role === "user" ? "#fff" : "var(--text)" }}>
-                {m.content}
-              </div>
+              m.role === "user" ? (
+                <div key={i} className="cc-in" style={{ alignSelf: "flex-end", maxWidth: "82%", padding: "9px 13px", borderRadius: 16, borderBottomRightRadius: 5, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: "var(--accent)", color: "#fff" }}>
+                  {m.content}
+                </div>
+              ) : (
+                <div key={i} className="cc-in" style={{ alignSelf: "flex-start", display: "flex", gap: 8, maxWidth: "92%" }}>
+                  <Avatar />
+                  <div style={{ padding: "9px 13px", borderRadius: 16, borderTopLeftRadius: 5, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: "var(--surface-2)", color: "var(--text)" }}>
+                    {fmt(m.content)}
+                  </div>
+                </div>
+              )
             ))}
             {busy && !recording && (
-              <div style={{ alignSelf: "flex-start", padding: "9px 13px", borderRadius: 14, fontSize: 13.5, color: "var(--text-3)", background: "var(--surface-2)", display: "inline-flex", alignItems: "center", gap: 7 }}>
-                <i className="ti ti-loader-2 spin" style={{ fontSize: 15 }} />{s.thinking}
+              <div className="cc-in" style={{ alignSelf: "flex-start", display: "flex", gap: 8, alignItems: "center" }}>
+                <Avatar />
+                <div style={{ padding: "12px 14px", borderRadius: 16, borderTopLeftRadius: 5, background: "var(--surface-2)" }}>
+                  <span className="cc-dots"><i /><i /><i /></span>
+                </div>
               </div>
             )}
           </div>

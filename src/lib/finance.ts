@@ -209,7 +209,7 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
   try {
     let { data: bs, error } = await db.from("finance_budget").select("category, subcategory, amount").eq("user_id", userId);
     if (error && /subcategory|column|schema cache/i.test(error.message)) {
-      ({ data: bs } = await db.from("finance_budget").select("category, amount").eq("user_id", userId));
+      ({ data: bs } = (await db.from("finance_budget").select("category, amount").eq("user_id", userId)) as any);
     }
     for (const b of bs || []) {
       const sub = ((b as any).subcategory || "") as string;
