@@ -32,8 +32,9 @@ export async function POST(req: NextRequest) {
   const token = String(body?.token || "").trim();
   if (!token || token.length < 20) return NextResponse.json({ ok: false, error: "bad_token" }, { status: 400 });
 
-  // 1) Проверяем токен через client-info (он же отдаёт имя клиента).
+  // 1) Проверяем токен через client-info (он же отдаёт имя клиента и счета).
   let clientName: string | null = null;
+  let accounts: any[] = [];
   try {
     const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
     if (r.status === 403) return NextResponse.json({ ok: false, error: "invalid_token" }, { status: 400 });
@@ -41,16 +42,24 @@ export async function POST(req: NextRequest) {
     if (!r.ok) return NextResponse.json({ ok: false, error: "mono_error" }, { status: 400 });
     const info = await r.json();
     clientName = info?.name || null;
+    accounts = (info?.accounts || []).map((a: any) => ({ id: a.id, currencyCode: a.currencyCode, type: a.type })).filter((a: any) => a.id);
   } catch {
     return NextResponse.json({ ok: false, error: "network" }, { status: 502 });
   }
 
   const db = supabaseAdmin();
-  // 2) Сохраняем токен (hook_secret сгенерируется при первой вставке).
-  const { error: upErr } = await db.from("bank_monobank").upsert(
-    { user_id: user.id, token, client_name: clientName, webhook_set: false },
+  // 2) Сохраняем токен и счета (hook_secret сгенерируется при первой вставке).
+  let { error: upErr } = await db.from("bank_monobank").upsert(
+    { user_id: user.id, token, client_name: clientName, accounts, webhook_set: false },
     { onConflict: "user_id" }
   );
+  // Старая база без колонки accounts — сохраняем без неё.
+  if (upErr && /accounts|column|schema cache/i.test(upErr.message)) {
+    ({ error: upErr } = await db.from("bank_monobank").upsert(
+      { user_id: user.id, token, client_name: clientName, webhook_set: false },
+      { onConflict: "user_id" }
+    ));
+  }
   if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 500 });
 
   const { data: row } = await db.from("bank_monobank").select("hook_secret").eq("user_id", user.id).maybeSingle();
