@@ -732,46 +732,56 @@ function esc(s: string): string {
 
 function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true, fullText?: string): string {
   const L = CONFIRM[lang] || CONFIRM.ru;
-  const lines = [`✅ <b>${L.saved}</b>`, ""];
-  // Для голосовых показываем ПОЛНУЮ расшифровку (то, что человек реально наговорил),
-  // чтобы не казалось, что часть потерялась. Резюме — отдельной короткой строкой ниже.
-  if (fullText && fullText.trim()) {
-    const ft = fullText.trim();
-    // Запас под теги/задачи/метрики и лимит Telegram (4096). Полный текст всё равно в записи.
-    const shown = ft.length > 3000 ? ft.slice(0, 3000).trimEnd() + "…" : ft;
-    lines.push(`📝 <b>${L.heard}:</b>`, esc(shown));
-    if (a.summary && a.summary.trim()) lines.push("", `💬 <b>${L.gist}:</b> ${esc(a.summary.trim())}`);
-  } else {
-    lines.push(esc(a.summary || ""));
-  }
+  const isVoice = !!(fullText && fullText.trim());
 
+  // Структурная часть — как AI разобрал запись. Показывается ПОЛНОСТЬЮ, без обрезки:
+  // все задачи, все инсайты, все теги и метрики.
+  const rest: string[] = [];
+  const gist = (a.summary || "").trim();
+  if (gist) {
+    // Для голоса резюме идёт отдельной строкой «Коротко» (под полной расшифровкой);
+    // для текста — это основной текст подтверждения.
+    if (isVoice) rest.push("", `💬 <b>${L.gist}:</b> ${esc(gist)}`);
+    else rest.push("", esc(gist));
+  }
   if (a.tags?.length) {
-    lines.push("", a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" "));
+    rest.push("", a.tags.map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" "));
   }
   if (a.tasks?.length) {
-    lines.push("", `🎯 <b>${L.tasksTitle}</b>`);
-    a.tasks.slice(0, 3).forEach((tk) => lines.push("• " + esc(tk)));
+    rest.push("", `🎯 <b>${L.tasksTitle}</b>`);
+    a.tasks.forEach((tk) => rest.push("• " + esc(tk)));
   }
   if (a.insights?.length) {
-    lines.push("", `💡 <b>${L.insightsTitle}</b>`);
-    a.insights.slice(0, 2).forEach((it) => lines.push("• " + esc(it)));
+    rest.push("", `💡 <b>${L.insightsTitle}</b>`);
+    a.insights.forEach((it) => rest.push("• " + esc(it)));
   }
   if (a.finance?.length) {
-    lines.push("", `💰 <b>${L.moneyTitle}</b>`);
-    a.finance.slice(0, 5).forEach((f) => {
+    rest.push("", `💰 <b>${L.moneyTitle}</b>`);
+    a.finance.forEach((f) => {
       const sym = CUR_SYM[f.currency || "USD"] || f.currency || "";
       const sign = f.kind === "income" ? "+" : "−";
       const note = f.note ? ` · ${esc(f.note)}` : "";
-      lines.push(`• ${f.kind === "income" ? "📈" : "💸"} ${sign}${esc(String(f.amount))} ${sym}${note}`);
+      rest.push(`• ${f.kind === "income" ? "📈" : "💸"} ${sign}${esc(String(f.amount))} ${sym}${note}`);
     });
-    if (!financeSaved) lines.push(`⚠️ ${L.moneyFail}`);
+    if (!financeSaved) rest.push(`⚠️ ${L.moneyFail}`);
   }
   const m = [
     a.mood != null ? `😊 ${a.mood}` : null,
     a.energy != null ? `⚡ ${a.energy}` : null,
     a.health != null ? `❤️ ${a.health}` : null,
   ].filter(Boolean);
-  if (m.length) lines.push("", m.join("   "));
-  if (streak >= 2) lines.push("", `🔥 ${streak} ${L.streakWord}`);
-  return lines.join("\n");
+  if (m.length) rest.push("", m.join("   "));
+  if (streak >= 2) rest.push("", `🔥 ${streak} ${L.streakWord}`);
+
+  const head = [`✅ <b>${L.saved}</b>`];
+  // Полная расшифровка голоса (слово в слово) занимает ОСТАТОК места до лимита
+  // Telegram (4096) — так структурная часть (задачи/инсайты) никогда не обрезается.
+  if (isVoice) {
+    const ft = fullText!.trim();
+    const used = head.join("\n").length + rest.join("\n").length + 80; // запас на разметку/заголовок
+    const budget = Math.max(400, 4000 - used);
+    const shown = ft.length > budget ? ft.slice(0, budget).trimEnd() + "…" : ft;
+    head.push("", `📝 <b>${L.heard}:</b>`, esc(shown));
+  }
+  return [...head, ...rest].join("\n");
 }
