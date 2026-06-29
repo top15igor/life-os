@@ -7,6 +7,15 @@ export async function getFileUrl(fileId: string): Promise<string> {
   return `https://api.telegram.org/file/bot${TOKEN}/${r.result.file_path}`;
 }
 
+// Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
+export async function answerCallback(callbackId: string, text?: string): Promise<void> {
+  await fetch(`${API}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ callback_query_id: callbackId, ...(text ? { text } : {}) }),
+  }).catch(() => {});
+}
+
 // Показать индикатор «печатает…».
 export async function sendChatAction(chatId: number, action = "typing"): Promise<void> {
   await fetch(`${API}/sendChatAction`, {

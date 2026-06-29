@@ -4,7 +4,7 @@ import { resolveHandle } from "./handle";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
-export type User = { id: string; token: string; name: string | null; chat_id?: number; isNew?: boolean };
+export type User = { id: string; token: string; name: string | null; lang?: string | null; chat_id?: number; isNew?: boolean };
 
 // ===== Короткий код-приглашение (для аккуратных реф-ссылок /i/<code>) =====
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // без похожих 0/o/1/l
@@ -62,10 +62,12 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
     .eq("chat_id", chatId)
     .maybeSingle();
   if (existing) {
-    // Подхватываем актуальные имя/язык из Telegram (имя чинит «кракозябры» из seed).
+    // Подхватываем актуальное имя из Telegram (чинит «кракозябры» из seed).
+    // Язык из Telegram ставим ТОЛЬКО как первый дефолт (если ещё не задан) —
+    // НЕ перетираем выбор пользователя (через /lang в боте или в Профиле).
     const upd: any = {};
     if (name && existing.name !== name) upd.name = name;
-    if (lang && (existing as any).lang !== lang) upd.lang = lang;
+    if (lang && !(existing as any).lang) upd.lang = lang;
     if (Object.keys(upd).length) {
       await db.from("users").update(upd).eq("chat_id", chatId);
       return { ...existing, ...upd, isNew: false } as User;
@@ -89,5 +91,5 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
     if (again) return { ...again, isNew: false } as User;
     throw error;
   }
-  return { ...data, isNew: true } as User;
+  return { ...data, lang: lang || null, isNew: true } as User;
 }

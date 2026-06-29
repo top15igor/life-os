@@ -14,6 +14,7 @@ const COMMANDS_RU = [
   { command: "income", description: "Записать доход: /income 1000 зарплата" },
   { command: "save", description: "Сохранить запись принудительно" },
   { command: "link", description: "Ссылка на веб-дневник" },
+  { command: "lang", description: "Сменить язык бота" },
   { command: "invite", description: "Пригласить друга" },
   { command: "demo", description: "Показать приветствие заново" },
 ];
@@ -28,6 +29,7 @@ const COMMANDS_EN = [
   { command: "income", description: "Log income: /income 1000 salary" },
   { command: "save", description: "Force-save an entry" },
   { command: "link", description: "Web diary link" },
+  { command: "lang", description: "Change the bot language" },
   { command: "invite", description: "Invite a friend" },
   { command: "demo", description: "Replay the welcome" },
 ];
@@ -42,6 +44,7 @@ const COMMANDS_UK = [
   { command: "income", description: "Записати дохід: /income 1000 зарплата" },
   { command: "save", description: "Зберегти запис примусово" },
   { command: "link", description: "Посилання на веб-щоденник" },
+  { command: "lang", description: "Змінити мову бота" },
   { command: "invite", description: "Запросити друга" },
   { command: "demo", description: "Показати привітання знову" },
 ];

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, answerCallback } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
@@ -29,6 +29,37 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function pickLang(code?: string): "ru" | "en" | "uk" | "fr" {
   const c = (code || "").slice(0, 2);
   return c === "uk" ? "uk" : c === "en" ? "en" : c === "fr" ? "fr" : "ru";
+}
+
+// Язык сообщений бота: ВЫБОР пользователя (users.lang) важнее языка Telegram-клиента.
+// Если выбор не задан — падаем на язык приложения Telegram.
+function langOf(user: any, msg: any): "ru" | "en" | "uk" | "fr" {
+  const v = user?.lang;
+  if (v === "ru" || v === "en" || v === "uk" || v === "fr") return v;
+  return pickLang(msg?.from?.language_code);
+}
+
+// Меню выбора языка (inline-кнопки) и подтверждения.
+const LANG_CHOICES: { code: string; label: string }[] = [
+  { code: "ru", label: "🇷🇺 Русский" },
+  { code: "en", label: "🇬🇧 English" },
+  { code: "uk", label: "🇺🇦 Українська" },
+  { code: "fr", label: "🇫🇷 Français" },
+];
+const LANG_PROMPT: Record<string, string> = {
+  ru: "🌐 Выбери язык бота:",
+  en: "🌐 Choose the bot language:",
+  uk: "🌐 Обери мову бота:",
+  fr: "🌐 Choisis la langue du bot :",
+};
+const LANG_DONE: Record<string, string> = {
+  ru: "✅ Готово! Бот теперь говорит по-русски.",
+  en: "✅ Done! The bot now speaks English.",
+  uk: "✅ Готово! Бот тепер розмовляє українською.",
+  fr: "✅ C'est fait ! Le bot parle maintenant français.",
+};
+function langKeyboard() {
+  return { inline_keyboard: LANG_CHOICES.map((c) => [{ text: c.label, callback_data: `lang:${c.code}` }]) };
 }
 
 let botUsernameCache: string | null = null;
@@ -284,6 +315,27 @@ export async function POST(req: NextRequest) {
   if (!commandsSynced) { commandsSynced = true; syncBotCommands().catch(() => {}); }
 
   const update = await req.json().catch(() => null);
+
+  // Нажатие inline-кнопки (выбор языка).
+  const cq = update?.callback_query;
+  if (cq) {
+    const data: string = cq.data || "";
+    const cqChat: number | undefined = cq.message?.chat?.id;
+    if (data.startsWith("lang:") && cqChat) {
+      const lng = data.slice(5);
+      if (["ru", "en", "uk", "fr"].includes(lng)) {
+        try { await supabaseAdmin().from("users").update({ lang: lng }).eq("chat_id", cqChat); } catch {}
+        await answerCallback(cq.id, LANG_DONE[lng]);
+        await sendMessage(cqChat, LANG_DONE[lng], { reply_markup: mainKeyboard(lng) });
+      } else {
+        await answerCallback(cq.id);
+      }
+    } else {
+      await answerCallback(cq.id);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   const msg = update?.message;
   if (!msg) return NextResponse.json({ ok: true });
 
@@ -313,7 +365,7 @@ export async function POST(req: NextRequest) {
   markPushResponded(user.id).catch(() => {});
 
   if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     if (user.isNew) {
       const seq = WELCOME[lang] || WELCOME.ru;
       for (let i = 0; i < seq.length; i++) {
@@ -328,7 +380,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (msg.text === "/demo") {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     const seq = WELCOME[lang] || WELCOME.ru;
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
@@ -339,13 +391,19 @@ export async function POST(req: NextRequest) {
   }
 
   if (msg.text === "/invite") {
-    await sendInvite(chatId, pickLang(msg.from?.language_code), origin, user.id);
+    await sendInvite(chatId, langOf(user, msg), origin, user.id);
     return NextResponse.json({ ok: true });
   }
 
   if (msg.text === "/link") {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}`, openBtn(lang, link));
+    return NextResponse.json({ ok: true });
+  }
+
+  if (typeof msg.text === "string" && /^\/lang(uage)?\b/i.test(msg.text.trim())) {
+    const lang = langOf(user, msg);
+    await sendMessage(chatId, LANG_PROMPT[lang] || LANG_PROMPT.ru, { reply_markup: langKeyboard() });
     return NextResponse.json({ ok: true });
   }
 
@@ -357,7 +415,7 @@ export async function POST(req: NextRequest) {
 
   // 💬 Режим беседы с AI-другом: /chat включает, /stop выключает, /newchat — с чистого листа.
   if (typeof msg.text === "string" && /^\/chat\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await setChatMode(user.id, true);
     const greet =
       lang === "en"
@@ -368,7 +426,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (typeof msg.text === "string" && /^\/stop\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await setChatMode(user.id, false);
     await sendMessage(
       chatId,
@@ -380,7 +438,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (typeof msg.text === "string" && /^\/newchat\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await clearHistory(user.id);
     await setChatMode(user.id, true);
     await sendMessage(
@@ -412,7 +470,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
     }
     await sendChatAction(chatId, "typing");
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     const text = (await personalMorning(user.id, user.name ?? null, lang)) || morningMessage(lang, Math.floor(Date.now() / 86400000));
     await sendMessage(chatId, text, { reply_markup: mainKeyboard(lang) });
     // Сохраняем в историю — чтобы на «а что за…» ассистент связал с этим сообщением.
@@ -422,14 +480,14 @@ export async function POST(req: NextRequest) {
 
   // Помощь: команда /help|/guide (помощь живёт в меню команд бота).
   if (typeof msg.text === "string" && /^\/(help|guide|помощь|допомога|aide)\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await sendMessage(chatId, (HELP[lang] || HELP.ru)(origin));
     return NextResponse.json({ ok: true });
   }
 
   // Финансовый разбор: команда /money|/finance|/деньги|/финансы.
   if (typeof msg.text === "string" && /^\/(money|finance|деньги|финансы)\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     await sendChatAction(chatId, "typing");
     try {
       const report = await financeReview(user.id, lang);
@@ -443,7 +501,7 @@ export async function POST(req: NextRequest) {
 
   // Быстрая запись траты/дохода: /spend|/расход и /income|/доход.
   if (typeof msg.text === "string" && /^\/(spend|income|расход|доход)\b/i.test(msg.text.trim())) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     const kind = /^\/(income|доход)\b/i.test(msg.text.trim()) ? "income" : "expense";
     const rest = msg.text.replace(/^\/(spend|income|расход|доход)\s*/i, "");
     if (!rest.trim()) {
@@ -494,7 +552,7 @@ export async function POST(req: NextRequest) {
   // Нажатия кнопок постоянной клавиатуры.
   const ba = buttonAction(msg.text);
   if (ba) {
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     if (ba === "tasks") {
       const tasks = await getOpenTasks(user.id, 100);
       const T = TASKS_MSG[lang] || TASKS_MSG.ru;
@@ -542,7 +600,7 @@ export async function POST(req: NextRequest) {
   try {
     // 📸 Фото/документ → «Визуальная память» (AI понимает смысл и извлекает данные)
     if (msg.photo && Array.isArray(msg.photo) && msg.photo.length) {
-      const lang = pickLang(msg.from?.language_code);
+      const lang = langOf(user, msg);
       const L = MEM_MSG[lang] || MEM_MSG.ru;
       await sendMessage(chatId, L.recognizing);
       try {
@@ -564,7 +622,7 @@ export async function POST(req: NextRequest) {
 
     // 📄 Документ/файл (PDF, скан как файл) → «Визуальная память» с распознаванием содержимого.
     if (msg.document && msg.document.file_id) {
-      const lang = pickLang(msg.from?.language_code);
+      const lang = langOf(user, msg);
       const L = MEM_MSG[lang] || MEM_MSG.ru;
       const doc = msg.document;
       const mime = (doc.mime_type || "").toLowerCase();
@@ -624,7 +682,7 @@ export async function POST(req: NextRequest) {
     const igUrl = extractInstagramUrl(text);
     const yt = extractYoutubeUrl(text);
     if (igUrl || yt) {
-      const lang = pickLang(msg.from?.language_code);
+      const lang = langOf(user, msg);
       const L = IG_MSG[lang] || IG_MSG.ru;
       await sendMessage(chatId, L.working);
       try {
@@ -671,7 +729,7 @@ export async function POST(req: NextRequest) {
     if (!forceSave && isCorrection(text)) {
       const amended = await amendLastEntry(user.id, text);
       if (amended) {
-        const lang = pickLang(msg.from?.language_code);
+        const lang = langOf(user, msg);
         const L = CONFIRM[lang] || CONFIRM.ru;
         const streak = await getStreak(user.id);
         const body = `${FIXED[lang] || FIXED.ru}\n\n${formatConfirm(amended.analysis, streak, lang)}`;
@@ -703,7 +761,7 @@ export async function POST(req: NextRequest) {
       source: isVoice ? "telegram_voice" : "telegram_text",
       analysis,
     });
-    const lang = pickLang(msg.from?.language_code);
+    const lang = langOf(user, msg);
     const streak = await getStreak(user.id);
     const count = await getEntryCount(user.id);
     const L = CONFIRM[lang] || CONFIRM.ru;
