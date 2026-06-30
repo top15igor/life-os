@@ -53,6 +53,11 @@ export async function GET(req: NextRequest) {
     // Migrations 2026-06-30
     users_plan: await columnExists("users", "plan"),
     insights_category: await columnExists("insights", "category"),
+    users_google_refresh_token: await columnExists("users", "google_refresh_token"),
+    reminders: await tableExists("reminders"),
+    calendar_links: await tableExists("calendar_links"),
+    reminders_gcal_calendar_id: await columnExists("reminders", "gcal_calendar_id"),
+    calendar_links_calendar_id: await columnExists("calendar_links", "calendar_id"),
   };
   return NextResponse.json({ ok: true, checks });
 }
