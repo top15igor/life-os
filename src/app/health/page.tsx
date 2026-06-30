@@ -113,8 +113,11 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   let healthToken = "";
   let fbConnected = false;
   if (tab === "health") {
-    const { data: u } = await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle();
-    healthToken = (u as any)?.token || "";
+    // Ключ Apple Health = session_secret (стабильный, не ротируется при входе). Фолбэк на token до миграции.
+    let u: any = null;
+    try { u = (await supabaseAdmin().from("users").select("session_secret, token").eq("id", user.id).maybeSingle()).data; }
+    catch { u = (await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle()).data; }
+    healthToken = u?.session_secret || u?.token || "";
     fbConnected = await isGoogleHealthConnected(user.id);
   }
 

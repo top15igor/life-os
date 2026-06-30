@@ -1,4 +1,4 @@
-import { headers, cookies } from "next/headers";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { CopyLink } from "@/components/ProfileActions";
@@ -30,16 +30,18 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const hdrs = await headers();
   const host = hdrs.get("host") || "mylifebookai.vercel.app";
   const proto = hdrs.get("x-forwarded-proto") || "https";
-  const token = (await cookies()).get("lifeos_token")?.value || "";
-  const link = `${proto}://${host}/u/${token}`;
   const baseUrl = `${proto}://${host}`;
   const handle = await getHandle(user.id, user.name);
 
+  // Ссылка входа = текущий ОДНОРАЗОВЫЙ код (users.token), а не cookie (там теперь session_secret).
   let email: string | null = null;
+  let loginToken = "";
   try {
-    const { data } = await supabaseAdmin().from("users").select("email").eq("id", user.id).maybeSingle();
+    const { data } = await supabaseAdmin().from("users").select("email, token").eq("id", user.id).maybeSingle();
     email = (data as any)?.email || null;
+    loginToken = (data as any)?.token || "";
   } catch { /* дефолт */ }
+  const link = `${proto}://${host}/u/${loginToken}`;
 
   return (
     <div className="shell">

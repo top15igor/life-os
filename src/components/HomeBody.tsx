@@ -15,7 +15,7 @@ import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PinPrompt from "@/components/PinPrompt";
 import EnterInBrowser from "@/components/EnterInBrowser";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 
 function pickLatest(entries: Entry[], key: string) {
   for (const e of entries) if (e[key] != null) return e[key];
@@ -66,9 +66,11 @@ export default async function HomeBody() {
   const kyivHour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Kyiv", hour: "2-digit", hour12: false }).format(new Date()));
   const daypart = kyivHour < 6 ? "night" : kyivHour < 12 ? "morning" : kyivHour < 18 ? "day" : "evening";
 
-  const tok = (await cookies()).get("lifeos_token")?.value || "";
+  // Ссылка входа = текущий ОДНОРАЗОВЫЙ код (users.token), а не cookie (там session_secret).
+  let loginTok = "";
+  try { loginTok = ((await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle()).data as any)?.token || ""; } catch {}
   const hdrs = await headers();
-  const personalLink = tok ? `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || ""}/u/${tok}` : "";
+  const personalLink = loginTok ? `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || ""}/u/${loginTok}` : "";
 
   // Контекст дня
   const nd = new Date();

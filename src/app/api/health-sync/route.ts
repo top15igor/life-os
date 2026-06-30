@@ -17,8 +17,15 @@ async function userByToken(req: NextRequest) {
   const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   const token = bearer || req.nextUrl.searchParams.get("token")?.trim();
   if (!token) return null;
-  const { data } = await supabaseAdmin().from("users").select("id").eq("token", token).maybeSingle();
-  return (data as { id: string } | null) || null;
+  const db = supabaseAdmin();
+  // Ключ Apple Health — это session_secret (стабильный, НЕ ротируется при входе).
+  // Старые шорткаты держат значение, которое после миграции равно session_secret. Фолбэк на token.
+  try {
+    const { data } = await db.from("users").select("id").eq("session_secret", token).maybeSingle();
+    if (data) return data as { id: string };
+  } catch {}
+  const { data: legacy } = await db.from("users").select("id").eq("token", token).maybeSingle();
+  return (legacy as { id: string } | null) || null;
 }
 
 function todayISO() {

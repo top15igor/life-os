@@ -59,9 +59,18 @@ export async function GET(req: NextRequest) {
     // Режим привязки: присоединяем Google к уже залогиненному аккаунту.
     if (req.cookies.get("lifeos_oauth_link")?.value === "1") {
       const token = req.cookies.get("lifeos_token")?.value;
-      const { data: cur } = token
-        ? await supabaseAdmin().from("users").select("id").eq("token", token).maybeSingle()
-        : { data: null };
+      // cookie хранит session_secret (новая схема); фолбэк на token (старые сессии/до миграции).
+      let cur: { id: string } | null = null;
+      if (token) {
+        try {
+          const r = await supabaseAdmin().from("users").select("id").eq("session_secret", token).maybeSingle();
+          cur = (r.data as any) || null;
+        } catch {}
+        if (!cur) {
+          const r2 = await supabaseAdmin().from("users").select("id").eq("token", token).maybeSingle();
+          cur = (r2.data as any) || null;
+        }
+      }
       const dest = !cur
         ? "/login" // сессия истекла — обычный вход
         : (await attachLoginToUser((cur as any).id, email)).ok
