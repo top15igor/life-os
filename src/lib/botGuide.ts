@@ -138,6 +138,15 @@ const RU: BotDoc = {
       ],
     },
     {
+      icon: "ti-bulb",
+      title: "Джарвис замечает (антиципация)",
+      lines: [
+        "Иногда бот сам, без твоей просьбы, мягко подмечает закономерности в твоей жизни и предлагает действие — как внимательный друг.",
+        "Например: «давно не упоминал зал — сходим сегодня?», «ты обещал перезвонить Артуру, не забыл?», «по воскресеньям вечером у тебя чаще спад — запланируй что-то приятное».",
+        "Это бывает редко (примерно раз в неделю) и только когда есть реально полезный повод — никакого спама. Сообщение помечено значком ✨.",
+      ],
+    },
+    {
       icon: "ti-shield-lock",
       title: "Приватность",
       lines: [
@@ -271,6 +280,15 @@ const EN: BotDoc = {
         "The bot gently nudges you to journal: a warm morning message and an evening reminder (no spam — if you already wrote today, it won't bug you).",
         "Turn notifications off in Profile on the site (“Telegram notifications” toggle).",
         "Bot language — /lang. The choice is remembered and won't reset.",
+      ],
+    },
+    {
+      icon: "ti-bulb",
+      title: "Jarvis notices (anticipation)",
+      lines: [
+        "Sometimes the bot, without being asked, gently spots patterns in your life and suggests an action — like an attentive friend.",
+        "For example: “haven't mentioned the gym in a while — go today?”, “you promised to call Arthur back, remember?”, “Sunday evenings tend to dip for you — plan something nice”.",
+        "It's rare (about once a week) and only when there's a genuinely useful reason — no spam. Such messages are marked with ✨.",
       ],
     },
     {

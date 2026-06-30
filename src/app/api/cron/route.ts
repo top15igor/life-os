@@ -7,6 +7,7 @@ import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
 import { bookPromptMessage } from "@/lib/bookPrompts";
 import { personalEvening } from "@/lib/eveningPersonal";
+import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
@@ -114,6 +115,23 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
 export async function GET(req: NextRequest) {
   // Безопасный самотест доставки: /api/cron?test=<TELEGRAM_WEBHOOK_SECRET>
   // Шлёт ОДИН тестовый пуш владельцу и выходит (без массовой рассылки).
+  // Самотест антиципации: считает подсказку для владельца и шлёт её (или сообщает,
+  // что сильного сигнала нет). Только по ключу. ?anticipate=<secret>&force=1 минует кэш.
+  const ant = req.nextUrl.searchParams.get("anticipate");
+  if (ant !== null) {
+    if (ant !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id, lang").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u) return NextResponse.json({ ok: false, error: "no_user" });
+    if (req.nextUrl.searchParams.get("force") === "1") {
+      try { await db.from("anticipations").delete().eq("user_id", (u as any).id); } catch {}
+    }
+    const nudge = await getAnticipation((u as any).id, ((u as any).lang as any) || "ru");
+    if (nudge && chat) await sendMessage(Number(chat), `✨ ${nudge}`);
+    return NextResponse.json({ ok: true, anticipation: nudge || null });
+  }
+
   const test = req.nextUrl.searchParams.get("test");
   if (test !== null) {
     if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -232,6 +250,19 @@ export async function GET(req: NextRequest) {
       // даём тёплый «вопрос для книги» — приглашение дополнить главу, без нудёжа.
       // На воскресенье не дублируем (там AI-обзор недели).
       if (wroteToday) {
+        // Антиципация «Джарвис заметил…»: ~1×/неделю активным, и только если AI
+        // нашёл сильный сигнал (иначе молчим). Имеет приоритет над «вопросом для книги».
+        if (ev.enabled && doy % 7 === 2 && !isWeeklyDay) {
+          try {
+            const nudge = await getAnticipation(u.id, lang);
+            if (nudge) {
+              await sendMessage(u.chat_id, `✨ ${nudge}`);
+              logPush(u.id, "evening").catch(() => {});
+              (stats as any).anticipations = ((stats as any).anticipations || 0) + 1;
+              continue;
+            }
+          } catch (e) { console.error("anticipation active", u.id, e); }
+        }
         if (ev.enabled && isBookQuestionDay && !isWeeklyDay) {
           try {
             const q = await personalEvening(u.id, lang, prefs);
