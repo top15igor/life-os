@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { getGoodDeeds, getAllPromises, getTraceWeek } from "@/lib/queries";
+import { isCalendarConnected, getCalendarLinkMap } from "@/lib/googleCalendar";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,10 @@ export default async function TracePage() {
     const { count } = await supabaseAdmin().from("gratitude").select("*", { count: "exact", head: true }).eq("user_id", user.id);
     gratitudeCount = count || 0;
   } catch {}
+  const [calConnected, calLinks] = await Promise.all([
+    isCalendarConnected(user.id),
+    getCalendarLinkMap(user.id, ["promise"]),
+  ]);
 
   return (
     <div className="shell">
@@ -41,7 +46,7 @@ export default async function TracePage() {
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{s.title}</h1>
         </div>
         <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 18 }}>{s.sub}</p>
-        <TraceView locale={locale} deeds={deeds} promises={promises} gratitudeCount={gratitudeCount} week={week} />
+        <TraceView locale={locale} deeds={deeds} promises={promises} gratitudeCount={gratitudeCount} week={week} calConnected={calConnected} calLinks={calLinks} />
       </main>
     </div>
   );

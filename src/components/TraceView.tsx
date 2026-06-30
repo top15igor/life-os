@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import AddToCalendar from "./AddToCalendar";
 
 type Deed = { id: string; text: string; kind?: string; person?: string; created_at: string };
 type Prom = { id: string; text: string; person?: string; status: string; created_at: string };
@@ -26,7 +27,7 @@ const S: Record<string, any> = {
   fr: { tabs: ["Aperçu", "Bonnes actions", "Promesses"], warm: "Tu laisses une belle empreinte.", warmEmpty: "Ton empreinte ne fait que commencer.", sub: "Ce qui compte, ce n'est pas le nombre, mais les histoires qui continuent après.", weekLabel: "Cette semaine", deedsW: "bonnes actions", peopleW: "personnes aidées", keptW: "promesses tenues", grat: (n: number) => `🙏 Gratitudes enregistrées : ${n}`, attention: "À suivre", chronicle: "Chronique de l'empreinte", openP: "Promesses ouvertes", doneP: "Promesses tenues", deedsEmpty: "Les histoires de ce qui s'est amélioré grâce à toi apparaîtront ici. Dis qui tu as aidé.", openEmpty: "Aucune promesse ouverte.", doneStr: "Fait", keptStr: "Fait ✓" },
 };
 
-export default function TraceView({ locale, deeds, promises, gratitudeCount, week }: { locale: string; deeds: Deed[]; promises: Prom[]; gratitudeCount: number; week: Week }) {
+export default function TraceView({ locale, deeds, promises, gratitudeCount, week, calConnected = false, calLinks = {} }: { locale: string; deeds: Deed[]; promises: Prom[]; gratitudeCount: number; week: Week; calConnected?: boolean; calLinks?: Record<string, string> }) {
   const s = S[locale] || S.ru;
   const labels = KIND_LABEL[locale] || KIND_LABEL.ru;
   const [tab, setTab] = useState(0);
@@ -79,11 +80,14 @@ export default function TraceView({ locale, deeds, promises, gratitudeCount, wee
           <div style={{ fontSize: 14.5, lineHeight: 1.4, textDecoration: isDone ? "line-through" : "none" }}>{p.text}</div>
           {p.person && <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>{p.person}</div>}
         </div>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
           {isDone ? (
             <span style={{ fontSize: 12, color: "var(--positive)", whiteSpace: "nowrap" }}>{s.keptStr}</span>
           ) : (
-            <button onClick={() => promDone(p.id)} style={{ fontSize: 12.5, padding: "6px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", cursor: "pointer", whiteSpace: "nowrap" }}>{s.doneStr}</button>
+            <>
+              <AddToCalendar kind="promise" refId={p.id} title={p.text} locale={locale} connected={calConnected} link={`promise:${p.id}` in calLinks ? calLinks[`promise:${p.id}`] : undefined} />
+              <button onClick={() => promDone(p.id)} style={{ fontSize: 12.5, padding: "6px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", cursor: "pointer", whiteSpace: "nowrap" }}>{s.doneStr}</button>
+            </>
           )}
           <button onClick={() => delProm(p.id)} aria-label="delete" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: 2 }}><i className="ti ti-x" style={{ fontSize: 16 }} /></button>
         </span>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import AddToCalendar from "./AddToCalendar";
 
 type Task = { id: string; text: string; done: boolean; entry_id: string | null };
 
@@ -36,7 +37,17 @@ const STR: Record<string, any> = {
   },
 };
 
-export default function TasksList({ tasks, locale }: { tasks: Task[]; locale: string }) {
+export default function TasksList({
+  tasks,
+  locale,
+  calConnected = false,
+  calLinks = {},
+}: {
+  tasks: Task[];
+  locale: string;
+  calConnected?: boolean;
+  calLinks?: Record<string, string>;
+}) {
   const s = STR[locale] || STR.ru;
   const [items, setItems] = useState<Task[]>(tasks);
 
@@ -79,6 +90,9 @@ export default function TasksList({ tasks, locale }: { tasks: Task[]; locale: st
         style={{ fontSize: 20, color: t.done ? "var(--positive)" : "var(--text-3)", cursor: "pointer", flexShrink: 0 }}
       />
       <span style={{ flex: 1, fontSize: 14, color: t.done ? "var(--text-3)" : "var(--text)", textDecoration: t.done ? "line-through" : "none" }}>{t.text}</span>
+      {!t.done && (
+        <AddToCalendar kind="task" refId={t.id} title={t.text} locale={locale} connected={calConnected} link={`task:${t.id}` in calLinks ? calLinks[`task:${t.id}`] : undefined} />
+      )}
       {t.entry_id && (
         <Link href={`/entry/${t.entry_id}`} title={s.source} style={{ color: "var(--text-3)", flexShrink: 0 }}>
           <i className="ti ti-arrow-up-right" style={{ fontSize: 16 }} />

@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Напоминания и синхронизация с Google Календарём", d: "Новый раздел «Напоминания». Поставь напоминание (что и когда) — и подключив Google Календарь, ты получишь уведомление на телефон в нужное время, как от обычного события. А ещё кнопка «В календарь» появилась у задач (раздел «Цели и задачи») и у открытых обещаний (раздел «Мой след») — выбираешь дату и время, и дело попадает в твой Google Календарь с напоминанием, чтобы не забыть выполнить. Подключение в один тап через твой Google-аккаунт, отключить можно там же. Бесплатно.", tag: "new" },
       { t: "Бот выполняет действия за тебя", d: "Теперь боту можно не только рассказывать про день, но и давать команды обычными словами — он сам всё сделает. Например: «добавь цель пробежать марафон», «отметь задачу про дерматолога выполненной», «запиши вес 78», «добавь мечту съездить в Японию», «удали последнюю запись». Бот поймёт и выполнит, а в ответ даст кнопку «Открыть» нужный раздел. Просто описываешь день — это по-прежнему сохраняется как запись; команды бот узнаёт по повелительному тону («добавь…», «отметь…», «удали…»).", tag: "new" },
       { t: "Книги — твой читательский дневник", d: "Новый раздел «Книги»: полки «Хочу прочитать», «Читаю» и «Прочитал». Добавляй книги поиском по названию (обложка, автор и описание подтянутся сами), по фото обложки или штрих-кода (распознаёт AI), или импортом из Goodreads/StoryGraph. На каждую книгу — оценка, мини-ревью «зашла или нет», заметки и любимые цитаты. Есть цель года со статистикой, AI-советы «что почитать дальше» и публичная страница библиотеки, которой можно поделиться с друзьями. Бесплатно для всех.", tag: "new" },
       { t: "Запись можно добавить прямо в «Дневнике»", d: "Раньше новую запись можно было создать только на главной или через бота. Теперь поле для записи (текст или голос) появилось и вверху раздела «Дневник» — пиши или наговаривай прямо там, где смотришь свою ленту. Запись сразу появится в списке.", tag: "new" },
@@ -83,6 +84,32 @@ const E: Record<Locale, Extras> = {
       { t: "Новый дизайн «Осознанность»", d: "Голос-first главная с большим живым микрофоном. Включается тумблером вверху главной — можно сравнить с классическим.", tag: "new" },
     ],
     features: [
+      {
+        key: "botactions", icon: "ti-robot", color: "#6d5efc", title: "Бот действует за тебя",
+        short: "Дай боту команду обычными словами — он сам добавит цель, закроет задачу, запишет вес и не только.",
+        sections: [
+          { p: "Боту можно не только рассказывать про день, но и давать команды. Он понимает обычную просьбу и сам всё делает в нужном разделе, а в ответ присылает кнопку «Открыть»." },
+          { h: "Что умеет", examples: [
+            "«добавь цель пробежать марафон» → новая цель",
+            "«добавь задачу позвонить маме» → новая задача",
+            "«отметь задачу про дерматолога выполненной» → задача закрыта",
+            "«запиши вес 78» → в трекер веса",
+            "«добавь мечту съездить в Японию» → в Карту желаний",
+            "«мечта про Японию сбылась» → отмечена исполненной",
+            "«отметь доброе дело — помог соседу» → в «Мой след»",
+            "«удали последнюю запись» → запись удалена",
+          ] },
+          { h: "Как пользоваться", steps: [
+            "Просто напиши или наговори команду боту в Telegram.",
+            "Бот выполнит действие и пришлёт подтверждение с кнопкой «Открыть» нужный раздел.",
+          ] },
+          { h: "Подсказки", tips: [
+            "Команды бот узнаёт по повелительному тону: «добавь…», «отметь…», «удали…», «запиши вес…».",
+            "Если просто описываешь день («сегодня пробежал 5 км») — это сохранится как обычная запись, а не превратится в цель.",
+            "Работает и текстом, и голосом.",
+          ] },
+        ],
+      },
       {
         key: "finance", icon: "ti-wallet", color: "#10b981", title: "Деньги: доходы и расходы",
         short: "Простой и понятный учёт денег. Видно баланс месяца и на что уходят деньги.",
@@ -231,6 +258,16 @@ const E: Record<Locale, Extras> = {
           { h: "Поделиться", p: "Нажми «Поделиться библиотекой» — друзья откроют её по ссылке и увидят, что ты читаешь и советуешь, с оценками и ревью. Полка «Хочу прочитать» остаётся приватной." },
         ],
       },
+      {
+        key: "reminders", icon: "ti-bell", color: "#4F46E5", title: "Напоминания",
+        short: "Поставь напоминание — оно придёт уведомлением в Google Календарь.",
+        sections: [
+          { p: "Раздел «Напоминания» — чтобы не держать дела в голове. Подключи Google Календарь, и напоминания будут приходить уведомлением на телефон в нужное время, как обычные события." },
+          { h: "Как подключить календарь", steps: ["Открой раздел «Напоминания» в меню.", "Нажми «Подключить Google Календарь» и выбери свой Google-аккаунт.", "Разреши доступ к календарю — всё, теперь напоминания уходят туда сами. Отключить можно той же кнопкой."] },
+          { h: "Как пользоваться", steps: ["В «Напоминаниях»: напиши, что напомнить, выбери дату и время — «Добавить».", "В «Целях и задачах»: у задачи нажми «В календарь», выбери когда.", "В «Моём следе»: у открытого обещания нажми «В календарь», чтобы не забыть выполнить."] },
+          { h: "Полезно знать", tips: ["Напоминания хранятся и в LIFE OS, и в календаре — отметка «В календаре» показывает, что событие создано.", "Без подключённого календаря напоминание просто сохранится списком в LIFE OS (без уведомления).", "Это односторонняя синхронизация: LIFE OS добавляет события в твой Google Календарь, но не читает оттуда чужие."] },
+        ],
+      },
     ],
   },
 
@@ -249,6 +286,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Reminders & Google Calendar sync", d: "A new “Reminders” section. Set a reminder (what and when) and, once you connect Google Calendar, you'll get a notification on your phone at the right time — just like a normal event. There's also a “To calendar” button on tasks (“Goals & tasks”) and on open promises (“My Trace”) — pick a date and time and the item lands in your Google Calendar with a reminder, so you don't forget to do it. Connect in one tap via your Google account; disconnect there too. Free.", tag: "new" },
       { t: "Books — your reading log", d: "A new “Books” section: shelves for “Want to read”, “Reading” and “Read”. Add books by title search (cover, author and description are pulled in), by a photo of the cover or barcode (AI recognizes it), or by importing from Goodreads/StoryGraph. For each book — a rating, a quick “loved it or not” review, notes and favorite quotes. There's a yearly goal with stats, AI “what to read next” picks, and a public library page you can share with friends. Free for everyone.", tag: "new" },
       { t: "Wishlist — wishes by link", d: "A new “Wishlist” section. Paste a product link (on the site or send /wish to the bot) — AI pulls the photo, title and price. Tap “Share” and friends open your list by link and can secretly reserve a gift: you won't see what's taken (the surprise stays), and no two people buy the same thing. Free for everyone.", tag: "new" },
       { t: "Your name in the address — like Instagram", d: "You now have a personal address with your name: mylifebookai.vercel.app/i/igor (created automatically from your name). It's one smart page: when you're logged in you see your own «Today» feed there — that's your home; a friend who opens the link sees an invitation and starts their own diary (and it counts toward your reward). The site itself stays on the main address mylifebookai.vercel.app — that's where new people land, while you get sent straight to your feed /i/igor after signing in. Change the name in Profile → «Your link name» (you instantly see if it's free or taken). Inner sections (Money, Diary, etc.) keep short addresses — they're already «behind the login», only yours. Any old links you shared keep working.", tag: "improved" },
@@ -277,6 +315,32 @@ const E: Record<Locale, Extras> = {
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "botactions", icon: "ti-robot", color: "#6d5efc", title: "The bot acts for you",
+        short: "Give the bot a command in plain words — it adds a goal, closes a task, logs your weight and more.",
+        sections: [
+          { p: "You can not only tell the bot about your day but also give it commands. It understands a plain request and does it in the right section, then sends an “Open” button." },
+          { h: "What it can do", examples: [
+            "“add a goal to run a marathon” → new goal",
+            "“add a task to call mom” → new task",
+            "“mark the dermatologist task done” → task closed",
+            "“log weight 78” → into the weight tracker",
+            "“add a dream to visit Japan” → into the Dream Map",
+            "“the Japan dream came true” → marked done",
+            "“log a good deed — helped a neighbor” → into My Trace",
+            "“delete the last entry” → entry removed",
+          ] },
+          { h: "How to use it", steps: [
+            "Just type or speak a command to the bot in Telegram.",
+            "The bot performs the action and replies with a confirmation and an “Open” button for the right section.",
+          ] },
+          { h: "Tips", tips: [
+            "The bot recognizes commands by their imperative tone: “add…”, “mark…”, “delete…”, “log weight…”.",
+            "If you just describe your day (“ran 5 km today”) it's saved as a normal entry, not turned into a goal.",
+            "Works by text and by voice.",
+          ] },
+        ],
+      },
       {
         key: "finance", icon: "ti-wallet", color: "#10b981", title: "Money: income & expenses",
         short: "Simple, clear money tracking. See your monthly balance and where money goes.",
@@ -414,6 +478,16 @@ const E: Record<Locale, Extras> = {
           { h: "How to add a book", steps: ["By title search — cover, author and description are pulled in.", "By photo: the “By photo / ISBN” button (snap the cover or barcode) — AI recognizes the book. In the bot — send a photo captioned “book”.", "By import from Goodreads or StoryGraph: export your library there as CSV and tap “Import” — shelves, ratings and reviews transfer over."] },
           { h: "Handy extras", tips: ["Year goal: set how many books to read and track progress and stats.", "AI “What to read next” suggests books based on the ones you loved, and adds them in one tap.", "Collect favorite quotes right on the book's card."] },
           { h: "Share", p: "Tap “Share library” — friends open it by link and see what you read and recommend, with ratings and reviews. Your “Want to read” shelf stays private." },
+        ],
+      },
+      {
+        key: "reminders", icon: "ti-bell", color: "#4F46E5", title: "Reminders",
+        short: "Set a reminder — it pops up as a notification in Google Calendar.",
+        sections: [
+          { p: "The “Reminders” section keeps things off your mind. Connect Google Calendar and reminders arrive as a notification on your phone at the right time, just like normal events." },
+          { h: "How to connect the calendar", steps: ["Open the “Reminders” section in the menu.", "Tap “Connect Google Calendar” and pick your Google account.", "Allow calendar access — done, reminders now go there automatically. Disconnect with the same button."] },
+          { h: "How to use it", steps: ["In “Reminders”: type what to remind, pick a date and time — “Add”.", "In “Goals & tasks”: tap “To calendar” on a task and choose when.", "In “My Trace”: tap “To calendar” on an open promise so you don't forget to keep it."] },
+          { h: "Good to know", tips: ["Reminders are stored both in LIFE OS and the calendar — the “In calendar” mark shows the event was created.", "Without a connected calendar a reminder just stays as a list in LIFE OS (no notification).", "This is one-way sync: LIFE OS adds events to your Google Calendar but doesn't read others from it."] },
         ],
       },
     ],
