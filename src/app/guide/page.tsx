@@ -58,6 +58,7 @@ export default async function GuidePage() {
   const botLink = await getBotLink();
 
   const tocLabel = locale === "en" ? "Contents" : locale === "uk" ? "Зміст" : locale === "fr" ? "Sommaire" : "Содержание";
+  const aiHelpersLabel = locale === "en" ? "Three AI helpers" : locale === "uk" ? "Три AI-помічники" : locale === "fr" ? "Trois assistants IA" : "Три AI-помощника";
   const TOC: { id: string; label: string }[] = [
     { id: "whatsnew", label: ex.whatsNew },
     { id: "what", label: g.whatTitle },
@@ -100,6 +101,13 @@ export default async function GuidePage() {
                 <i className="ti ti-chevron-right toc-arrow" />
               </a>
             ))}
+            {/* Отдельная страница: сравнение трёх AI-помощников */}
+            <a href="/guide/ai-helpers">
+              <span className="toc-num">{String(TOC.length + 1).padStart(2, "0")}</span>
+              <span className="toc-t">{aiHelpersLabel}</span>
+              <span className="toc-dots" />
+              <i className="ti ti-chevron-right toc-arrow" />
+            </a>
           </div>
         </div>
 

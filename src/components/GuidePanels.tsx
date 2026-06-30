@@ -70,7 +70,9 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
   }, []);
 
   const FEAT_LIMIT = 6;
-  const shownFeatures = featuresOpen ? ex.features : ex.features.slice(0, FEAT_LIMIT);
+  // «Три AI-помощника» — наверх, чтобы карточка была видна без «Показать все».
+  const ordered = [...ex.features].sort((a, b) => (a.key === "ai-compare" ? -1 : b.key === "ai-compare" ? 1 : 0));
+  const shownFeatures = featuresOpen ? ordered : ordered.slice(0, FEAT_LIMIT);
 
   useEffect(() => {
     if (!active) return;
