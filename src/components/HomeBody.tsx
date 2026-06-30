@@ -14,6 +14,7 @@ import { getBookPrompt } from "@/lib/bookPrompts";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import PinPrompt from "@/components/PinPrompt";
+import BindEmailPrompt from "@/components/BindEmailPrompt";
 import EnterInBrowser from "@/components/EnterInBrowser";
 import { headers } from "next/headers";
 
@@ -51,11 +52,13 @@ export default async function HomeBody() {
   const memory = await getOnThisDay(user.id, date || new Date().toISOString().slice(0, 10));
 
   let hasPin = false;
+  let hasEmail = true; // по умолчанию не показываем подсказку (если не смогли определить)
   let preset = "minimal";
   let blocks: string[] | null = null;
   try {
-    const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks").eq("id", user.id).maybeSingle();
+    const { data: pinRow } = await supabaseAdmin().from("users").select("pin_hash, home_preset, home_blocks, email").eq("id", user.id).maybeSingle();
     hasPin = !!pinRow?.pin_hash;
+    hasEmail = !!(pinRow as any)?.email;
     if (pinRow?.home_preset) preset = pinRow.home_preset;
     if (pinRow?.home_blocks) {
       try { blocks = JSON.parse(pinRow.home_blocks); } catch { blocks = String(pinRow.home_blocks).split(",").map((x: string) => x.trim()).filter(Boolean); }
@@ -167,6 +170,7 @@ export default async function HomeBody() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <EnterInBrowser link={personalLink} locale={locale} />
+        <BindEmailPrompt hasEmail={hasEmail} locale={locale} />
         <PinPrompt hasPin={hasPin} locale={locale} />
         <HomeSwitch
           data={data}
