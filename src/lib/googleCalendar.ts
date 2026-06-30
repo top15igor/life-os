@@ -81,12 +81,24 @@ export async function setRefreshToken(userId: string, token: string | null): Pro
   }
 }
 
+export type Recurrence = "daily" | "weekly" | "monthly" | "yearly";
+
 export type CalEvent = {
   summary: string;
   description?: string;
   startISO: string; // ISO 8601 with offset, e.g. 2026-07-01T15:00:00+03:00
   durationMin?: number; // default 30
   remindMinutes?: number[]; // popup reminders before start; default [10, 0]
+  allDay?: boolean; // all-day event (uses dateStr)
+  dateStr?: string; // YYYY-MM-DD, required when allDay
+  recurrence?: Recurrence | null; // repeat rule (null = one-time)
+};
+
+const RRULE: Record<Recurrence, string> = {
+  daily: "RRULE:FREQ=DAILY",
+  weekly: "RRULE:FREQ=WEEKLY",
+  monthly: "RRULE:FREQ=MONTHLY",
+  yearly: "RRULE:FREQ=YEARLY",
 };
 
 export type CalResult = { ok: true; id: string; link: string } | { ok: false; error: string };
@@ -127,17 +139,30 @@ export async function createCalendarEvent(userId: string, ev: CalEvent, calendar
   const end = new Date(start.getTime() + (ev.durationMin ?? 30) * 60000);
   const mins = ev.remindMinutes ?? [10, 0];
 
-  const body = {
+  // All-day uses date (no time); end.date is exclusive (next day).
+  let startField: any, endField: any;
+  if (ev.allDay && ev.dateStr) {
+    const d2 = new Date(ev.dateStr + "T00:00:00Z");
+    d2.setUTCDate(d2.getUTCDate() + 1);
+    startField = { date: ev.dateStr };
+    endField = { date: d2.toISOString().slice(0, 10) };
+  } else {
+    startField = { dateTime: start.toISOString() };
+    endField = { dateTime: end.toISOString() };
+  }
+
+  const body: any = {
     summary: ev.summary.slice(0, 200),
     description: ev.description?.slice(0, 1000),
-    start: { dateTime: start.toISOString() },
-    end: { dateTime: end.toISOString() },
+    start: startField,
+    end: endField,
     reminders: {
       useDefault: false,
       overrides: mins.map((m) => ({ method: "popup", minutes: Math.max(0, m) })),
     },
     source: { title: "LIFE OS", url: "https://mylifebookai.vercel.app" },
   };
+  if (ev.recurrence && RRULE[ev.recurrence]) body.recurrence = [RRULE[ev.recurrence]];
 
   try {
     const r = await fetch(
