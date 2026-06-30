@@ -52,6 +52,16 @@ export async function resolveRefToId(raw?: string | null): Promise<string | null
   return null;
 }
 
+// Лучшая попытка сохранить настоящий Telegram-@username (из message.from.username).
+// Мягко: если колонки tg_username ещё нет — тихо игнорируем.
+export async function noteTgUsername(userId: string, username?: string | null): Promise<void> {
+  const u = (username || "").trim();
+  if (!u) return;
+  try {
+    await supabaseAdmin().from("users").update({ tg_username: u }).eq("id", userId);
+  } catch {}
+}
+
 // Находит пользователя по chat_id или создаёт нового (при первом сообщении).
 export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string): Promise<User> {
   const db = supabaseAdmin();

@@ -12,7 +12,7 @@ import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPubl
 import { addBookFromImage } from "@/lib/books";
 import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
-import { getOrCreateUser, getInviteCode } from "@/lib/users";
+import { getOrCreateUser, getInviteCode, noteTgUsername } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
@@ -380,6 +380,8 @@ export async function POST(req: NextRequest) {
     await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
     return NextResponse.json({ ok: true });
   }
+  // Сохраняем настоящий Telegram-@username — чтобы по нему можно было писать (/send @username).
+  await noteTgUsername(user.id, msg.from?.username);
 
   const link = `${origin}/u/${user.token}`;
 

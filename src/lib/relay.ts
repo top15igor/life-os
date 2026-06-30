@@ -98,7 +98,17 @@ export function relaySentMsg(lang: string, name: string) { return L(lang).sent(n
 export function relayToggleMsg(lang: string, nowOff: boolean) { return nowOff ? L(lang).off : L(lang).on; }
 export function nickHelp(lang: string) { return L(lang).nickHow; }
 
-type Contact = { id: string; name: string | null; chat_id: number | null; lang: string | null; relay_off?: boolean };
+type Contact = { id: string; name: string | null; chat_id: number | null; lang: string | null; relay_off?: boolean; tg_username?: string | null };
+
+// Поиск по настоящему Telegram-@username (users.tg_username). Мягко к отсутствию колонки.
+async function userByTgUsername(uname: string): Promise<Contact | null> {
+  try {
+    const { data } = await supabaseAdmin().from("users").select("id, name, chat_id, lang, relay_off, tg_username").ilike("tg_username", uname);
+    return (((data as any[]) || []).find((u) => u.chat_id) as Contact) || null;
+  } catch {
+    return null;
+  }
+}
 
 // Контакты пользователя в LIFE OS: кого он пригласил, кто пригласил его,
 // и с кем он уже переписывался через /send (в обе стороны). Только реальные юзеры бота.
@@ -128,14 +138,14 @@ async function getContacts(fromUserId: string): Promise<Contact[]> {
 // ещё не применена) — тогда повторяем запрос без неё, чтобы контакты всё равно нашлись.
 async function fetchUsers(ids: string[]): Promise<Contact[]> {
   const db = supabaseAdmin();
-  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off").in("id", ids);
+  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off, tg_username").in("id", ids);
   if (q.error) q = await db.from("users").select("id, name, chat_id, lang").in("id", ids);
   return (((q.data as any[]) || []).filter((u) => u.chat_id)) as Contact[];
 }
 
 async function fetchUser(id: string): Promise<Contact | null> {
   const db = supabaseAdmin();
-  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off").eq("id", id).maybeSingle();
+  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off, tg_username").eq("id", id).maybeSingle();
   if (q.error) q = await db.from("users").select("id, name, chat_id, lang").eq("id", id).maybeSingle();
   return (q.data as any) || null;
 }
@@ -197,7 +207,7 @@ async function enrichLines(contacts: Contact[], lang: string): Promise<string[]>
   };
   return Promise.all(
     contacts.map(async (c) => {
-      const h = await getHandle(c.id, c.name).catch(() => "?");
+      const h = c.tg_username || (await getHandle(c.id, c.name).catch(() => "?"));
       const n = cnt[c.id] || 0;
       // Команду оборачиваем в <code>: Telegram не превратит @имя в ссылку на чужой
       // аккаунт, а по тапу строка скопируется — останется дописать текст.
@@ -227,7 +237,10 @@ async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolv
     if (u?.chat_id) return { ok: true, user: u };
   }
 
-  if (/^[a-z0-9_-]{2,30}$/i.test(clean)) {
+  if (/^[a-z0-9_-]{2,32}$/i.test(clean)) {
+    // 1) настоящий Telegram-@username, 2) имя-ссылка LIFE OS (slug).
+    const byTg = await userByTgUsername(clean);
+    if (byTg) return { ok: true, user: byTg };
     const uid = await resolveHandle(clean.toLowerCase());
     if (uid) {
       const u = await fetchUser(uid);
@@ -257,7 +270,8 @@ async function deliver(from: { id: string; name: string | null }, rcpt: Contact,
   } catch {}
 
   const rl = L(rcpt.lang);
-  const fromHandle = await getHandle(from.id, from.name).catch(() => null);
+  const fromU = await fetchUser(from.id);
+  const fromHandle = fromU?.tg_username || (await getHandle(from.id, from.name).catch(() => null));
   let body = rl.incoming(from.name || "LIFE OS", message);
   if (fromHandle) body += rl.replyHint(fromHandle);
 
