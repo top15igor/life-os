@@ -59,8 +59,10 @@ export default async function GuidePage() {
 
   const tocLabel = locale === "en" ? "Contents" : locale === "uk" ? "Зміст" : locale === "fr" ? "Sommaire" : "Содержание";
   const aiHelpersLabel = locale === "en" ? "Three AI helpers" : locale === "uk" ? "Три AI-помічники" : locale === "fr" ? "Trois assistants IA" : "Три AI-помощника";
+  const botGuideLabel = locale === "en" ? "Telegram bot guide" : locale === "uk" ? "Інструкція по Telegram-боту" : locale === "fr" ? "Guide du bot Telegram" : "Инструкция по Telegram-боту";
   const TOC: { id: string; label: string; href?: string }[] = [
     { id: "whatsnew", label: ex.whatsNew },
+    { id: "bot-guide", label: botGuideLabel, href: "/guide/bot" },
     { id: "what", label: g.whatTitle },
     { id: "why", label: g.whyTitle },
     { id: "how", label: g.howTitle },
