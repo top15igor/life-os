@@ -135,15 +135,19 @@ export async function fetchProductMeta(url: string): Promise<ProductMeta> {
   }
   let source: string | null = null;
   try { source = new URL(url).hostname.replace(/^www\./, ""); } catch {}
+
+  let title = ogTag(html, "title") || titleTag(html);
+  let description = ogTag(html, "description") || metaProp(html, "description");
+  let imageUrl = ogTag(html, "image") || ogTag(html, "image:url") || metaProp(html, "twitter:image");
   const { price, currency } = priceFrom(html);
-  return {
-    title: ogTag(html, "title") || titleTag(html),
-    description: ogTag(html, "description") || metaProp(html, "description"),
-    imageUrl: ogTag(html, "image") || ogTag(html, "image:url") || metaProp(html, "twitter:image"),
-    price,
-    currency,
-    source,
-  };
+
+  // Магазин отдал заглушку антибота (Cloudflare и т.п.) вместо товара — не сохраняем
+  // мусор «Just a moment…», оставляем пусто, чтобы карточка взяла домен и можно было дописать руками.
+  const blocked = /just a moment|attention required|enable javascript|verify you are human|access denied|are you a robot|checking your browser/i.test(title || "") ||
+    /cf-browser-verification|challenge-platform|cf_chl_opt/i.test(html);
+  if (blocked) { title = null; description = null; imageUrl = null; }
+
+  return { title, description, imageUrl, price: blocked ? null : price, currency: blocked ? null : currency, source };
 }
 
 // ---------- CRUD (владелец) ----------

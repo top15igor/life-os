@@ -6,6 +6,7 @@ import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
+import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice } from "@/lib/wishlist";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
@@ -677,12 +678,17 @@ export async function POST(req: NextRequest) {
     // («Instagram мне недоступен…») вместо импорта. Как и фото, ссылки в обход чата.
     const igUrl = extractInstagramUrl(text);
     const yt = extractYoutubeUrl(text);
-    if (igUrl || yt) {
+    const ttUrl = extractTiktokUrl(text);
+    if (igUrl || yt || ttUrl) {
       const lang = langOf(user, msg);
       const L = IG_MSG[lang] || IG_MSG.ru;
       await sendMessage(chatId, L.working);
       try {
-        const r = igUrl ? await importInstagram(user.id, igUrl, lang) : await importYoutube(user.id, yt!.url, yt!.kind, lang);
+        const r = igUrl
+          ? await importInstagram(user.id, igUrl, lang)
+          : ttUrl
+            ? await importTiktok(user.id, ttUrl, lang)
+            : await importYoutube(user.id, yt!.url, yt!.kind, lang);
         if (r.ok === false) {
           await sendMessage(chatId, r.reason === "limited" ? L.limited : L.failed);
           return NextResponse.json({ ok: true });
