@@ -87,21 +87,14 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 .mobile-drawer-backdrop { display: none; }
 
 @media (max-width: 760px) {
-  /* Контент скроллится ВНУТРИ .main, а оболочка занимает ровно высоту экрана.
-     Так нижнее меню — обычный флекс-футер, и оно не «прыгает» вместе с
-     адресной строкой Safari при прокрутке (раньше было position:fixed → дёргалось). */
-  .shell { flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+  .shell { flex-direction: column; }
   .sidebar { display: none; }
-  .main {
-    order: 1; flex: 1; min-height: 0; max-width: none;
-    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-  }
+  .main { padding: 16px 16px calc(82px + env(safe-area-inset-bottom)); max-width: none; }
 
   .mobilenav {
-    order: 2; flex-shrink: 0; display: flex; z-index: 50;
+    display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
     background: var(--bg); border-top: 1px solid var(--border);
-    padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); justify-content: space-around;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); justify-content: space-around;
   }
   .mobilenav a, .mobilenav button {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
