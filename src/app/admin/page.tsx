@@ -11,7 +11,30 @@ export const dynamic = "force-dynamic";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
-const KIND_LABEL: Record<string, string> = { analyze: "Разбор записей", transcribe: "Голос (Whisper)", biographer: "Биограф", overview: "Аналитика / Зеркало", intent: "Классификатор", intelligence: "Связи записей", summarize: "Перегенерация" };
+// Каждый тип расхода — человеческим языком: что это и когда тратятся деньги.
+const KIND_INFO: Record<string, { label: string; desc: string }> = {
+  analyze: { label: "Разбор записей", desc: "AI читает каждую запись и раскладывает по категориям, тегам, настроению, задачам. Тратится на КАЖДУЮ запись." },
+  transcribe: { label: "Голос → текст (Whisper)", desc: "Расшифровка голосовых сообщений. Тратится на каждое голосовое." },
+  companion: { label: "AI-друг (беседа)", desc: "Живой чат с ботом и на сайте — каждый ответ друга, иногда с поиском в интернете." },
+  biographer: { label: "Биограф", desc: "Ответы на вопросы о твоей жизни (раздел «Биограф» и вопросы боту)." },
+  intelligence: { label: "Связи записей", desc: "AI ищет причины, последствия и связи записи с другими — на экране записи." },
+  overview: { label: "Аналитика / Зеркало", desc: "Ежедневный разбор всего архива для «Что заметил AI». Самый тяжёлый проход." },
+  saved: { label: "База знаний (ссылки)", desc: "Разбор постов Instagram/YouTube/TikTok, которые кидают боту." },
+  "finance-coach": { label: "Финансовый разбор", desc: "Советы и разбор в разделе «Деньги»." },
+  vision: { label: "Распознавание фото", desc: "AI понимает фото для «Визуальной памяти»." },
+  vision_doc: { label: "Распознавание документов", desc: "AI читает документы и PDF в «Память»." },
+  health_focus: { label: "Здоровье сейчас", desc: "Дневной AI-вывод о здоровье на вкладке «Здоровье»." },
+  morning: { label: "Утренний пуш", desc: "Тёплое утреннее сообщение в боте." },
+  evening: { label: "Вечерний пуш", desc: "Вечернее напоминание или вопрос для книги." },
+  publish: { label: "Публичная версия записи", desc: "AI готовит публичную версию, когда публикуешь запись." },
+  intent: { label: "Классификатор (старый)", desc: "Определял вопрос/запись. Заменён на «Роутер бота»." },
+  bot_route: { label: "Роутер бота", desc: "Определяет, что ты хочешь от бота: действие, вопрос или запись." },
+  book_section: { label: "Главы Книги жизни", desc: "AI пишет главы для «Книги жизни»." },
+  insights_autosort: { label: "Сортировка инсайтов", desc: "Кнопка «Разложить по категориям» в Инсайтах." },
+  knowledge_ask: { label: "Вопрос к базе знаний", desc: "Поиск-ответ по сохранённым материалам." },
+  assistant: { label: "Помощник-гид", desc: "AI-подсказки «куда нажать» в окне Помощник." },
+  summarize: { label: "Перегенерация резюме", desc: "Пересборка резюме записи после правки." },
+};
 
 const CAT_COLOR: Record<string, string> = {
   health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", relationship: "#f472b6", business: "#3b82f6",
@@ -234,14 +257,36 @@ export default async function AdminPage() {
                 <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
               </div>
               <div className="card" style={{ padding: "4px 14px" }}>
-                {d.usage.byKind.map((k: any, i: number) => (
-                  <div key={k.kind} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
-                    <span>{KIND_LABEL[k.kind] || k.kind}</span>
-                    <span style={{ color: "var(--text-3)" }}>${(k.cents / 100).toFixed(2)}</span>
-                  </div>
-                ))}
+                {d.usage.byKind.map((k: any, i: number) => {
+                  const info = KIND_INFO[k.kind];
+                  return (
+                    <div key={k.kind} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, fontSize: 13, padding: "10px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 500 }}>{info?.label || k.kind}</div>
+                        {info?.desc && <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2, lineHeight: 1.45 }}>{info.desc}</div>}
+                      </div>
+                      <span style={{ color: "var(--text-2)", fontWeight: 600, whiteSpace: "nowrap" }}>${(k.cents / 100).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
               </div>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 8 }}>Оценка по токенам моделей (голос — приблизительно).</div>
+              {/* Где пополнять баланс AI */}
+              <div className="card" style={{ marginTop: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)", fontSize: 13, lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 600, marginBottom: 5, display: "flex", alignItems: "center", gap: 7 }}>
+                  <i className="ti ti-credit-card" style={{ fontSize: 17, color: "var(--accent)" }} />Где пополнять баланс
+                </div>
+                <div style={{ color: "var(--text-2)" }}>
+                  Это не подписка пользователей, а себестоимость AI — списывается с кредитов в кабинетах поставщиков:
+                  <div style={{ marginTop: 7, display: "flex", flexDirection: "column", gap: 5 }}>
+                    <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontWeight: 500 }}>→ Claude (Anthropic): console.anthropic.com → Billing</a>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Основной расход: разбор записей, AI-друг, биограф, аналитика, связи, советы — всё, кроме голоса.</span>
+                    <a href="https://platform.openai.com/account/billing/overview" target="_blank" rel="noreferrer" style={{ color: "var(--accent)", fontWeight: 500, marginTop: 4 }}>→ OpenAI: platform.openai.com → Billing</a>
+                    <span style={{ color: "var(--text-3)", fontSize: 12 }}>Только «Голос → текст (Whisper)» — расшифровка голосовых.</span>
+                  </div>
+                  <div style={{ marginTop: 9, color: "var(--text-3)", fontSize: 12 }}>Совет: включи там авто-пополнение (auto-reload), чтобы AI не остановился при нуле баланса.</div>
+                </div>
+              </div>
             </>
           ) : (
             <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5, lineHeight: 1.6 }}>
