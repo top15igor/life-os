@@ -24,9 +24,9 @@ const RELAY: Record<string, any> = {
     replyHint: (h: string) => `\n\n↩️ Ответить: <code>/send @${esc(h)} твой текст</code>`,
     sent: (name: string) => `✅ Передал «${esc(name)}».`,
     notFound: "Не нашёл такого человека среди твоих контактов. Можно указать его @имя из LIFE OS (Профиль → имя-ссылка), и он должен пользоваться ботом.",
-    notFoundList: (q: string, list: string[]) => `Не нашёл «${esc(q)}» среди твоих контактов. Кому можно написать:\n${list.map((o) => "• " + o).join("\n")}\nИли укажи точное @имя из LIFE OS.`,
+    notFoundList: (q: string, list: string[]) => `Не нашёл «${esc(q)}». Кому можно написать — нажми команду (скопируется) и допиши сообщение:\n\n${list.join("\n")}`,
     noContacts: "У тебя пока нет контактов в боте, кому можно написать. Пригласи друга (кнопка «Пригласить друга») — или напиши по точному @имени из LIFE OS, если знаешь его. Важно: человек должен пользоваться этим ботом.",
-    ambiguous: (opts: string[]) => `Под это имя подходят несколько человек — уточни по @имени:\n${opts.map((o) => "• " + o).join("\n")}\nНапример: <code>/send @имя текст</code>`,
+    ambiguous: (opts: string[]) => `Несколько человек с таким именем — нажми команду нужного (скопируется) и допиши текст:\n\n${opts.join("\n")}`,
     self: "Это же ты сам 🙂",
     optedOut: "Этот пользователь отключил приём сообщений.",
     limit: `На сегодня лимит (${DAILY_LIMIT}) исчерпан — попробуй завтра.`,
@@ -40,9 +40,9 @@ const RELAY: Record<string, any> = {
     replyHint: (h: string) => `\n\n↩️ Reply: <code>/send @${esc(h)} your text</code>`,
     sent: (name: string) => `✅ Sent to “${esc(name)}”.`,
     notFound: "Couldn't find that person among your contacts. You can use their LIFE OS @name (Profile → link name), and they must use the bot.",
-    notFoundList: (q: string, list: string[]) => `Couldn't find “${esc(q)}” among your contacts. People you can message:\n${list.map((o) => "• " + o).join("\n")}\nOr use their exact LIFE OS @name.`,
+    notFoundList: (q: string, list: string[]) => `Couldn't find “${esc(q)}”. People you can message — tap a command (it copies) and add your text:\n\n${list.join("\n")}`,
     noContacts: "You have no contacts in the bot yet. Invite a friend (the “Invite a friend” button) — or use someone's exact LIFE OS @name if you know it. Note: they must use this bot.",
-    ambiguous: (opts: string[]) => `Several people match that name — pick by @name:\n${opts.map((o) => "• " + o).join("\n")}\nE.g.: <code>/send @name text</code>`,
+    ambiguous: (opts: string[]) => `Several people match that name — tap the right one's command (it copies) and add your text:\n\n${opts.join("\n")}`,
     self: "That's you 🙂",
     optedOut: "This user has turned off incoming messages.",
     limit: `You've hit today's limit (${DAILY_LIMIT}) — try tomorrow.`,
@@ -151,7 +151,9 @@ async function enrichLines(contacts: Contact[], lang: string): Promise<string[]>
     contacts.map(async (c) => {
       const h = await getHandle(c.id, c.name).catch(() => "?");
       const n = cnt[c.id] || 0;
-      return `@${h} — ${esc(c.name || "?")} · ${status(c.id)}${n ? " · " + A.entries(n) : ""}`;
+      // Команду оборачиваем в <code>: Telegram не превратит @имя в ссылку на чужой
+      // аккаунт, а по тапу строка скопируется — останется дописать текст.
+      return `<code>/send @${h}</code> — ${esc(c.name || "?")} · ${status(c.id)}${n ? " · " + A.entries(n) : ""}`;
     })
   );
 }
