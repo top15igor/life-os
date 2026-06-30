@@ -94,7 +94,10 @@ export async function GET(req: NextRequest) {
     const result = await findOrCreateGoogleUser(email, info?.name, ref);
     if (!result) return fail(req);
 
-    const res = NextResponse.redirect(new URL("/", req.url));
+    // Brand-new Google account → ask if they already kept a diary in Telegram,
+    // so they don't end up confused on an empty duplicate. Existing → straight in.
+    const dest = result.created ? "/just-joined" : "/";
+    const res = NextResponse.redirect(new URL(dest, req.url));
     setSessionCookie(res, result.token);
     res.cookies.delete("lifeos_oauth_state");
     res.cookies.delete("lifeos_oauth_ref");

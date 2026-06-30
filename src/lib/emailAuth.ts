@@ -98,7 +98,7 @@ export async function findOrCreateGoogleUser(
   rawEmail: string,
   name?: string,
   ref?: string | null
-): Promise<{ token: string } | null> {
+): Promise<{ token: string; created: boolean } | null> {
   const email = normalizeEmail(rawEmail);
   if (!validEmail(email)) return null;
 
@@ -109,7 +109,7 @@ export async function findOrCreateGoogleUser(
     if (name && !(existing as any).name) {
       await db.from("users").update({ name }).eq("email", email);
     }
-    return { token: (existing as any).token };
+    return { token: (existing as any).token, created: false };
   }
 
   const id = randomUUID();
@@ -127,11 +127,11 @@ export async function findOrCreateGoogleUser(
 
   if (error) {
     const { data: again } = await db.from("users").select("token").eq("email", email).maybeSingle();
-    if (again?.token) return { token: (again as any).token };
+    if (again?.token) return { token: (again as any).token, created: false };
     console.error("findOrCreateGoogleUser", error);
     return null;
   }
-  return { token };
+  return { token, created: true };
 }
 
 // ===== Привязка почты/Google к УЖЕ существующему аккаунту (связывание входов) =====
