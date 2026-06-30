@@ -37,13 +37,18 @@ export async function GET(req: NextRequest) {
     if ((st as any)?.base_currency) base = (st as any).base_currency;
   } catch {}
 
+  // day is a DATE column — filter by range, not LIKE (LIKE matches nothing on dates).
+  const [y, mo] = month.split("-").map(Number);
+  const start = `${month}-01`;
+  const end = mo >= 12 ? `${y + 1}-01-01` : `${y}-${String((mo || 1) + 1).padStart(2, "0")}-01`;
   let q: any = await db
     .from("finance_tx")
     .select("day, kind, amount, currency, category, subcategory, note")
     .eq("user_id", userId)
-    .like("day", `${month}%`)
+    .gte("day", start)
+    .lt("day", end)
     .order("amount", { ascending: false });
-  if (q.error) q = await db.from("finance_tx").select("day, kind, amount, currency, category, note").eq("user_id", userId).like("day", `${month}%`);
+  if (q.error) q = await db.from("finance_tx").select("day, kind, amount, currency, category, note").eq("user_id", userId).gte("day", start).lt("day", end);
   const txs = (q.data as any[]) || [];
 
   const byCur: Record<string, { inc: number; exp: number; n: number }> = {};
