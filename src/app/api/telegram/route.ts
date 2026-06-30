@@ -10,7 +10,7 @@ import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
-import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg } from "@/lib/relay";
+import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -450,6 +450,16 @@ export async function POST(req: NextRequest) {
     const lang = langOf(user, msg);
     const nowOff = await toggleRelay(user.id);
     await sendMessage(chatId, relayToggleMsg(lang, nowOff));
+    return NextResponse.json({ ok: true });
+  }
+
+  // 🏷 /nick @имя прозвище — задать своё имя для контакта (потом /send Прозвище текст).
+  if (typeof msg.text === "string" && /^\/nick\b/i.test(msg.text.trim())) {
+    const lang = langOf(user, msg);
+    const parsed = parseNick(msg.text.trim());
+    if (!parsed) { await sendMessage(chatId, nickHelp(lang)); return NextResponse.json({ ok: true }); }
+    const r = await setAlias(user.id, parsed.recipient, parsed.alias, lang);
+    await sendMessage(chatId, r.ok ? nickSavedMsg(lang, parsed.alias, r.toName!) : r.error!);
     return NextResponse.json({ ok: true });
   }
 

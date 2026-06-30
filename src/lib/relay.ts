@@ -8,7 +8,7 @@ const DAILY_LIMIT = 20;
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const norm = (s?: string | null) => (s || "").toLowerCase().replace(/ё/g, "е").trim();
 
-// Разбор «/send <получатель> текст». Получатель — @имя-ссылка ИЛИ просто имя контакта.
+// Разбор «/send <получатель> текст». Получатель — @имя-ссылка ИЛИ имя/прозвище контакта.
 export function parseSend(text?: string | null): { handle: string; message: string } | null {
   if (!text) return null;
   const m = text.match(/^\/send\s+@?(\S{1,40})\s+([\s\S]+)/i);
@@ -16,6 +16,14 @@ export function parseSend(text?: string | null): { handle: string; message: stri
   const message = m[2].trim();
   if (!message) return null;
   return { handle: m[1], message: message.slice(0, 2000) };
+}
+
+// Разбор «/nick <@имя|имя> <прозвище>». Прозвище — одно слово (без пробелов).
+export function parseNick(text?: string | null): { recipient: string; alias: string } | null {
+  if (!text) return null;
+  const m = text.match(/^\/nick\s+@?(\S{1,40})\s+(\S{1,40})\s*$/i);
+  if (!m) return null;
+  return { recipient: m[1], alias: m[2] };
 }
 
 const RELAY: Record<string, any> = {
@@ -34,6 +42,8 @@ const RELAY: Record<string, any> = {
     how: "Чтобы передать сообщение другому человеку:\n<code>/send имя текст</code> — по имени контакта,\n<code>/send @имя текст</code> — по @имени-ссылке.\nНапример: <code>/send Аня буду через 10 минут</code>\n\nЧтобы отключить приём сообщений у себя — /relay.",
     on: "🔔 Приём сообщений включён — твои контакты из LIFE OS могут писать тебе через /send.",
     off: "🔕 Приём сообщений выключен. Включить обратно — /relay.",
+    nickHow: "Чтобы называть человека своим именем (как у тебя в контактах):\n<code>/nick @имя прозвище</code>\nНапример: <code>/nick @evgeniya Котик</code>\nПотом просто пиши: <code>/send Котик привет</code>",
+    nickSaved: (alias: string, name: string) => `✅ Готово — теперь «${esc(alias)}» это <b>${esc(name)}</b>.\nПиши: <code>/send ${esc(alias)} текст</code>`,
   },
   en: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> sends you a message via LIFE OS:\n\n“${esc(msg)}”`,
@@ -50,6 +60,8 @@ const RELAY: Record<string, any> = {
     how: "To relay a message to someone:\n<code>/send name text</code> — by contact name,\n<code>/send @name text</code> — by @link-name.\nE.g.: <code>/send Anna running 10 min late</code>\n\nTo turn off your own inbox — /relay.",
     on: "🔔 Incoming messages on — your LIFE OS contacts can message you via /send.",
     off: "🔕 Incoming messages off. Turn back on — /relay.",
+    nickHow: "To call someone by your own name (like in your contacts):\n<code>/nick @name nickname</code>\nE.g.: <code>/nick @evgeniya Kitty</code>\nThen just write: <code>/send Kitty hi</code>",
+    nickSaved: (alias: string, name: string) => `✅ Done — “${esc(alias)}” is now <b>${esc(name)}</b>.\nWrite: <code>/send ${esc(alias)} text</code>`,
   },
 };
 
@@ -58,6 +70,7 @@ function L(lang?: string | null) { return RELAY[lang || "ru"] || (lang === "en" 
 export function relayHelp(lang: string) { return L(lang).how; }
 export function relaySentMsg(lang: string, name: string) { return L(lang).sent(name); }
 export function relayToggleMsg(lang: string, nowOff: boolean) { return nowOff ? L(lang).off : L(lang).on; }
+export function nickHelp(lang: string) { return L(lang).nickHow; }
 
 type Contact = { id: string; name: string | null; chat_id: number | null; lang: string | null; relay_off?: boolean };
 
@@ -158,9 +171,27 @@ async function enrichLines(contacts: Contact[], lang: string): Promise<string[]>
   );
 }
 
-// Найти получателя: сначала как @имя-ссылку, иначе как имя среди контактов.
+// Прозвище, заданное владельцем для контакта (relay_aliases) → id получателя.
+async function aliasTarget(ownerId: string, name: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin().from("relay_aliases").select("target_id, alias").eq("owner_id", ownerId);
+    const n = norm(name);
+    const hit = ((data as any[]) || []).find((a) => norm(a.alias) === n);
+    return hit ? (hit.target_id as string) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Найти получателя: сначала своё прозвище, затем @имя-ссылка, затем имя среди контактов.
 async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolved> {
   const clean = raw.replace(/^@+/, "").trim();
+
+  const aTarget = await aliasTarget(fromUserId, clean);
+  if (aTarget) {
+    const u = await fetchUser(aTarget);
+    if (u?.chat_id) return { ok: true, user: u };
+  }
 
   if (/^[a-z0-9_-]{2,30}$/i.test(clean)) {
     const uid = await resolveHandle(clean.toLowerCase());
@@ -216,6 +247,30 @@ export async function sendRelay(from: { id: string; name: string | null }, recip
   try { await db.from("message_relays").insert({ from_user: from.id, to_user: rcpt.id, body: message }); } catch {}
   return { ok: true, toName: rcpt.name || recipient };
 }
+
+// Задать своё прозвище для контакта: /nick @имя прозвище. Возвращает имя получателя.
+export async function setAlias(ownerId: string, recipient: string, alias: string, lang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
+  const SL = L(lang);
+  const res = await resolveRecipient(ownerId, recipient);
+  if (res.ok !== true) {
+    if (res.reason === "ambiguous") {
+      const lines = await enrichLines(res.matches, lang);
+      return { ok: false, error: SL.ambiguous(lines) };
+    }
+    const list = await enrichLines(res.contacts.slice(0, 12), lang);
+    return { ok: false, error: list.length ? SL.notFoundList(recipient, list) : SL.noContacts };
+  }
+  const db = supabaseAdmin();
+  try {
+    await db.from("relay_aliases").delete().eq("owner_id", ownerId).ilike("alias", alias);
+    await db.from("relay_aliases").insert({ owner_id: ownerId, target_id: res.user.id, alias: alias.slice(0, 40) });
+  } catch {
+    return { ok: false, error: SL.fail };
+  }
+  return { ok: true, toName: res.user.name || recipient };
+}
+
+export function nickSavedMsg(lang: string, alias: string, name: string) { return L(lang).nickSaved(alias, name); }
 
 // Переключить приём сообщений. Возвращает новое состояние relay_off (true = выключено).
 export async function toggleRelay(userId: string): Promise<boolean> {
