@@ -45,14 +45,16 @@ async function mintSecret(
           instructions,
           audio: {
             input: {
-              // Server VAD = natural barge-in. silence_duration_ms: how long a
-              // pause counts as "you finished" before the model replies.
+              // Higher threshold + near-field noise reduction keep a TV in the
+              // next room from triggering the model. silence_duration_ms: how
+              // long a pause counts as "you finished" before it replies.
               turn_detection: {
                 type: "server_vad",
-                threshold: 0.5,
+                threshold: 0.6,
                 prefix_padding_ms: 300,
-                silence_duration_ms: 500,
+                silence_duration_ms: 600,
               },
+              noise_reduction: { type: "near_field" },
               // Transcribe the user's speech so the app can show captions.
               transcription: { model: "whisper-1" },
             },
@@ -80,7 +82,8 @@ async function mintSecret(
       body: JSON.stringify({
         model: MODEL,
         voice: VOICE,
-        turn_detection: { type: "server_vad", threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 500 },
+        turn_detection: { type: "server_vad", threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 600 },
+        input_audio_noise_reduction: { type: "near_field" },
         input_audio_transcription: { model: "whisper-1" },
         instructions,
       }),

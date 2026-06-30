@@ -25,6 +25,8 @@ export default function VoiceLivePage() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stoppedAt = useRef<number | null>(null); // when the user finished speaking
   const asstId = useRef<string | null>(null); // current assistant line being built
+  const pendingUserId = useRef<string | null>(null); // user bubble awaiting its transcript
+  const counter = useRef(0);
 
   const cleanup = useCallback(() => {
     try { pcRef.current?.getSenders().forEach((s) => s.track?.stop()); } catch {}
@@ -41,9 +43,22 @@ export default function VoiceLivePage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines]);
 
-  const pushUser = (text: string) => {
-    if (!text.trim()) return;
-    setLines((ls) => [...ls, { id: `u-${ls.length}-${text.length}`, role: "user", text }]);
+  // Reserve a user bubble at the moment the user stops talking, so it keeps its
+  // chronological place even though the transcript text arrives later.
+  const reserveUser = () => {
+    const id = `u-${counter.current++}`;
+    pendingUserId.current = id;
+    setLines((ls) => [...ls, { id, role: "user", text: "…" }]);
+  };
+
+  const fillUser = (text: string) => {
+    const id = pendingUserId.current;
+    pendingUserId.current = null;
+    const txt = text.trim() || "(не расслышал)";
+    setLines((ls) => {
+      if (id && ls.some((l) => l.id === id)) return ls.map((l) => (l.id === id ? { ...l, text: txt } : l));
+      return [...ls, { id: `u-${counter.current++}`, role: "user", text: txt }];
+    });
   };
 
   const appendAssistant = (delta: string) => {
@@ -55,7 +70,7 @@ export default function VoiceLivePage() {
         copy[idx] = { ...copy[idx], text: copy[idx].text + delta };
         return copy;
       }
-      const newId = `a-${ls.length}`;
+      const newId = `a-${counter.current++}`;
       asstId.current = newId;
       return [...ls, { id: newId, role: "assistant", text: delta }];
     });
@@ -73,6 +88,7 @@ export default function VoiceLivePage() {
       setStatus("listening");
     } else if (t === "input_audio_buffer.speech_stopped") {
       stoppedAt.current = performance.now();
+      reserveUser(); // place the user's bubble now; fill text when it arrives
       setStatus("thinking");
     }
     // The model began a response.
@@ -80,13 +96,9 @@ export default function VoiceLivePage() {
       asstId.current = null;
       setStatus("thinking");
     }
-    // User's speech transcribed (caption).
-    else if (
-      t === "conversation.item.input_audio_transcription.completed" ||
-      t === "conversation.item.input_audio_transcription.delta"
-    ) {
-      const txt = ev.transcript || ev.delta || "";
-      if (t.endsWith(".completed")) pushUser(txt);
+    // User's speech transcribed (caption) — fills the reserved bubble in place.
+    else if (t === "conversation.item.input_audio_transcription.completed") {
+      fillUser(ev.transcript || "");
     }
     // Assistant's spoken words streaming in (caption) — names vary by API version.
     else if (
@@ -129,7 +141,15 @@ export default function VoiceLivePage() {
       pcRef.current = pc;
       pc.ontrack = (e) => { if (audioRef.current) audioRef.current.srcObject = e.streams[0]; };
 
-      const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Echo cancellation + noise suppression keep the TV in the next room (and
+      // the assistant's own voice) out of the mic.
+      const ms = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
       streamRef.current = ms;
       ms.getTracks().forEach((track) => pc.addTrack(track, ms));
 
