@@ -35,6 +35,8 @@ const SECTIONS: { key: string; icon: string; color: string; label?: string }[] =
   { key: "diary", icon: "ti-book", color: "var(--accent)" },
   { key: "wellness", icon: "ti-heartbeat", color: "#ef4444" },
   { key: "plans", icon: "ti-target", color: "#3b82f6" },
+  { key: "knowledge", icon: "ti-bookmarks", color: "#0ea5e9" },
+  { key: "memory", icon: "ti-camera", color: "#8b5cf6" },
   { key: "analytics", icon: "ti-sparkles", color: "var(--insight)" },
   { key: "lab", icon: "ti-flask-2", color: "var(--insight)" },
   { key: "people", icon: "ti-user-heart", color: "#ec4899" },
