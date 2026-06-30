@@ -6,20 +6,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // Loaded inside the native app's WebView at /voice-live?k=<session token>, but
 // also works standalone in a browser (cookie session).
 //
-// Flow: GET /api/realtime-token (mints an ephemeral key) -> WebRTC offer/answer
-// with OpenAI -> mic streams up, voice streams down. Barge-in (interruptions)
-// is handled by the model's server-side VAD configured in the session.
+// Shows live status (listening / thinking / speaking), running captions of both
+// sides, and a small latency readout so we can see how fast turns are handled.
 
-type Status = "idle" | "connecting" | "live" | "ended" | "error";
+type Status = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "ended" | "error";
+type Line = { id: string; role: "user" | "assistant"; text: string };
 
 export default function VoiceLivePage() {
   const [status, setStatus] = useState<Status>("idle");
-  const [speaking, setSpeaking] = useState(false); // assistant is talking
-  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [lines, setLines] = useState<Line[]>([]);
+  const [latency, setLatency] = useState<number | null>(null);
+  const [events, setEvents] = useState(0);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const stoppedAt = useRef<number | null>(null); // when the user finished speaking
+  const asstId = useRef<string | null>(null); // current assistant line being built
 
   const cleanup = useCallback(() => {
     try { pcRef.current?.getSenders().forEach((s) => s.track?.stop()); } catch {}
@@ -31,125 +36,183 @@ export default function VoiceLivePage() {
 
   useEffect(() => () => cleanup(), [cleanup]);
 
+  // Keep captions scrolled to the newest line.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [lines]);
+
+  const pushUser = (text: string) => {
+    if (!text.trim()) return;
+    setLines((ls) => [...ls, { id: `u-${ls.length}-${text.length}`, role: "user", text }]);
+  };
+
+  const appendAssistant = (delta: string) => {
+    setLines((ls) => {
+      const id = asstId.current;
+      const idx = id ? ls.findIndex((l) => l.id === id) : -1;
+      if (idx >= 0) {
+        const copy = ls.slice();
+        copy[idx] = { ...copy[idx], text: copy[idx].text + delta };
+        return copy;
+      }
+      const newId = `a-${ls.length}`;
+      asstId.current = newId;
+      return [...ls, { id: newId, role: "assistant", text: delta }];
+    });
+  };
+
+  const handleEvent = useCallback((ev: any) => {
+    setEvents((n) => n + 1);
+    const t = ev?.type as string;
+    if (!t) return;
+    // Visible in browser devtools — lets us trace the turn-by-turn event flow.
+    if (typeof console !== "undefined") console.log("[voice]", t);
+
+    // User started/stopped talking (server VAD).
+    if (t === "input_audio_buffer.speech_started") {
+      setStatus("listening");
+    } else if (t === "input_audio_buffer.speech_stopped") {
+      stoppedAt.current = performance.now();
+      setStatus("thinking");
+    }
+    // The model began a response.
+    else if (t === "response.created") {
+      asstId.current = null;
+      setStatus("thinking");
+    }
+    // User's speech transcribed (caption).
+    else if (
+      t === "conversation.item.input_audio_transcription.completed" ||
+      t === "conversation.item.input_audio_transcription.delta"
+    ) {
+      const txt = ev.transcript || ev.delta || "";
+      if (t.endsWith(".completed")) pushUser(txt);
+    }
+    // Assistant's spoken words streaming in (caption) — names vary by API version.
+    else if (
+      t === "response.output_audio_transcript.delta" ||
+      t === "response.audio_transcript.delta"
+    ) {
+      if (stoppedAt.current != null && latency == null) {
+        setLatency(Math.round(performance.now() - stoppedAt.current));
+      }
+      setStatus("speaking");
+      appendAssistant(ev.delta || "");
+    } else if (t === "response.audio.delta" || t === "output_audio_buffer.started") {
+      if (stoppedAt.current != null && latency == null) {
+        setLatency(Math.round(performance.now() - stoppedAt.current));
+      }
+      setStatus("speaking");
+    }
+    // Turn finished.
+    else if (t === "response.done" || t === "response.audio.done" || t === "output_audio_buffer.stopped") {
+      asstId.current = null;
+      stoppedAt.current = null;
+      setLatency(null);
+      setStatus((s) => (s === "ended" || s === "error" ? s : "listening"));
+    }
+  }, [latency]);
+
   const start = useCallback(async () => {
     setErrorMsg("");
+    setLines([]);
+    setLatency(null);
+    setEvents(0);
     setStatus("connecting");
     try {
-      // 1) Ephemeral token (+ which model to use).
       const k = new URLSearchParams(window.location.search).get("k");
       const tokRes = await fetch(`/api/realtime-token${k ? `?k=${encodeURIComponent(k)}` : ""}`);
       const tok = await tokRes.json();
-      if (!tok?.ok || !tok?.value) {
-        throw new Error(tok?.detail || tok?.error || "Не удалось получить доступ");
-      }
+      if (!tok?.ok || !tok?.value) throw new Error(tok?.detail || tok?.error || "Не удалось получить доступ");
 
-      // 2) WebRTC peer + remote audio playback.
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
+      pc.ontrack = (e) => { if (audioRef.current) audioRef.current.srcObject = e.streams[0]; };
 
-      const audioEl = audioRef.current!;
-      pc.ontrack = (e) => {
-        audioEl.srcObject = e.streams[0];
-      };
-
-      // 3) Microphone up.
       const ms = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = ms;
-      ms.getTracks().forEach((t) => pc.addTrack(t, ms));
+      ms.getTracks().forEach((track) => pc.addTrack(track, ms));
 
-      // 4) Events channel — drives the "speaking/listening" UI.
       const dc = pc.createDataChannel("oai-events");
-      dc.onmessage = (e) => {
-        try {
-          const ev = JSON.parse(e.data);
-          if (ev.type === "response.audio.delta" || ev.type === "output_audio_buffer.started") {
-            setSpeaking(true);
-          } else if (
-            ev.type === "response.done" ||
-            ev.type === "output_audio_buffer.stopped" ||
-            ev.type === "response.audio.done"
-          ) {
-            setSpeaking(false);
-          } else if (ev.type === "input_audio_buffer.speech_started") {
-            // user started talking — barge-in, model will stop on its own
-            setSpeaking(false);
-          }
-        } catch {}
-      };
+      dc.onmessage = (e) => { try { handleEvent(JSON.parse(e.data)); } catch {} };
 
-      // 5) Offer/answer SDP exchange with OpenAI.
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // GA WebRTC endpoint is /v1/realtime/calls; older API used /v1/realtime.
-      // Try GA first, fall back so we survive either API version.
-      const sdpHeaders = {
-        Authorization: `Bearer ${tok.value}`,
-        "Content-Type": "application/sdp",
-      };
+      const sdpHeaders = { Authorization: `Bearer ${tok.value}`, "Content-Type": "application/sdp" };
       const model = encodeURIComponent(tok.model);
       let sdpRes = await fetch(`https://api.openai.com/v1/realtime/calls?model=${model}`, {
-        method: "POST",
-        body: offer.sdp,
-        headers: sdpHeaders,
+        method: "POST", body: offer.sdp, headers: sdpHeaders,
       });
       if (sdpRes.status === 404) {
         sdpRes = await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {
-          method: "POST",
-          body: offer.sdp,
-          headers: sdpHeaders,
+          method: "POST", body: offer.sdp, headers: sdpHeaders,
         });
       }
       if (!sdpRes.ok) throw new Error("Не удалось соединиться с голосовым сервисом");
-      const answer = { type: "answer" as RTCSdpType, sdp: await sdpRes.text() };
-      await pc.setRemoteDescription(answer);
+      await pc.setRemoteDescription({ type: "answer" as RTCSdpType, sdp: await sdpRes.text() });
 
       pc.onconnectionstatechange = () => {
         const st = pc.connectionState;
-        if (st === "connected") setStatus("live");
-        else if (st === "failed" || st === "disconnected" || st === "closed") {
+        if (st === "connected") setStatus((s) => (s === "connecting" ? "listening" : s));
+        else if (st === "failed" || st === "disconnected" || st === "closed")
           setStatus((s) => (s === "ended" ? s : "error"));
-        }
       };
-      setStatus("live");
+      setStatus("listening");
     } catch (err: any) {
       setErrorMsg(String(err?.message || err) || "Ошибка");
       setStatus("error");
       cleanup();
     }
-  }, [cleanup]);
+  }, [cleanup, handleEvent]);
 
   const end = useCallback(() => {
     cleanup();
-    setSpeaking(false);
     setStatus("ended");
   }, [cleanup]);
 
+  const live = status === "listening" || status === "thinking" || status === "speaking";
   const label =
-    status === "connecting"
-      ? "Соединяюсь…"
-      : status === "live"
-      ? speaking
-        ? "Говорит…"
-        : "Слушаю тебя…"
-      : status === "ended"
-      ? "Разговор завершён"
-      : status === "error"
-      ? "Не получилось"
-      : "Готов поговорить";
+    status === "connecting" ? "Соединяюсь…"
+    : status === "listening" ? "Слушаю тебя…"
+    : status === "thinking" ? "Думаю…"
+    : status === "speaking" ? "Говорит…"
+    : status === "ended" ? "Разговор завершён"
+    : status === "error" ? "Не получилось"
+    : "Готов поговорить";
 
   return (
     <div style={S.wrap}>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} autoPlay />
 
-      <div style={{ ...S.orb, ...(status === "live" ? (speaking ? S.orbSpeak : S.orbListen) : {}) }} />
+      <div style={S.top}>
+        <div style={{ ...S.orb, ...(status === "speaking" ? S.orbSpeak : live ? S.orbListen : {}) }}>
+          {status === "thinking" && <div style={S.spinner} />}
+        </div>
+        <div style={S.label}>{label}</div>
+        {live && (
+          <div style={S.meta}>
+            {latency != null ? `ответ за ${latency} мс · ` : ""}событий: {events}
+          </div>
+        )}
+        {status === "error" && errorMsg ? <div style={S.err}>{errorMsg}</div> : null}
+      </div>
 
-      <div style={S.label}>{label}</div>
-      {status === "error" && errorMsg ? <div style={S.err}>{errorMsg}</div> : null}
+      <div ref={scrollRef} style={S.transcript}>
+        {lines.length === 0 && live ? (
+          <div style={S.placeholder}>Здесь появится расшифровка разговора…</div>
+        ) : (
+          lines.map((l) => (
+            <div key={l.id} style={{ ...S.bubble, ...(l.role === "user" ? S.bubbleUser : S.bubbleAsst) }}>
+              {l.text}
+            </div>
+          ))
+        )}
+      </div>
 
       <div style={S.controls}>
-        {status === "live" ? (
+        {live ? (
           <button style={{ ...S.btn, ...S.btnEnd }} onClick={end}>Завершить</button>
         ) : status === "connecting" ? (
           <button style={{ ...S.btn, opacity: 0.6 }} disabled>Соединяюсь…</button>
@@ -158,49 +221,62 @@ export default function VoiceLivePage() {
             {status === "idle" ? "Начать разговор" : "Поговорить ещё"}
           </button>
         )}
+        <div style={S.hint}>Говори свободно — можешь перебивать в любой момент.</div>
       </div>
 
-      <div style={S.hint}>Говори свободно — можешь перебивать в любой момент.</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
 const S: Record<string, React.CSSProperties> = {
   wrap: {
-    minHeight: "100vh",
+    height: "100vh",
     background: "#0f1115",
     color: "#f2f3f5",
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 28,
-    padding: 24,
     fontFamily: "-apple-system, system-ui, sans-serif",
-    textAlign: "center",
   },
+  top: { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 28 },
   orb: {
-    width: 160,
-    height: 160,
+    width: 120,
+    height: 120,
     borderRadius: "50%",
     background: "radial-gradient(circle at 35% 35%, #6f9bff, #3358cc)",
     transition: "transform .25s ease, box-shadow .25s ease",
-    boxShadow: "0 0 0 0 rgba(91,140,255,0.4)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  orbListen: { transform: "scale(1.0)", boxShadow: "0 0 60px 8px rgba(91,140,255,0.35)" },
-  orbSpeak: { transform: "scale(1.12)", boxShadow: "0 0 90px 18px rgba(91,140,255,0.55)" },
-  label: { fontSize: 22, fontWeight: 700 },
-  err: { color: "#ff6b6b", fontSize: 14, maxWidth: 320 },
-  controls: { marginTop: 8 },
-  btn: {
-    border: "none",
-    borderRadius: 28,
-    padding: "16px 32px",
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#fff",
+  orbListen: { boxShadow: "0 0 50px 6px rgba(91,140,255,0.35)" },
+  orbSpeak: { transform: "scale(1.1)", boxShadow: "0 0 80px 16px rgba(91,140,255,0.55)" },
+  spinner: {
+    width: 34,
+    height: 34,
+    borderRadius: "50%",
+    border: "3px solid rgba(255,255,255,0.35)",
+    borderTopColor: "#fff",
+    animation: "spin 0.8s linear infinite",
   },
+  label: { fontSize: 21, fontWeight: 700 },
+  meta: { fontSize: 12, color: "#7e848e" },
+  err: { color: "#ff6b6b", fontSize: 13, maxWidth: 320, textAlign: "center", padding: "0 16px" },
+  transcript: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "16px 14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  placeholder: { color: "#5c626c", textAlign: "center", marginTop: 24, fontSize: 14 },
+  bubble: { maxWidth: "82%", padding: "10px 13px", borderRadius: 16, fontSize: 15, lineHeight: 1.4, whiteSpace: "pre-wrap" },
+  bubbleUser: { alignSelf: "flex-end", backgroundColor: "#27406e", color: "#eaf0ff" },
+  bubbleAsst: { alignSelf: "flex-start", background: "#1a1d24", border: "1px solid #262a33" },
+  controls: { padding: "12px 16px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 },
+  btn: { border: "none", borderRadius: 26, padding: "15px 30px", fontSize: 17, fontWeight: 700, color: "#fff" },
   btnStart: { background: "#5b8cff" },
   btnEnd: { background: "#d64545" },
-  hint: { color: "#9aa0aa", fontSize: 14, maxWidth: 300 },
+  hint: { color: "#7e848e", fontSize: 13, textAlign: "center", maxWidth: 300 },
 };
