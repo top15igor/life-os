@@ -82,8 +82,23 @@ async function getContacts(fromUserId: string): Promise<Contact[]> {
   } catch {}
   ids.delete(fromUserId);
   if (!ids.size) return [];
-  const { data } = await db.from("users").select("id, name, chat_id, lang, relay_off").in("id", [...ids]);
-  return ((data as any[]) || []).filter((u) => u.chat_id) as Contact[];
+  return fetchUsers([...ids]);
+}
+
+// Выборка пользователей. Устойчиво к отсутствию колонки relay_off (если миграция
+// ещё не применена) — тогда повторяем запрос без неё, чтобы контакты всё равно нашлись.
+async function fetchUsers(ids: string[]): Promise<Contact[]> {
+  const db = supabaseAdmin();
+  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off").in("id", ids);
+  if (q.error) q = await db.from("users").select("id, name, chat_id, lang").in("id", ids);
+  return (((q.data as any[]) || []).filter((u) => u.chat_id)) as Contact[];
+}
+
+async function fetchUser(id: string): Promise<Contact | null> {
+  const db = supabaseAdmin();
+  let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off").eq("id", id).maybeSingle();
+  if (q.error) q = await db.from("users").select("id, name, chat_id, lang").eq("id", id).maybeSingle();
+  return (q.data as any) || null;
 }
 
 function nameMatches(full: string | null, query: string): boolean {
@@ -108,8 +123,8 @@ async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolv
   if (/^[a-z0-9_-]{2,30}$/i.test(clean)) {
     const uid = await resolveHandle(clean.toLowerCase());
     if (uid) {
-      const { data } = await supabaseAdmin().from("users").select("id, name, chat_id, lang, relay_off").eq("id", uid).maybeSingle();
-      if ((data as any)?.chat_id) return { ok: true, user: data as Contact };
+      const u = await fetchUser(uid);
+      if (u?.chat_id) return { ok: true, user: u };
     }
   }
 
