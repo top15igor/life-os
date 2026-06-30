@@ -26,6 +26,12 @@ export function parseNick(text?: string | null): { recipient: string; alias: str
   return { recipient: m[1], alias: m[2] };
 }
 
+// Разбор «/unnick <прозвище>».
+export function parseUnnick(text?: string | null): { alias: string } | null {
+  const m = text?.match(/^\/unnick\s+@?(\S{1,40})\s*$/i);
+  return m ? { alias: m[1] } : null;
+}
+
 // Естественная фраза «передай/скажи/напиши <кому> [что] <текст>» (в т.ч. распознанная с голоса).
 export function parseRelayPhrase(text?: string | null): { recipient: string; message: string } | null {
   if (!text) return null;
@@ -54,6 +60,11 @@ const RELAY: Record<string, any> = {
     off: "🔕 Приём сообщений выключен. Включить обратно — /relay.",
     nickHow: "Чтобы называть человека своим именем (как у тебя в контактах):\n<code>/nick @имя прозвище</code>\nНапример: <code>/nick @evgeniya Котик</code>\nПотом просто пиши: <code>/send Котик привет</code>",
     nickSaved: (alias: string, name: string) => `✅ Готово — теперь «${esc(alias)}» это <b>${esc(name)}</b>.\nПиши: <code>/send ${esc(alias)} текст</code>`,
+    nicksEmpty: "У тебя пока нет прозвищ. Задать: <code>/nick @имя Прозвище</code>.",
+    nicksList: (lines: string[]) => `🏷 Твои прозвища:\n${lines.join("\n")}`,
+    nickRemoved: (a: string) => `✅ Удалил прозвище «${esc(a)}».`,
+    nickNone: (a: string) => `Прозвища «${esc(a)}» у тебя нет. Список — /nicks.`,
+    notReachable: "Этот человек ещё не пользуется ботом — доставить пока некуда.",
   },
   en: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> sends you a message via LIFE OS:\n\n“${esc(msg)}”`,
@@ -72,6 +83,11 @@ const RELAY: Record<string, any> = {
     off: "🔕 Incoming messages off. Turn back on — /relay.",
     nickHow: "To call someone by your own name (like in your contacts):\n<code>/nick @name nickname</code>\nE.g.: <code>/nick @evgeniya Kitty</code>\nThen just write: <code>/send Kitty hi</code>",
     nickSaved: (alias: string, name: string) => `✅ Done — “${esc(alias)}” is now <b>${esc(name)}</b>.\nWrite: <code>/send ${esc(alias)} text</code>`,
+    nicksEmpty: "You have no nicknames yet. Set one: <code>/nick @name Nickname</code>.",
+    nicksList: (lines: string[]) => `🏷 Your nicknames:\n${lines.join("\n")}`,
+    nickRemoved: (a: string) => `✅ Removed nickname “${esc(a)}”.`,
+    nickNone: (a: string) => `You have no nickname “${esc(a)}”. List — /nicks.`,
+    notReachable: "This person doesn't use the bot yet — nowhere to deliver.",
   },
 };
 
@@ -310,6 +326,45 @@ export async function setAlias(ownerId: string, recipient: string, alias: string
 }
 
 export function nickSavedMsg(lang: string, alias: string, name: string) { return L(lang).nickSaved(alias, name); }
+
+// Список прозвищ пользователя (с кнопкой-командой удаления).
+export async function listAliasesText(ownerId: string, lang: string): Promise<string> {
+  const A = L(lang);
+  try {
+    const { data } = await supabaseAdmin().from("relay_aliases").select("alias, target_id").eq("owner_id", ownerId).order("created_at", { ascending: true });
+    const rows = (data as any[]) || [];
+    if (!rows.length) return A.nicksEmpty;
+    const lines = await Promise.all(rows.map(async (r) => {
+      const u = await fetchUser(r.target_id);
+      return `• <b>${esc(r.alias)}</b> → ${esc(u?.name || "?")}  (<code>/unnick ${esc(r.alias)}</code>)`;
+    }));
+    return A.nicksList(lines);
+  } catch {
+    return A.nicksEmpty;
+  }
+}
+
+// Удалить прозвище.
+export async function removeAlias(ownerId: string, alias: string, lang: string): Promise<string> {
+  const A = L(lang);
+  try {
+    const { data } = await supabaseAdmin().from("relay_aliases").delete().eq("owner_id", ownerId).ilike("alias", alias).select("id");
+    return data && data.length ? A.nickRemoved(alias) : A.nickNone(alias);
+  } catch {
+    return A.fail;
+  }
+}
+
+// Отправка напрямую по id получателя (для веба — кнопка «написать» у контакта).
+export async function sendRelayToUser(from: { id: string; name: string | null }, targetUserId: string, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
+  const SL = L(senderLang);
+  const msg = String(message || "").trim().slice(0, 2000);
+  if (!msg) return { ok: false, error: SL.fail };
+  const u = await fetchUser(targetUserId);
+  if (!u?.chat_id) return { ok: false, error: SL.notReachable };
+  const r = await deliver(from, u, msg, senderLang);
+  return { ok: r.ok, toName: r.toName || u.name || undefined, error: r.error };
+}
 
 // Переключить приём сообщений. Возвращает новое состояние relay_off (true = выключено).
 export async function toggleRelay(userId: string): Promise<boolean> {

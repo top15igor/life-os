@@ -10,7 +10,7 @@ import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
-import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase } from "@/lib/relay";
+import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -460,6 +460,19 @@ export async function POST(req: NextRequest) {
     if (!parsed) { await sendMessage(chatId, nickHelp(lang)); return NextResponse.json({ ok: true }); }
     const r = await setAlias(user.id, parsed.recipient, parsed.alias, lang);
     await sendMessage(chatId, r.ok ? nickSavedMsg(lang, parsed.alias, r.toName!) : r.error!);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 🏷 /nicks — список своих прозвищ; /unnick <прозвище> — удалить.
+  if (msg.text === "/nicks") {
+    await sendMessage(chatId, await listAliasesText(user.id, langOf(user, msg)));
+    return NextResponse.json({ ok: true });
+  }
+  if (typeof msg.text === "string" && /^\/unnick\b/i.test(msg.text.trim())) {
+    const lang = langOf(user, msg);
+    const p = parseUnnick(msg.text.trim());
+    if (!p) { await sendMessage(chatId, "Удалить прозвище: <code>/unnick Прозвище</code>"); return NextResponse.json({ ok: true }); }
+    await sendMessage(chatId, await removeAlias(user.id, p.alias, lang));
     return NextResponse.json({ ok: true });
   }
 

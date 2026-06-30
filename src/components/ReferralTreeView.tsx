@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CopyLink } from "@/components/ProfileActions";
+import RelayButton from "@/components/RelayButton";
 import type { ReferralTree, RefNode, RefActivity, ReferralStatus } from "@/lib/referral";
 
 // Локализованные подписи. UK берёт RU-словарь как ближайший, FR — EN (как на других страницах).
@@ -98,6 +99,7 @@ function Node({ node, s, locale, last }: { node: RefNode; s: any; locale: string
               </span>
             )}
           </div>
+          {node.entries > 0 && <RelayButton targetId={node.id} locale={locale} />}
         </div>
         <span
           style={{
