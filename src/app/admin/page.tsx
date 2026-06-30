@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import AdminPlanSelect from "@/components/AdminPlanSelect";
-import AdminReferrerSelect from "@/components/AdminReferrerSelect";
+import AdminUsersTable from "@/components/AdminUsersTable";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -266,49 +265,7 @@ export default async function AdminPage() {
         )}
 
         <Title>Все пользователи ({d.totalUsers})</Title>
-        <div className="card" style={{ padding: 0, overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ color: "var(--text-2)", fontSize: 11.5, textAlign: "left" }}>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Имя</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Записей</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Последняя</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Пришёл</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Пригласил</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Тариф</th>
-                <th style={{ padding: "10px 12px", fontWeight: 500 }}>Статус</th>
-              </tr>
-            </thead>
-            <tbody>
-              {d.list.map((u) => (
-                <tr key={u.id} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td style={{ padding: "10px 12px" }}>
-                    <div style={{ fontWeight: 500 }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6, marginTop: 1, flexWrap: "wrap" }}>
-                      {(u as any).telegram && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-brand-telegram" style={{ fontSize: 12 }} />TG</span>}
-                      {(u as any).email && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-mail" style={{ fontSize: 12 }} />{(u as any).email}</span>}
-                      {!(u as any).telegram && !(u as any).email && "—"}
-                    </div>
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>{u.entries}</td>
-                  <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.last || "—"}</td>
-                  <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.joined || "—"}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <AdminReferrerSelect id={u.id} current={(u as any).referrerId || null} users={refOptions} />
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <AdminPlanSelect id={u.id} plan={(u as any).plan || "free"} />
-                  </td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <span style={{ fontSize: 11.5, padding: "2px 9px", borderRadius: 99, background: u.active ? "rgba(5,150,105,0.12)" : "var(--surface-2)", color: u.active ? "var(--positive)" : "var(--text-3)" }}>
-                      {u.active ? "активен" : u.entries === 0 ? "не писал" : "тихо"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminUsersTable users={d.list as any} refOptions={refOptions} />
       </main>
     </div>
   );

@@ -52,6 +52,7 @@ export async function getAdminData() {
       referrerId: u.referred_by || null,
       email: u.email || null,
       telegram: !!u.chat_id,
+      chatId: u.chat_id || null,
       plan: (u.plan === "pro" || u.plan === "premium") ? u.plan : "free",
     };
   });
