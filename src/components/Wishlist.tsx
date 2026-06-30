@@ -6,7 +6,7 @@ import { formatPrice, type Wish } from "@/lib/wishlist";
 const T: Record<string, any> = {
   ru: {
     lead: "Вставь ссылку на товар — подтянем фото, название и цену. Поделись списком с друзьями: они увидят, что тебе подарить.",
-    ph: "Ссылка на товар (Wildberries, Ozon, Amazon, AliExpress…)",
+    ph: "Ссылка на товар (Rozetka, Amazon, Zalando, AliExpress…)",
     add: "Добавить",
     adding: "Тянем карточку…",
     manual: "Добавить вручную",
@@ -33,7 +33,7 @@ const T: Record<string, any> = {
   },
   en: {
     lead: "Paste a product link — we'll pull the photo, title and price. Share the list with friends so they know what to gift you.",
-    ph: "Product link (Amazon, eBay, AliExpress…)",
+    ph: "Product link (Amazon, Zalando, Rozetka, AliExpress…)",
     add: "Add",
     adding: "Fetching…",
     manual: "Add manually",

@@ -25,11 +25,17 @@ const URL_RE = /https?:\/\/[^\s<>"']+/i;
 
 // Известные магазины: «голую» ссылку из них бот сам кладёт в вишлист.
 const SHOP_DOMAINS = [
-  "amazon.", "ozon.ru", "ozon.com", "wildberries.", "wb.ru", "aliexpress.", "ebay.",
-  "lamoda.", "etsy.com", "asos.", "yandex.market", "market.yandex", "avito.ru",
-  "dns-shop.ru", "mvideo.ru", "citilink.ru", "apple.com", "ikea.com", "zara.com",
-  "hm.com", "nike.com", "adidas.", "rozetka.com", "prom.ua", "shafa.ua", "allo.ua",
-  "comfy.ua", "kasta.ua", "farfetch.", "ssense.com", "net-a-porter.", "wildberries.ru",
+  // Глобальные
+  "amazon.", "ebay.", "aliexpress.", "etsy.com", "asos.", "apple.com", "ikea.com",
+  "nike.com", "adidas.", "zara.com", "hm.com", "farfetch.", "ssense.com", "net-a-porter.",
+  // Европа
+  "zalando.", "otto.de", "bol.com", "cdiscount.com", "fnac.com", "mediamarkt.",
+  "aboutyou.", "vinted.", "allegro.pl", "leroymerlin.", "decathlon.", "boozt.com", "veepee.",
+  // Украина
+  "rozetka.com", "prom.ua", "shafa.ua", "allo.ua", "comfy.ua", "kasta.ua", "epicentrk.ua",
+  "foxtrot.ua", "eldorado.ua", "makeup.com.ua", "intertop.", "moyo.ua", "27.ua", "stylus.ua",
+  // Waily
+  "waily.",
 ];
 
 const clean = (u: string) => u.replace(/[)\].,;!?]+$/, "");

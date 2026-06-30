@@ -528,7 +528,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* Плавающая кнопка быстрого добавления */}
       <button className="fin-fab" aria-label={s.add} title={s.add}
-        onClick={() => { setOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+        onClick={() => { setOpen(true); (document.querySelector(".main") || window).scrollTo({ top: 0, behavior: "smooth" }); }}>
         <i className="ti ti-plus" />
       </button>
 
