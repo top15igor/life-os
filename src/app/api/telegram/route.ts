@@ -902,12 +902,6 @@ export async function POST(req: NextRequest) {
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
         await sendMessage(chatId, mdToTelegram(ans) || "—");
-        // Джарвис отвечает голосом, если спросили голосом.
-        if (isVoice && ans) {
-          await sendChatAction(chatId, "record_voice");
-          const audio = await speak(ans);
-          if (audio) await sendVoice(chatId, audio);
-        }
         return NextResponse.json({ ok: true });
       }
     }
