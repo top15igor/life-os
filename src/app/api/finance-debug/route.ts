@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
     for (const r of (allu as any[]) || []) whereData[r.user_id] = (whereData[r.user_id] || 0) + 1;
   } catch {}
   const { count: allTimeCount } = await db.from("finance_tx").select("*", { count: "exact", head: true }).eq("user_id", userId);
+  // Raw sample to inspect the real schema / date format.
+  const { data: sample } = await db.from("finance_tx").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(4);
 
   let base = "EUR";
   try {
@@ -74,6 +76,7 @@ export async function GET(req: NextRequest) {
     resolvedUserId: userId,
     allTimeCount: allTimeCount || 0,
     txCountByUser: whereData,
+    rawSample: sample || [],
     count: txs.length,
     rawExpenseSum: Math.round(exp),
     rawIncomeSum: Math.round(inc),
