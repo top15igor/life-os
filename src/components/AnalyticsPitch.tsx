@@ -20,6 +20,9 @@ const P: Record<string, any> = {
     freeLead: "Сделай 50 записей в дневнике — и «Что заметил AI» откроется тебе бесплатно, навсегда. Чем больше пишешь, тем точнее AI понимает тебя.",
     freeOf: (a: number, b: number) => `${a} из ${b} записей`,
     freeLeft: (n: number) => `осталось ${n} до открытия`,
+    freeDoneT: "Открыто бесплатно — спасибо, что ведёшь дневник!",
+    freeDoneLead: (n: number) => `Ты сделал ${n} записей и заслужил «Что заметил AI» бесплатно. Пиши дальше — чем больше записей, тем глубже AI понимает тебя.`,
+    freeDoneTag: "доступ открыт ✓",
     recordBtn: "Сделать запись",
     orPro: "Не хочешь ждать? Можно открыть сразу на Pro:",
   },
@@ -42,6 +45,9 @@ const P: Record<string, any> = {
     freeLead: "Make 50 diary entries and “What AI noticed” unlocks for you free, forever. The more you write, the better AI understands you.",
     freeOf: (a: number, b: number) => `${a} of ${b} entries`,
     freeLeft: (n: number) => `${n} to go`,
+    freeDoneT: "Unlocked free — thanks for journaling!",
+    freeDoneLead: (n: number) => `You've made ${n} entries and earned “What AI noticed” for free. Keep writing — the more entries, the deeper AI understands you.`,
+    freeDoneTag: "access granted ✓",
     recordBtn: "Add an entry",
     orPro: "Don't want to wait? You can unlock it on Pro:",
   },
@@ -49,29 +55,31 @@ const P: Record<string, any> = {
 
 export default function AnalyticsPitch({ locale, progress }: { locale: string; progress?: { count: number; need: number } }) {
   const p = locale === "en" || locale === "fr" ? P.en : P.ru;
-  const showFree = progress && progress.count < progress.need;
+  const earnedFree = !!progress && progress.count >= progress.need;
   const left = progress ? Math.max(0, progress.need - progress.count) : 0;
   const pctDone = progress ? Math.min(100, Math.round((progress.count / progress.need) * 100)) : 0;
 
   return (
     <div>
-      {showFree && (
+      {progress && (
         <div className="card" style={{ background: "var(--positive-bg, #ecfdf5)", border: "1px solid var(--positive)", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <i className="ti ti-gift" style={{ fontSize: 24, color: "var(--positive)" }} />
-            <div style={{ fontSize: 18, fontWeight: 700 }}>{p.freeT}</div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{earnedFree ? p.freeDoneT : p.freeT}</div>
           </div>
-          <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 13, maxWidth: 600 }}>{p.freeLead}</div>
+          <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 13, maxWidth: 600 }}>{earnedFree ? p.freeDoneLead(progress.count) : p.freeLead}</div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 5 }}>
-            <span style={{ fontWeight: 600 }}>{p.freeOf(progress!.count, progress!.need)}</span>
-            <span style={{ color: "var(--positive)", fontWeight: 600 }}>{p.freeLeft(left)}</span>
+            <span style={{ fontWeight: 600 }}>{p.freeOf(progress.count, progress.need)}</span>
+            <span style={{ color: "var(--positive)", fontWeight: 600 }}>{earnedFree ? p.freeDoneTag : p.freeLeft(left)}</span>
           </div>
           <div style={{ height: 11, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
             <div style={{ width: `${pctDone}%`, height: "100%", background: "var(--positive)", transition: "width .3s" }} />
           </div>
-          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 15, padding: "11px 20px", borderRadius: 11, background: "var(--positive)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
-            <i className="ti ti-pencil-plus" style={{ fontSize: 16 }} />{p.recordBtn}
-          </Link>
+          {!earnedFree && (
+            <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 15, padding: "11px 20px", borderRadius: 11, background: "var(--positive)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+              <i className="ti ti-pencil-plus" style={{ fontSize: 16 }} />{p.recordBtn}
+            </Link>
+          )}
         </div>
       )}
 
@@ -105,7 +113,7 @@ export default function AnalyticsPitch({ locale, progress }: { locale: string; p
         <div style={{ width: 52, height: 52, borderRadius: 999, background: "var(--accent)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
           <i className="ti ti-lock" style={{ fontSize: 26 }} />
         </div>
-        {showFree && <div style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 6 }}>{p.orPro}</div>}
+        {progress && !earnedFree && <div style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 6 }}>{p.orPro}</div>}
         <div style={{ fontSize: 17, fontWeight: 600 }}>{p.lockT}</div>
         <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.55, marginTop: 7, maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}>{p.lockS}</div>
         <Link href="/pricing" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 16, padding: "12px 22px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500, textDecoration: "none" }}>
