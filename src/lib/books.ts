@@ -264,6 +264,139 @@ export async function setBooksPublic(userId: string, name: string | null, makePu
   return { slug, isPublic: makePublic };
 }
 
+// ---------- Добавление по фото (обложка или штрих-код) ----------
+
+export async function bookFromImage(base64: string, mediaType: string): Promise<{ title: string; author: string | null; isbn: string | null } | null> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const TOOL = {
+    name: "book",
+    description: "Identify the book shown in the photo.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        title: { type: "string", description: "Book title, empty if no book is visible" },
+        author: { type: "string" },
+        isbn: { type: "string", description: "ISBN-13 digits if a barcode or ISBN number is visible, else empty" },
+      },
+      required: ["title"],
+    },
+  };
+  try {
+    const msg = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 300,
+      tools: [TOOL as any],
+      tool_choice: { type: "tool", name: "book" },
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType as any, data: base64 } },
+          { type: "text", text: "This photo shows a book — its cover or its back-cover barcode. Identify the book: title, author, and the ISBN-13 digits if a barcode/number is visible (otherwise leave isbn empty). If no book can be identified, return an empty title." },
+        ],
+      }],
+    });
+    const block = msg.content.find((b) => b.type === "tool_use");
+    if (!block || block.type !== "tool_use") return null;
+    const out = block.input as any;
+    if (!out.title || !String(out.title).trim()) return null;
+    return { title: String(out.title).trim(), author: out.author ? String(out.author).trim() : null, isbn: out.isbn ? String(out.isbn).replace(/[^0-9Xx]/g, "") : null };
+  } catch {
+    return null;
+  }
+}
+
+export async function addBookFromImage(userId: string, base64: string, mediaType: string): Promise<Book | null> {
+  const id = await bookFromImage(base64, mediaType);
+  if (!id) return null;
+  if (id.isbn && id.isbn.length >= 10) {
+    const hits = await searchBooks(id.isbn);
+    if (hits[0]) return addBook(userId, { ...hits[0], status: "want" });
+  }
+  return addBookByTitle(userId, id.title, id.author);
+}
+
+// ---------- Импорт из Goodreads / StoryGraph (CSV) ----------
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+    else if (c !== "\r") cur += c;
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function parseDate(s: string): string | null {
+  const m = s.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  return m ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : null;
+}
+
+export async function importBooksCsv(userId: string, csv: string): Promise<number> {
+  const rows = parseCsv(csv);
+  if (rows.length < 2) return 0;
+  const header = rows[0].map((h) => h.trim());
+  const idx = (name: string) => header.indexOf(name);
+  const isGR = idx("Exclusive Shelf") >= 0;
+
+  const records: any[] = [];
+  for (let r = 1; r < rows.length && records.length < 600; r++) {
+    const cells = rows[r];
+    const get = (name: string) => { const i = idx(name); return i >= 0 ? (cells[i] || "").trim() : ""; };
+    const title = get("Title");
+    if (!title) continue;
+
+    let author = "", status = "want", rating: number | null = null, review = "", isbn = "", finished: string | null = null, pages: number | null = null;
+    if (isGR) {
+      author = get("Author");
+      const shelf = get("Exclusive Shelf");
+      status = shelf === "read" ? "read" : shelf === "currently-reading" ? "reading" : "want";
+      const rt = parseInt(get("My Rating")); rating = rt > 0 ? rt : null;
+      review = get("My Review").replace(/<br\s*\/?>/gi, "\n");
+      isbn = (get("ISBN13") || get("ISBN")).replace(/[^0-9Xx]/g, "");
+      finished = parseDate(get("Date Read"));
+      pages = parseInt(get("Number of Pages")) || null;
+    } else {
+      author = get("Authors") || get("Author");
+      const rs = get("Read Status").toLowerCase();
+      status = rs === "read" ? "read" : rs === "currently-reading" ? "reading" : "want";
+      const rt = parseFloat(get("Star Rating")); rating = rt > 0 ? Math.round(rt) : null;
+      review = get("Review");
+      isbn = (get("ISBN/UID") || get("ISBN")).replace(/[^0-9Xx]/g, "");
+      finished = parseDate(get("Last Date Read") || get("Dates Read"));
+    }
+
+    records.push({
+      user_id: userId,
+      title: title.slice(0, 250),
+      author: author || null,
+      isbn: isbn || null,
+      cover_url: isbn && isbn.length >= 10 ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg` : null,
+      status,
+      rating,
+      review: review ? review.slice(0, 2000) : null,
+      finished_at: status === "read" ? finished : null,
+      pages,
+    });
+  }
+  if (!records.length) return 0;
+
+  const db = supabaseAdmin();
+  let count = 0;
+  for (let i = 0; i < records.length; i += 100) {
+    const { data, error } = await db.from("books").insert(records.slice(i, i + 100)).select("id");
+    if (!error) count += (data?.length || 0);
+  }
+  return count;
+}
+
 export type PublicBook = { id: string; title: string; author: string | null; cover_url: string | null; status: string; rating: number | null; liked: boolean | null; review: string | null; favorite: boolean; year: number | null };
 
 export async function getPublicLibrary(slug: string): Promise<{ ownerName: string | null; books: PublicBook[] } | null> {

@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { computeStats, type Book, type Quote, type BookHit, type Recommendation } from "@/lib/books";
 
 const T: Record<string, any> = {
   ru: {
     lead: "Твоя библиотека: что читаешь, что хочешь и что прочитал. Ставь оценку, пиши мини-ревью «зашла или нет» и сохраняй цитаты.",
     add: "Добавить книгу", addPh: "Название книги или автор…", searching: "Ищу…", noHits: "Ничего не нашлось — попробуй иначе или добавь вручную.",
+    photo: "По фото / ISBN", photoBusy: "Распознаю…", photoFail: "Не получилось распознать книгу. Сфоткай обложку или штрих-код чётче, либо добавь поиском.",
+    imp: "Импорт", impBusy: "Импортирую…", impDone: (n: number) => (n ? `Импортировано книг: ${n} 📚` : "В файле не нашлось книг для импорта."),
     rec: "Что почитать дальше", recLoading: "AI подбирает…", recHead: "AI советует тебе", recAdd: "В «Хочу»", recEmpty: "Оцени несколько прочитанных книг — и AI подберёт, что почитать дальше.",
     tabs: { all: "Все", want: "Хочу прочитать", reading: "Читаю", read: "Прочитал" },
     status: { want: "Хочу прочитать", reading: "Читаю", read: "Прочитал" },
@@ -24,6 +26,8 @@ const T: Record<string, any> = {
   en: {
     lead: "Your library: what you're reading, want to read, and have read. Rate books, write a quick “loved it or not” review and save quotes.",
     add: "Add a book", addPh: "Book title or author…", searching: "Searching…", noHits: "Nothing found — try differently or add manually.",
+    photo: "By photo / ISBN", photoBusy: "Recognizing…", photoFail: "Couldn't recognize the book. Snap the cover or barcode more clearly, or add by search.",
+    imp: "Import", impBusy: "Importing…", impDone: (n: number) => (n ? `Imported ${n} books 📚` : "No books found to import in the file."),
     rec: "What to read next", recLoading: "AI is picking…", recHead: "AI suggests for you", recAdd: "To “Want”", recEmpty: "Rate a few books you've read — and AI will suggest what to read next.",
     tabs: { all: "All", want: "Want to read", reading: "Reading", read: "Read" },
     status: { want: "Want to read", reading: "Reading", read: "Read" },
@@ -72,6 +76,10 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
   const [isPublic, setIsPublic] = useState(share.isPublic);
   const [slug, setSlug] = useState(share.slug);
   const [copied, setCopied] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [impBusy, setImpBusy] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
 
   const year = new Date().getFullYear();
   const stats = useMemo(() => computeStats(books, goal, year), [books, goal, year]);
@@ -147,6 +155,31 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
     await api({ action: "deleteQuote", id });
   }
 
+  function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = rej; r.readAsDataURL(file); });
+  }
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    setPhotoBusy(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const r = await api({ action: "fromPhoto", image: dataUrl, mediaType: file.type || "image/jpeg" });
+      if (r?.ok && r.book) setBooks((b) => [r.book, ...b]); else alert(t.photoFail);
+    } finally { setPhotoBusy(false); }
+  }
+  async function onCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    setImpBusy(true);
+    try {
+      const text = await file.text();
+      const r = await api({ action: "import", csv: text });
+      alert(t.impDone(r?.count || 0));
+      if (r?.ok && r.count) window.location.reload();
+    } finally { setImpBusy(false); }
+  }
+
   function saveGoal(v: number) { setGoal(v); api({ action: "setGoal", goal: v }); }
   function copy() { navigator.clipboard?.writeText(pubUrl); setCopied(true); setTimeout(() => setCopied(false), 1800); }
 
@@ -185,6 +218,14 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
         <button onClick={loadRecs} disabled={recLoading} style={{ padding: "10px 18px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
           <i className="ti ti-sparkles" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {recLoading ? t.recLoading : t.rec}
         </button>
+        <button onClick={() => photoRef.current?.click()} disabled={photoBusy} style={ghostBtn}>
+          <i className="ti ti-camera" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {photoBusy ? t.photoBusy : t.photo}
+        </button>
+        <button onClick={() => csvRef.current?.click()} disabled={impBusy} style={ghostBtn}>
+          <i className="ti ti-file-import" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {impBusy ? t.impBusy : t.imp}
+        </button>
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={onPhoto} style={{ display: "none" }} />
+        <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onCsv} style={{ display: "none" }} />
       </div>
 
       {/* AI рекомендации */}
@@ -389,6 +430,7 @@ function Modal({ children, onClose, wide }: { children: any; onClose: () => void
 }
 
 const inp: React.CSSProperties = { width: "100%", padding: "11px 13px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", fontSize: 14, color: "var(--text)" };
+const ghostBtn: React.CSSProperties = { padding: "10px 16px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 14, fontWeight: 500, cursor: "pointer" };
 function chip(active: boolean, color: string): React.CSSProperties {
   return { display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 9, border: `1px solid ${active ? color : "var(--border)"}`, background: active ? color : "var(--surface)", color: active ? "#fff" : "var(--text-2)", fontSize: 12.5, fontWeight: 500, cursor: "pointer" };
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
-import { searchBooks, addBook, addBookByTitle, updateBook, deleteBook, addQuote, deleteQuote, setBookGoal, setBooksPublic, recommendBooks, getBooks } from "@/lib/books";
+import { searchBooks, addBook, addBookByTitle, updateBook, deleteBook, addQuote, deleteQuote, setBookGoal, setBooksPublic, recommendBooks, getBooks, addBookFromImage, importBooksCsv } from "@/lib/books";
 
 export const runtime = "nodejs";
 
@@ -57,6 +57,21 @@ export async function POST(req: NextRequest) {
   if (action === "setPublic") {
     const res = await setBooksPublic(user.id, user.name ?? null, !!body?.value);
     return NextResponse.json({ ok: true, ...res });
+  }
+
+  if (action === "fromPhoto") {
+    const image = String(body?.image || "").replace(/^data:[^,]+,/, "");
+    if (!image) return NextResponse.json({ ok: false }, { status: 400 });
+    const book = await addBookFromImage(user.id, image, body?.mediaType || "image/jpeg");
+    if (!book) return NextResponse.json({ ok: false, error: "not_recognized" }, { status: 422 });
+    return NextResponse.json({ ok: true, book });
+  }
+
+  if (action === "import") {
+    const csv = String(body?.csv || "");
+    if (!csv) return NextResponse.json({ ok: false }, { status: 400 });
+    const count = await importBooksCsv(user.id, csv);
+    return NextResponse.json({ ok: true, count });
   }
 
   if (action === "recommend") {

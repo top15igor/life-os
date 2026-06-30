@@ -8,6 +8,7 @@ import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
+import { addBookFromImage } from "@/lib/books";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -135,6 +136,13 @@ const FIXED: Record<string, string> = {
   en: "✏️ Updated your previous entry:",
   uk: "✏️ Виправив попередній запис:",
   fr: "✏️ J'ai corrigé l'entrée précédente :",
+};
+
+const BOOK_PHOTO: Record<string, { working: string; saved: string; open: string; failed: string }> = {
+  ru: { working: "📚 Распознаю книгу…", saved: "Добавил в библиотеку:", open: "📚 Открыть Книги", failed: "Не удалось распознать книгу на фото. Сфоткай обложку или штрих-код чётче." },
+  en: { working: "📚 Recognizing the book…", saved: "Added to your library:", open: "📚 Open Books", failed: "Couldn't recognize the book. Snap the cover or barcode more clearly." },
+  uk: { working: "📚 Розпізнаю книгу…", saved: "Додав у бібліотеку:", open: "📚 Відкрити Книги", failed: "Не вдалося розпізнати книгу на фото. Сфоткай обкладинку або штрих-код чіткіше." },
+  fr: { working: "📚 Je reconnais le livre…", saved: "Ajouté à ta bibliothèque :", open: "📚 Ouvrir les Livres", failed: "Impossible de reconnaître le livre. Photographie la couverture ou le code-barres plus nettement." },
 };
 
 const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: string; open: string; failed: string; unsupported: string }> = {
@@ -611,6 +619,26 @@ export async function POST(req: NextRequest) {
     if (msg.photo && Array.isArray(msg.photo) && msg.photo.length) {
       const lang = langOf(user, msg);
       const L = MEM_MSG[lang] || MEM_MSG.ru;
+      // 📚 Фото с подписью «книга/book» → в библиотеку (обложку или штрих-код читает AI).
+      const bookMode = /книг|book|прочит|читаю|читаю/i.test(msg.caption || "");
+      if (bookMode) {
+        const B = BOOK_PHOTO[lang] || BOOK_PHOTO.ru;
+        await sendMessage(chatId, B.working);
+        try {
+          const ph = msg.photo[msg.photo.length - 1];
+          const fileUrl = await getFileUrl(ph.file_id);
+          const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
+          const book = await addBookFromImage(user.id, buf.toString("base64"), "image/jpeg");
+          if (!book) { await sendMessage(chatId, B.failed); return NextResponse.json({ ok: true }); }
+          let body = `📚 <b>${B.saved}</b>\n\n<b>${esc(book.title)}</b>`;
+          if (book.author) body += `\n${esc(book.author)}`;
+          await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: B.open, url: `${origin}/u/${user.token}?next=/books` }]] } });
+        } catch (e) {
+          console.error("book photo", e);
+          await sendMessage(chatId, B.failed);
+        }
+        return NextResponse.json({ ok: true });
+      }
       await sendMessage(chatId, L.recognizing);
       try {
         const ph = msg.photo[msg.photo.length - 1];
