@@ -8,6 +8,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "projects", href: "/projects", icon: "ti-briefcase" },
   { key: "lifebook", href: "/lifebook", icon: "ti-book-2" },
   { key: "knowledge", href: "/knowledge", icon: "ti-bookmarks" },
+  { key: "books", href: "/books", icon: "ti-books" },
   { key: "trace", href: "/trace", icon: "ti-heart-handshake" },
   { key: "memory", href: "/memory", icon: "ti-camera" },
   { key: "people", href: "/people", icon: "ti-user-heart" },
@@ -26,7 +27,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
 export const NAV_GROUPS: { id: string; keys: string[] }[] = [
   { id: "main", keys: ["today", "diary", "wellness"] },
   { id: "life", keys: ["plans", "finance", "trace", "family", "projects"] },
-  { id: "memory", keys: ["lifebook", "knowledge", "memory", "people", "places"] },
+  { id: "memory", keys: ["lifebook", "knowledge", "books", "memory", "people", "places"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
   { id: "more", keys: ["wishlist", "share", "paths", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
 ];
