@@ -109,7 +109,7 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
       <SectionTitle>{ex.featuresTitle}</SectionTitle>
       <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.featuresLead}</div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10, marginBottom: 12 }}>
+      <div className="guide-feature-grid" style={{ marginBottom: 12 }}>
         {shownFeatures.map((f) => {
           const cardStyle = { textAlign: "left" as const, cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)", textDecoration: "none", color: "var(--text)" };
           const inner = (
