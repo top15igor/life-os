@@ -12,8 +12,12 @@ async function ownsRef(userId: string, kind: Kind, refId: string): Promise<boole
   const db = supabaseAdmin();
   try {
     if (kind === "task") {
-      const { data } = await db.from("tasks").select("entry_id").eq("id", refId).maybeSingle();
-      const entryId = (data as any)?.entry_id;
+      // tasks has a direct user_id (entry_id may be null for bot-added tasks).
+      const { data } = await db.from("tasks").select("user_id, entry_id").eq("id", refId).maybeSingle();
+      if (!data) return false;
+      if ((data as any).user_id) return (data as any).user_id === userId;
+      // Legacy rows without user_id: fall back to the linked entry's owner.
+      const entryId = (data as any).entry_id;
       if (!entryId) return false;
       const { data: e } = await db.from("entries").select("user_id").eq("id", entryId).maybeSingle();
       return (e as any)?.user_id === userId;
