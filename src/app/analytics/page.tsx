@@ -4,7 +4,7 @@ import PageHead from "@/components/PageHead";
 import IntelligenceOverview from "@/components/IntelligenceOverview";
 import AnalyticsPitch from "@/components/AnalyticsPitch";
 import AiHelperBanner from "@/components/AiHelperBanner";
-import { getEntries, getOnThisDay, cats, tagList, projects as projectsOf, people as peopleOf, type Entry } from "@/lib/queries";
+import { getEntries, getOnThisDay, getEntryCount, cats, tagList, projects as projectsOf, people as peopleOf, type Entry } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -46,15 +46,18 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const h = hints(locale);
   const sp = await searchParams;
 
-  // «Что заметил AI» — фича тарифа Pro. ?preview=lock — продающая страница даже на Pro/Премиуме.
-  const pro = (await isPro(user.id)) && sp?.preview !== "lock";
-  if (!pro) {
+  // «Что заметил AI» открывается на Pro/Премиуме ИЛИ БЕСПЛАТНО за 50 записей (мотивируем вести дневник).
+  // ?preview=lock — продающая страница даже у тех, у кого открыто.
+  const FREE_AT = 50;
+  const entryCount = await getEntryCount(user.id);
+  const unlocked = ((await isPro(user.id)) || entryCount >= FREE_AT) && sp?.preview !== "lock";
+  if (!unlocked) {
     return (
       <div className="shell">
         <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
         <main className="main">
           <PageHead icon="ti-sparkles" color="var(--insight)" title={t.nav.analytics} hint={h.analytics} />
-          <AnalyticsPitch locale={locale} />
+          <AnalyticsPitch locale={locale} progress={{ count: entryCount, need: FREE_AT }} />
         </main>
       </div>
     );
