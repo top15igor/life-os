@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import AdminPlanSelect from "./AdminPlanSelect";
 import AdminReferrerSelect from "./AdminReferrerSelect";
+import AdminUserCard from "./AdminUserCard";
 
 type Row = {
   id: string; name: string; entries: number; last: string | null; joined: string | null;
@@ -29,6 +30,7 @@ export default function AdminUsersTable({ users, refOptions }: { users: Row[]; r
   const [msgText, setMsgText] = useState("");
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState("");
+  const [cardFor, setCardFor] = useState<Row | null>(null);
 
   const rows = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -85,7 +87,7 @@ export default function AdminUsersTable({ users, refOptions }: { users: Row[]; r
             {rows.map((u) => (
               <tr key={u.id} style={{ borderTop: "1px solid var(--border)" }}>
                 <td style={{ padding: "10px 12px" }}>
-                  <div style={{ fontWeight: 500 }}>{u.name}</div>
+                  <div onClick={() => setCardFor(u)} style={{ fontWeight: 500, cursor: "pointer", color: "var(--accent)" }} title="Подробнее">{u.name}</div>
                   <div style={{ fontSize: 11, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6, marginTop: 1, flexWrap: "wrap" }}>
                     {u.telegram && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-brand-telegram" style={{ fontSize: 12 }} />TG</span>}
                     {u.email && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-mail" style={{ fontSize: 12 }} />{u.email}</span>}
@@ -127,6 +129,7 @@ export default function AdminUsersTable({ users, refOptions }: { users: Row[]; r
           </tbody>
         </table>
       </div>
+      {cardFor && <AdminUserCard id={cardFor.id} name={cardFor.name} onClose={() => setCardFor(null)} />}
     </div>
   );
 }

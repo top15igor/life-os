@@ -127,6 +127,19 @@ export default async function AdminPage() {
   const voicePct = Math.round((d.voice / srcTotal) * 100);
   const maxCat = d.catDist[0]?.count || 1;
 
+  // Метрики роста и удержания (по уже посчитанным агрегатам).
+  const totalU = d.totalUsers || 1;
+  const pct = (n: number) => Math.round((n / totalU) * 100);
+  const funnel = [
+    { label: "Зашли (всего)", n: d.totalUsers, color: "var(--text-3)" },
+    { label: "Написали хотя бы 1 запись", n: d.writers, color: "var(--accent)" },
+    { label: "Вернулись (писали ≥2 дней)", n: d.returning, color: "var(--insight)" },
+    { label: "Активны за 7 дней", n: d.activeUsers, color: "var(--positive)" },
+  ];
+  const plans = { free: 0, pro: 0, premium: 0 } as Record<string, number>;
+  for (const u of d.list as any[]) plans[u.plan === "pro" || u.plan === "premium" ? u.plan : "free"]++;
+  const paid = plans.pro + plans.premium;
+
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
@@ -165,6 +178,56 @@ export default async function AdminPage() {
           <Stat label="Всего записей" value={d.totalEntries} color="var(--accent)" />
           <Stat label="Ср. записей / автор" value={d.avgPerWriter} />
           <Stat label="Вернулись (≥2 дней)" value={d.returning} color="var(--insight)" />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <Title>📈 Рост и удержание</Title>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+            {/* Воронка активации */}
+            <div className="card">
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Воронка активации</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                {funnel.map((f) => (
+                  <div key={f.label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
+                      <span style={{ color: "var(--text-2)" }}>{f.label}</span>
+                      <span style={{ fontWeight: 600 }}>{f.n} <span style={{ color: "var(--text-3)", fontWeight: 400 }}>· {pct(f.n)}%</span></span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
+                      <div style={{ width: `${pct(f.n)}%`, height: "100%", background: f.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 11, lineHeight: 1.5 }}>
+                Доля «написали» от «зашли» — активация. Доля «вернулись» — закрепилась ли привычка.
+              </div>
+            </div>
+
+            {/* Удержание + тарифы */}
+            <div className="card">
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Удержание и тарифы</div>
+              <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: 1, textAlign: "center", background: "var(--surface-2)", borderRadius: 10, padding: "10px 6px" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "var(--positive)" }}>{pct(d.activeUsers)}%</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 2 }}>активны 7 дней</div>
+                </div>
+                <div style={{ flex: 1, textAlign: "center", background: "var(--surface-2)", borderRadius: 10, padding: "10px 6px" }}>
+                  <div style={{ fontSize: 22, fontWeight: 700 }}>{pct(d.active30)}%</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-2)", marginTop: 2 }}>активны 30 дней</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 8, color: "var(--text-2)" }}>Тарифы</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Старт (бесплатно)</span><b>{plans.free}</b></div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#0ea5e9" }}>Pro</span><b>{plans.pro}</b></div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#f59e0b" }}>Премиум</span><b>{plans.premium}</b></div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 7, marginTop: 1 }}>
+                  <span style={{ color: "var(--text-2)" }}>Конверсия в платный</span><b>{pct(paid)}%</b>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {d.feedback && d.feedback.length > 0 && (
