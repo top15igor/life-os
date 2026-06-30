@@ -28,10 +28,10 @@ async function resolveUser(req: NextRequest): Promise<{ id: string; name: string
 
 // Mint a short-lived ephemeral token. Tries the GA endpoint first, then falls
 // back to the older sessions endpoint, so it works whichever the account is on.
-// Build the GA session config. `withNoiseReduction` is split out because that
-// field is the newest/riskiest — if a given API version rejects it, we retry
-// without it so the friend still works.
-function gaSession(instructions: string, withNoiseReduction: boolean) {
+// Build the GA session config. noise_reduction and tools are the newest/riskiest
+// fields — each can be dropped on retry so the friend still works if an API
+// version rejects one of them.
+function gaSession(instructions: string, opts: { noiseReduction: boolean; tools: boolean }) {
   const input: any = {
     // Higher threshold keeps a TV in the next room from triggering the model.
     // silence_duration_ms: how long a pause counts as "you finished".
@@ -39,16 +39,19 @@ function gaSession(instructions: string, withNoiseReduction: boolean) {
     // Transcribe the user's speech so the app can show captions.
     transcription: { model: "whisper-1" },
   };
-  if (withNoiseReduction) input.noise_reduction = { type: "near_field" };
-  return {
+  if (opts.noiseReduction) input.noise_reduction = { type: "near_field" };
+  const session: any = {
     type: "realtime",
     model: MODEL,
     instructions,
     audio: { input, output: { voice: VOICE } },
-    // Action tools (reminders, tasks, weight, …) — same as the bot's Jarvis.
-    tools: voiceActionTools(),
-    tool_choice: "auto",
   };
+  if (opts.tools) {
+    // Action tools (reminders, tasks, weight, …) — same as the bot's Jarvis.
+    session.tools = voiceActionTools();
+    session.tool_choice = "auto";
+  }
+  return session;
 }
 
 async function postGA(key: string, session: any) {
@@ -65,15 +68,19 @@ async function mintSecret(
   key: string,
   instructions: string
 ): Promise<{ value?: string; expires_at?: number; detail?: string }> {
-  // Try the full config, then drop noise_reduction if it was rejected.
+  // Degrade gracefully: full → drop noise_reduction → drop tools (last resort,
+  // keeps the friend talking even if a field is rejected).
   try {
-    const full = await postGA(key, gaSession(instructions, true));
-    if (full.ok) return { value: full.value, expires_at: full.expires_at };
+    const a = await postGA(key, gaSession(instructions, { noiseReduction: true, tools: true }));
+    if (a.ok) return { value: a.value, expires_at: a.expires_at };
 
-    const lite = await postGA(key, gaSession(instructions, false));
-    if (lite.ok) return { value: lite.value, expires_at: lite.expires_at };
+    const b = await postGA(key, gaSession(instructions, { noiseReduction: false, tools: true }));
+    if (b.ok) return { value: b.value, expires_at: b.expires_at };
 
-    return { detail: `full: ${full.detail}; lite: ${lite.detail}` };
+    const c = await postGA(key, gaSession(instructions, { noiseReduction: false, tools: false }));
+    if (c.ok) return { value: c.value, expires_at: c.expires_at };
+
+    return { detail: `a: ${a.detail}; b: ${b.detail}; c: ${c.detail}` };
   } catch (e: any) {
     return { detail: String(e?.message || e) };
   }
