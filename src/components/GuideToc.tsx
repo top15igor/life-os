@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 // Плавающая навигация по разделам Инструкции с подсветкой активного (десктоп).
-export default function GuideToc({ items }: { items: { id: string; label: string }[] }) {
+export default function GuideToc({ items }: { items: { id: string; label: string; href?: string }[] }) {
   const [active, setActive] = useState(items[0]?.id || "");
 
   useEffect(() => {
@@ -23,7 +23,8 @@ export default function GuideToc({ items }: { items: { id: string; label: string
   return (
     <nav className="guide-toc-rail" aria-label="Содержание">
       {items.map((it) => (
-        <a key={it.id} href={`#${it.id}`} className={active === it.id ? "active" : ""}>
+        // Пункт-ссылка на отдельную страницу (href) — без scroll-spy; обычный якорь — с подсветкой.
+        <a key={it.id} href={it.href || `#${it.id}`} className={!it.href && active === it.id ? "active" : ""}>
           <span className="lbl">{it.label}</span>
           <span className="dot" />
         </a>

@@ -59,7 +59,7 @@ export default async function GuidePage() {
 
   const tocLabel = locale === "en" ? "Contents" : locale === "uk" ? "Зміст" : locale === "fr" ? "Sommaire" : "Содержание";
   const aiHelpersLabel = locale === "en" ? "Three AI helpers" : locale === "uk" ? "Три AI-помічники" : locale === "fr" ? "Trois assistants IA" : "Три AI-помощника";
-  const TOC: { id: string; label: string }[] = [
+  const TOC: { id: string; label: string; href?: string }[] = [
     { id: "whatsnew", label: ex.whatsNew },
     { id: "what", label: g.whatTitle },
     { id: "why", label: g.whyTitle },
@@ -69,6 +69,7 @@ export default async function GuidePage() {
     { id: "sections", label: g.sectionsTitle },
     { id: "lifehacks", label: g.lifehacksTitle },
     { id: "privacy", label: g.privacyTitle },
+    { id: "ai-helpers", label: aiHelpersLabel, href: "/guide/ai-helpers" },
   ];
 
   return (
@@ -94,20 +95,13 @@ export default async function GuidePage() {
           </div>
           <div className="toc-book">
             {TOC.map((it, i) => (
-              <a key={it.id} href={`#${it.id}`}>
+              <a key={it.id} href={it.href || `#${it.id}`}>
                 <span className="toc-num">{String(i + 1).padStart(2, "0")}</span>
                 <span className="toc-t">{it.label}</span>
                 <span className="toc-dots" />
                 <i className="ti ti-chevron-right toc-arrow" />
               </a>
             ))}
-            {/* Отдельная страница: сравнение трёх AI-помощников */}
-            <a href="/guide/ai-helpers">
-              <span className="toc-num">{String(TOC.length + 1).padStart(2, "0")}</span>
-              <span className="toc-t">{aiHelpersLabel}</span>
-              <span className="toc-dots" />
-              <i className="ti ti-chevron-right toc-arrow" />
-            </a>
           </div>
         </div>
 
