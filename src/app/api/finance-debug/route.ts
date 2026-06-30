@@ -15,9 +15,21 @@ export async function GET(req: NextRequest) {
   const chat = req.nextUrl.searchParams.get("chat") || process.env.TELEGRAM_ALLOWED_CHAT_ID;
   const db = supabaseAdmin();
 
-  const { data: u } = await db.from("users").select("id").eq("chat_id", Number(chat)).maybeSingle();
-  if (!u) return NextResponse.json({ ok: false, error: "no_user" }, { status: 404 });
-  const userId = (u as any).id;
+  const override = req.nextUrl.searchParams.get("user");
+  let userId = override || "";
+  if (!userId) {
+    const { data: u } = await db.from("users").select("id").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u) return NextResponse.json({ ok: false, error: "no_user" }, { status: 404 });
+    userId = (u as any).id;
+  }
+
+  // Where does finance data actually live? Count tx per user_id.
+  let whereData: Record<string, number> = {};
+  try {
+    const { data: allu } = await db.from("finance_tx").select("user_id").limit(5000);
+    for (const r of (allu as any[]) || []) whereData[r.user_id] = (whereData[r.user_id] || 0) + 1;
+  } catch {}
+  const { count: allTimeCount } = await db.from("finance_tx").select("*", { count: "exact", head: true }).eq("user_id", userId);
 
   let base = "EUR";
   try {
@@ -54,6 +66,9 @@ export async function GET(req: NextRequest) {
     ok: true,
     month,
     base,
+    resolvedUserId: userId,
+    allTimeCount: allTimeCount || 0,
+    txCountByUser: whereData,
     count: txs.length,
     rawExpenseSum: Math.round(exp),
     rawIncomeSum: Math.round(inc),
