@@ -58,6 +58,9 @@ export async function GET(req: NextRequest) {
     calendar_links: await tableExists("calendar_links"),
     reminders_gcal_calendar_id: await columnExists("reminders", "gcal_calendar_id"),
     calendar_links_calendar_id: await columnExists("calendar_links", "calendar_id"),
+    reminders_recurrence: await columnExists("reminders", "recurrence"),
+    reminders_all_day: await columnExists("reminders", "all_day"),
+    reminders_remind_min: await columnExists("reminders", "remind_min"),
   };
   return NextResponse.json({ ok: true, checks });
 }
