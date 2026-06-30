@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, answerCallback } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, answerCallback, sendVoice } from "@/lib/telegram";
+import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { routeMessage, runAction } from "@/lib/botActions";
@@ -838,8 +839,14 @@ export async function POST(req: NextRequest) {
     if (await getChatMode(user.id)) {
       await sendChatAction(chatId, "typing");
       try {
-        const reply = await talkToCompanion(user.id, user.name ?? null, text);
+        const reply = await talkToCompanion(user.id, user.name ?? null, text, langOf(user, msg), (user as any).tz_offset);
         await sendMessage(chatId, mdToTelegram(reply) || "…");
+        // Джарвис отвечает голосом, если к нему обратились голосом.
+        if (isVoice && reply) {
+          await sendChatAction(chatId, "record_voice");
+          const audio = await speak(reply);
+          if (audio) await sendVoice(chatId, audio);
+        }
       } catch (e) {
         console.error("companion", e);
         await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { talkToCompanion, getCompanionHistory } from "@/lib/companion";
+import { getLocale } from "@/lib/locale";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import type { Lang } from "@/lib/botActions";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // веб-поиск может занять несколько секунд
@@ -21,7 +24,13 @@ export async function POST(req: NextRequest) {
   const text = String(body?.text || "").trim();
   if (!text) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
   try {
-    const answer = await talkToCompanion(user.id, user.name, text);
+    const locale = (await getLocale()) as Lang;
+    let tz: number | null = null;
+    try {
+      const { data } = await supabaseAdmin().from("users").select("tz_offset").eq("id", user.id).maybeSingle();
+      tz = (data as any)?.tz_offset ?? null;
+    } catch {}
+    const answer = await talkToCompanion(user.id, user.name, text, locale, tz);
     return NextResponse.json({ ok: true, answer });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });

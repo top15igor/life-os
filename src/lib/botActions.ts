@@ -19,7 +19,7 @@ export type Route =
   | { kind: "question" }
   | { kind: "note" };
 
-const ACTION_TOOLS: any[] = [
+export const ACTION_TOOLS: any[] = [
   { name: "add_goal", description: "Добавить цель на год. Только при явной команде вроде «добавь цель…», «поставь цель…».", input_schema: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } },
   { name: "add_task", description: "Добавить задачу/дело БЕЗ конкретного времени. Команда «добавь задачу…», «надо не забыть…», «запиши в дела…». Если названо КОНКРЕТНОЕ время/дата напоминания — это set_reminder, не add_task.", input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
   {

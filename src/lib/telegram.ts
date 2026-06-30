@@ -7,6 +7,19 @@ export async function getFileUrl(fileId: string): Promise<string> {
   return `https://api.telegram.org/file/bot${TOKEN}/${r.result.file_path}`;
 }
 
+// Отправить голосовое сообщение (OGG/Opus буфер) — «Джарвис отвечает голосом».
+export async function sendVoice(chatId: number, buf: Buffer, extra?: Record<string, any>): Promise<void> {
+  try {
+    const form = new FormData();
+    form.append("chat_id", String(chatId));
+    form.append("voice", new Blob([new Uint8Array(buf)], { type: "audio/ogg" }), "voice.ogg");
+    if (extra) for (const [k, v] of Object.entries(extra)) form.append(k, typeof v === "string" ? v : JSON.stringify(v));
+    await fetch(`${API}/sendVoice`, { method: "POST", body: form as any });
+  } catch (e) {
+    console.error("sendVoice", e);
+  }
+}
+
 // Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
 export async function answerCallback(callbackId: string, text?: string): Promise<void> {
   await fetch(`${API}/answerCallbackQuery`, {

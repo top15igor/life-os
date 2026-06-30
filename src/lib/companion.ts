@@ -2,6 +2,12 @@ import { supabaseAdmin } from "./supabaseAdmin";
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
 import { getFinanceSummary } from "./finance";
+import { ACTION_TOOLS, runAction, type Lang } from "./botActions";
+
+// Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
+// Берём из общего набора бота, исключая роутер-заглушки и опасное удаление.
+const AGENT_NAMES = ["set_reminder", "add_task", "add_goal", "log_weight", "add_dream", "complete_task", "complete_dream", "add_deed"];
+const AGENT_TOOLS = ACTION_TOOLS.filter((t) => AGENT_NAMES.includes(t.name));
 
 // AI-компаньон («идеальный друг под боком»): живая беседа с памятью диалога,
 // знанием всей базы пользователя (дневник/заметки/финансы) и доступом к открытому
@@ -127,9 +133,18 @@ ${saved}
 ${finance || "ФИНАНСЫ: операций пока нет."}`;
 }
 
-function buildSystem(name: string | null, context: string): string {
+function nowLocal(off?: number | null): string {
+  const ms = Date.now() + (typeof off === "number" ? off : 0) * 60000;
+  const d = new Date(ms);
+  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getUTCDay()];
+  return `${d.toISOString().slice(0, 16).replace("T", " ")} (${dow})`;
+}
+
+function buildSystem(name: string | null, context: string, off?: number | null): string {
   const who = name ? name : "собеседника";
-  return `Ты — близкий тёплый друг и личный AI-компаньон ${who} в приложении LIFE OS. Ты знаешь о нём почти всё — из его дневника, заметок и финансов (они ниже). Веди живую беседу, как лучший друг, который всегда рядом: слушай, поддерживай, размышляй вместе, давай честный совет, по-доброму напоминай о важном и подмечай закономерности в его жизни.
+  return `Местное время собеседника сейчас: ${nowLocal(off)}. Используй его для дат «сегодня/завтра/через час/в 9».
+
+Ты — близкий тёплый друг и личный AI-компаньон ${who} в приложении LIFE OS. Ты знаешь о нём почти всё — из его дневника, заметок и финансов (они ниже). Веди живую беседу, как лучший друг, который всегда рядом: слушай, поддерживай, размышляй вместе, давай честный совет, по-доброму напоминай о важном и подмечай закономерности в его жизни.
 
 КАК СЕБЯ ВЕСТИ:
 - Говори по-человечески, тепло и по делу, на языке собеседника. Без канцелярита и без фраз вроде «как ИИ я не могу».
@@ -140,45 +155,64 @@ function buildSystem(name: string | null, context: string): string {
 - Отвечай живо и не слишком длинно — как в переписке, а не как в реферате.
 - НЕ выдумывай факты о его жизни. Чего не знаешь — спроси.
 
+ТЫ УМЕЕШЬ ДЕЙСТВОВАТЬ (как Джарвис): у тебя есть инструменты — поставить напоминание (set_reminder), добавить задачу (add_task), цель (add_goal), мечту (add_dream), записать вес (log_weight), отметить задачу/мечту выполненной (complete_task/complete_dream), записать доброе дело (add_deed). Если собеседник просит сделать что-то из этого («напомни…», «добавь задачу…», «запиши вес…», «поставь цель…») — ВЫЗОВИ нужный инструмент и затем подтверди живой фразой. Не пиши «я не могу» и не делай вид, что выполнил — именно вызывай инструмент. Для напоминаний разбирай дату/время по местному времени собеседника (оно указано ниже).
+
 ЧТО Я ЗНАЮ О ТЕБЕ:
 ${context}`;
 }
 
 // Главная функция: принимает новое сообщение пользователя, ведёт беседу с памятью,
 // возвращает ответ компаньона. Сохраняет обе реплики в историю.
-export async function talkToCompanion(userId: string, name: string | null, userText: string): Promise<string> {
+export async function talkToCompanion(
+  userId: string,
+  name: string | null,
+  userText: string,
+  lang: Lang = "ru",
+  tzOffset?: number | null
+): Promise<string> {
   // 1) Запоминаем реплику пользователя (до ответа — чтобы не потерять при сбое).
   await appendMessage(userId, "user", userText);
 
   // 2) Собираем контекст и историю диалога.
   const [context, history] = await Promise.all([gatherContext(userId), getHistory(userId, 20)]);
-  const system = buildSystem(name, context);
+  const system = buildSystem(name, context, tzOffset);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const tools: any = [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }];
+  // Веб-поиск (серверный) + действия-инструменты (исполняем сами через runAction).
+  const tools: any = [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }, ...AGENT_TOOLS];
   const messages: any[] = history.map((t) => ({ role: t.role, content: t.content }));
+  const didActions: string[] = [];
 
-  // 3) Запрос с веб-поиском. Серверный инструмент может вернуть stop_reason
-  //    "pause_turn" (исчерпан лимит итераций) — тогда дослыаем ответ обратно.
-  let resp = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system,
-    tools,
-    messages,
-  } as any);
+  // 3) Цикл: модель может вызвать веб-поиск (pause_turn) или действие (tool_use).
+  //    На действие — выполняем через runAction и возвращаем результат как tool_result.
+  let resp = await client.messages.create({ model: "claude-sonnet-4-6", max_tokens: 1024, system, tools, messages } as any);
   logClaude(userId, "companion", "sonnet", (resp as any).usage);
 
   let guard = 0;
-  while ((resp as any).stop_reason === "pause_turn" && guard < 3) {
-    messages.push({ role: "assistant", content: (resp as any).content });
-    resp = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system,
-      tools,
-      messages,
-    } as any);
+  while (guard < 6) {
+    const sr = (resp as any).stop_reason;
+    if (sr === "tool_use") {
+      const blocks: any[] = (resp as any).content || [];
+      const calls = blocks.filter((b: any) => b.type === "tool_use");
+      messages.push({ role: "assistant", content: blocks });
+      const results: any[] = [];
+      for (const c of calls) {
+        try {
+          const r = await runAction(userId, c.name, c.input || {}, lang, tzOffset);
+          didActions.push(c.name);
+          results.push({ type: "tool_result", tool_use_id: c.id, content: r.text });
+        } catch {
+          results.push({ type: "tool_result", tool_use_id: c.id, content: "Не удалось выполнить", is_error: true });
+        }
+      }
+      if (!results.length) break;
+      messages.push({ role: "user", content: results });
+    } else if (sr === "pause_turn") {
+      messages.push({ role: "assistant", content: (resp as any).content });
+    } else {
+      break;
+    }
+    resp = await client.messages.create({ model: "claude-sonnet-4-6", max_tokens: 1024, system, tools, messages } as any);
     logClaude(userId, "companion", "sonnet", (resp as any).usage);
     guard++;
   }
