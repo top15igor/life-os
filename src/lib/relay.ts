@@ -24,6 +24,8 @@ const RELAY: Record<string, any> = {
     replyHint: (h: string) => `\n\n↩️ Ответить: <code>/send @${esc(h)} твой текст</code>`,
     sent: (name: string) => `✅ Передал «${esc(name)}».`,
     notFound: "Не нашёл такого человека среди твоих контактов. Можно указать его @имя из LIFE OS (Профиль → имя-ссылка), и он должен пользоваться ботом.",
+    notFoundList: (q: string, list: string[]) => `Не нашёл «${esc(q)}» среди твоих контактов. Кому можно написать:\n${list.map((o) => "• " + o).join("\n")}\nИли укажи точное @имя из LIFE OS.`,
+    noContacts: "У тебя пока нет контактов в боте, кому можно написать. Пригласи друга (кнопка «Пригласить друга») — или напиши по точному @имени из LIFE OS, если знаешь его. Важно: человек должен пользоваться этим ботом.",
     ambiguous: (opts: string[]) => `Под это имя подходят несколько человек — уточни по @имени:\n${opts.map((o) => "• " + o).join("\n")}\nНапример: <code>/send @имя текст</code>`,
     self: "Это же ты сам 🙂",
     optedOut: "Этот пользователь отключил приём сообщений.",
@@ -38,6 +40,8 @@ const RELAY: Record<string, any> = {
     replyHint: (h: string) => `\n\n↩️ Reply: <code>/send @${esc(h)} your text</code>`,
     sent: (name: string) => `✅ Sent to “${esc(name)}”.`,
     notFound: "Couldn't find that person among your contacts. You can use their LIFE OS @name (Profile → link name), and they must use the bot.",
+    notFoundList: (q: string, list: string[]) => `Couldn't find “${esc(q)}” among your contacts. People you can message:\n${list.map((o) => "• " + o).join("\n")}\nOr use their exact LIFE OS @name.`,
+    noContacts: "You have no contacts in the bot yet. Invite a friend (the “Invite a friend” button) — or use someone's exact LIFE OS @name if you know it. Note: they must use this bot.",
     ambiguous: (opts: string[]) => `Several people match that name — pick by @name:\n${opts.map((o) => "• " + o).join("\n")}\nE.g.: <code>/send @name text</code>`,
     self: "That's you 🙂",
     optedOut: "This user has turned off incoming messages.",
@@ -92,7 +96,10 @@ function nameMatches(full: string | null, query: string): boolean {
   return false;
 }
 
-type Resolved = { ok: true; user: Contact } | { ok: false; reason: "not_found" | "ambiguous"; options?: string[] };
+type Resolved =
+  | { ok: true; user: Contact }
+  | { ok: false; reason: "ambiguous"; options: string[] }
+  | { ok: false; reason: "not_found"; contacts: Contact[] };
 
 // Найти получателя: сначала как @имя-ссылку, иначе как имя среди контактов.
 async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolved> {
@@ -115,7 +122,12 @@ async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolv
     );
     return { ok: false, reason: "ambiguous", options };
   }
-  return { ok: false, reason: "not_found" };
+  return { ok: false, reason: "not_found", contacts };
+}
+
+// Список контактов «@имя — Имя» (для подсказки, кому можно написать).
+async function contactList(contacts: Contact[]): Promise<string[]> {
+  return Promise.all(contacts.slice(0, 12).map(async (c) => `@${await getHandle(c.id, c.name).catch(() => "?")} — ${c.name || "?"}`));
 }
 
 // Передать сообщение получателю (по @имени или имени контакта). Возвращает результат для отправителя.
@@ -125,7 +137,9 @@ export async function sendRelay(from: { id: string; name: string | null }, recip
 
   const res = await resolveRecipient(from.id, recipient);
   if (res.ok !== true) {
-    return { ok: false, error: res.reason === "ambiguous" ? SL.ambiguous(res.options || []) : SL.notFound };
+    if (res.reason === "ambiguous") return { ok: false, error: SL.ambiguous(res.options) };
+    const list = await contactList(res.contacts);
+    return { ok: false, error: list.length ? SL.notFoundList(recipient, list) : SL.noContacts };
   }
 
   const rcpt = res.user;
