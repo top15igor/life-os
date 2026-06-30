@@ -7,11 +7,11 @@ export async function getAdminData() {
 
   // referred_by/plan могут ещё не существовать (миграции не запущены) — мягкий фолбэк по убыванию.
   let users: any[] | null = null;
-  const rA = await db.from("users").select("id, name, chat_id, created_at, referred_by, plan");
+  const rA = await db.from("users").select("id, name, chat_id, created_at, referred_by, plan, email");
   if (!rA.error) {
     users = rA.data;
   } else {
-    const r1 = await db.from("users").select("id, name, chat_id, created_at, referred_by");
+    const r1 = await db.from("users").select("id, name, chat_id, created_at, referred_by, email");
     if (!r1.error) {
       users = r1.data;
     } else {
@@ -50,6 +50,8 @@ export async function getAdminData() {
       active: Boolean(st.last && st.last >= weekAgo),
       referrer: u.referred_by ? nameById[u.referred_by] || "—" : null,
       referrerId: u.referred_by || null,
+      email: u.email || null,
+      telegram: !!u.chat_id,
       plan: (u.plan === "pro" || u.plan === "premium") ? u.plan : "free",
     };
   });

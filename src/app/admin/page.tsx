@@ -282,7 +282,14 @@ export default async function AdminPage() {
             <tbody>
               {d.list.map((u) => (
                 <tr key={u.id} style={{ borderTop: "1px solid var(--border)" }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 500 }}>{u.name}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <div style={{ fontWeight: 500 }}>{u.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6, marginTop: 1, flexWrap: "wrap" }}>
+                      {(u as any).telegram && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-brand-telegram" style={{ fontSize: 12 }} />TG</span>}
+                      {(u as any).email && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-mail" style={{ fontSize: 12 }} />{(u as any).email}</span>}
+                      {!(u as any).telegram && !(u as any).email && "—"}
+                    </div>
+                  </td>
                   <td style={{ padding: "10px 12px" }}>{u.entries}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.last || "—"}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.joined || "—"}</td>
