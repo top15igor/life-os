@@ -49,6 +49,7 @@ export async function getAdminData() {
       last: st.last || null,
       active: Boolean(st.last && st.last >= weekAgo),
       referrer: u.referred_by ? nameById[u.referred_by] || "—" : null,
+      referrerId: u.referred_by || null,
       plan: (u.plan === "pro" || u.plan === "premium") ? u.plan : "free",
     };
   });
@@ -109,11 +110,13 @@ export async function getAdminData() {
   for (const u of users || []) {
     if (u.referred_by && userMap[u.referred_by]) (childrenOf[u.referred_by] ||= []).push(u);
   }
+  const nodeActive = (id: string) => Boolean(byUser[id]?.last && byUser[id].last >= weekAgo);
   const buildNode = (u: any, depth: number, seen: Set<string>): any => {
-    if (seen.has(u.id) || depth > 12) return { id: u.id, name: u.name || "—", entries: byUser[u.id]?.count || 0, children: [] };
+    const base = { id: u.id, name: u.name || "—", entries: byUser[u.id]?.count || 0, last: byUser[u.id]?.last || null, active: nodeActive(u.id) };
+    if (seen.has(u.id) || depth > 12) return { ...base, children: [] };
     seen.add(u.id);
     const children = (childrenOf[u.id] || []).map((c) => buildNode(c, depth + 1, seen));
-    return { id: u.id, name: u.name || "—", entries: byUser[u.id]?.count || 0, children };
+    return { ...base, children };
   };
   const roots = (users || []).filter((u: any) => !u.referred_by || !userMap[u.referred_by]);
   const tree = roots.map((u: any) => buildNode(u, 0, new Set<string>())).filter((n: any) => n.children.length > 0);

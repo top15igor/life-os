@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import AdminPlanSelect from "@/components/AdminPlanSelect";
+import AdminReferrerSelect from "@/components/AdminReferrerSelect";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -61,9 +62,14 @@ function TreeNode({ node, depth }: { node: any; depth: number }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
         <Avatar name={node.name} root={depth === 0} depth={depth} />
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: depth === 0 ? 600 : 500 }}>{node.name}</div>
+          <div style={{ fontSize: 13.5, fontWeight: depth === 0 ? 600 : 500, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            {node.name}
+            <span style={{ fontSize: 10.5, fontWeight: 600, padding: "1px 7px", borderRadius: 99, whiteSpace: "nowrap", background: node.active ? "rgba(5,150,105,0.12)" : "var(--surface-2)", color: node.active ? "var(--positive)" : "var(--text-3)" }}>
+              {node.active ? "активен" : node.entries ? "тихо" : "не писал"}
+            </span>
+          </div>
           <div style={{ fontSize: 11, color: "var(--text-3)" }}>
-            {kids > 0 ? `пригласил ${kids}` : depth === 0 ? "корень" : "приглашён"} · {node.entries ?? 0} зап.
+            {kids > 0 ? `пригласил ${kids}` : depth === 0 ? "корень" : "приглашён"} · {node.entries ?? 0} зап.{node.last ? ` · посл. ${node.last}` : ""}
           </div>
         </div>
       </div>
@@ -92,6 +98,8 @@ export default async function AdminPage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const d = await getAdminData();
+  // Опции для ручного выбора «кто пригласил» (все пользователи).
+  const refOptions = d.list.map((u: any) => ({ id: u.id, name: u.name }));
 
   const srcTotal = d.voice + d.textEntries || 1;
   const voicePct = Math.round((d.voice / srcTotal) * 100);
@@ -278,7 +286,9 @@ export default async function AdminPage() {
                   <td style={{ padding: "10px 12px" }}>{u.entries}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.last || "—"}</td>
                   <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.joined || "—"}</td>
-                  <td style={{ padding: "10px 12px", color: "var(--text-2)" }}>{u.referrer || "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <AdminReferrerSelect id={u.id} current={(u as any).referrerId || null} users={refOptions} />
+                  </td>
                   <td style={{ padding: "10px 12px" }}>
                     <AdminPlanSelect id={u.id} plan={(u as any).plan || "free"} />
                   </td>
