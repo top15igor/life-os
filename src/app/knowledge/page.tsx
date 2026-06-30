@@ -15,13 +15,6 @@ const HINT: Record<string, string> = {
   uk: "Збережене з Instagram і YouTube, розкладене за темами. Надішли боту посилання на пост, reels або відео.",
   fr: "Tes enregistrements Instagram & YouTube, classés par thème. Envoie un lien au bot — il atterrit ici.",
 };
-const EMPTY: Record<string, string> = {
-  ru: "Пока пусто. Открой в Instagram сохранённый пост или reels → «Поделиться» → «Копировать ссылку» → пришли её боту в Telegram.",
-  en: "Empty for now. In Instagram open a saved post or reel → Share → Copy link → send it to the bot in Telegram.",
-  uk: "Поки порожньо. Відкрий збережений пост або reels в Instagram → «Поділитися» → «Скопіювати посилання» → надішли боту.",
-  fr: "Vide pour l'instant. Dans Instagram, ouvre un post enregistré → Partager → Copier le lien → envoie-le au bot.",
-};
-
 export default async function KnowledgePage() {
   const user = await requireUser();
   const locale = await getLocale();
@@ -34,7 +27,7 @@ export default async function KnowledgePage() {
       <main className="main wide">
         <PageHead icon="ti-bookmarks" color="#6d5efc" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
 
-        <KnowledgeManager initial={items} locale={locale} emptyHint={EMPTY[locale] || EMPTY.ru} />
+        <KnowledgeManager initial={items} locale={locale} />
       </main>
     </div>
   );
