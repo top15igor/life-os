@@ -50,6 +50,8 @@ export default function DiaryView({ entries: initialEntries, t, locale, initial 
   const [busyId, setBusyId] = useState<string | null>(null); // id записи в работе (правка/удаление)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Подхватываем свежие записи после router.refresh() (например, после добавления новой записи сверху).
+  useEffect(() => { setEntries(initialEntries); }, [initialEntries]);
 
   const catOpts: { slug: string; name: string }[] = [];
   const tagSet = new Set<string>();

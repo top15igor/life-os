@@ -69,7 +69,12 @@ export default function QuickAdd({
     const sent = text.trim();
     setBusy(true);
     try {
-      const res = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: sent }) });
+      // Местные дата/время клиента — чтобы запись легла на нужный день/час, а не по UTC сервера.
+      const now = new Date();
+      const p2 = (n: number) => String(n).padStart(2, "0");
+      const date = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
+      const time = `${p2(now.getHours())}:${p2(now.getMinutes())}`;
+      const res = await fetch("/api/entry", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: sent, date, time }) });
       const j = await res.json().catch(() => null);
       if (res.ok && j?.ok) { setText(""); setExpanded(false); showResult({ text: sent, id: j.id }); router.refresh(); }
     } finally {

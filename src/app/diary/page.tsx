@@ -1,6 +1,7 @@
 import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
 import DiaryView from "@/components/DiaryView";
+import QuickAdd from "@/components/QuickAdd";
 import { getEntries, cats, tagList, people as peopleOf } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -8,6 +9,13 @@ import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+
+const QA: Record<string, { placeholder: string; button: string; saving: string; hint: string }> = {
+  ru: { placeholder: "Что произошло? Запиши событие, мысль, идею…", button: "Записать", saving: "Сохраняю…", hint: "AI разберёт запись и добавит её в дневник" },
+  en: { placeholder: "What happened? Note an event, thought, idea…", button: "Save", saving: "Saving…", hint: "AI will sort the entry into your diary" },
+  uk: { placeholder: "Що сталося? Запиши подію, думку, ідею…", button: "Записати", saving: "Зберігаю…", hint: "AI розбере запис і додасть його у щоденник" },
+  fr: { placeholder: "Quoi de neuf ? Note un événement, une pensée…", button: "Enregistrer", saving: "Enregistrement…", hint: "L'IA classera l'entrée dans ton journal" },
+};
 
 export default async function DiaryPage({ searchParams }: { searchParams: Promise<{ tag?: string; category?: string; person?: string }> }) {
   const sp = await searchParams;

@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Вишлист — список желаний со ссылками", d: "Новый раздел «Вишлист». Вставь ссылку на товар (на сайте или кинь боту /wish) — AI подтянет фото, название и цену. Нажми «Поделиться» — друзья откроют твой список по ссылке и смогут тайно «забронировать» подарок: ты не увидишь, что занято (сюрприз сохранится), а двое не подарят одно и то же. Бесплатно для всех.", tag: "new" },
       { t: "Смена языка прямо в боте", d: "Раньше бот говорил на языке твоего приложения Telegram — и если оно на английском, всё было на английском. Теперь язык можно выбрать самому: отправь боту команду /lang и нажми нужный язык (Русский, English, Українська, Français). Бот запомнит выбор и больше не будет переключаться обратно. Тот же язык подтянется и в напоминаниях.", tag: "new" },
       { t: "Инсайты: правка, удаление и категории", d: "Раздел «Цели и задачи» → «Инсайты» стал управляемым. Каждый инсайт теперь можно отредактировать (карандаш) или удалить (корзина), а ещё присвоить ему категорию: Саморазвитие, Здоровье, Отношения, Работа и деньги, Эмоции, Привычки или Прочее. Появился вид «По категориям» — инсайты сгруппированы по темам. А кнопка «Разложить по категориям» одним нажатием разберёт все накопившиеся инсайты по полочкам с помощью AI. Плюс новые понятные пустые страницы у «Целей» (примеры целей в один тап) и «Задач» (как они появляются из записей).", tag: "new" },
       { t: "Голосовая запись — теперь видно её целиком", d: "Когда наговариваешь запись голосом, бот в подтверждении показывает её ПОЛНОСТЬЮ — слово в слово, как ты сказал(а), а не короткое резюме. Так сразу видно, что ничего не потерялось. Короткая выжимка осталась отдельной строкой ниже. (Полный текст и раньше сохранялся в дневник — изменилось только то, что бот теперь сразу его показывает.)", tag: "improved" },
@@ -207,6 +208,16 @@ const E: Record<Locale, Extras> = {
           { h: "Подсказки", tips: ["Спрашивать можно прямо в боте — он сам поймёт, вопрос это или запись.", "Чем конкретнее вопрос, тем точнее ответ."] },
         ],
       },
+      {
+        key: "wishlist", icon: "ti-gift", color: "#ec4899", title: "Вишлист",
+        short: "Список желаний по ссылке — друзья видят, что тебе подарить.",
+        sections: [
+          { p: "Вставь ссылку на товар — AI подтянет фото, название и цену. Поделись списком: друзья откроют его по ссылке и сразу поймут, что тебе подарить. Бесплатно для всех." },
+          { h: "Как пользоваться", steps: ["Открой «Вишлист» в меню и вставь ссылку на товар (или кинь её боту: команда /wish или просто ссылка из магазина).", "Карточка соберётся сама — можно добавить заметку (размер, цвет, «на ДР»).", "Нажми «Поделиться вишлистом» и отправь ссылку друзьям."] },
+          { h: "Тайный резерв", p: "Друг на твоей странице жмёт «Дарю это» — подарок помечается занятым для других гостей, чтобы не подарили одно и то же. А ты этого НЕ видишь — сюрприз сохранится." },
+          { h: "Подсказки", tips: ["На сайте подойдёт ссылка из любого магазина; в боте «голую» ссылку он распознаёт из популярных магазинов, а с командой /wish — из любого.", "Не подтянулось фото или цена? Жми «Добавить вручную» и впиши сам.", "Список виден только тем, кому ты дал ссылку, — и только когда включишь «Поделиться»."] },
+        ],
+      },
     ],
   },
 
@@ -225,6 +236,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Wishlist — wishes by link", d: "A new “Wishlist” section. Paste a product link (on the site or send /wish to the bot) — AI pulls the photo, title and price. Tap “Share” and friends open your list by link and can secretly reserve a gift: you won't see what's taken (the surprise stays), and no two people buy the same thing. Free for everyone.", tag: "new" },
       { t: "Your name in the address — like Instagram", d: "You now have a personal address with your name: mylifebookai.vercel.app/i/igor (created automatically from your name). It's one smart page: when you're logged in you see your own «Today» feed there — that's your home; a friend who opens the link sees an invitation and starts their own diary (and it counts toward your reward). The site itself stays on the main address mylifebookai.vercel.app — that's where new people land, while you get sent straight to your feed /i/igor after signing in. Change the name in Profile → «Your link name» (you instantly see if it's free or taken). Inner sections (Money, Diary, etc.) keep short addresses — they're already «behind the login», only yours. Any old links you shared keep working.", tag: "improved" },
       { t: "Invite a friend — a printed book on us", d: "Invite friends and earn your real printed Book of Life for free. How it works: share your personal link (the “Invite a friend” button in the sidebar or menu). A friend counts once they register through your link and genuinely start journaling — at least 5 entries. Every 3 such active friends unlock one free printed book in the “Classic” tier (softcover, color photos, delivered by mail). You can see your progress right in the invite dialog, and once a book is earned, a “Get it free” button appears on the “Book of Life” page.", tag: "new" },
       { t: "Connect Fitbit", d: "Got a Fitbit band or watch? Connect it in one click: Health → “Connect Fitbit” (sign in with the Google account your Fitbit is linked to). Steps, activity, sleep and resting heart rate then sync automatically once a day — no phone fiddling. You can also refresh manually with “Sync now” and disconnect anytime.", tag: "new" },
@@ -368,6 +380,16 @@ const E: Record<Locale, Extras> = {
           { h: "How to use", steps: ["Open “Biographer” in the menu (or ask right in the Telegram bot).", "Ask a question in your own words.", "Get an answer referencing dates and events."] },
           { h: "Example questions", examples: ["“When was I happiest this year?”", "“Tell the story of the LIFE OS project.”", "“What affected my health?”", "“How was my week?”"] },
           { h: "Tips", tips: ["You can ask right in the bot — it knows if it's a question or an entry.", "The more specific the question, the better the answer."] },
+        ],
+      },
+      {
+        key: "wishlist", icon: "ti-gift", color: "#ec4899", title: "Wishlist",
+        short: "A wish list by link — friends see what to gift you.",
+        sections: [
+          { p: "Paste a product link — AI pulls the photo, title and price. Share the list and friends instantly know what to gift you. Free for everyone." },
+          { h: "How to use", steps: ["Open “Wishlist” and paste a product link (or send it to the bot: /wish, or just a shop link).", "The card builds itself — add a note (size, color, “for birthday”).", "Tap “Share wishlist” and send the link to friends."] },
+          { h: "Secret reservation", p: "A friend taps “I'll gift this” on your page — the gift is marked taken for other guests so no one doubles up. And you DON'T see it — the surprise stays." },
+          { h: "Tips", tips: ["On the site any shop link works; in the bot a bare link is recognized from popular shops, and /wish works for any link.", "Photo or price didn't load? Tap “Add manually” and fill it in.", "Only people you give the link to can see it — and only when you turn “Share” on."] },
         ],
       },
     ],

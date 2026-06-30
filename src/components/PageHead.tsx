@@ -14,12 +14,18 @@ export default function PageHead({
   hint?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [top, setTop] = useState(0);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
 
   function show() {
     const el = btnRef.current;
-    if (el) setTop(el.getBoundingClientRect().bottom + 7); // якорим по вертикали под иконкой
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const w = Math.min(360, window.innerWidth - 24);
+      // Якорим под иконкой, но не даём вылезти за края экрана (важно на телефоне).
+      const left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
+      setPos({ top: r.bottom + 7, left });
+    }
     setOpen(true);
   }
 
@@ -41,8 +47,8 @@ export default function PageHead({
               <i className="ti ti-help-circle" style={{ fontSize: 16 }} />
             </button>
             {open && (
-              // position: fixed + left/right/margin auto — подсказка всегда в пределах экрана (не обрезается по краям на телефоне)
-              <div style={{ position: "fixed", top, left: 12, right: 12, marginInline: "auto", zIndex: 30, width: "max-content", maxWidth: "min(540px, calc(100vw - 24px))", fontSize: 12.5, fontWeight: 400, color: "var(--text-2)", background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,.12)", borderRadius: 9, padding: "8px 12px", lineHeight: 1.5 }}>
+              // position: fixed, привязан к иконке (pos), с клампом по краям экрана
+              <div style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 30, width: "max-content", maxWidth: "min(360px, calc(100vw - 24px))", fontSize: 12.5, fontWeight: 400, color: "var(--text-2)", background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,.12)", borderRadius: 9, padding: "8px 12px", lineHeight: 1.5 }}>
                 {hint}
               </div>
             )}
