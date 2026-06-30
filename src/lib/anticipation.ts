@@ -91,6 +91,25 @@ export async function getAnticipation(userId: string, lang: Lang = "ru", tzOffse
   return text;
 }
 
+// Отладка (временно): вернуть сырое решение AI + объём контекста, без кэша.
+export async function debugAnticipation(userId: string, lang: Lang = "ru"): Promise<any> {
+  const context = await gather(userId);
+  const system =
+    `Ты — внимательный AI-друг (как Джарвис). По данным пользователя ниже найди МАКСИМУМ ОДНО своевременное, реально полезное наблюдение-подсказку на СЕГОДНЯ. ` +
+    `Типы: привычка под угрозой, приближается повторяющееся дело, напомнить про незакрытое обещание, заметная закономерность. ` +
+    `Если нет СИЛЬНОГО сигнала — found=false. Кратко (1-2 предложения), на ${LANG_NAME[lang]}. Всегда вызывай инструмент anticipation.`;
+  const resp = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 300,
+    system,
+    tools: [TOOL as any],
+    tool_choice: { type: "tool", name: "anticipation" },
+    messages: [{ role: "user", content: context }],
+  });
+  const block: any = (resp as any).content.find((b: any) => b.type === "tool_use");
+  return { contextChars: context.length, contextPreview: context.slice(0, 600), decision: block?.input || null };
+}
+
 // Снять подсказку (пользователь «понятно/скрыть»).
 export async function dismissAnticipation(userId: string, day: string): Promise<void> {
   try {
