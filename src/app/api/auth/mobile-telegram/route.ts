@@ -5,13 +5,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 
 // Telegram-based login for the native app. The user taps /link in the bot and
-// gets a one-time link `<origin>/u/<token>`. The app sends that token (or the
-// whole link) here. We mirror the web /u/<token> flow:
-//   - look up the user by the one-time token,
-//   - ensure a stable session_secret exists,
-//   - rotate the one-time token so the link can't be replayed,
-// then return session_secret in JSON for the app to store (SecureStore) and send
-// back as the `lifeos_token` cookie on every request — same as the web session.
+// gets a link `<origin>/u/<token>`. The app sends that token (or the whole link)
+// here; we look up the user, ensure a stable session_secret, and return it for
+// the app to store (SecureStore) and send as the `lifeos_token` cookie.
+//
+// Unlike the web /u/<token> flow, we deliberately do NOT rotate (burn) the token.
+// The app keeps it as a "remember me" credential so it can silently re-mint a
+// session if session_secret is ever rotated (e.g. after connecting Google or
+// setting a password) — without the user pasting a fresh link every time. The web
+// /u route still rotates for one-time security; this endpoint is app-only.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const raw = String(body?.token || "").trim();
@@ -28,22 +30,16 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (!user) {
-    // Token already used (rotated) or invalid — ask for a fresh /link.
+    // Token was rotated by a web /u login, or invalid — ask for a fresh /link.
     return NextResponse.json({ ok: false, error: "link_expired" }, { status: 401 });
   }
 
   let secret: string = (user as any).session_secret || "";
-  let canRotate = !!secret;
   try {
     if (!secret) {
       const fresh = randomUUID();
       const { error } = await db.from("users").update({ session_secret: fresh }).eq("id", user.id);
-      if (error) { secret = token; canRotate = false; }
-      else { secret = fresh; canRotate = true; }
-    }
-    if (canRotate) {
-      // One-time: replace the login token so the pasted link is now burned.
-      await db.from("users").update({ token: randomUUID() }).eq("id", user.id);
+      secret = error ? token : fresh; // fall back to token if column is missing
     }
   } catch {
     if (!secret) secret = token;
