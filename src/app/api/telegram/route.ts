@@ -880,7 +880,7 @@ export async function POST(req: NextRequest) {
     // По смыслу: ДЕЙСТВИЕ (бот выполняет вместо пользователя), вопрос к ассистенту или запись?
     // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
     if (!forceSave && (!isVoice || text.length < 160)) {
-      const route = await routeMessage(text, user.id);
+      const route = await routeMessage(text, user.id, (user as any).tz_offset);
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);

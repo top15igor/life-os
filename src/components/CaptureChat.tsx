@@ -20,7 +20,7 @@ const Avatar = () => (
 const STR: Record<string, any> = {
   ru: {
     ph: "Запиши событие или спроси AI-друга…", phChat: "Спроси своего AI-друга…",
-    write: "Записать", chat: "AI-друг", saved: "Записано", open: "Открыть запись →",
+    write: "Записать", chat: "AI-друг", saved: "Записано", open: "Открыть запись →", openRem: "Открыть напоминания →",
     thinking: "Думаю…", err: "Связь сорвалась, скажи ещё раз 🙂",
     intro: "Привет! Я твой AI-друг — знаю про тебя всё из дневника и заглядываю в интернет за свежим. О чём поговорим?",
     note: "Память общая с Telegram — можно продолжить там же.",
@@ -31,7 +31,7 @@ const STR: Record<string, any> = {
   },
   en: {
     ph: "Note an event or ask your AI friend…", phChat: "Ask your AI friend…",
-    write: "Note", chat: "AI friend", saved: "Saved", open: "Open entry →",
+    write: "Note", chat: "AI friend", saved: "Saved", open: "Open entry →", openRem: "Open reminders →",
     thinking: "Thinking…", err: "Connection dropped, say it again 🙂",
     intro: "Hi! I'm your AI friend — I know all about you from your diary and check the web for fresh facts. What's up?",
     note: "Memory is shared with Telegram — continue there anytime.",
@@ -42,7 +42,7 @@ const STR: Record<string, any> = {
   },
   uk: {
     ph: "Запиши подію або запитай AI-друга…", phChat: "Запитай свого AI-друга…",
-    write: "Записати", chat: "AI-друг", saved: "Збережено", open: "Відкрити запис →",
+    write: "Записати", chat: "AI-друг", saved: "Збережено", open: "Відкрити запис →", openRem: "Відкрити нагадування →",
     thinking: "Думаю…", err: "Зв'язок обірвався, скажи ще раз 🙂",
     intro: "Привіт! Я твій AI-друг — знаю про тебе все зі щоденника і заглядаю в інтернет за свіжим. Про що поговоримо?",
     note: "Пам'ять спільна з Telegram — можна продовжити там.",
@@ -53,7 +53,7 @@ const STR: Record<string, any> = {
   },
   fr: {
     ph: "Note un événement ou demande à ton ami IA…", phChat: "Demande à ton ami IA…",
-    write: "Noter", chat: "Ami IA", saved: "Enregistré", open: "Ouvrir l'entrée →",
+    write: "Noter", chat: "Ami IA", saved: "Enregistré", open: "Ouvrir l'entrée →", openRem: "Ouvrir les rappels →",
     thinking: "Je réfléchis…", err: "Connexion perdue, redis-le 🙂",
     intro: "Salut ! Je suis ton ami IA — je sais tout de toi via ton journal et je consulte le web. De quoi parle-t-on ?",
     note: "La mémoire est partagée avec Telegram — continue là-bas quand tu veux.",
@@ -70,7 +70,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [recSrc, setRecSrc] = useState<null | "bar" | "reply">(null);
-  const [saved, setSaved] = useState<{ id?: string } | null>(null);
+  const [saved, setSaved] = useState<{ id?: string; msg?: string; href?: string } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -139,11 +139,28 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
     try { localStorage.setItem("lifeos_chat_open", "0"); } catch {}
   }
 
+  // Reminder voice/text command: "напомни …" -> create a reminder instead of an entry.
+  const REMIND_RE = /^\s*(напомни|напоминай|нагадай|нагадуй|remind|rappelle)/i;
+
   async function saveEntry() {
     const t = text.trim();
     if (!t || busy) return;
     setBusy(true);
     try {
+      if (REMIND_RE.test(t)) {
+        const rr = await fetch("/api/voice-command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: t }) })
+          .then((x) => x.json())
+          .catch(() => null);
+        if (rr?.handled) {
+          setText("");
+          setSaved({ msg: rr.message, href: rr.openNext || "/reminders" });
+          router.refresh();
+          if (savedTimer.current) clearTimeout(savedTimer.current);
+          savedTimer.current = setTimeout(() => setSaved(null), 12000);
+          return;
+        }
+        // not recognized as a reminder -> fall through to a normal entry
+      }
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -371,9 +388,12 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       )}
 
       {saved && !chatOpen && (
-        <div style={{ marginTop: 8, fontSize: 13, color: "var(--positive)", display: "inline-flex", alignItems: "center", gap: 7 }}>
-          <i className="ti ti-circle-check" style={{ fontSize: 16 }} />{s.saved}
-          {saved.id && <Link href={`/entry/${saved.id}`} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.open}</Link>}
+        <div style={{ marginTop: 8, fontSize: 13, color: "var(--positive)", display: "inline-flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <i className="ti ti-circle-check" style={{ fontSize: 16 }} />
+          {saved.msg ? saved.msg : s.saved}
+          {saved.msg
+            ? <Link href={saved.href || "/reminders"} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.openRem}</Link>
+            : saved.id && <Link href={`/entry/${saved.id}`} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.open}</Link>}
         </div>
       )}
     </div>

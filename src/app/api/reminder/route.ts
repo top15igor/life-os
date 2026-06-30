@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createCalendarEvent, deleteCalendarEvent, isCalendarConnected, type Recurrence } from "@/lib/googleCalendar";
+import { createReminder } from "@/lib/reminders";
 
 export const runtime = "nodejs";
 
@@ -57,40 +58,9 @@ export async function POST(req: NextRequest) {
     const remindMin = typeof body.remindMin === "number" ? body.remindMin : null;
     const dateStr = (body.dateStr || "").toString();
 
-    // Push to Google Calendar first (if connected) so we can store the event id.
-    let gcalId: string | null = null;
-    let gcalLink: string | null = null;
-    const r = await createCalendarEvent(user.id, buildEvent(text, due, allDay, dateStr, recurrence, remindMin), calendarId);
-    if (r.ok) {
-      gcalId = r.id;
-      gcalLink = r.link;
-    }
-
-    const full: any = {
-      user_id: user.id,
-      text,
-      due_at: due.toISOString(),
-      gcal_event_id: gcalId,
-      gcal_link: gcalLink,
-      recurrence,
-      all_day: allDay,
-      remind_min: remindMin,
-    };
-    if (gcalId) full.gcal_calendar_id = calendarId;
-
-    try {
-      let ins = await db.from("reminders").insert(full).select(COLS).single();
-      if (ins.error) {
-        // Optional columns may be missing (migrations not run) — retry with basics.
-        const basic = { user_id: user.id, text, due_at: due.toISOString(), gcal_event_id: gcalId, gcal_link: gcalLink };
-        ins = await db.from("reminders").insert(basic).select(COLS_BASIC).single();
-      }
-      if (ins.error) throw ins.error;
-      return NextResponse.json({ ok: true, reminder: ins.data, synced: !!gcalId });
-    } catch {
-      if (gcalId) await deleteCalendarEvent(user.id, gcalId, calendarId);
-      return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
-    }
+    const res = await createReminder(user.id, { text, dueISO: due.toISOString(), dateStr, allDay, recurrence, remindMin, calendarId });
+    if (!res.ok) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+    return NextResponse.json({ ok: true, reminder: res.reminder, synced: res.synced });
   }
 
   if (action === "edit") {

@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { logClaude } from "./usage";
 import { DREAM_SPHERES } from "./ai";
+import { createReminder, localToISO } from "./reminders";
+import type { Recurrence } from "./googleCalendar";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -19,7 +21,24 @@ export type Route =
 
 const ACTION_TOOLS: any[] = [
   { name: "add_goal", description: "Добавить цель на год. Только при явной команде вроде «добавь цель…», «поставь цель…».", input_schema: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } },
-  { name: "add_task", description: "Добавить задачу/дело. Команда вроде «добавь задачу…», «напомни сделать…», «надо не забыть…» в повелительном виде боту.", input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
+  { name: "add_task", description: "Добавить задачу/дело БЕЗ конкретного времени. Команда «добавь задачу…», «надо не забыть…», «запиши в дела…». Если названо КОНКРЕТНОЕ время/дата напоминания — это set_reminder, не add_task.", input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } },
+  {
+    name: "set_reminder",
+    description:
+      "Поставить НАПОМИНАНИЕ на конкретное время/дату (уйдёт в календарь с уведомлением). Команды: «напомни …», «напоминай …», «напомни мне …», «через час …», «завтра в 9 …», «каждый день в 8 …». Разбери: что напомнить (text, без слова «напомни»), дату и время по МЕСТНОМУ времени пользователя.",
+    input_schema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "что напомнить, без слова «напомни»" },
+        date: { type: "string", description: "дата YYYY-MM-DD по местному времени пользователя" },
+        time: { type: "string", description: "время HH:MM 24ч по местному; не указывай, если на весь день" },
+        all_day: { type: "boolean", description: "true, если без конкретного времени (день рождения и т.п.)" },
+        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly", "yearly"], description: "повтор, если сказано «каждый день/неделю/месяц/год»" },
+        remind_min: { type: "number", description: "за сколько минут предупредить, если названо (10/30/60/1440); иначе не указывай" },
+      },
+      required: ["text", "date"],
+    },
+  },
   { name: "complete_task", description: "Отметить существующую задачу выполненной. Команда «отметь задачу … выполненной», «заверши задачу …», «выполнил …». query — слова для поиска задачи.", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
   { name: "log_weight", description: "Записать вес в трекер веса. Команда «запиши вес 78», «мой вес 80 кг». kg — число в килограммах.", input_schema: { type: "object", properties: { kg: { type: "number" } }, required: ["kg"] } },
   { name: "add_dream", description: "Добавить мечту в Карту желаний. Команда «добавь мечту …», «хочу чтобы это было моей мечтой …».", input_schema: { type: "object", properties: { text: { type: "string" }, sphere: { type: "string", enum: [...DREAM_SPHERES] } }, required: ["text"] } },
@@ -33,18 +52,28 @@ const ACTION_TOOLS: any[] = [
 const SYS =
   "Ты — маршрутизатор сообщений в личном дневнике-боте. Большинство сообщений — это ДНЕВНИКОВЫЕ ЗАПИСИ " +
   "(человек рассказывает о дне, мыслях, чувствах, событиях) → save_entry. " +
-  "Инструменты-ДЕЙСТВИЯ (add_goal, add_task, complete_task, log_weight, add_dream, complete_dream, add_deed, delete_last_entry) " +
-  "выбирай ТОЛЬКО при ЯВНОЙ ПОВЕЛИТЕЛЬНОЙ команде боту («добавь…», «отметь…», «удали…», «запиши вес…», «заверши задачу…»). " +
+  "Инструменты-ДЕЙСТВИЯ (add_goal, add_task, set_reminder, complete_task, log_weight, add_dream, complete_dream, add_deed, delete_last_entry) " +
+  "выбирай ТОЛЬКО при ЯВНОЙ ПОВЕЛИТЕЛЬНОЙ команде боту («добавь…», «напомни…», «отметь…», «удали…», «запиши вес…», «заверши задачу…»). " +
+  "«Напомни …» с датой/временем → set_reminder (разбери дату и время по местному времени). «Добавь задачу» без времени → add_task. " +
   "Если человек просто описывает, что сделал («сегодня пробежал 5 км», «поговорил с мамой») — это save_entry, НЕ действие. " +
   "Вопросы о своей жизни → ask_question. Всегда выбирай РОВНО один инструмент.";
 
+// Local "now" string for resolving relative dates (today/tomorrow/in an hour).
+function nowLocalLine(off?: number | null): string {
+  const ms = Date.now() + (typeof off === "number" ? off : 0) * 60000;
+  const d = new Date(ms);
+  const iso = d.toISOString().slice(0, 16).replace("T", " ");
+  const dow = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getUTCDay()];
+  return `Сейчас у пользователя (местное время): ${iso} (${dow}). Используй это для дат «сегодня», «завтра», «через час», «в 9».`;
+}
+
 // Один haiku-проход: действие / вопрос / запись.
-export async function routeMessage(text: string, userId?: string): Promise<Route> {
+export async function routeMessage(text: string, userId?: string, tzOffset?: number | null): Promise<Route> {
   try {
     const resp = await client().messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
-      system: SYS,
+      max_tokens: 220,
+      system: SYS + "\n" + nowLocalLine(tzOffset),
       messages: [{ role: "user", content: text }],
       tools: ACTION_TOOLS,
       tool_choice: { type: "any" },
@@ -129,6 +158,14 @@ const M: Record<Lang, any> = {
   },
 };
 
+// Reminder confirmation strings (kept separate from M for brevity).
+const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: string; allDayNote: string; rep: Record<Recurrence, string> }> = {
+  ru: { label: (t, w) => `⏰ Напомню: «${t}» — ${w}.`, at: "в", allDayNote: "весь день", rep: { daily: " · каждый день", weekly: " · каждую неделю", monthly: " · каждый месяц", yearly: " · каждый год" } },
+  en: { label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" } },
+  uk: { label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" } },
+  fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" } },
+};
+
 export type ActionResult = { text: string; openNext?: string };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
@@ -147,6 +184,24 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!t) return { text: s.fail };
       await db.from("tasks").insert({ user_id: userId, text: t, done: false });
       return { text: s.task(t), openNext: "/goals?tab=tasks" };
+    }
+    if (name === "set_reminder") {
+      const t = String(input?.text || "").trim();
+      const date = String(input?.date || "").trim();
+      if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
+      const time = input?.time ? String(input.time).trim() : null;
+      const allDay = !!input?.all_day || !time;
+      const recurrence = (["daily", "weekly", "monthly", "yearly"] as Recurrence[]).includes(input?.recurrence) ? (input.recurrence as Recurrence) : null;
+      const remindMin = typeof input?.remind_min === "number" ? input.remind_min : null;
+      const dueISO = localToISO(date, allDay ? null : time, tzOffset);
+      if (!dueISO) return { text: s.fail };
+      const res = await createReminder(userId, { text: t, dueISO, dateStr: date, allDay, recurrence, remindMin });
+      if (!res.ok) return { text: s.fail };
+      const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
+      const [, mm, dd] = date.split("-");
+      const when = allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
+      const suffix = recurrence ? rm.rep[recurrence] : "";
+      return { text: rm.label(t, when + suffix), openNext: "/reminders" };
     }
     if (name === "complete_task") {
       const q = String(input?.query || "").trim();
