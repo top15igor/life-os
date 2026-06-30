@@ -289,6 +289,9 @@ export default function KnowledgeManager({ initial, locale }: { initial: SavedIt
                       <button onClick={(e) => { e.stopPropagation(); setMenuId(menuId === it.id ? null : it.id); }} aria-label="menu" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: 16, padding: 2, flexShrink: 0 }}><i className="ti ti-dots" /></button>
                     </div>
                     {menuId === it.id ? (
+                      <>
+                      {/* Невидимый фон: клик мимо закрывает меню (иначе оно «залипает»). */}
+                      <div onClick={(e) => { e.stopPropagation(); setMenuId(null); }} style={{ position: "fixed", inset: 0, zIndex: 4 }} />
                       <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", right: 10, bottom: 10, zIndex: 5, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,.18)", padding: 6, minWidth: 150 }}>
                         <button onClick={() => { setOpen(it); startEdit(it); setMenuId(null); }} style={menuItem}><i className="ti ti-pencil" /> {s.edit}</button>
                         <div style={{ padding: "4px 8px 2px", fontSize: 10.5, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".04em" }}>{s.folder}</div>
@@ -298,6 +301,7 @@ export default function KnowledgeManager({ initial, locale }: { initial: SavedIt
                         <button onClick={() => { const t = prompt(s.newFolder, ""); if (t) move(it.id, t); }} style={menuItem}><i className="ti ti-folder-plus" /> {s.newFolder}</button>
                         <button onClick={() => del(it.id)} style={{ ...menuItem, color: "#ef4444" }}><i className="ti ti-trash" /> {s.delete}</button>
                       </div>
+                      </>
                     ) : null}
                   </div>
                 </article>
