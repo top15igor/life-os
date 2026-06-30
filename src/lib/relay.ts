@@ -6,15 +6,16 @@ import { sendMessage } from "./telegram";
 const DAILY_LIMIT = 20;
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const norm = (s?: string | null) => (s || "").toLowerCase().replace(/ё/g, "е").trim();
 
-// Разбор команды «/send @handle текст» (собака необязательна).
+// Разбор «/send <получатель> текст». Получатель — @имя-ссылка ИЛИ просто имя контакта.
 export function parseSend(text?: string | null): { handle: string; message: string } | null {
   if (!text) return null;
-  const m = text.match(/^\/send\s+@?([a-zA-Z0-9_-]{2,30})\s+([\s\S]+)/);
+  const m = text.match(/^\/send\s+@?(\S{1,40})\s+([\s\S]+)/i);
   if (!m) return null;
   const message = m[2].trim();
   if (!message) return null;
-  return { handle: m[1].toLowerCase(), message: message.slice(0, 2000) };
+  return { handle: m[1], message: message.slice(0, 2000) };
 }
 
 const RELAY: Record<string, any> = {
@@ -22,26 +23,28 @@ const RELAY: Record<string, any> = {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> передаёт тебе через LIFE OS:\n\n«${esc(msg)}»`,
     replyHint: (h: string) => `\n\n↩️ Ответить: <code>/send @${esc(h)} твой текст</code>`,
     sent: (name: string) => `✅ Передал «${esc(name)}».`,
-    notFound: "Не нашёл такого пользователя. Нужно его @имя из LIFE OS, и он должен пользоваться ботом.",
+    notFound: "Не нашёл такого человека среди твоих контактов. Можно указать его @имя из LIFE OS (Профиль → имя-ссылка), и он должен пользоваться ботом.",
+    ambiguous: (opts: string[]) => `Под это имя подходят несколько человек — уточни по @имени:\n${opts.map((o) => "• " + o).join("\n")}\nНапример: <code>/send @имя текст</code>`,
     self: "Это же ты сам 🙂",
     optedOut: "Этот пользователь отключил приём сообщений.",
     limit: `На сегодня лимит (${DAILY_LIMIT}) исчерпан — попробуй завтра.`,
     fail: "Не удалось отправить, попробуй позже.",
-    how: "Чтобы передать сообщение другому человеку:\n<code>/send @имя текст</code>\nНапример: <code>/send @anna буду через 10 минут</code>\n\nЧтобы отключить приём сообщений у себя — /relay.",
-    on: "🔔 Приём сообщений включён — друзья из LIFE OS могут писать тебе через /send.",
+    how: "Чтобы передать сообщение другому человеку:\n<code>/send имя текст</code> — по имени контакта,\n<code>/send @имя текст</code> — по @имени-ссылке.\nНапример: <code>/send Аня буду через 10 минут</code>\n\nЧтобы отключить приём сообщений у себя — /relay.",
+    on: "🔔 Приём сообщений включён — твои контакты из LIFE OS могут писать тебе через /send.",
     off: "🔕 Приём сообщений выключен. Включить обратно — /relay.",
   },
   en: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> sends you a message via LIFE OS:\n\n“${esc(msg)}”`,
     replyHint: (h: string) => `\n\n↩️ Reply: <code>/send @${esc(h)} your text</code>`,
     sent: (name: string) => `✅ Sent to “${esc(name)}”.`,
-    notFound: "Couldn't find that user. You need their LIFE OS @name, and they must use the bot.",
+    notFound: "Couldn't find that person among your contacts. You can use their LIFE OS @name (Profile → link name), and they must use the bot.",
+    ambiguous: (opts: string[]) => `Several people match that name — pick by @name:\n${opts.map((o) => "• " + o).join("\n")}\nE.g.: <code>/send @name text</code>`,
     self: "That's you 🙂",
     optedOut: "This user has turned off incoming messages.",
     limit: `You've hit today's limit (${DAILY_LIMIT}) — try tomorrow.`,
     fail: "Couldn't send, try again later.",
-    how: "To relay a message to someone:\n<code>/send @name text</code>\nE.g.: <code>/send @anna running 10 min late</code>\n\nTo turn off your own inbox — /relay.",
-    on: "🔔 Incoming messages on — LIFE OS friends can message you via /send.",
+    how: "To relay a message to someone:\n<code>/send name text</code> — by contact name,\n<code>/send @name text</code> — by @link-name.\nE.g.: <code>/send Anna running 10 min late</code>\n\nTo turn off your own inbox — /relay.",
+    on: "🔔 Incoming messages on — your LIFE OS contacts can message you via /send.",
     off: "🔕 Incoming messages off. Turn back on — /relay.",
   },
 };
@@ -52,17 +55,81 @@ export function relayHelp(lang: string) { return L(lang).how; }
 export function relaySentMsg(lang: string, name: string) { return L(lang).sent(name); }
 export function relayToggleMsg(lang: string, nowOff: boolean) { return nowOff ? L(lang).off : L(lang).on; }
 
-// Передать сообщение получателю по его @handle. Возвращает результат для отправителя.
-export async function sendRelay(from: { id: string; name: string | null }, handle: string, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
+type Contact = { id: string; name: string | null; chat_id: number | null; lang: string | null; relay_off?: boolean };
+
+// Контакты пользователя в LIFE OS: кого он пригласил, кто пригласил его,
+// и с кем он уже переписывался через /send (в обе стороны). Только реальные юзеры бота.
+async function getContacts(fromUserId: string): Promise<Contact[]> {
+  const db = supabaseAdmin();
+  const ids = new Set<string>();
+  try {
+    const { data } = await db.from("users").select("id").eq("referred_by", fromUserId);
+    (data || []).forEach((u: any) => ids.add(u.id));
+  } catch {}
+  try {
+    const { data: me } = await db.from("users").select("referred_by").eq("id", fromUserId).maybeSingle();
+    if ((me as any)?.referred_by) ids.add((me as any).referred_by);
+  } catch {}
+  try {
+    const { data: sent } = await db.from("message_relays").select("to_user").eq("from_user", fromUserId);
+    (sent || []).forEach((r: any) => ids.add(r.to_user));
+    const { data: recv } = await db.from("message_relays").select("from_user").eq("to_user", fromUserId);
+    (recv || []).forEach((r: any) => ids.add(r.from_user));
+  } catch {}
+  ids.delete(fromUserId);
+  if (!ids.size) return [];
+  const { data } = await db.from("users").select("id, name, chat_id, lang, relay_off").in("id", [...ids]);
+  return ((data as any[]) || []).filter((u) => u.chat_id) as Contact[];
+}
+
+function nameMatches(full: string | null, query: string): boolean {
+  const f = norm(full), n = norm(query);
+  if (!f || !n) return false;
+  if (f === n) return true;
+  const first = f.split(/\s+/)[0];
+  if (first === n) return true;
+  if (n.length >= 3 && first.startsWith(n)) return true; // «Ан» → «Анна»
+  return false;
+}
+
+type Resolved = { ok: true; user: Contact } | { ok: false; reason: "not_found" | "ambiguous"; options?: string[] };
+
+// Найти получателя: сначала как @имя-ссылку, иначе как имя среди контактов.
+async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolved> {
+  const clean = raw.replace(/^@+/, "").trim();
+
+  if (/^[a-z0-9_-]{2,30}$/i.test(clean)) {
+    const uid = await resolveHandle(clean.toLowerCase());
+    if (uid) {
+      const { data } = await supabaseAdmin().from("users").select("id, name, chat_id, lang, relay_off").eq("id", uid).maybeSingle();
+      if ((data as any)?.chat_id) return { ok: true, user: data as Contact };
+    }
+  }
+
+  const contacts = await getContacts(fromUserId);
+  const matches = contacts.filter((c) => nameMatches(c.name, clean));
+  if (matches.length === 1) return { ok: true, user: matches[0] };
+  if (matches.length > 1) {
+    const options = await Promise.all(
+      matches.slice(0, 6).map(async (m) => `@${await getHandle(m.id, m.name).catch(() => "?")} (${m.name || "?"})`)
+    );
+    return { ok: false, reason: "ambiguous", options };
+  }
+  return { ok: false, reason: "not_found" };
+}
+
+// Передать сообщение получателю (по @имени или имени контакта). Возвращает результат для отправителя.
+export async function sendRelay(from: { id: string; name: string | null }, recipient: string, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
   const db = supabaseAdmin();
   const SL = L(senderLang);
 
-  const toUserId = await resolveHandle(handle);
-  if (!toUserId) return { ok: false, error: SL.notFound };
-  if (toUserId === from.id) return { ok: false, error: SL.self };
+  const res = await resolveRecipient(from.id, recipient);
+  if (res.ok !== true) {
+    return { ok: false, error: res.reason === "ambiguous" ? SL.ambiguous(res.options || []) : SL.notFound };
+  }
 
-  const { data: rcpt } = await db.from("users").select("chat_id, name, lang, relay_off").eq("id", toUserId).maybeSingle();
-  if (!(rcpt as any)?.chat_id) return { ok: false, error: SL.notFound };
+  const rcpt = res.user;
+  if (rcpt.id === from.id) return { ok: false, error: SL.self };
   if ((rcpt as any).relay_off) return { ok: false, error: SL.optedOut };
 
   // Анти-спам: не больше DAILY_LIMIT сообщений в сутки (мягко, если таблицы ещё нет).
@@ -72,18 +139,18 @@ export async function sendRelay(from: { id: string; name: string | null }, handl
     if ((count || 0) >= DAILY_LIMIT) return { ok: false, error: SL.limit };
   } catch {}
 
-  const rl = L((rcpt as any).lang);
+  const rl = L(rcpt.lang);
   const fromHandle = await getHandle(from.id, from.name).catch(() => null);
   let body = rl.incoming(from.name || "LIFE OS", message);
   if (fromHandle) body += rl.replyHint(fromHandle);
 
   try {
-    await sendMessage((rcpt as any).chat_id, body);
+    await sendMessage(rcpt.chat_id!, body);
   } catch {
     return { ok: false, error: SL.fail };
   }
-  try { await db.from("message_relays").insert({ from_user: from.id, to_user: toUserId, body: message }); } catch {}
-  return { ok: true, toName: (rcpt as any).name || handle };
+  try { await db.from("message_relays").insert({ from_user: from.id, to_user: rcpt.id, body: message }); } catch {}
+  return { ok: true, toName: rcpt.name || recipient };
 }
 
 // Переключить приём сообщений. Возвращает новое состояние relay_off (true = выключено).
