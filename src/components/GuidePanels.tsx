@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import type { Extras, Feature, ChangeItem } from "@/lib/guideExtras";
+import GuideSections from "@/components/GuideSections";
 
 const BADGE_STYLE: Record<string, { bg: string; col: string }> = {
   new: { bg: "var(--accent-bg)", col: "var(--accent-text)" },
@@ -106,18 +108,25 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
       <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 13, maxWidth: 620 }}>{ex.featuresLead}</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10, marginBottom: 12 }}>
-        {shownFeatures.map((f) => (
-          <button key={f.key} onClick={() => setActive(f)} className="card" style={{ textAlign: "left", cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)" }}>
-            <i className={`ti ${f.icon}`} style={{ fontSize: 22, color: f.color, flexShrink: 0, marginTop: 1 }} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 14.5, fontWeight: 600 }}>{f.title}</span>
-                <span style={{ fontSize: 12, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>{ex.open}<i className="ti ti-chevron-right" style={{ fontSize: 14 }} /></span>
+        {shownFeatures.map((f) => {
+          const cardStyle = { textAlign: "left" as const, cursor: "pointer", display: "flex", gap: 11, alignItems: "flex-start", border: "1px solid var(--border)", background: "var(--surface)", textDecoration: "none", color: "var(--text)" };
+          const inner = (
+            <>
+              <i className={`ti ${f.icon}`} style={{ fontSize: 22, color: f.color, flexShrink: 0, marginTop: 1 }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: 14.5, fontWeight: 600 }}>{f.title}</span>
+                  <span style={{ fontSize: 12, color: "var(--accent)", display: "inline-flex", alignItems: "center", gap: 3, flexShrink: 0 }}>{ex.open}<i className="ti ti-chevron-right" style={{ fontSize: 14 }} /></span>
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 4 }}>{f.short}</div>
               </div>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 4 }}>{f.short}</div>
-            </div>
-          </button>
-        ))}
+            </>
+          );
+          // «Три AI-помощника» — отдельная страница, остальные карточки открываются модалкой.
+          return f.key === "ai-compare"
+            ? <Link key={f.key} href="/guide/ai-helpers" className="card" style={cardStyle}>{inner}</Link>
+            : <button key={f.key} onClick={() => setActive(f)} className="card" style={cardStyle}>{inner}</button>;
+        })}
       </div>
       {ex.features.length > FEAT_LIMIT && (
         <button onClick={() => setFeaturesOpen((o) => !o)} style={{ marginBottom: 26, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, background: "none", border: "1px solid var(--border)", borderRadius: 9, padding: "9px", color: "var(--accent)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
@@ -141,41 +150,7 @@ export default function GuidePanels({ ex, upcoming }: { ex: Extras; upcoming: Ch
 
             {/* тело */}
             <div style={{ padding: "16px 20px 28px" }}>
-              {active.sections.map((sec, i) => (
-                <div key={i} style={{ marginBottom: 18 }}>
-                  {sec.h && <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 9 }}>{sec.h}</div>}
-                  {sec.p && <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>{sec.p}</div>}
-
-                  {sec.steps && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                      {sec.steps.map((st, k) => (
-                        <div key={k} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                          <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 600 }}>{k + 1}</span>
-                          <span style={{ fontSize: 14, lineHeight: 1.55, paddingTop: 2 }}>{st}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {sec.examples && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                      {sec.examples.map((ex2, k) => (
-                        <div key={k} style={{ fontSize: 13.5, lineHeight: 1.5, padding: "9px 12px", borderRadius: 10, background: "var(--surface-2)", borderLeft: "3px solid var(--accent)", color: "var(--text)" }}>{ex2}</div>
-                      ))}
-                    </div>
-                  )}
-
-                  {sec.tips && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {sec.tips.map((tp, k) => (
-                        <div key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13.5, lineHeight: 1.55 }}>
-                          <i className="ti ti-bulb" style={{ fontSize: 16, color: "var(--energy)", flexShrink: 0, marginTop: 2 }} />{tp}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              <GuideSections sections={active.sections} />
               <button onClick={() => setActive(null)} style={{ width: "100%", padding: "12px", borderRadius: 12, background: "var(--accent)", color: "#fff", border: "none", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>{ex.close}</button>
             </div>
           </div>

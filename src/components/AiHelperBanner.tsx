@@ -25,7 +25,7 @@ export default function AiHelperBanner({ which, locale }: { which: "analytics" |
   const more = which === "analytics" ? r.moreA : which === "lab" ? r.moreL : r.more;
 
   return (
-    <Link href="/guide?card=ai-compare" className="card card-hover" style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, background: "var(--accent-bg)", border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
+    <Link href="/guide/ai-helpers" className="card card-hover" style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, background: "var(--accent-bg)", border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
       <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 999, background: "var(--accent)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
         <i className={`ti ${role.icon}`} style={{ fontSize: 20 }} />
       </span>
