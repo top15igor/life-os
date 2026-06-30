@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   const end = mo >= 12 ? `${y + 1}-01-01` : `${y}-${String((mo || 1) + 1).padStart(2, "0")}-01`;
   let q: any = await db
     .from("finance_tx")
-    .select("day, kind, amount, currency, category, subcategory, note")
+    .select("day, kind, amount, currency, category, subcategory, note, scope")
     .eq("user_id", userId)
     .gte("day", start)
     .lt("day", end)
@@ -55,14 +55,18 @@ export async function GET(req: NextRequest) {
 
   const byCur: Record<string, { inc: number; exp: number; n: number }> = {};
   const byCat: Record<string, number> = {};
+  const byScope: Record<string, { inc: number; exp: number; n: number }> = {};
   let inc = 0, exp = 0;
   for (const t of txs) {
     const a = Number(t.amount) || 0;
     const c = t.currency || "?";
+    const sc = (t as any).scope || "null";
     byCur[c] = byCur[c] || { inc: 0, exp: 0, n: 0 };
     byCur[c].n++;
-    if (t.kind === "income") { inc += a; byCur[c].inc += a; }
-    else { exp += a; byCur[c].exp += a; const k = t.category || "—"; byCat[k] = (byCat[k] || 0) + a; }
+    byScope[sc] = byScope[sc] || { inc: 0, exp: 0, n: 0 };
+    byScope[sc].n++;
+    if (t.kind === "income") { inc += a; byCur[c].inc += a; byScope[sc].inc += a; }
+    else { exp += a; byCur[c].exp += a; byScope[sc].exp += a; const k = t.category || "—"; byCat[k] = (byCat[k] || 0) + a; }
   }
   const top = txs
     .filter((t) => t.kind === "expense")
@@ -81,6 +85,7 @@ export async function GET(req: NextRequest) {
     rawExpenseSum: Math.round(exp),
     rawIncomeSum: Math.round(inc),
     byCurrency: byCur,
+    byScope,
     byCategoryRaw: Object.fromEntries(Object.entries(byCat).sort((a, b) => b[1] - a[1])),
     topExpenses: top,
   });

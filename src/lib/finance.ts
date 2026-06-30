@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getUsdPerUnit } from "./fx";
+import { inScope, type Scope } from "./financeScope";
 
 // Постраничная загрузка ВСЕХ операций пользователя. Нужна потому, что
 // PostgREST/Supabase отдаёт максимум ~1000 строк за запрос (.limit это не
@@ -86,7 +87,7 @@ export function shiftMonth(m: string, delta: number): string {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // Данные по финансам за выбранный месяц: итоги в основной валюте + бюджеты по категориям.
-export async function getFinanceData(userId: string, month?: string): Promise<FinanceData> {
+export async function getFinanceData(userId: string, month?: string, view: Scope | "all" = "personal"): Promise<FinanceData> {
   const m = /^\d{4}-\d{2}$/.test(month || "") ? (month as string) : currentMonth();
   const db = supabaseAdmin();
 
@@ -116,12 +117,14 @@ export async function getFinanceData(userId: string, month?: string): Promise<Fi
       .order("day", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5000);
-    let { data, error } = await q("id, day, kind, amount, currency, category, subcategory, note");
-    // Старая база без колонки subcategory — повторяем запрос без неё.
-    if (error && /subcategory|column|schema cache/i.test(error.message)) {
+    let { data, error } = await q("id, day, kind, amount, currency, category, subcategory, note, scope");
+    // Старая база без колонок scope/subcategory — повторяем запрос без них.
+    if (error && /scope|subcategory|column|schema cache/i.test(error.message)) {
       ({ data, error } = await q("id, day, kind, amount, currency, category, note"));
     }
-    txsRaw = (data || []).map((t: any) => ({ subcategory: null, ...t, amount: Number(t.amount) }));
+    txsRaw = (data || []).map((t: any) => ({ subcategory: null, scope: null, ...t, amount: Number(t.amount) }));
+    // Фильтр режима: Личное (по умолчанию) / Бизнес / Переводы / Всё.
+    txsRaw = txsRaw.filter((t: any) => inScope(t.scope, view));
   } catch {
     // нет таблицы — пустой месяц
   }
@@ -324,15 +327,22 @@ export async function getMonthlyTrend(userId: string, n = 12): Promise<{ month: 
 // курсы, чтобы ответ бота не тормозил.
 export async function getFinanceSummary(userId: string): Promise<string> {
   const db = supabaseAdmin();
-  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null; subcategory: string | null }> = [];
+  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null; subcategory: string | null; scope?: string | null }> = [];
   try {
-    let raw = await fetchAllTx(db, "day, kind, amount, currency, category, subcategory", userId);
-    // Старая база без колонки subcategory — повторяем без неё.
+    let raw = await fetchAllTx(db, "day, kind, amount, currency, category, subcategory, scope", userId);
+    // Старая база без колонки scope/subcategory — повторяем без них.
     if (!raw.length) raw = await fetchAllTx(db, "day, kind, amount, currency, category", userId);
-    all = raw.map((t: any) => ({ subcategory: null, ...t, amount: Number(t.amount) }));
+    all = raw.map((t: any) => ({ subcategory: null, scope: null, ...t, amount: Number(t.amount) }));
   } catch {
     return "";
   }
+  if (!all.length) return "";
+
+  // Личная сводка считает ТОЛЬКО личные операции. Бизнес (счета ФОП/контрагенты)
+  // и переводы (себе/людям, пополнения карты, наличные) исключаем — иначе сырой
+  // банковский оборот выглядит как личные траты.
+  const excluded = all.filter((t) => !inScope(t.scope, "personal"));
+  all = all.filter((t) => inScope(t.scope, "personal"));
   if (!all.length) return "";
 
   // Основная валюта: из настроек либо самая частая в операциях.
@@ -380,7 +390,8 @@ export async function getFinanceSummary(userId: string): Promise<string> {
     [...mp.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([c, v]) => `${c} ${Math.round(v)}`).join(", ") || "—";
 
   const lines = [
-    `ФИНАНСЫ — сводка из раздела «Деньги» (валюта итогов: ${base}; операции в разных валютах сведены по официальному курсу НБУ на дату каждой операции). Числа — округлённые суммы в ${base}.`,
+    `ФИНАНСЫ — ЛИЧНАЯ сводка из раздела «Деньги» (валюта итогов: ${base}; операции в разных валютах сведены по официальному курсу НБУ на дату каждой операции). Числа — округлённые суммы в ${base}. ВАЖНО: здесь ТОЛЬКО личные траты/доходы. Бизнес-операции (счета ФОП, контрагенты) и переводы (себе/людям, пополнения карты, наличные) ИСКЛЮЧЕНЫ и НЕ являются личными расходами — не называй их тратами.`,
+    excluded.length ? `(Исключено из личной сводки: ${excluded.length} операций — это бизнес и переводы, не личные траты.)` : "",
     "",
     "ПО ГОДАМ:",
   ];

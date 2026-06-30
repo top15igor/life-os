@@ -32,6 +32,8 @@ function mccCategory(mcc: number): string | null {
   return null;
 }
 
+import { classifyScope } from "./financeScope";
+
 export type MonoMapped = {
   ext_id: string;
   day: string;
@@ -40,6 +42,7 @@ export type MonoMapped = {
   currency: string;
   category: string | null;
   note: string | null;
+  scope: string;
 };
 
 // Преобразовать statementItem из вебхука/выписки Monobank в операцию.
@@ -56,6 +59,7 @@ export function mapStatementItem(item: any, accountCurrency?: string): MonoMappe
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();
+  const note = desc ? desc.slice(0, 200) : null;
   return {
     ext_id: String(item.id),
     day,
@@ -63,6 +67,7 @@ export function mapStatementItem(item: any, accountCurrency?: string): MonoMappe
     amount,
     currency,
     category,
-    note: desc ? desc.slice(0, 200) : null,
+    note,
+    scope: classifyScope({ note, category }),
   };
 }

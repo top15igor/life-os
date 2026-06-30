@@ -48,11 +48,11 @@ export async function POST(req: NextRequest) {
       const row: any = {
         user_id: userId, day: mapped.day, kind: mapped.kind, amount: mapped.amount,
         currency: mapped.currency, category: mapped.category, note: mapped.note,
-        source: "monobank", ext_id: mapped.ext_id,
+        source: "monobank", ext_id: mapped.ext_id, scope: mapped.scope,
       };
       let { error } = await db.from("finance_tx").insert(row);
-      if (error && /ext_id|source|column|schema cache/i.test(error.message)) {
-        const { ext_id, source, ...bare } = row; // старая база без колонок
+      if (error && /ext_id|source|scope|column|schema cache/i.test(error.message)) {
+        const { ext_id, source, scope, ...bare } = row; // старая база без колонок
         await db.from("finance_tx").insert(bare);
       }
     }
