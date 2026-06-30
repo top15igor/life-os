@@ -45,22 +45,6 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
         <span style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 500, whiteSpace: "nowrap" }}>{s.refBtn} →</span>
       </Link>
 
-      {/* Тариф */}
-      <Link href="/pricing" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16, border: "1px solid #f59e0b55", background: "#f59e0b0d" }}>
-        <i className="ti ti-star" style={{ fontSize: 22, color: "#f59e0b", flexShrink: 0 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{s.plan}</div>
-          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45 }}>{s.planSub}</div>
-        </div>
-        <span style={{ fontSize: 12.5, color: "#f59e0b", fontWeight: 500, whiteSpace: "nowrap" }}>{s.planBtn} →</span>
-      </Link>
-
-      {/* Язык */}
-      <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <span style={{ fontSize: 14, fontWeight: 500 }}>{s.language}</span>
-        <LangSwitcher current={locale as any} />
-      </div>
-
       {/* Пуш-уведомления: отдельная страница со всеми настройками (утро/вечер/время/тон…) */}
       {showPushToggle && (
         <Link href="/profile/notifications" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
@@ -92,6 +76,22 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
         </div>
         <span style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 500, whiteSpace: "nowrap" }}>{s.refBtn} →</span>
       </Link>
+
+      {/* Тариф */}
+      <Link href="/pricing" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16, border: "1px solid #f59e0b55", background: "#f59e0b0d" }}>
+        <i className="ti ti-star" style={{ fontSize: 22, color: "#f59e0b", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>{s.plan}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45 }}>{s.planSub}</div>
+        </div>
+        <span style={{ fontSize: 12.5, color: "#f59e0b", fontWeight: 500, whiteSpace: "nowrap" }}>{s.planBtn} →</span>
+      </Link>
+
+      {/* Язык */}
+      <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 500 }}>{s.language}</span>
+        <LangSwitcher current={locale as any} />
+      </div>
 
       {/* Управление */}
       <div style={{ fontSize: 13, color: "var(--text-2)", margin: "20px 0 10px" }}>{s.danger}</div>
