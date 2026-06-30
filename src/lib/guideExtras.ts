@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Книги — твой читательский дневник", d: "Новый раздел «Книги»: полки «Хочу прочитать», «Читаю» и «Прочитал». Добавляй книги поиском по названию (обложка, автор и описание подтянутся сами), по фото обложки или штрих-кода (распознаёт AI), или импортом из Goodreads/StoryGraph. На каждую книгу — оценка, мини-ревью «зашла или нет», заметки и любимые цитаты. Есть цель года со статистикой, AI-советы «что почитать дальше» и публичная страница библиотеки, которой можно поделиться с друзьями. Бесплатно для всех.", tag: "new" },
       { t: "Запись можно добавить прямо в «Дневнике»", d: "Раньше новую запись можно было создать только на главной или через бота. Теперь поле для записи (текст или голос) появилось и вверху раздела «Дневник» — пиши или наговаривай прямо там, где смотришь свою ленту. Запись сразу появится в списке.", tag: "new" },
       { t: "Вишлист — список желаний со ссылками", d: "Новый раздел «Вишлист». Вставь ссылку на товар (на сайте или кинь боту /wish) — AI подтянет фото, название и цену. Нажми «Поделиться» — друзья откроют твой список по ссылке и смогут тайно «забронировать» подарок: ты не увидишь, что занято (сюрприз сохранится), а двое не подарят одно и то же. Бесплатно для всех.", tag: "new" },
       { t: "Смена языка прямо в боте", d: "Раньше бот говорил на языке твоего приложения Telegram — и если оно на английском, всё было на английском. Теперь язык можно выбрать самому: отправь боту команду /lang и нажми нужный язык (Русский, English, Українська, Français). Бот запомнит выбор и больше не будет переключаться обратно. Тот же язык подтянется и в напоминаниях.", tag: "new" },
@@ -219,6 +220,16 @@ const E: Record<Locale, Extras> = {
           { h: "Подсказки", tips: ["На сайте подойдёт ссылка из любого магазина; в боте «голую» ссылку он распознаёт из популярных магазинов, а с командой /wish — из любого.", "Не подтянулось фото или цена? Жми «Добавить вручную» и впиши сам.", "Список виден только тем, кому ты дал ссылку, — и только когда включишь «Поделиться»."] },
         ],
       },
+      {
+        key: "books", icon: "ti-books", color: "#8b5cf6", title: "Книги",
+        short: "Читательский дневник: полки, оценки, ревью, цитаты и AI-советы.",
+        sections: [
+          { p: "Твоя библиотека с полками «Хочу прочитать», «Читаю» и «Прочитал». На каждую книгу — оценка, мини-ревью «зашла или нет», заметки и любимые цитаты. Бесплатно для всех." },
+          { h: "Как добавить книгу", steps: ["Поиском по названию — обложка, автор и описание подтянутся сами.", "По фото: кнопка «По фото / ISBN» (сфоткай обложку или штрих-код) — AI распознает книгу. В боте — пришли фото с подписью «книга».", "Импортом из Goodreads или StoryGraph: выгрузи там библиотеку в CSV и нажми «Импорт» — перенесутся полки, оценки и рецензии."] },
+          { h: "Полезные фишки", tips: ["Цель года: поставь, сколько книг прочитать, и следи за прогрессом и статистикой.", "AI «Что почитать дальше» — советует книги по тем, что тебе зашли, и добавляет в один клик.", "Любимые цитаты можно копить прямо в карточке книги."] },
+          { h: "Поделиться", p: "Нажми «Поделиться библиотекой» — друзья откроют её по ссылке и увидят, что ты читаешь и советуешь, с оценками и ревью. Полка «Хочу прочитать» остаётся приватной." },
+        ],
+      },
     ],
   },
 
@@ -237,6 +248,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Books — your reading log", d: "A new “Books” section: shelves for “Want to read”, “Reading” and “Read”. Add books by title search (cover, author and description are pulled in), by a photo of the cover or barcode (AI recognizes it), or by importing from Goodreads/StoryGraph. For each book — a rating, a quick “loved it or not” review, notes and favorite quotes. There's a yearly goal with stats, AI “what to read next” picks, and a public library page you can share with friends. Free for everyone.", tag: "new" },
       { t: "Wishlist — wishes by link", d: "A new “Wishlist” section. Paste a product link (on the site or send /wish to the bot) — AI pulls the photo, title and price. Tap “Share” and friends open your list by link and can secretly reserve a gift: you won't see what's taken (the surprise stays), and no two people buy the same thing. Free for everyone.", tag: "new" },
       { t: "Your name in the address — like Instagram", d: "You now have a personal address with your name: mylifebookai.vercel.app/i/igor (created automatically from your name). It's one smart page: when you're logged in you see your own «Today» feed there — that's your home; a friend who opens the link sees an invitation and starts their own diary (and it counts toward your reward). The site itself stays on the main address mylifebookai.vercel.app — that's where new people land, while you get sent straight to your feed /i/igor after signing in. Change the name in Profile → «Your link name» (you instantly see if it's free or taken). Inner sections (Money, Diary, etc.) keep short addresses — they're already «behind the login», only yours. Any old links you shared keep working.", tag: "improved" },
       { t: "Invite a friend — a printed book on us", d: "Invite friends and earn your real printed Book of Life for free. How it works: share your personal link (the “Invite a friend” button in the sidebar or menu). A friend counts once they register through your link and genuinely start journaling — at least 5 entries. Every 3 such active friends unlock one free printed book in the “Classic” tier (softcover, color photos, delivered by mail). You can see your progress right in the invite dialog, and once a book is earned, a “Get it free” button appears on the “Book of Life” page.", tag: "new" },
@@ -391,6 +403,16 @@ const E: Record<Locale, Extras> = {
           { h: "How to use", steps: ["Open “Wishlist” and paste a product link (or send it to the bot: /wish, or just a shop link).", "The card builds itself — add a note (size, color, “for birthday”).", "Tap “Share wishlist” and send the link to friends."] },
           { h: "Secret reservation", p: "A friend taps “I'll gift this” on your page — the gift is marked taken for other guests so no one doubles up. And you DON'T see it — the surprise stays." },
           { h: "Tips", tips: ["On the site any shop link works; in the bot a bare link is recognized from popular shops, and /wish works for any link.", "Photo or price didn't load? Tap “Add manually” and fill it in.", "Only people you give the link to can see it — and only when you turn “Share” on."] },
+        ],
+      },
+      {
+        key: "books", icon: "ti-books", color: "#8b5cf6", title: "Books",
+        short: "A reading log: shelves, ratings, reviews, quotes and AI picks.",
+        sections: [
+          { p: "Your library with “Want to read”, “Reading” and “Read” shelves. For each book — a rating, a quick “loved it or not” review, notes and favorite quotes. Free for everyone." },
+          { h: "How to add a book", steps: ["By title search — cover, author and description are pulled in.", "By photo: the “By photo / ISBN” button (snap the cover or barcode) — AI recognizes the book. In the bot — send a photo captioned “book”.", "By import from Goodreads or StoryGraph: export your library there as CSV and tap “Import” — shelves, ratings and reviews transfer over."] },
+          { h: "Handy extras", tips: ["Year goal: set how many books to read and track progress and stats.", "AI “What to read next” suggests books based on the ones you loved, and adds them in one tap.", "Collect favorite quotes right on the book's card."] },
+          { h: "Share", p: "Tap “Share library” — friends open it by link and see what you read and recommend, with ratings and reviews. Your “Want to read” shelf stays private." },
         ],
       },
     ],
