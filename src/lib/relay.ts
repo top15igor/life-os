@@ -26,6 +26,16 @@ export function parseNick(text?: string | null): { recipient: string; alias: str
   return { recipient: m[1], alias: m[2] };
 }
 
+// Естественная фраза «передай/скажи/напиши <кому> [что] <текст>» (в т.ч. распознанная с голоса).
+export function parseRelayPhrase(text?: string | null): { recipient: string; message: string } | null {
+  if (!text) return null;
+  const m = text.match(/^\s*(?:передай(?:те)?|перешли(?:те)?|скажи(?:те)?|напиши(?:те)?)\s+@?([^\s,;:.!?]{2,40})[,;:.\s]+(?:что(?:бы)?\s+)?([\s\S]+)/i);
+  if (!m) return null;
+  const message = m[2].trim();
+  if (!message) return null;
+  return { recipient: m[1], message: message.slice(0, 2000) };
+}
+
 const RELAY: Record<string, any> = {
   ru: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> передаёт тебе через LIFE OS:\n\n«${esc(msg)}»`,
@@ -114,14 +124,23 @@ async function fetchUser(id: string): Promise<Contact | null> {
   return (q.data as any) || null;
 }
 
+// Сравнение с допуском на склонения: общий префикс ≥3 и почти вся длина
+// («котик»/«котику», «евгения»/«евгении»). Точное совпадение — всегда true.
+function looseEq(a?: string | null, b?: string | null): boolean {
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  let i = 0;
+  while (i < short.length && short[i] === long[i]) i++;
+  return i >= 3 && i >= long.length - 2;
+}
+
 function nameMatches(full: string | null, query: string): boolean {
-  const f = norm(full), n = norm(query);
-  if (!f || !n) return false;
-  if (f === n) return true;
-  const first = f.split(/\s+/)[0];
-  if (first === n) return true;
-  if (n.length >= 3 && first.startsWith(n)) return true; // «Ан» → «Анна»
-  return false;
+  const f = norm(full);
+  if (!f) return false;
+  if (looseEq(f, query)) return true;
+  return looseEq(f.split(/\s+/)[0], query);
 }
 
 type Resolved =
@@ -175,8 +194,7 @@ async function enrichLines(contacts: Contact[], lang: string): Promise<string[]>
 async function aliasTarget(ownerId: string, name: string): Promise<string | null> {
   try {
     const { data } = await supabaseAdmin().from("relay_aliases").select("target_id, alias").eq("owner_id", ownerId);
-    const n = norm(name);
-    const hit = ((data as any[]) || []).find((a) => norm(a.alias) === n);
+    const hit = ((data as any[]) || []).find((a) => looseEq(a.alias, name));
     return hit ? (hit.target_id as string) : null;
   } catch {
     return null;
@@ -208,22 +226,10 @@ async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolv
   return { ok: false, reason: "not_found", contacts };
 }
 
-// Передать сообщение получателю (по @имени или имени контакта). Возвращает результат для отправителя.
-export async function sendRelay(from: { id: string; name: string | null }, recipient: string, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
+// Доставка уже найденному получателю (проверки + отправка + лог).
+async function deliver(from: { id: string; name: string | null }, rcpt: Contact, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
   const db = supabaseAdmin();
   const SL = L(senderLang);
-
-  const res = await resolveRecipient(from.id, recipient);
-  if (res.ok !== true) {
-    if (res.reason === "ambiguous") {
-      const lines = await enrichLines(res.matches, senderLang);
-      return { ok: false, error: SL.ambiguous(lines) };
-    }
-    const list = await enrichLines(res.contacts.slice(0, 12), senderLang);
-    return { ok: false, error: list.length ? SL.notFoundList(recipient, list) : SL.noContacts };
-  }
-
-  const rcpt = res.user;
   if (rcpt.id === from.id) return { ok: false, error: SL.self };
   if ((rcpt as any).relay_off) return { ok: false, error: SL.optedOut };
 
@@ -245,7 +251,40 @@ export async function sendRelay(from: { id: string; name: string | null }, recip
     return { ok: false, error: SL.fail };
   }
   try { await db.from("message_relays").insert({ from_user: from.id, to_user: rcpt.id, body: message }); } catch {}
-  return { ok: true, toName: rcpt.name || recipient };
+  return { ok: true, toName: rcpt.name || null || undefined };
+}
+
+// Передать сообщение получателю (по @имени, имени или прозвищу). Результат для отправителя.
+export async function sendRelay(from: { id: string; name: string | null }, recipient: string, message: string, senderLang: string): Promise<{ ok: boolean; toName?: string; error?: string }> {
+  const SL = L(senderLang);
+  const res = await resolveRecipient(from.id, recipient);
+  if (res.ok !== true) {
+    if (res.reason === "ambiguous") {
+      const lines = await enrichLines(res.matches, senderLang);
+      return { ok: false, error: SL.ambiguous(lines) };
+    }
+    const list = await enrichLines(res.contacts.slice(0, 12), senderLang);
+    return { ok: false, error: list.length ? SL.notFoundList(recipient, list) : SL.noContacts };
+  }
+  const r = await deliver(from, res.user, message, senderLang);
+  return { ok: r.ok, toName: r.toName || res.user.name || recipient, error: r.error };
+}
+
+// Естественная фраза «передай <кому> …» (голос/текст). handled=false → это НЕ relay
+// (получатель не распознан) → пусть обработается как обычная запись дневника.
+export async function relayFromPhrase(from: { id: string; name: string | null }, text: string, senderLang: string): Promise<{ handled: boolean; reply?: string }> {
+  const p = parseRelayPhrase(text);
+  if (!p) return { handled: false };
+  const res = await resolveRecipient(from.id, p.recipient);
+  if (res.ok !== true) {
+    if (res.reason === "ambiguous") {
+      const lines = await enrichLines(res.matches, senderLang);
+      return { handled: true, reply: L(senderLang).ambiguous(lines) };
+    }
+    return { handled: false }; // не нашли получателя — не перехватываем, это обычная запись
+  }
+  const r = await deliver(from, res.user, p.message, senderLang);
+  return { handled: true, reply: r.ok ? L(senderLang).sent(r.toName || res.user.name || p.recipient) : r.error! };
 }
 
 // Задать своё прозвище для контакта: /nick @имя прозвище. Возвращает имя получателя.

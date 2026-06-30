@@ -10,7 +10,7 @@ import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
-import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg } from "@/lib/relay";
+import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -809,6 +809,13 @@ export async function POST(req: NextRequest) {
         await sendMessage(chatId, W.failed);
       }
       return NextResponse.json({ ok: true });
+    }
+
+    // 📨 Естественная фраза «передай <кому> …» (в т.ч. голосом) → доставить сообщение.
+    //    Если получатель не распознан — не перехватываем, идём дальше (обычная запись).
+    {
+      const rp = await relayFromPhrase({ id: user.id, name: user.name ?? null }, text, langOf(user, msg));
+      if (rp.handled) { await sendMessage(chatId, rp.reply!); return NextResponse.json({ ok: true }); }
     }
 
     // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
