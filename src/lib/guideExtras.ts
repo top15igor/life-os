@@ -261,6 +261,16 @@ const E: Record<Locale, Extras> = {
         ],
       },
       {
+        key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Сообщения друзьям",
+        short: "Передай сообщение другому человеку из LIFE OS — голосом или командой.",
+        sections: [
+          { p: "Через бота можно передать сообщение другому человеку, который тоже пользуется LIFE OS. Бот доставит его с подписью, от кого оно — без анонимности." },
+          { h: "Как отправить", steps: ["Голосом или текстом естественной фразой: «передай Ане, что опоздаю» — бот сам поймёт и доставит.", "Командой: /send Имя текст (по имени контакта) или /send @имя текст (по имени-ссылке из Профиля).", "На сайте: «Профиль → Мои приглашённые», у каждого кнопка «Написать»."] },
+          { h: "Прозвища", p: "Бот не видит, как человек записан у тебя в телефоне. Зато можно задать своё прозвище: /nick @evgeniya Котик — и дальше писать «передай Котику …». Список прозвищ — /nicks, удалить — /unnick Котик." },
+          { h: "Подсказки", tips: ["Получателю приходит «Имя передаёт тебе через LIFE OS: …» — он сразу видит, от кого.", "Лимит 20 сообщений в день; писать можно только тем, кто пользуется ботом.", "Не хочешь получать такие сообщения — отключи приём командой /relay."] },
+        ],
+      },
+      {
         key: "reminders", icon: "ti-bell", color: "#4F46E5", title: "Напоминания",
         short: "Поставь напоминание — оно придёт уведомлением в Google Календарь.",
         sections: [
@@ -482,6 +492,16 @@ const E: Record<Locale, Extras> = {
           { h: "How to add a book", steps: ["By title search — cover, author and description are pulled in.", "By photo: the “By photo / ISBN” button (snap the cover or barcode) — AI recognizes the book. In the bot — send a photo captioned “book”.", "By import from Goodreads or StoryGraph: export your library there as CSV and tap “Import” — shelves, ratings and reviews transfer over."] },
           { h: "Handy extras", tips: ["Year goal: set how many books to read and track progress and stats.", "AI “What to read next” suggests books based on the ones you loved, and adds them in one tap.", "Collect favorite quotes right on the book's card."] },
           { h: "Share", p: "Tap “Share library” — friends open it by link and see what you read and recommend, with ratings and reviews. Your “Want to read” shelf stays private." },
+        ],
+      },
+      {
+        key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Message friends",
+        short: "Relay a message to another LIFE OS person — by voice or command.",
+        sections: [
+          { p: "Through the bot you can relay a message to another person who also uses LIFE OS. The bot delivers it signed with who sent it — no anonymity." },
+          { h: "How to send", steps: ["By voice or text, naturally: “tell Anna I'll be late” — the bot understands and delivers it.", "By command: /send Name text (by contact name) or /send @name text (by link-name from Profile).", "On the web: “Profile → People you invited”, a “Message” button next to each person."] },
+          { h: "Nicknames", p: "The bot can't see how you saved someone in your phone. But you can set your own nickname: /nick @evgeniya Kitty — then “tell Kitty …”. List nicknames — /nicks, remove — /unnick Kitty." },
+          { h: "Tips", tips: ["The recipient sees “Name sends you a message via LIFE OS: …” — they know who it's from.", "Limit of 20 messages a day; only people who use the bot can be reached.", "Don't want such messages — turn off your inbox with /relay."] },
         ],
       },
       {
