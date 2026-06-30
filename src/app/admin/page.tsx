@@ -64,6 +64,19 @@ function Title({ children }: any) {
   return <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10 }}>{children}</div>;
 }
 
+// Сворачиваемая секция админки: заголовок-кнопка, по клику разворачивается (нативный <details>).
+function Section({ title, open, children }: { title: any; open?: boolean; children: any }) {
+  return (
+    <details className="adm" open={open} style={{ marginBottom: 12, border: "1px solid var(--border)", borderRadius: 14, background: "var(--surface)", overflow: "hidden" }}>
+      <summary style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "14px 16px", cursor: "pointer", fontSize: 14.5, fontWeight: 600, userSelect: "none" }}>
+        <span>{title}</span>
+        <i className="ti ti-chevron-down adm-chev" style={{ fontSize: 18, color: "var(--text-3)", flexShrink: 0 }} />
+      </summary>
+      <div style={{ padding: "0 16px 16px" }}>{children}</div>
+    </details>
+  );
+}
+
 const TREE_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
 
 function Avatar({ name, root, depth }: { name: string; root?: boolean; depth: number }) {
@@ -174,8 +187,7 @@ export default async function AdminPage() {
           <Stat label="Вернулись (≥2 дней)" value={d.returning} color="var(--insight)" />
         </div>
 
-        <div style={{ marginBottom: 24 }}>
-          <Title>📈 Рост и удержание</Title>
+        <Section title="📈 Рост и удержание" open>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
             {/* Воронка активации */}
             <div className="card">
@@ -222,11 +234,10 @@ export default async function AdminPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Section>
 
         {d.feedback && d.feedback.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <Title>💬 Обратная связь ({d.feedback.length})</Title>
+          <Section title={`💬 Обратная связь (${d.feedback.length})`}>
             <div style={{ display: "grid", gap: 8 }}>
               {d.feedback.map((f: any, i: number) => (
                 <div key={i} className="card" style={{ padding: "11px 13px" }}>
@@ -238,10 +249,11 @@ export default async function AdminPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Section>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginBottom: 24 }}>
+        <Section title="📊 Динамика (14 дней)">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginBottom: 14 }}>
           <div>
             <Title>Записи по дням (14 дней)</Title>
             <div className="card"><Bars series={d.entriesSeries} color="var(--accent)" /></div>
@@ -263,8 +275,10 @@ export default async function AdminPage() {
           <Stat label="Ср. настроение" value={d.avgMood ?? "—"} color="#4f46e5" />
           <Stat label="Ср. энергия" value={d.avgEnergy ?? "—"} color="var(--energy)" />
         </div>
+        </Section>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 24 }}>
+        <Section title="🧩 Использование и вовлечённость" open>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
           {/* Что реально используют — adoption фич */}
           {(d as any).featureAdoption && (
             <div>
@@ -318,9 +332,9 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+        </Section>
 
-        <div style={{ marginBottom: 24 }}>
-          <Title>🌳 Дерево приглашений — кто кого привёл</Title>
+        <Section title="🌳 Дерево приглашений — кто кого привёл">
           {d.tree.length > 0 ? (
             <div className="card">
               {d.tree.map((n: any) => <TreeNode key={n.id} node={n} depth={0} />)}
@@ -335,10 +349,9 @@ export default async function AdminPage() {
               </div>
             </div>
           )}
-        </div>
+        </Section>
 
-        <div style={{ marginBottom: 24 }}>
-          <Title>💰 Расход AI (примерно)</Title>
+        <Section title="💰 Расход AI (примерно)">
           {d.usage && d.usage.byKind.length > 0 ? (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 10 }}>
@@ -383,11 +396,10 @@ export default async function AdminPage() {
               Пока пусто. Запусти <b style={{ color: "var(--text)" }}>usage.sql</b> в Supabase, затем сделай новую запись или задай вопрос — расход начнёт считаться здесь. Старые записи (до включения учёта) не учитываются.
             </div>
           )}
-        </div>
+        </Section>
 
         {d.topReferrers.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <Title>Кто больше всех приглашает</Title>
+          <Section title="🤝 Кто больше всех приглашает">
             <div className="card" style={{ padding: "6px 14px" }}>
               {d.topReferrers.map((r, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "8px 0", borderTop: i ? "1px solid var(--border)" : "none" }}>
@@ -396,11 +408,12 @@ export default async function AdminPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Section>
         )}
 
-        <Title>Все пользователи ({d.totalUsers})</Title>
-        <AdminUsersTable users={d.list as any} refOptions={refOptions} />
+        <Section title={`👥 Все пользователи (${d.totalUsers})`} open>
+          <AdminUsersTable users={d.list as any} refOptions={refOptions} />
+        </Section>
       </main>
     </div>
   );
