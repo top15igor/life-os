@@ -106,6 +106,43 @@ export async function getAdminData() {
     .map(([id, count]) => ({ name: nameById[id] || id, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Adoption фич: сколько РАЗНЫХ юзеров реально пользуются каждой фичей (что взлетело, что мёртвое).
+  const adopt = async (table: string): Promise<{ users: number; total: number }> => {
+    try {
+      const { data } = await db.from(table).select("user_id");
+      const rows = (data || []) as any[];
+      return { users: new Set(rows.map((r) => r.user_id)).size, total: rows.length };
+    } catch { return { users: 0, total: 0 }; }
+  };
+  const voiceUsers = new Set((ents as any[]).filter((e) => (e.source || "").includes("voice")).map((e) => e.user_id)).size;
+  const FEATS: { label: string; table?: string; color: string }[] = [
+    { label: "Голосовые", color: "#6d5efc" },
+    { label: "Финансы", table: "finance_tx", color: "#0ea5e9" },
+    { label: "Цели", table: "goals", color: "#3b82f6" },
+    { label: "Задачи", table: "tasks", color: "#6366f1" },
+    { label: "Мечты", table: "dreams", color: "#f59e0b" },
+    { label: "Вишлист", table: "wishes", color: "#ec4899" },
+    { label: "База знаний", table: "saved_items", color: "#14b8a6" },
+    { label: "Память", table: "memories", color: "#8b5cf6" },
+    { label: "AI-друг", table: "companion_messages", color: "#10b981" },
+    { label: "Напоминания", table: "reminders", color: "#f472b6" },
+    { label: "Книги", table: "books", color: "#84cc16" },
+    { label: "Трекер веса", table: "weight_log", color: "#ef4444" },
+  ];
+  const adoptRes = await Promise.all(FEATS.map((f) => (f.table ? adopt(f.table) : Promise.resolve({ users: voiceUsers, total: 0 }))));
+  const featureAdoption = FEATS
+    .map((f, i) => ({ label: f.label, color: f.color, users: adoptRes[i].users, total: adoptRes[i].total }))
+    .sort((a, b) => b.users - a.users);
+
+  // Вовлечённость: распределение юзеров по числу записей.
+  const buckets = { b0: 0, b12: 0, b310: 0, b11: 0 };
+  for (const u of list) {
+    if (u.entries === 0) buckets.b0++;
+    else if (u.entries <= 2) buckets.b12++;
+    else if (u.entries <= 10) buckets.b310++;
+    else buckets.b11++;
+  }
+
   // Дерево приглашений: кто кого позвал, ветки от корня.
   const userMap: Record<string, any> = {};
   for (const u of users || []) userMap[u.id] = u;
@@ -152,6 +189,7 @@ export async function getAdminData() {
     totalUsers, activeUsers, active30, inactiveUsers: totalUsers - activeUsers,
     totalEntries, writers, returning, avgPerWriter,
     entriesSeries, newUsersSeries, voice, textEntries, avgMood, avgEnergy, catDist,
+    featureAdoption, engagement: buckets,
     list, topReferrers, tree, usage, feedback,
   };
 }

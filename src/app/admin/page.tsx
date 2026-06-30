@@ -36,11 +36,6 @@ const KIND_INFO: Record<string, { label: string; desc: string }> = {
   summarize: { label: "Перегенерация резюме", desc: "Пересборка резюме записи после правки." },
 };
 
-const CAT_COLOR: Record<string, string> = {
-  health: "#ef4444", sport: "#10b981", food: "#84cc16", family: "#ec4899", relationship: "#f472b6", business: "#3b82f6",
-  finance: "#0ea5e9", ideas: "#f59e0b", insight: "#8b5cf6", task: "#6366f1", gratitude: "#14b8a6", travel: "#06b6d4",
-  emotions: "#a78bfa", problem: "#fb7185", decision: "#22d3ee", event: "#94a3b8",
-};
 
 function Stat({ label, value, color }: any) {
   return (
@@ -125,7 +120,6 @@ export default async function AdminPage() {
 
   const srcTotal = d.voice + d.textEntries || 1;
   const voicePct = Math.round((d.voice / srcTotal) * 100);
-  const maxCat = d.catDist[0]?.count || 1;
 
   // Метрики роста и удержания (по уже посчитанным агрегатам).
   const totalU = d.totalUsers || 1;
@@ -270,27 +264,60 @@ export default async function AdminPage() {
           <Stat label="Ср. энергия" value={d.avgEnergy ?? "—"} color="var(--energy)" />
         </div>
 
-        {d.catDist.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <Title>Зачем пользуются — темы записей</Title>
-            <div className="card">
-              {d.catDist.slice(0, 12).map((c) => {
-                const pct = Math.round((c.count / d.totalEntries) * 100);
-                return (
-                  <div key={c.slug} style={{ marginBottom: 9 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
-                      <span>{t.cats[c.slug] || c.slug}</span>
-                      <span style={{ color: "var(--text-3)" }}>{c.count} · {pct}%</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginBottom: 24 }}>
+          {/* Что реально используют — adoption фич */}
+          {(d as any).featureAdoption && (
+            <div>
+              <Title>🧩 Что реально используют</Title>
+              <div className="card">
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10 }}>Сколько разных людей пользуются каждой фичей (из {d.totalUsers}).</div>
+                {(d as any).featureAdoption.map((f: any) => {
+                  const p = Math.round((f.users / (d.totalUsers || 1)) * 100);
+                  return (
+                    <div key={f.label} style={{ marginBottom: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
+                        <span>{f.label}</span>
+                        <span style={{ color: "var(--text-3)" }}>{f.users} чел · {p}%{f.total ? ` · ${f.total} шт` : ""}</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
+                        <div style={{ width: `${p}%`, height: "100%", background: f.color }} />
+                      </div>
                     </div>
-                    <div style={{ height: 6, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
-                      <div style={{ width: `${Math.round((c.count / maxCat) * 100)}%`, height: "100%", background: CAT_COLOR[c.slug] || "var(--accent)" }} />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Вовлечённость по юзерам */}
+          {(d as any).engagement && (
+            <div>
+              <Title>🔥 Вовлечённость по юзерам</Title>
+              <div className="card">
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10 }}>Сколько людей в каждой группе по числу записей.</div>
+                {[
+                  { label: "10+ записей — закрепились", n: (d as any).engagement.b11, color: "var(--positive)" },
+                  { label: "3–10 записей — пробуют", n: (d as any).engagement.b310, color: "var(--accent)" },
+                  { label: "1–2 записи — попробовали", n: (d as any).engagement.b12, color: "#f59e0b" },
+                  { label: "0 записей — не начали", n: (d as any).engagement.b0, color: "var(--text-3)" },
+                ].map((g) => {
+                  const p = Math.round((g.n / (d.totalUsers || 1)) * 100);
+                  return (
+                    <div key={g.label} style={{ marginBottom: 11 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 3 }}>
+                        <span>{g.label}</span>
+                        <span style={{ fontWeight: 600 }}>{g.n} <span style={{ color: "var(--text-3)", fontWeight: 400 }}>· {p}%</span></span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
+                        <div style={{ width: `${p}%`, height: "100%", background: g.color }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div style={{ marginBottom: 24 }}>
           <Title>🌳 Дерево приглашений — кто кого привёл</Title>
