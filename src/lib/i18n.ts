@@ -69,7 +69,7 @@ function cats(...names: string[]): Record<string, string> {
 const dicts: Record<Locale, Dict> = {
   ru: {
     brand: "LIFE OS",
-    nav: { today: "Сегодня", guide: "Инструкция", diary: "Дневник", tasks: "Задачи", wellness: "Самочувствие", plans: "Цели и задачи", finance: "Деньги", health: "Здоровье", energy: "Энергия", sport: "Спорт", food: "Питание", family: "Семья", projects: "Проекты", insights: "Инсайты", goals: "Цели", lifebook: "Книга жизни", knowledge: "База знаний", trace: "Мой след", memory: "Память", people: "Люди", places: "Места", analytics: "Что заметил AI", lab: "Лаборатория", biographer: "Биограф", share: "Поделиться", paths: "Мои пути", profile: "Профиль" },
+    nav: { today: "Сегодня", guide: "Инструкция", diary: "Дневник", tasks: "Задачи", wellness: "Самочувствие", plans: "Цели и задачи", finance: "Деньги", health: "Здоровье", energy: "Энергия", sport: "Спорт", food: "Питание", family: "Семья", projects: "Проекты", insights: "Инсайты", goals: "Цели", lifebook: "Книга жизни", knowledge: "База знаний", trace: "Мой след", memory: "Память", people: "Люди", places: "Места", analytics: "Что заметил AI", lab: "Лаборатория", biographer: "Биограф", wishlist: "Вишлист", share: "Поделиться", paths: "Мои пути", profile: "Профиль" },
     greetings: { night: "Доброй ночи", morning: "Доброе утро", day: "Добрый день", evening: "Добрый вечер" },
     entriesWord: "записей",
     quickCapture: "Быстрая запись",
@@ -86,7 +86,7 @@ const dicts: Record<Locale, Dict> = {
   },
   en: {
     brand: "LIFE OS",
-    nav: { today: "Today", guide: "Guide", diary: "Diary", tasks: "Tasks", wellness: "Wellness", plans: "Goals & tasks", finance: "Money", health: "Health", energy: "Energy", sport: "Sport", food: "Food", family: "Family", projects: "Projects", insights: "Insights", goals: "Goals", lifebook: "Life Book", knowledge: "Knowledge", trace: "My Trace", memory: "Memory", people: "People", places: "Places", analytics: "Life Intelligence", lab: "Lab", biographer: "Biographer", share: "Share", paths: "My paths", profile: "Profile" },
+    nav: { today: "Today", guide: "Guide", diary: "Diary", tasks: "Tasks", wellness: "Wellness", plans: "Goals & tasks", finance: "Money", health: "Health", energy: "Energy", sport: "Sport", food: "Food", family: "Family", projects: "Projects", insights: "Insights", goals: "Goals", lifebook: "Life Book", knowledge: "Knowledge", trace: "My Trace", memory: "Memory", people: "People", places: "Places", analytics: "Life Intelligence", lab: "Lab", biographer: "Biographer", wishlist: "Wishlist", share: "Share", paths: "My paths", profile: "Profile" },
     greetings: { night: "Good night", morning: "Good morning", day: "Good afternoon", evening: "Good evening" },
     entriesWord: "entries",
     quickCapture: "Quick capture",
@@ -103,7 +103,7 @@ const dicts: Record<Locale, Dict> = {
   },
   uk: {
     brand: "LIFE OS",
-    nav: { today: "Сьогодні", guide: "Інструкція", diary: "Щоденник", tasks: "Завдання", wellness: "Самопочуття", plans: "Цілі та завдання", finance: "Гроші", health: "Здоров'я", energy: "Енергія", sport: "Спорт", food: "Харчування", family: "Сім'я", projects: "Проєкти", insights: "Інсайти", goals: "Цілі", lifebook: "Книга життя", knowledge: "База знань", trace: "Мій слід", memory: "Пам'ять", people: "Люди", places: "Місця", analytics: "Що помітив AI", lab: "Лабораторія", biographer: "Біограф", share: "Поділитися", paths: "Мої шляхи", profile: "Профіль" },
+    nav: { today: "Сьогодні", guide: "Інструкція", diary: "Щоденник", tasks: "Завдання", wellness: "Самопочуття", plans: "Цілі та завдання", finance: "Гроші", health: "Здоров'я", energy: "Енергія", sport: "Спорт", food: "Харчування", family: "Сім'я", projects: "Проєкти", insights: "Інсайти", goals: "Цілі", lifebook: "Книга життя", knowledge: "База знань", trace: "Мій слід", memory: "Пам'ять", people: "Люди", places: "Місця", analytics: "Що помітив AI", lab: "Лабораторія", biographer: "Біограф", wishlist: "Вішліст", share: "Поділитися", paths: "Мої шляхи", profile: "Профіль" },
     greetings: { night: "Доброї ночі", morning: "Доброго ранку", day: "Доброго дня", evening: "Доброго вечора" },
     entriesWord: "записів",
     quickCapture: "Швидкий запис",
@@ -120,7 +120,7 @@ const dicts: Record<Locale, Dict> = {
   },
   fr: {
     brand: "LIFE OS",
-    nav: { today: "Aujourd'hui", guide: "Guide", diary: "Journal", tasks: "Tâches", wellness: "Bien-être", plans: "Objectifs & tâches", finance: "Argent", health: "Santé", energy: "Énergie", sport: "Sport", food: "Alimentation", family: "Famille", projects: "Projets", insights: "Insights", goals: "Objectifs", lifebook: "Livre de vie", knowledge: "Base de connaissances", trace: "Mon empreinte", memory: "Mémoire", people: "Personnes", places: "Lieux", analytics: "Vu par l'IA", lab: "Labo", biographer: "Biographe", share: "Partager", paths: "Mes chemins", profile: "Profil" },
+    nav: { today: "Aujourd'hui", guide: "Guide", diary: "Journal", tasks: "Tâches", wellness: "Bien-être", plans: "Objectifs & tâches", finance: "Argent", health: "Santé", energy: "Énergie", sport: "Sport", food: "Alimentation", family: "Famille", projects: "Projets", insights: "Insights", goals: "Objectifs", lifebook: "Livre de vie", knowledge: "Base de connaissances", trace: "Mon empreinte", memory: "Mémoire", people: "Personnes", places: "Lieux", analytics: "Vu par l'IA", lab: "Labo", biographer: "Biographe", wishlist: "Liste de souhaits", share: "Partager", paths: "Mes chemins", profile: "Profil" },
     greetings: { night: "Bonne nuit", morning: "Bonjour", day: "Bon après-midi", evening: "Bonsoir" },
     entriesWord: "entrées",
     quickCapture: "Capture rapide",

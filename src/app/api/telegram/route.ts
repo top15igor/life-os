@@ -6,6 +6,7 @@ import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
+import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice } from "@/lib/wishlist";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -147,6 +148,13 @@ const IG_MSG: Record<string, { working: string; saved: string; open: string; noA
   en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this Instagram post. Try another link or send a screenshot/video.", limited: "📉 Monthly Instagram limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
   uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з Instagram. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір Instagram. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
   fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post Instagram. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle Instagram atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
+};
+
+const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string }> = {
+  ru: { working: "🎁 Добавляю в Вишлист…", saved: "Добавил в Вишлист:", open: "🎁 Открыть Вишлист", failed: "Не получилось забрать карточку товара. Открой Вишлист на сайте и добавь вручную." },
+  en: { working: "🎁 Adding to your Wishlist…", saved: "Added to your Wishlist:", open: "🎁 Open Wishlist", failed: "Couldn't fetch the product card. Open the Wishlist on the site and add it manually." },
+  uk: { working: "🎁 Додаю у Вішліст…", saved: "Додав у Вішліст:", open: "🎁 Відкрити Вішліст", failed: "Не вдалося забрати картку товару. Відкрий Вішліст на сайті й додай вручну." },
+  fr: { working: "🎁 J'ajoute à ta liste de souhaits…", saved: "Ajouté à ta liste de souhaits :", open: "🎁 Ouvrir la liste", failed: "Impossible de récupérer la fiche produit. Ouvre la liste sur le site et ajoute-la manuellement." },
 };
 
 const MILE: Record<string, any> = {
@@ -695,6 +703,32 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("instagram", e);
         await sendMessage(chatId, L.failed);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🎁 Ссылка на товар → в Вишлист (НЕ в дневник). Ловим либо команду /wish <ссылка>,
+    //    либо «голую» ссылку из известного магазина. Обычные ссылки (статьи) не трогаем.
+    const wishCmd = /^\/wish\b/i.test(text);
+    const wishUrl = wishCmd ? extractAnyUrl(text) : extractShopUrl(text);
+    if (wishUrl) {
+      const lang = langOf(user, msg);
+      const W = WISH_MSG[lang] || WISH_MSG.ru;
+      await sendMessage(chatId, W.working);
+      try {
+        const wish = await addWishFromUrl(user.id, wishUrl);
+        if (!wish) {
+          await sendMessage(chatId, W.failed);
+          return NextResponse.json({ ok: true });
+        }
+        let body = `🎁 <b>${W.saved}</b>\n\n<b>${esc(wish.title)}</b>`;
+        const price = formatPrice(wish.price, wish.currency);
+        if (price) body += `\n💰 ${esc(price)}`;
+        if (wish.source) body += `\n🛒 ${esc(wish.source)}`;
+        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: W.open, url: `${origin}/u/${user.token}?next=/wishlist` }]] } });
+      } catch (e) {
+        console.error("wishlist", e);
+        await sendMessage(chatId, W.failed);
       }
       return NextResponse.json({ ok: true });
     }
