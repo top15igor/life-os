@@ -170,7 +170,7 @@ export default async function HomeBody() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <EnterInBrowser link={personalLink} locale={locale} />
-        <BindEmailPrompt hasEmail={hasEmail} locale={locale} />
+        <BindEmailPrompt hasEmail={hasEmail} locale={locale} googleEnabled={!!process.env.GOOGLE_CLIENT_ID} />
         <PinPrompt hasPin={hasPin} locale={locale} />
         <HomeSwitch
           data={data}
