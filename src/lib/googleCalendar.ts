@@ -4,7 +4,10 @@ import { supabaseAdmin } from "./supabaseAdmin";
 // We store a per-user offline refresh_token (users.google_refresh_token) and
 // exchange it for a short-lived access token whenever we need to write events.
 
-export const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+// calendar.events = write events; calendar.calendarlist.readonly = list the
+// user's calendars (work / family / ...) so they can pick a target.
+export const GCAL_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly";
 
 // Exchange the stored refresh token for a fresh access token.
 async function accessTokenFromRefresh(refreshToken: string): Promise<string | null> {
@@ -88,8 +91,32 @@ export type CalEvent = {
 
 export type CalResult = { ok: true; id: string; link: string } | { ok: false; error: string };
 
-// Create an event in the user's primary calendar. Returns event id + html link.
-export async function createCalendarEvent(userId: string, ev: CalEvent): Promise<CalResult> {
+export type CalendarInfo = { id: string; summary: string; primary: boolean; color?: string };
+
+// List the user's writable calendars (owner/writer) so they can choose a
+// target (work / family / personal). Primary is sorted first.
+export async function listCalendars(userId: string): Promise<CalendarInfo[]> {
+  const refresh = await getRefreshToken(userId);
+  if (!refresh) return [];
+  const access = await accessTokenFromRefresh(refresh);
+  if (!access) return [];
+  try {
+    const r = await fetch(
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer&fields=items(id,summary,primary,backgroundColor,accessRole)",
+      { headers: { Authorization: `Bearer ${access}` } }
+    ).then((x) => x.json());
+    const items: any[] = r?.items || [];
+    return items
+      .filter((c) => c.accessRole === "owner" || c.accessRole === "writer")
+      .map((c) => ({ id: c.id as string, summary: (c.summary as string) || c.id, primary: !!c.primary, color: c.backgroundColor }))
+      .sort((a, b) => (a.primary === b.primary ? a.summary.localeCompare(b.summary) : a.primary ? -1 : 1));
+  } catch {
+    return [];
+  }
+}
+
+// Create an event in the given calendar (default: primary). Returns id + link.
+export async function createCalendarEvent(userId: string, ev: CalEvent, calendarId = "primary"): Promise<CalResult> {
   const refresh = await getRefreshToken(userId);
   if (!refresh) return { ok: false, error: "not_connected" };
   const access = await accessTokenFromRefresh(refresh);
@@ -113,11 +140,14 @@ export async function createCalendarEvent(userId: string, ev: CalEvent): Promise
   };
 
   try {
-    const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }).then((x) => x.json());
+    const r = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    ).then((x) => x.json());
     if (r?.id) return { ok: true, id: r.id as string, link: (r.htmlLink as string) || "" };
     return { ok: false, error: r?.error?.message || "create_failed" };
   } catch {
@@ -125,15 +155,15 @@ export async function createCalendarEvent(userId: string, ev: CalEvent): Promise
   }
 }
 
-// Delete an event (best effort; missing event is treated as success).
-export async function deleteCalendarEvent(userId: string, eventId: string): Promise<boolean> {
+// Delete an event from the given calendar (best effort; missing = success).
+export async function deleteCalendarEvent(userId: string, eventId: string, calendarId = "primary"): Promise<boolean> {
   const refresh = await getRefreshToken(userId);
   if (!refresh) return false;
   const access = await accessTokenFromRefresh(refresh);
   if (!access) return false;
   try {
     const r = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
       { method: "DELETE", headers: { Authorization: `Bearer ${access}` } }
     );
     return r.status === 204 || r.status === 200 || r.status === 404 || r.status === 410;

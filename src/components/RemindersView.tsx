@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadCalendars, getDefaultCal, setDefaultCal, type Cal } from "@/lib/calendarsClient";
 
 type Reminder = { id: string; text: string; due_at: string; gcal_event_id: string | null; gcal_link: string | null; done: boolean };
 
@@ -115,10 +116,19 @@ export default function RemindersView({
   calStatus?: string;
 }) {
   const s = STR[locale] || STR.ru;
+  const calLabel = { ru: "Календарь", en: "Calendar", uk: "Календар", fr: "Agenda" }[locale] || "Календарь";
   const [items, setItems] = useState<Reminder[]>(initial);
   const [text, setText] = useState("");
   const [when, setWhen] = useState(defaultWhen());
   const [busy, setBusy] = useState(false);
+  const [calendars, setCalendars] = useState<Cal[]>([]);
+  const [calId, setCalId] = useState("primary");
+
+  useEffect(() => {
+    if (!connected) return;
+    setCalId(getDefaultCal());
+    loadCalendars().then(setCalendars);
+  }, [connected]);
 
   const banner =
     calStatus === "ok"
@@ -140,7 +150,7 @@ export default function RemindersView({
       const r = await fetch("/api/reminder", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "create", text: t, dueAt }),
+        body: JSON.stringify({ action: "create", text: t, dueAt, calendarId: calId }),
       }).then((x) => x.json());
       if (r.ok && r.reminder) {
         setItems((prev) => [...prev, r.reminder].sort((a, b) => a.due_at.localeCompare(b.due_at)));
@@ -278,6 +288,18 @@ export default function RemindersView({
             onChange={(e) => setWhen(e.target.value)}
             style={{ fontSize: 13.5, padding: "8px 10px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
           />
+          {connected && calendars.length > 1 && (
+            <select
+              value={calId}
+              onChange={(e) => { setCalId(e.target.value); setDefaultCal(e.target.value); }}
+              title={calLabel}
+              style={{ fontSize: 13.5, padding: "8px 10px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", maxWidth: 180 }}
+            >
+              {calendars.map((c) => (
+                <option key={c.id} value={c.primary ? "primary" : c.id}>{c.summary}</option>
+              ))}
+            </select>
+          )}
           <button
             onClick={add}
             disabled={busy || !text.trim()}

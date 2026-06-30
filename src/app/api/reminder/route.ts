@@ -34,32 +34,35 @@ export async function POST(req: NextRequest) {
     if (!text) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
     const due = new Date(dueAt);
     if (isNaN(due.getTime())) return NextResponse.json({ ok: false, error: "bad_date" }, { status: 400 });
+    const calendarId = (body.calendarId || "primary").toString();
 
     // Push to Google Calendar first (if connected) so we can store the event id.
     let gcalId: string | null = null;
     let gcalLink: string | null = null;
-    const r = await createCalendarEvent(user.id, {
-      summary: text,
-      description: "LIFE OS reminder",
-      startISO: due.toISOString(),
-      remindMinutes: [10, 0],
-    });
+    const r = await createCalendarEvent(
+      user.id,
+      { summary: text, description: "LIFE OS reminder", startISO: due.toISOString(), remindMinutes: [10, 0] },
+      calendarId
+    );
     if (r.ok) {
       gcalId = r.id;
       gcalLink = r.link;
     }
 
     try {
-      const { data, error } = await db
-        .from("reminders")
-        .insert({ user_id: user.id, text, due_at: due.toISOString(), gcal_event_id: gcalId, gcal_link: gcalLink })
-        .select("id, text, due_at, gcal_event_id, gcal_link, done")
-        .single();
-      if (error) throw error;
-      return NextResponse.json({ ok: true, reminder: data, synced: !!gcalId });
+      const row: any = { user_id: user.id, text, due_at: due.toISOString(), gcal_event_id: gcalId, gcal_link: gcalLink };
+      if (gcalId) row.gcal_calendar_id = calendarId;
+      let ins = await db.from("reminders").insert(row).select("id, text, due_at, gcal_event_id, gcal_link, done").single();
+      // If gcal_calendar_id column is missing (migration not run), retry without it.
+      if (ins.error && row.gcal_calendar_id) {
+        delete row.gcal_calendar_id;
+        ins = await db.from("reminders").insert(row).select("id, text, due_at, gcal_event_id, gcal_link, done").single();
+      }
+      if (ins.error) throw ins.error;
+      return NextResponse.json({ ok: true, reminder: ins.data, synced: !!gcalId });
     } catch {
       // Roll back the calendar event if the DB insert failed.
-      if (gcalId) await deleteCalendarEvent(user.id, gcalId);
+      if (gcalId) await deleteCalendarEvent(user.id, gcalId, calendarId);
       return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
     }
   }
@@ -68,14 +71,17 @@ export async function POST(req: NextRequest) {
     const id = (body.id || "").toString();
     if (!id) return NextResponse.json({ ok: false, error: "no_id" }, { status: 400 });
     try {
-      const { data } = await db
-        .from("reminders")
-        .select("gcal_event_id")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const evId = (data as any)?.gcal_event_id;
-      if (evId) await deleteCalendarEvent(user.id, evId);
+      let evId: string | null = null;
+      let calId = "primary";
+      try {
+        const { data } = await db.from("reminders").select("gcal_event_id, gcal_calendar_id").eq("id", id).eq("user_id", user.id).maybeSingle();
+        evId = (data as any)?.gcal_event_id || null;
+        calId = (data as any)?.gcal_calendar_id || "primary";
+      } catch {
+        const { data } = await db.from("reminders").select("gcal_event_id").eq("id", id).eq("user_id", user.id).maybeSingle();
+        evId = (data as any)?.gcal_event_id || null;
+      }
+      if (evId) await deleteCalendarEvent(user.id, evId, calId);
       await db.from("reminders").delete().eq("id", id).eq("user_id", user.id);
       return NextResponse.json({ ok: true });
     } catch {

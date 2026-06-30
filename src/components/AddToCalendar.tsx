@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { loadCalendars, getDefaultCal, setDefaultCal, type Cal } from "@/lib/calendarsClient";
 
 type Kind = "task" | "deed" | "promise";
 
@@ -41,6 +42,14 @@ export default function AddToCalendar({
   const [when, setWhen] = useState(defaultWhen());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
+  const [calendars, setCalendars] = useState<Cal[]>([]);
+  const [calId, setCalId] = useState("primary");
+
+  function openPicker() {
+    setCalId(getDefaultCal());
+    loadCalendars().then(setCalendars);
+    setOpen(true);
+  }
 
   async function save() {
     setBusy(true);
@@ -50,7 +59,7 @@ export default function AddToCalendar({
       const r = await fetch("/api/calendar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind, refId, title, dueAt }),
+        body: JSON.stringify({ kind, refId, title, dueAt, calendarId: calId }),
       }).then((x) => x.json());
       if (r.ok) {
         setCurLink(r.link || "");
@@ -122,7 +131,7 @@ export default function AddToCalendar({
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} style={{ ...chip, font: "inherit" }}>
+      <button onClick={openPicker} style={{ ...chip, font: "inherit" }}>
         <i className="ti ti-calendar-plus" style={{ fontSize: 14 }} />
         {s.add}
       </button>
@@ -137,6 +146,17 @@ export default function AddToCalendar({
         onChange={(e) => setWhen(e.target.value)}
         style={{ fontSize: 12.5, padding: "5px 7px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
       />
+      {calendars.length > 1 && (
+        <select
+          value={calId}
+          onChange={(e) => { setCalId(e.target.value); setDefaultCal(e.target.value); }}
+          style={{ fontSize: 12.5, padding: "5px 7px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", maxWidth: 150 }}
+        >
+          {calendars.map((c) => (
+            <option key={c.id} value={c.primary ? "primary" : c.id}>{c.summary}</option>
+          ))}
+        </select>
+      )}
       <button onClick={save} disabled={busy} style={{ ...chip, background: "var(--accent)", color: "#fff", borderColor: "var(--accent)" }}>
         {busy ? s.saving : s.save}
       </button>

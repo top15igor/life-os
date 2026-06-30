@@ -56,15 +56,17 @@ export async function POST(req: NextRequest) {
   // Remove from calendar.
   if (body.unpush) {
     try {
-      const { data } = await db
-        .from("calendar_links")
-        .select("event_id")
-        .eq("user_id", user.id)
-        .eq("kind", kind)
-        .eq("ref_id", refId)
-        .maybeSingle();
-      const evId = (data as any)?.event_id;
-      if (evId) await deleteCalendarEvent(user.id, evId);
+      let evId: string | null = null;
+      let calId = "primary";
+      try {
+        const { data } = await db.from("calendar_links").select("event_id, calendar_id").eq("user_id", user.id).eq("kind", kind).eq("ref_id", refId).maybeSingle();
+        evId = (data as any)?.event_id || null;
+        calId = (data as any)?.calendar_id || "primary";
+      } catch {
+        const { data } = await db.from("calendar_links").select("event_id").eq("user_id", user.id).eq("kind", kind).eq("ref_id", refId).maybeSingle();
+        evId = (data as any)?.event_id || null;
+      }
+      if (evId) await deleteCalendarEvent(user.id, evId, calId);
       await db.from("calendar_links").delete().eq("user_id", user.id).eq("kind", kind).eq("ref_id", refId);
       return NextResponse.json({ ok: true, removed: true });
     } catch {
@@ -79,33 +81,28 @@ export async function POST(req: NextRequest) {
   const title = (body.title || "").toString().trim().slice(0, 200) || "LIFE OS";
   const due = new Date((body.dueAt || "").toString());
   if (isNaN(due.getTime())) return NextResponse.json({ ok: false, error: "bad_date" }, { status: 400 });
+  const calendarId = (body.calendarId || "primary").toString();
 
   const labelByKind: Record<Kind, string> = { task: "Task", deed: "Good deed", promise: "Promise" };
-  const r = await createCalendarEvent(user.id, {
-    summary: title,
-    description: `LIFE OS ${labelByKind[kind]}`,
-    startISO: due.toISOString(),
-    remindMinutes: [60, 0],
-  });
+  const r = await createCalendarEvent(
+    user.id,
+    { summary: title, description: `LIFE OS ${labelByKind[kind]}`, startISO: due.toISOString(), remindMinutes: [60, 0] },
+    calendarId
+  );
   if (!r.ok) return NextResponse.json({ ok: false, error: (r as any).error }, { status: 500 });
 
   try {
-    await db
-      .from("calendar_links")
-      .upsert(
-        {
-          user_id: user.id,
-          kind,
-          ref_id: refId,
-          event_id: r.id,
-          html_link: r.link,
-          due_at: due.toISOString(),
-        },
-        { onConflict: "user_id,kind,ref_id" }
-      );
+    const row: any = { user_id: user.id, kind, ref_id: refId, event_id: r.id, html_link: r.link, due_at: due.toISOString(), calendar_id: calendarId };
+    let up = await db.from("calendar_links").upsert(row, { onConflict: "user_id,kind,ref_id" });
+    // If calendar_id column is missing (migration not run), retry without it.
+    if (up.error) {
+      delete row.calendar_id;
+      up = await db.from("calendar_links").upsert(row, { onConflict: "user_id,kind,ref_id" });
+    }
+    if (up.error) throw up.error;
     return NextResponse.json({ ok: true, link: r.link, due_at: due.toISOString() });
   } catch {
-    await deleteCalendarEvent(user.id, r.id);
+    await deleteCalendarEvent(user.id, r.id, calendarId);
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
   }
 }
