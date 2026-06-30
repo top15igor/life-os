@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
     places_hidden: await columnExists("places", "hidden"),
     dreams: await tableExists("dreams"),
     memories: await tableExists("memories"),
+    // Migrations 2026-06-30
+    users_plan: await columnExists("users", "plan"),
+    insights_category: await columnExists("insights", "category"),
   };
   return NextResponse.json({ ok: true, checks });
 }
