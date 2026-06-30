@@ -664,21 +664,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
-    //    диалога и веб-поиском), а НЕ в дневник. Выход — командой /stop (поймана выше).
-    if (await getChatMode(user.id)) {
-      await sendChatAction(chatId, "typing");
-      try {
-        const reply = await talkToCompanion(user.id, user.name ?? null, text);
-        await sendMessage(chatId, mdToTelegram(reply) || "…");
-      } catch (e) {
-        console.error("companion", e);
-        await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
-      }
-      return NextResponse.json({ ok: true });
-    }
-
     // 🔖 Ссылка Instagram / YouTube → сохраняем в личную Базу знаний (НЕ в дневник).
+    // ВАЖНО: ловим ДО режима беседы — иначе в /chat ссылка уходит компаньону
+    // («Instagram мне недоступен…») вместо импорта. Как и фото, ссылки в обход чата.
     const igUrl = extractInstagramUrl(text);
     const yt = extractYoutubeUrl(text);
     if (igUrl || yt) {
@@ -707,6 +695,20 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("instagram", e);
         await sendMessage(chatId, L.failed);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
+    //    диалога и веб-поиском), а НЕ в дневник. Выход — командой /stop (поймана выше).
+    if (await getChatMode(user.id)) {
+      await sendChatAction(chatId, "typing");
+      try {
+        const reply = await talkToCompanion(user.id, user.name ?? null, text);
+        await sendMessage(chatId, mdToTelegram(reply) || "…");
+      } catch (e) {
+        console.error("companion", e);
+        await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
       }
       return NextResponse.json({ ok: true });
     }
