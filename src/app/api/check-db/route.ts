@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
     users_tz_offset: await columnExists("users", "tz_offset"),
     users_push_enabled: await columnExists("users", "push_enabled"),
     users_chat_mode: await columnExists("users", "chat_mode"),
+    users_tg_username: await columnExists("users", "tg_username"),
     companion_messages: await tableExists("companion_messages"),
     memories_note: await columnExists("memories", "note"),
     users_free_books_used: await columnExists("users", "free_books_used"),

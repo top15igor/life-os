@@ -8,7 +8,7 @@ import AdminUserCard from "./AdminUserCard";
 type Row = {
   id: string; name: string; entries: number; last: string | null; joined: string | null;
   referrer: string | null; referrerId: string | null; email: string | null; telegram: boolean;
-  chatId: number | null; plan: string; active: boolean;
+  tgUsername: string | null; chatId: number | null; plan: string; active: boolean;
 };
 
 const COLS: { key: string; label: string; sort?: (a: Row, b: Row) => number }[] = [
@@ -89,7 +89,7 @@ export default function AdminUsersTable({ users, refOptions }: { users: Row[]; r
                 <td style={{ padding: "10px 12px" }}>
                   <div onClick={() => setCardFor(u)} style={{ fontWeight: 500, cursor: "pointer", color: "var(--accent)" }} title="Подробнее">{u.name}</div>
                   <div style={{ fontSize: 11, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 6, marginTop: 1, flexWrap: "wrap" }}>
-                    {u.telegram && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-brand-telegram" style={{ fontSize: 12 }} />TG</span>}
+                    {u.telegram && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-brand-telegram" style={{ fontSize: 12 }} />{u.tgUsername ? `@${u.tgUsername}` : "TG"}</span>}
                     {u.email && <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}><i className="ti ti-mail" style={{ fontSize: 12 }} />{u.email}</span>}
                     {!u.telegram && !u.email && "—"}
                   </div>

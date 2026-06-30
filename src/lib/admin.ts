@@ -39,6 +39,14 @@ export async function getAdminData() {
   const nameById: Record<string, string> = {};
   for (const u of users || []) nameById[u.id] = u.name || "—";
 
+  // Настоящий Telegram-@username (users.tg_username) — мягким запросом, чтобы
+  // не ломать фолбэк выше, если миграция tg_username.sql ещё не применена.
+  const tgById: Record<string, string> = {};
+  try {
+    const { data: tg } = await db.from("users").select("id, tg_username");
+    for (const r of tg || []) if ((r as any).tg_username) tgById[(r as any).id] = (r as any).tg_username;
+  } catch {}
+
   const list = (users || []).map((u: any) => {
     const st = byUser[u.id] || { count: 0, last: "", days: new Set() };
     return {
@@ -52,6 +60,7 @@ export async function getAdminData() {
       referrerId: u.referred_by || null,
       email: u.email || null,
       telegram: !!u.chat_id,
+      tgUsername: tgById[u.id] || null,
       chatId: u.chat_id || null,
       plan: (u.plan === "pro" || u.plan === "premium") ? u.plan : "free",
     };
