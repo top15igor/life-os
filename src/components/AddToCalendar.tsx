@@ -41,7 +41,7 @@ export default function AddToCalendar({
   const [open, setOpen] = useState(false);
   const [when, setWhen] = useState(defaultWhen());
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(false);
+  const [err, setErr] = useState("");
   const [calendars, setCalendars] = useState<Cal[]>([]);
   const [calId, setCalId] = useState("primary");
 
@@ -53,7 +53,7 @@ export default function AddToCalendar({
 
   async function save() {
     setBusy(true);
-    setErr(false);
+    setErr("");
     try {
       const dueAt = new Date(when).toISOString(); // local -> UTC ISO
       const r = await fetch("/api/calendar", {
@@ -64,9 +64,9 @@ export default function AddToCalendar({
       if (r.ok) {
         setCurLink(r.link || "");
         setOpen(false);
-      } else setErr(true);
+      } else setErr((r.error || s.err).toString().slice(0, 160));
     } catch {
-      setErr(true);
+      setErr(s.err);
     }
     setBusy(false);
   }
@@ -161,7 +161,7 @@ export default function AddToCalendar({
         {busy ? s.saving : s.save}
       </button>
       <i onClick={() => setOpen(false)} className="ti ti-x" style={{ fontSize: 14, color: "var(--text-3)", cursor: "pointer" }} />
-      {err && <span style={{ fontSize: 11, color: "var(--negative)" }}>{s.err}</span>}
+      {err && <span style={{ fontSize: 11, color: "var(--negative)", maxWidth: 240, lineHeight: 1.3 }}>{err}</span>}
     </span>
   );
 }
