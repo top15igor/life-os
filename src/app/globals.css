@@ -163,7 +163,7 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 .asst-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px; border-bottom: 1px solid var(--border); }
 .asst-ava { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 .asst-x { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 18px; padding: 4px; display: flex; }
-.asst-body { padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.asst-body { padding: 12px; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; }
 .asst-card { border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; background: var(--bg); }
 .asst-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); display: flex; align-items: center; }
 .asst-ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
