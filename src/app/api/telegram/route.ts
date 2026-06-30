@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, answerCallback } from "@/lib/telegram";
 import { transcribe } from "@/lib/transcribe";
-import { analyze, classifyIntent, type Analysis } from "@/lib/ai";
+import { analyze, type Analysis } from "@/lib/ai";
+import { routeMessage, runAction } from "@/lib/botActions";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
@@ -9,6 +10,7 @@ import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
+import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -130,6 +132,9 @@ const CONFIRM: Record<string, any> = {
 
 // Символы валют для подтверждения в боте.
 const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
+
+// Подпись кнопки «открыть раздел» после действия бота.
+const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir" };
 
 const FIXED: Record<string, string> = {
   ru: "✏️ Поправил предыдущую запись:",
@@ -427,6 +432,24 @@ export async function POST(req: NextRequest) {
   if (msg.text === "/resetpin") {
     try { await supabaseAdmin().from("users").update({ pin_hash: null }).eq("id", user.id); } catch {}
     await sendMessage(chatId, "🔓 PIN сброшен. Теперь можно войти в веб без кода — и при желании задать новый в разделе «Профиль».");
+    return NextResponse.json({ ok: true });
+  }
+
+  // 📨 /send @имя текст — передать сообщение другому пользователю LIFE OS (с подписью «от кого»).
+  if (typeof msg.text === "string" && /^\/send\b/i.test(msg.text.trim())) {
+    const lang = langOf(user, msg);
+    const parsed = parseSend(msg.text.trim());
+    if (!parsed) { await sendMessage(chatId, relayHelp(lang)); return NextResponse.json({ ok: true }); }
+    const r = await sendRelay({ id: user.id, name: user.name ?? null }, parsed.handle, parsed.message, lang);
+    await sendMessage(chatId, r.ok ? relaySentMsg(lang, r.toName!) : r.error!);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 🔔/🔕 /relay — включить или выключить приём сообщений от других пользователей.
+  if (msg.text === "/relay") {
+    const lang = langOf(user, msg);
+    const nowOff = await toggleRelay(user.id);
+    await sendMessage(chatId, relayToggleMsg(lang, nowOff));
     return NextResponse.json({ ok: true });
   }
 
@@ -822,11 +845,20 @@ export async function POST(req: NextRequest) {
       // нет сегодняшней записи для правки → проваливаемся дальше (вопрос/новая запись)
     }
 
-    // По смыслу: это вопрос к ассистенту или запись в дневник?
+    // По смыслу: ДЕЙСТВИЕ (бот выполняет вместо пользователя), вопрос к ассистенту или запись?
     // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
     if (!forceSave && (!isVoice || text.length < 160)) {
-      const intent = await classifyIntent(text, user.id);
-      if (intent === "question") {
+      const route = await routeMessage(text, user.id);
+      if (route.kind === "action") {
+        const lang = langOf(user, msg);
+        const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
+        const extra = res.openNext
+          ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/u/${user.token}?next=${encodeURIComponent(res.openNext)}` }]] } }
+          : undefined;
+        await sendMessage(chatId, res.text, extra);
+        return NextResponse.json({ ok: true });
+      }
+      if (route.kind === "question") {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text);
         await saveChat(user.id, text, ans);
