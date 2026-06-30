@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import Sidebar from "@/components/Sidebar";
+import BackLink from "@/components/BackLink";
 import ReferralTreeView from "@/components/ReferralTreeView";
 import { requireUser } from "@/lib/auth";
 import { getLocale } from "@/lib/locale";
@@ -29,6 +30,7 @@ export default async function ReferralsPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <BackLink locale={locale} />
         <ReferralTreeView locale={locale} tree={tree} status={status} inviteLink={inviteLink} />
       </main>
     </div>

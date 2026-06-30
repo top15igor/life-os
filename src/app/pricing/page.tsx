@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import BackLink from "@/components/BackLink";
 import PageHead from "@/components/PageHead";
 import PricingPlans from "@/components/PricingPlans";
 import { getEntries } from "@/lib/queries";
@@ -29,6 +30,7 @@ export default async function PricingPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <BackLink locale={locale} />
         <PageHead icon="ti-star" color="#f59e0b" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <PricingPlans locale={locale} monthEntries={monthEntries} userName={user.name || ""} />
       </main>
