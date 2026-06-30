@@ -7,7 +7,7 @@ import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
-import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice } from "@/lib/wishlist";
+import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -151,11 +151,11 @@ const IG_MSG: Record<string, { working: string; saved: string; open: string; noA
   fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post Instagram. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle Instagram atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
 };
 
-const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string }> = {
-  ru: { working: "🎁 Добавляю в Вишлист…", saved: "Добавил в Вишлист:", open: "🎁 Открыть Вишлист", failed: "Не получилось забрать карточку товара. Открой Вишлист на сайте и добавь вручную." },
-  en: { working: "🎁 Adding to your Wishlist…", saved: "Added to your Wishlist:", open: "🎁 Open Wishlist", failed: "Couldn't fetch the product card. Open the Wishlist on the site and add it manually." },
-  uk: { working: "🎁 Додаю у Вішліст…", saved: "Додав у Вішліст:", open: "🎁 Відкрити Вішліст", failed: "Не вдалося забрати картку товару. Відкрий Вішліст на сайті й додай вручну." },
-  fr: { working: "🎁 J'ajoute à ta liste de souhaits…", saved: "Ajouté à ta liste de souhaits :", open: "🎁 Ouvrir la liste", failed: "Impossible de récupérer la fiche produit. Ouvre la liste sur le site et ajoute-la manuellement." },
+const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string; shareHint: string }> = {
+  ru: { working: "🎁 Добавляю в Вишлист…", saved: "Добавил в Вишлист:", open: "🔗 Ссылка для друзей", failed: "Не получилось забрать карточку товара. Открой Вишлист на сайте и добавь вручную.", shareHint: "Делись этой ссылкой с друзьями — они увидят список и смогут тайно «забронировать» подарок. Управлять — в приложении: Меню → Вишлист." },
+  en: { working: "🎁 Adding to your Wishlist…", saved: "Added to your Wishlist:", open: "🔗 Link for friends", failed: "Couldn't fetch the product card. Open the Wishlist on the site and add it manually.", shareHint: "Share this link with friends — they'll see the list and can secretly reserve a gift. Manage it in the app: Menu → Wishlist." },
+  uk: { working: "🎁 Додаю у Вішліст…", saved: "Додав у Вішліст:", open: "🔗 Посилання для друзів", failed: "Не вдалося забрати картку товару. Відкрий Вішліст на сайті й додай вручну.", shareHint: "Ділись цим посиланням з друзями — вони побачать список і зможуть таємно «забронювати» подарунок. Керувати — у застосунку: Меню → Вішліст." },
+  fr: { working: "🎁 J'ajoute à ta liste de souhaits…", saved: "Ajouté à ta liste de souhaits :", open: "🔗 Lien pour tes amis", failed: "Impossible de récupérer la fiche produit. Ouvre la liste sur le site et ajoute-la manuellement.", shareHint: "Partage ce lien avec tes amis — ils verront la liste et pourront réserver un cadeau en secret. Gère-la dans l'app : Menu → Liste de souhaits." },
 };
 
 const MILE: Record<string, any> = {
@@ -731,7 +731,18 @@ export async function POST(req: NextRequest) {
         const price = formatPrice(wish.price, wish.currency);
         if (price) body += `\n💰 ${esc(price)}`;
         if (wish.source) body += `\n🛒 ${esc(wish.source)}`;
-        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: W.open, url: `${origin}/u/${user.token}?next=/wishlist` }]] } });
+        // ПУБЛИЧНАЯ ссылка для друзей (/w/<slug>), а НЕ личная логин-ссылка /u/<token>!
+        // Включаем публичность вишлиста, чтобы пересланная ссылка открывала список, а не аккаунт.
+        let wishBtnUrl = "";
+        try {
+          const { slug } = await setWishPublic(user.id, user.name, true);
+          if (slug) wishBtnUrl = `${origin}/w/${slug}`;
+        } catch {}
+        if (wishBtnUrl) body += `\n\n${esc(W.shareHint)}`;
+        const wishBtn = wishBtnUrl
+          ? [{ text: W.open, url: wishBtnUrl }]
+          : [{ text: "🎁 Открыть Вишлист", url: `${origin}/u/${user.token}?next=/wishlist` }];
+        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [wishBtn] } });
       } catch (e) {
         console.error("wishlist", e);
         await sendMessage(chatId, W.failed);
