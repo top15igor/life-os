@@ -63,9 +63,9 @@ export async function getAnticipation(userId: string, lang: Lang = "ru", tzOffse
     const context = await gather(userId);
     const system =
       `Ты — внимательный AI-друг (как Джарвис). По данным пользователя ниже найди МАКСИМУМ ОДНО своевременное, реально полезное наблюдение-подсказку на СЕГОДНЯ. ` +
-      `Типы: привычка под угрозой (регулярное дело давно не упоминается — напр. зал, витамины, пробежки), приближается повторяющееся/регулярное дело, стоит мягко напомнить про незакрытое обещание человеку, заметная закономерность (настроение/энергия/расходы). ` +
-      `СТРОГО: если нет СИЛЬНОГО, уместного именно сегодня сигнала — верни found=false (это нормально и предпочтительнее пустой болтовни). ` +
-      `Будь тёплым, конкретным и КРАТКИМ (1-2 предложения), пиши на ${LANG_NAME[lang]} языке от лица друга. Не выдумывай фактов. Не дублируй банальности и не повторяй то, что и так очевидно. Всегда вызывай инструмент anticipation.`;
+      `Типы: привычка под угрозой (регулярное дело давно не упоминается или силы тают — напр. аскеза, зал, витамины, пробежки), приближается повторяющееся/регулярное дело, стоит мягко напомнить про незакрытое обещание человеку, заметная закономерность (настроение/энергия/расходы). ` +
+      `Если в данных есть такой уместный сегодня сигнал — found=true и дай подсказку. Если данных мало или ничего подходящего нет — found=false. ` +
+      `Будь тёплым, конкретным и КРАТКИМ — строго 1-2 коротких предложения, пиши на ${LANG_NAME[lang]} языке от лица друга. Опирайся на конкретику из записей. Не выдумывай фактов. Всегда вызывай инструмент anticipation.`;
     const resp = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 300,
@@ -89,25 +89,6 @@ export async function getAnticipation(userId: string, lang: Lang = "ru", tzOffse
     // нет таблицы — просто не кэшируем
   }
   return text;
-}
-
-// Отладка (временно): вернуть сырое решение AI + объём контекста, без кэша.
-export async function debugAnticipation(userId: string, lang: Lang = "ru"): Promise<any> {
-  const context = await gather(userId);
-  const system =
-    `Ты — внимательный AI-друг (как Джарвис). По данным пользователя ниже найди МАКСИМУМ ОДНО своевременное, реально полезное наблюдение-подсказку на СЕГОДНЯ. ` +
-    `Типы: привычка под угрозой, приближается повторяющееся дело, напомнить про незакрытое обещание, заметная закономерность. ` +
-    `Если нет СИЛЬНОГО сигнала — found=false. Кратко (1-2 предложения), на ${LANG_NAME[lang]}. Всегда вызывай инструмент anticipation.`;
-  const resp = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 300,
-    system,
-    tools: [TOOL as any],
-    tool_choice: { type: "tool", name: "anticipation" },
-    messages: [{ role: "user", content: context }],
-  });
-  const block: any = (resp as any).content.find((b: any) => b.type === "tool_use");
-  return { contextChars: context.length, contextPreview: context.slice(0, 600), decision: block?.input || null };
 }
 
 // Снять подсказку (пользователь «понятно/скрыть»).

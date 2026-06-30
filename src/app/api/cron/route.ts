@@ -7,7 +7,7 @@ import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
 import { bookPromptMessage } from "@/lib/bookPrompts";
 import { personalEvening } from "@/lib/eveningPersonal";
-import { getAnticipation, debugAnticipation } from "@/lib/anticipation";
+import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
@@ -126,10 +126,6 @@ export async function GET(req: NextRequest) {
     if (!u) return NextResponse.json({ ok: false, error: "no_user" });
     if (req.nextUrl.searchParams.get("force") === "1") {
       try { await db.from("anticipations").delete().eq("user_id", (u as any).id); } catch {}
-    }
-    if (req.nextUrl.searchParams.get("debug") === "1") {
-      const dbg = await debugAnticipation((u as any).id, ((u as any).lang as any) || "ru");
-      return NextResponse.json({ ok: true, debug: dbg });
     }
     const nudge = await getAnticipation((u as any).id, ((u as any).lang as any) || "ru");
     if (nudge && chat) await sendMessage(Number(chat), `✨ ${nudge}`);
