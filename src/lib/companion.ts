@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
 import { getFinanceSummary } from "./finance";
 import { ACTION_TOOLS, runAction, type Lang } from "./botActions";
+import { recallContext } from "./semanticMemory";
 
 // Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
 // Берём из общего набора бота, исключая роутер-заглушки и опасное удаление.
@@ -192,9 +193,13 @@ export async function talkToCompanion(
   // 1) Запоминаем реплику пользователя (до ответа — чтобы не потерять при сбое).
   await appendMessage(userId, "user", userText);
 
-  // 2) Собираем контекст и историю диалога.
-  const [context, history] = await Promise.all([gatherContext(userId), getHistory(userId, 20)]);
-  const system = buildSystem(name, context, tzOffset);
+  // 2) Собираем контекст, историю диалога и релевантные по смыслу записи (pgvector).
+  const [context, history, recall] = await Promise.all([
+    gatherContext(userId),
+    getHistory(userId, 20),
+    recallContext(userId, userText).catch(() => ""),
+  ]);
+  const system = buildSystem(name, recall ? `${recall}\n\n${context}` : context, tzOffset);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   // Веб-поиск (серверный) + действия-инструменты (исполняем сами через runAction).

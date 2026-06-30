@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
 import { getFinanceSummary } from "./finance";
 import { getBiographerHistory } from "./queries";
+import { recallContext } from "./semanticMemory";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
 export async function askLife(userId: string, question: string): Promise<string> {
@@ -18,6 +19,10 @@ export async function askLife(userId: string, question: string): Promise<string>
   ]);
 
   const list = (entries || []).map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n") || "(записей пока нет)";
+
+  // Поиск по смыслу: подтягиваем самые релевантные записи под вопрос, в т.ч.
+  // старее последних 200 (мягко "" без pgvector/эмбеддингов).
+  const recall = await recallContext(userId, question).catch(() => "");
 
   // Также подмешиваем личную Базу знаний (сохранённое из Instagram/YouTube: рецепты,
   // тренировки, советы), чтобы ассистент отвечал и по ней, а не только по дневнику.
@@ -96,7 +101,7 @@ export async function askLife(userId: string, question: string): Promise<string>
 - Если в источниках реально нет ответа — честно скажи об этом (но не ссылайся на «отсутствие доступа»). Не выдумывай.
 Пиши живо, по-человечески, без воды.
 
-ДНЕВНИК (дата: текст):
+${recall ? recall + "\n\n" : ""}ДНЕВНИК (дата: текст):
 ${list}
 
 БАЗА ЗНАНИЙ (сохранённое из Instagram/YouTube):

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { type Analysis, EXPENSE_CAT_KEYS, INCOME_CAT_KEYS, FINANCE_CURRENCIES } from "./ai";
+import { embedToVectorString } from "./embeddings";
 
 export async function saveEntry(opts: {
   userId: string;
@@ -52,6 +53,15 @@ export async function saveEntry(opts: {
     .select()
     .single();
   if (error) throw error;
+
+  // Семантическая память: эмбеддинг записи для поиска по смыслу (best-effort,
+  // не ломает сохранение, если pgvector/колонки ещё нет).
+  try {
+    const vec = await embedToVectorString(`${a.summary ? a.summary + ". " : ""}${opts.raw_text}`);
+    if (vec) await db.from("entries").update({ embedding: vec }).eq("id", entry.id);
+  } catch {
+    // нет колонки embedding / ключа — пропускаем
+  }
 
   const derived = await attachDerived(owner, entry.id, a, entry.entry_date);
   return { ...entry, financeSaved: derived.financeSaved, financeError: derived.financeError };
