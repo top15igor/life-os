@@ -56,9 +56,8 @@ export default function WishlistPublic({ locale, ownerName, wishes: initial }: {
   }
 
   async function give(id: string) {
-    const name = window.prompt(t.askName) || "";
     const token = getToken();
-    const r = await fetch("/api/wish/reserve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "reserve", wishId: id, token, name }) }).then((x) => x.json()).catch(() => ({ ok: false }));
+    const r = await fetch("/api/wish/reserve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "reserve", wishId: id, token }) }).then((x) => x.json()).catch(() => ({ ok: false }));
     if (r?.ok) {
       setWishes((w) => w.map((x) => (x.id === id ? { ...x, reserved: true } : x)));
       const next = new Set(mine); next.add(id); persistMine(next);
