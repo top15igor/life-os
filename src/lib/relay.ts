@@ -113,8 +113,48 @@ function nameMatches(full: string | null, query: string): boolean {
 
 type Resolved =
   | { ok: true; user: Contact }
-  | { ok: false; reason: "ambiguous"; options: string[] }
+  | { ok: false; reason: "ambiguous"; matches: Contact[] }
   | { ok: false; reason: "not_found"; contacts: Contact[] };
+
+const ACT: Record<string, any> = {
+  ru: { active: "активно пишет", warm: "пишет иногда", started: "давно не заходил", idle: "ещё не писал", entries: (n: number) => `${n} зап.` },
+  en: { active: "active", warm: "writes sometimes", started: "long inactive", idle: "hasn't written", entries: (n: number) => `${n} entr.` },
+};
+
+// Обогащённые строки контактов: «@имя — Имя · активность · N записей» — чтобы
+// различить тёзок (две «Евгении») и понять, кому именно писать.
+async function enrichLines(contacts: Contact[], lang: string): Promise<string[]> {
+  const A = ACT[lang] || (lang === "en" || lang === "fr" ? ACT.en : ACT.ru);
+  const db = supabaseAdmin();
+  const ids = contacts.map((c) => c.id);
+  const cnt: Record<string, number> = {};
+  const last: Record<string, string> = {};
+  try {
+    const { data } = await db.from("entries").select("user_id, entry_date").in("user_id", ids);
+    for (const r of (data as any[]) || []) {
+      const u = r.user_id as string;
+      cnt[u] = (cnt[u] || 0) + 1;
+      const d = (r.entry_date || "") as string;
+      if (d && (!last[u] || d > last[u])) last[u] = d;
+    }
+  } catch {}
+  const today = new Date(Date.now()).toISOString().slice(0, 10);
+  const status = (id: string): string => {
+    const c = cnt[id] || 0;
+    const ds = last[id] ? Math.floor((Date.parse(today) - Date.parse(last[id])) / 86400000) : Infinity;
+    if (c === 0) return A.idle;
+    if (ds <= 7 && c >= 3) return A.active;
+    if (ds <= 30 || c >= 5) return A.warm;
+    return A.started;
+  };
+  return Promise.all(
+    contacts.map(async (c) => {
+      const h = await getHandle(c.id, c.name).catch(() => "?");
+      const n = cnt[c.id] || 0;
+      return `@${h} — ${esc(c.name || "?")} · ${status(c.id)}${n ? " · " + A.entries(n) : ""}`;
+    })
+  );
+}
 
 // Найти получателя: сначала как @имя-ссылку, иначе как имя среди контактов.
 async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolved> {
@@ -131,18 +171,8 @@ async function resolveRecipient(fromUserId: string, raw: string): Promise<Resolv
   const contacts = await getContacts(fromUserId);
   const matches = contacts.filter((c) => nameMatches(c.name, clean));
   if (matches.length === 1) return { ok: true, user: matches[0] };
-  if (matches.length > 1) {
-    const options = await Promise.all(
-      matches.slice(0, 6).map(async (m) => `@${await getHandle(m.id, m.name).catch(() => "?")} (${m.name || "?"})`)
-    );
-    return { ok: false, reason: "ambiguous", options };
-  }
+  if (matches.length > 1) return { ok: false, reason: "ambiguous", matches: matches.slice(0, 8) };
   return { ok: false, reason: "not_found", contacts };
-}
-
-// Список контактов «@имя — Имя» (для подсказки, кому можно написать).
-async function contactList(contacts: Contact[]): Promise<string[]> {
-  return Promise.all(contacts.slice(0, 12).map(async (c) => `@${await getHandle(c.id, c.name).catch(() => "?")} — ${c.name || "?"}`));
 }
 
 // Передать сообщение получателю (по @имени или имени контакта). Возвращает результат для отправителя.
@@ -152,8 +182,11 @@ export async function sendRelay(from: { id: string; name: string | null }, recip
 
   const res = await resolveRecipient(from.id, recipient);
   if (res.ok !== true) {
-    if (res.reason === "ambiguous") return { ok: false, error: SL.ambiguous(res.options) };
-    const list = await contactList(res.contacts);
+    if (res.reason === "ambiguous") {
+      const lines = await enrichLines(res.matches, senderLang);
+      return { ok: false, error: SL.ambiguous(lines) };
+    }
+    const list = await enrichLines(res.contacts.slice(0, 12), senderLang);
     return { ok: false, error: list.length ? SL.notFoundList(recipient, list) : SL.noContacts };
   }
 
