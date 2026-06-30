@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { buildVoiceInstructions } from "@/lib/companion";
+import { buildVoiceInstructions, voiceActionTools } from "@/lib/companion";
 
 export const runtime = "nodejs";
 
@@ -40,7 +40,15 @@ function gaSession(instructions: string, withNoiseReduction: boolean) {
     transcription: { model: "whisper-1" },
   };
   if (withNoiseReduction) input.noise_reduction = { type: "near_field" };
-  return { type: "realtime", model: MODEL, instructions, audio: { input, output: { voice: VOICE } } };
+  return {
+    type: "realtime",
+    model: MODEL,
+    instructions,
+    audio: { input, output: { voice: VOICE } },
+    // Action tools (reminders, tasks, weight, …) — same as the bot's Jarvis.
+    tools: voiceActionTools(),
+    tool_choice: "auto",
+  };
 }
 
 async function postGA(key: string, session: any) {

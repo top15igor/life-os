@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // sides, and a small latency readout so we can see how fast turns are handled.
 
 type Status = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "ended" | "error";
-type Line = { id: string; role: "user" | "assistant"; text: string };
+type Line = { id: string; role: "user" | "assistant" | "system"; text: string };
 
 export default function VoiceLivePage() {
   const [status, setStatus] = useState<Status>("idle");
@@ -27,6 +27,8 @@ export default function VoiceLivePage() {
   const asstId = useRef<string | null>(null); // current assistant line being built
   const pendingUserId = useRef<string | null>(null); // user bubble awaiting its transcript
   const counter = useRef(0);
+  const dcRef = useRef<RTCDataChannel | null>(null); // events channel (to send tool results)
+  const callNames = useRef<Record<string, string>>({}); // call_id -> function name
 
   const cleanup = useCallback(() => {
     try { pcRef.current?.getSenders().forEach((s) => s.track?.stop()); } catch {}
@@ -76,6 +78,39 @@ export default function VoiceLivePage() {
     });
   };
 
+  const pushSystem = (text: string) => {
+    setLines((ls) => [...ls, { id: `s-${counter.current++}`, role: "system", text }]);
+  };
+
+  // Execute a tool the model requested (set_reminder, add_task, …) on the server,
+  // then hand the result back so the model can confirm it aloud.
+  const runVoiceAction = async (callId: string, name: string, argsJson: string) => {
+    let args: any = {};
+    try { args = JSON.parse(argsJson || "{}"); } catch {}
+    const k = new URLSearchParams(window.location.search).get("k");
+    let resultText = "Готово";
+    try {
+      const r = await fetch(`/api/voice-action${k ? `?k=${encodeURIComponent(k)}` : ""}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, arguments: args }),
+      });
+      const d = await r.json().catch(() => null);
+      resultText = d?.result || (d?.ok ? "Готово" : "Не получилось выполнить");
+    } catch {
+      resultText = "Не получилось выполнить";
+    }
+    pushSystem(`✓ ${resultText}`);
+    const dc = dcRef.current;
+    if (dc && dc.readyState === "open") {
+      dc.send(JSON.stringify({
+        type: "conversation.item.create",
+        item: { type: "function_call_output", call_id: callId, output: resultText },
+      }));
+      dc.send(JSON.stringify({ type: "response.create" }));
+    }
+  };
+
   const handleEvent = useCallback((ev: any) => {
     setEvents((n) => n + 1);
     const t = ev?.type as string;
@@ -99,6 +134,18 @@ export default function VoiceLivePage() {
     // User's speech transcribed (caption) — fills the reserved bubble in place.
     else if (t === "conversation.item.input_audio_transcription.completed") {
       fillUser(ev.transcript || "");
+    }
+    // The model wants to run a tool — remember its name by call_id.
+    else if (t === "response.output_item.added" && ev.item?.type === "function_call") {
+      if (ev.item.call_id && ev.item.name) callNames.current[ev.item.call_id] = ev.item.name;
+    }
+    // Tool arguments are complete — execute the action, then feed the result back.
+    else if (t === "response.function_call_arguments.done") {
+      const name = ev.name || callNames.current[ev.call_id];
+      if (name) {
+        setStatus("thinking");
+        runVoiceAction(ev.call_id, name, ev.arguments || "{}");
+      }
     }
     // Assistant's spoken words streaming in (caption) — names vary by API version.
     else if (
@@ -154,6 +201,7 @@ export default function VoiceLivePage() {
       ms.getTracks().forEach((track) => pc.addTrack(track, ms));
 
       const dc = pc.createDataChannel("oai-events");
+      dcRef.current = dc;
       dc.onmessage = (e) => { try { handleEvent(JSON.parse(e.data)); } catch {} };
 
       const offer = await pc.createOffer();
@@ -223,11 +271,15 @@ export default function VoiceLivePage() {
         {lines.length === 0 && live ? (
           <div style={S.placeholder}>Здесь появится расшифровка разговора…</div>
         ) : (
-          lines.map((l) => (
-            <div key={l.id} style={{ ...S.bubble, ...(l.role === "user" ? S.bubbleUser : S.bubbleAsst) }}>
-              {l.text}
-            </div>
-          ))
+          lines.map((l) =>
+            l.role === "system" ? (
+              <div key={l.id} style={S.systemNote}>{l.text}</div>
+            ) : (
+              <div key={l.id} style={{ ...S.bubble, ...(l.role === "user" ? S.bubbleUser : S.bubbleAsst) }}>
+                {l.text}
+              </div>
+            )
+          )
         )}
       </div>
 
@@ -294,6 +346,7 @@ const S: Record<string, React.CSSProperties> = {
   bubble: { maxWidth: "82%", padding: "10px 13px", borderRadius: 16, fontSize: 15, lineHeight: 1.4, whiteSpace: "pre-wrap" },
   bubbleUser: { alignSelf: "flex-end", backgroundColor: "#27406e", color: "#eaf0ff" },
   bubbleAsst: { alignSelf: "flex-start", background: "#1a1d24", border: "1px solid #262a33" },
+  systemNote: { alignSelf: "center", color: "#7fd18b", fontSize: 13, fontWeight: 600, padding: "4px 10px" },
   controls: { padding: "12px 16px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 },
   btn: { border: "none", borderRadius: 26, padding: "15px 30px", fontSize: 17, fontWeight: 700, color: "#fff" },
   btnStart: { background: "#5b8cff" },
