@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findOrCreateGoogleUser, attachLoginToUser } from "@/lib/emailAuth";
+import { findOrCreateGoogleUser, attachLoginToUser, secureAccountSessions } from "@/lib/emailAuth";
 import { setSessionCookie } from "@/lib/authCookie";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -71,12 +71,19 @@ export async function GET(req: NextRequest) {
           cur = (r2.data as any) || null;
         }
       }
+      let linkedOk = false;
       const dest = !cur
         ? "/login" // сессия истекла — обычный вход
-        : (await attachLoginToUser((cur as any).id, email)).ok
+        : (linkedOk = (await attachLoginToUser((cur as any).id, email)).ok)
         ? "/profile/account?linked=google"
         : "/profile/account?e=emailtaken";
       const res = NextResponse.redirect(new URL(dest, req.url));
+      // Безопасность: после привязки Google сбрасываем старые ссылочные сессии (кто вошёл по
+      // пересланной ссылке — вылетит), а себе ставим свежую cookie.
+      if (cur && linkedOk) {
+        const fresh = await secureAccountSessions((cur as any).id);
+        if (fresh) setSessionCookie(res, fresh);
+      }
       res.cookies.delete("lifeos_oauth_state");
       res.cookies.delete("lifeos_oauth_ref");
       res.cookies.delete("lifeos_oauth_link");

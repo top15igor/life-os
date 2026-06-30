@@ -137,6 +137,23 @@ export async function findOrCreateGoogleUser(
 // ===== Привязка почты/Google к УЖЕ существующему аккаунту (связывание входов) =====
 // Если password задан — ставит и пароль (привязка «почта+пароль»); иначе только email (привязка Google).
 // Если email занят ДРУГИМ аккаунтом: освобождаем его, только если тот пустой (0 записей) и не владелец.
+// Сброс всех ссылочных сессий аккаунта: новый session_secret (старые cookie мгновенно
+// перестают работать — выкидывает всех, кто вошёл по пересланной ссылке) + новый одноразовый
+// код входа token. Возвращает новый session_secret, чтобы вызвавший поставил его действующему
+// пользователю в cookie (он остаётся в системе, остальных выкидывает). null — если не вышло
+// (например, колонки session_secret ещё нет: тогда просто ничего не меняем — мягкая деградация).
+export async function secureAccountSessions(userId: string): Promise<string | null> {
+  const db = supabaseAdmin();
+  const fresh = randomUUID();
+  try {
+    const { error } = await db.from("users").update({ session_secret: fresh, token: randomUUID() }).eq("id", userId);
+    if (error) return null;
+    return fresh;
+  } catch {
+    return null;
+  }
+}
+
 export async function attachLoginToUser(
   userId: string,
   rawEmail: string,

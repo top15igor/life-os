@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import LogoutOthers from "@/components/LogoutOthers";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { CopyLink } from "@/components/ProfileActions";
@@ -67,6 +68,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
           <UsernameEditor locale={locale} baseUrl={baseUrl} initialHandle={handle} />
           <LoginMethods locale={locale} hasTelegram={!!user.chat_id} email={email} notice={notice} />
+          <LogoutOthers locale={locale} />
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { attachLoginToUser } from "@/lib/emailAuth";
+import { attachLoginToUser, secureAccountSessions } from "@/lib/emailAuth";
+import { setSessionCookie } from "@/lib/authCookie";
 
 export const runtime = "nodejs";
 
@@ -15,5 +16,11 @@ export async function POST(req: NextRequest) {
 
   const result = await attachLoginToUser(user.id, email, password);
   if (!result.ok) return NextResponse.json({ ok: false, error: result.error || "server" }, { status: 400 });
-  return NextResponse.json({ ok: true });
+
+  // Безопасность: привязка пароля = «закрываю аккаунт». Сбрасываем все старые ссылочные сессии
+  // (кто вошёл по пересланной ссылке — вылетит), а себе ставим свежую cookie, чтобы остаться внутри.
+  const res = NextResponse.json({ ok: true });
+  const fresh = await secureAccountSessions(user.id);
+  if (fresh) setSessionCookie(res, fresh);
+  return res;
 }
