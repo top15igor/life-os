@@ -101,9 +101,19 @@ export async function addBook(userId: string, hit: Partial<BookHit> & { title: s
 }
 
 // Добавить по названию (для AI-рекомендаций): ищем обложку/автора в Open Library.
+// Берём не просто первый результат, а тот, чьё название лучше совпадает с искомым
+// (иначе для «Homo Deus» вперёд может вылезти издание на иврите).
 export async function addBookByTitle(userId: string, title: string, author?: string | null): Promise<Book | null> {
   const hits = await searchBooks([title, author].filter(Boolean).join(" "));
-  const hit = hits[0] || { title, author: author || null };
+  const words = title.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  let best = hits[0];
+  let bestScore = -1;
+  for (const h of hits) {
+    const ht = (h.title || "").toLowerCase();
+    const score = words.filter((w) => ht.includes(w)).length + (h.coverUrl ? 0.5 : 0);
+    if (score > bestScore) { bestScore = score; best = h; }
+  }
+  const hit = best || { title, author: author || null };
   return addBook(userId, { ...hit, title: hit.title || title, status: "want" });
 }
 
