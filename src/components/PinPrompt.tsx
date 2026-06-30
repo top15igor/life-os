@@ -10,7 +10,7 @@ const STR: Record<string, any> = {
   fr: { title: "Définis un PIN", text: "Protège ton journal : l'accès web demandera un code. Maintenant ou plus tard dans Profil.", set: "Définir", later: "Plus tard", placeholder: "Choisis un PIN (4–8 chiffres)", save: "OK", cancel: "Annuler", bad: "Le PIN doit faire 4–8 chiffres" },
 };
 
-export default function PinPrompt({ hasPin, locale }: { hasPin: boolean; locale: string }) {
+export default function PinPrompt({ hasPin, locale, hasEmail = false }: { hasPin: boolean; locale: string; hasEmail?: boolean }) {
   const s = STR[locale] || STR.ru;
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -21,13 +21,14 @@ export default function PinPrompt({ hasPin, locale }: { hasPin: boolean; locale:
 
   useEffect(() => {
     try {
-      if (hasPin) return;
+      // Есть почта/Google — полноценный вход уже защищает аккаунт, PIN не навязываем.
+      if (hasPin || hasEmail) return;
       if (localStorage.getItem("lifeos_pin_prompt") === "off") return;
       setShow(true);
     } catch {}
-  }, [hasPin]);
+  }, [hasPin, hasEmail]);
 
-  if (!show || hasPin) return null;
+  if (!show || hasPin || hasEmail) return null;
 
   function later() {
     try { localStorage.setItem("lifeos_pin_prompt", "off"); } catch {}

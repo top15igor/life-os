@@ -171,7 +171,7 @@ export default async function HomeBody() {
       <main className="main">
         <EnterInBrowser link={personalLink} locale={locale} />
         <BindEmailPrompt hasEmail={hasEmail} locale={locale} googleEnabled={!!process.env.GOOGLE_CLIENT_ID} />
-        <PinPrompt hasPin={hasPin} locale={locale} />
+        <PinPrompt hasPin={hasPin} locale={locale} hasEmail={hasEmail} />
         <HomeSwitch
           data={data}
           locale={locale}
