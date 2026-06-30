@@ -28,73 +28,46 @@ async function resolveUser(req: NextRequest): Promise<{ id: string; name: string
 
 // Mint a short-lived ephemeral token. Tries the GA endpoint first, then falls
 // back to the older sessions endpoint, so it works whichever the account is on.
+// Build the GA session config. `withNoiseReduction` is split out because that
+// field is the newest/riskiest — if a given API version rejects it, we retry
+// without it so the friend still works.
+function gaSession(instructions: string, withNoiseReduction: boolean) {
+  const input: any = {
+    // Higher threshold keeps a TV in the next room from triggering the model.
+    // silence_duration_ms: how long a pause counts as "you finished".
+    turn_detection: { type: "server_vad", threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 600 },
+    // Transcribe the user's speech so the app can show captions.
+    transcription: { model: "whisper-1" },
+  };
+  if (withNoiseReduction) input.noise_reduction = { type: "near_field" };
+  return { type: "realtime", model: MODEL, instructions, audio: { input, output: { voice: VOICE } } };
+}
+
+async function postGA(key: string, session: any) {
+  const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ session }),
+  });
+  const d = await r.json().catch(() => null);
+  return { ok: r.ok && !!d?.value, value: d?.value as string | undefined, expires_at: d?.expires_at as number | undefined, detail: d?.error?.message || `status ${r.status}` };
+}
+
 async function mintSecret(
   key: string,
   instructions: string
 ): Promise<{ value?: string; expires_at?: number; detail?: string }> {
-  let gaDetail = "ga unknown";
-  // 1) GA: POST /v1/realtime/client_secrets with a nested session config.
+  // Try the full config, then drop noise_reduction if it was rejected.
   try {
-    const r = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session: {
-          type: "realtime",
-          model: MODEL,
-          instructions,
-          audio: {
-            input: {
-              // Higher threshold + near-field noise reduction keep a TV in the
-              // next room from triggering the model. silence_duration_ms: how
-              // long a pause counts as "you finished" before it replies.
-              turn_detection: {
-                type: "server_vad",
-                threshold: 0.6,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 600,
-              },
-              noise_reduction: { type: "near_field" },
-              // Transcribe the user's speech so the app can show captions.
-              transcription: { model: "whisper-1" },
-            },
-            output: { voice: VOICE },
-          },
-        },
-      }),
-    });
-    const d = await r.json().catch(() => null);
-    if (r.ok && d?.value) return { value: d.value, expires_at: d.expires_at };
-    gaDetail = d?.error?.message || `ga status ${r.status}`;
-  } catch (e: any) {
-    gaDetail = `ga ${String(e?.message || e)}`;
-  }
+    const full = await postGA(key, gaSession(instructions, true));
+    if (full.ok) return { value: full.value, expires_at: full.expires_at };
 
-  // 2) Legacy: POST /v1/realtime/sessions (flat config, beta header).
-  try {
-    const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        "OpenAI-Beta": "realtime=v1",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        voice: VOICE,
-        turn_detection: { type: "server_vad", threshold: 0.6, prefix_padding_ms: 300, silence_duration_ms: 600 },
-        input_audio_noise_reduction: { type: "near_field" },
-        input_audio_transcription: { model: "whisper-1" },
-        instructions,
-      }),
-    });
-    const d = await r.json().catch(() => null);
-    if (r.ok && d?.client_secret?.value) {
-      return { value: d.client_secret.value, expires_at: d.client_secret.expires_at };
-    }
-    return { detail: `${gaDetail}; legacy ${d?.error?.message || `status ${r.status}`}` };
+    const lite = await postGA(key, gaSession(instructions, false));
+    if (lite.ok) return { value: lite.value, expires_at: lite.expires_at };
+
+    return { detail: `full: ${full.detail}; lite: ${lite.detail}` };
   } catch (e: any) {
-    return { detail: `${gaDetail}; legacy ${String(e?.message || e)}` };
+    return { detail: String(e?.message || e) };
   }
 }
 
