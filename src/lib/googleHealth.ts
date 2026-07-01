@@ -290,17 +290,26 @@ export async function googleHealthProbe(userId: string): Promise<any> {
       ? { ok: true, sample: r.body?.dataPoints?.[0] ?? "empty" }
       : { status: r.status, msg: r.body?.error?.message || r.body?.error?.status || null };
   });
-  // Диагностика AZM: почему не подтянулось (варианты pageSize / filter).
-  const azmFilter = encodeURIComponent(`active_zone_minutes.interval.civil_end_time >= "${startIso}" AND active_zone_minutes.interval.civil_end_time < "${endExclIso}"`);
-  const [azm1000, azm200, azmFiltered] = await Promise.all([
-    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000`),
-    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=200`),
-    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000&filter=${azmFilter}`),
-  ]);
+  // Диагностика AZM: порядок точек + поддержка dailyRollUp.
+  async function post(path: string, body: any) {
+    try {
+      const r = await fetch(`${API}${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const t = await r.text(); let b: any = t; try { b = JSON.parse(t); } catch {}
+      return { status: r.status, body: b };
+    } catch (e: any) { return { status: -1, body: String(e?.message || e) }; }
+  }
+  const azm1000 = await get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000`);
+  const pts = azm1000.body?.dataPoints || [];
+  const azmRoll = await post(`/users/me/dataTypes/active-zone-minutes/dataPoints:dailyRollUp`, { range: { start: civil(startIso), end: civil(endExclIso) }, windowSizeDays: 1 });
   const azmDiag = {
-    p1000: { status: azm1000.status, count: azm1000.body?.dataPoints?.length ?? null, msg: azm1000.body?.error?.message || null },
-    p200: { status: azm200.status, count: azm200.body?.dataPoints?.length ?? null, msg: azm200.body?.error?.message || null },
-    filtered: { status: azmFiltered.status, count: azmFiltered.body?.dataPoints?.length ?? null, msg: azmFiltered.body?.error?.message || null, sample: azmFiltered.body?.dataPoints?.[0] ?? null },
+    listStatus: azm1000.status,
+    listCount: pts.length,
+    firstEnd: pts[0]?.interval?.endTime ?? null,
+    lastEnd: pts[pts.length - 1]?.interval?.endTime ?? null,
+    rollStatus: azmRoll.status,
+    rollMsg: azmRoll.body?.error?.message || null,
+    rollFirst: azmRoll.body?.rollupDataPoints?.[0] ?? null,
+    rollCount: azmRoll.body?.rollupDataPoints?.length ?? null,
   };
   return { connected: true, range: { startIso, endExclIso }, sleepStatus: sleepRaw.status, sleepCount: sleepPts.length, sleepPts, probes, azmDiag };
 }
