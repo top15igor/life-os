@@ -20,6 +20,30 @@ export async function sendVoice(chatId: number, buf: Buffer, extra?: Record<stri
   }
 }
 
+// Отправить файл-документ (например, .zip с Obsidian-выгрузкой дневника).
+export async function sendDocument(
+  chatId: number,
+  file: Uint8Array | Buffer,
+  filename: string,
+  extra?: Record<string, any>,
+): Promise<boolean> {
+  try {
+    const form = new FormData();
+    form.append("chat_id", String(chatId));
+    form.append(
+      "document",
+      new Blob([new Uint8Array(file)], { type: "application/zip" }),
+      filename,
+    );
+    if (extra) for (const [k, v] of Object.entries(extra)) form.append(k, typeof v === "string" ? v : JSON.stringify(v));
+    const r = await fetch(`${API}/sendDocument`, { method: "POST", body: form as any });
+    return r.ok;
+  } catch (e) {
+    console.error("sendDocument", e);
+    return false;
+  }
+}
+
 // Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
 export async function answerCallback(callbackId: string, text?: string): Promise<void> {
   await fetch(`${API}/answerCallbackQuery`, {

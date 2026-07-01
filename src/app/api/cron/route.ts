@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
-import { sendMessage } from "@/lib/telegram";
+import { sendMessage, sendDocument } from "@/lib/telegram";
+import { buildObsidianZip } from "@/lib/obsidian";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
@@ -78,6 +79,14 @@ const MSG: Record<Lang, {
 const dayMs = 86400000;
 const isoOf = (t: number) => new Date(t).toISOString().slice(0, 10);
 
+// Ежемесячная авто-выгрузка дневника в Obsidian (.zip) — «твои данные всегда у тебя».
+const BACKUP_CAPTION: Record<Lang, string> = {
+  ru: "📦 <b>Твой дневник за месяц — резервная копия</b>\nВсе записи в обычных Markdown-файлах (Obsidian-vault). Скачай и распакуй — данные останутся у тебя навсегда, независимо от сервиса.",
+  en: "📦 <b>Your diary — monthly backup</b>\nAll entries as plain Markdown files (an Obsidian vault). Download and unzip — your data stays with you forever, independent of any service.",
+  uk: "📦 <b>Твій щоденник за місяць — резервна копія</b>\nУсі записи у звичайних Markdown-файлах (Obsidian-vault). Завантаж і розпакуй — дані залишаться в тебе назавжди, незалежно від сервісу.",
+  fr: "📦 <b>Ton journal — sauvegarde mensuelle</b>\nToutes les entrées en fichiers Markdown (un coffre Obsidian). Télécharge et décompresse — tes données restent à toi pour toujours, indépendamment du service.",
+};
+
 const RECUR_HEAD: Record<Lang, string> = {
   ru: "📅 <b>Регулярные платежи на сегодня</b>\nНапоминаю — записать можно одним нажатием на команду ниже:",
   en: "📅 <b>Recurring payments due today</b>\nA reminder — log each by tapping the command below:",
@@ -132,6 +141,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, anticipation: nudge || null });
   }
 
+  // Самотест ежемесячной выгрузки: /api/cron?backup=<secret> — собирает и шлёт .zip владельцу.
+  const bkp = req.nextUrl.searchParams.get("backup");
+  if (bkp !== null) {
+    if (bkp !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
+    const lang: Lang = (["ru", "en", "uk", "fr"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    try {
+      const zip = await buildObsidianZip((u as any).id, (u as any).name || undefined);
+      const fname = `LIFE_OS_Obsidian_${new Date().toISOString().slice(0, 7)}.zip`;
+      const sent = await sendDocument(Number(chat), zip, fname, { caption: BACKUP_CAPTION[lang], parse_mode: "HTML" });
+      return NextResponse.json({ ok: sent, backup: true, bytes: zip.length });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, backup: true, error: String(e?.message || e) });
+    }
+  }
+
   const test = req.nextUrl.searchParams.get("test");
   if (test !== null) {
     if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -169,9 +197,9 @@ export async function GET(req: NextRequest) {
   // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
   let users: any[] | null = null;
   {
-    const r = await db.from("users").select("id, chat_id, lang, created_at, push_enabled, morning_prefs").not("chat_id", "is", null);
+    const r = await db.from("users").select("id, chat_id, lang, name, created_at, push_enabled, morning_prefs").not("chat_id", "is", null);
     if (r.error) {
-      const r2 = await db.from("users").select("id, chat_id, lang, created_at").not("chat_id", "is", null);
+      const r2 = await db.from("users").select("id, chat_id, lang, name, created_at").not("chat_id", "is", null);
       users = r2.data as any;
     } else users = r.data as any;
   }
@@ -186,7 +214,7 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0 };
 
   for (const u of users || []) {
     try {
@@ -215,6 +243,16 @@ export async function GET(req: NextRequest) {
           const fin = await monthlyFinanceDigest(u.id, lang, prevMonth);
           if (fin) { await sendMessage(u.chat_id, fin); stats.financeDigests++; }
         } catch (e) { console.error("finance digest", u.id, e); }
+
+        // Ежемесячная авто-выгрузка дневника в Obsidian (.zip) — только если есть записи.
+        if (days.length) {
+          try {
+            const zip = await buildObsidianZip(u.id, u.name || undefined);
+            const fname = `LIFE_OS_Obsidian_${today.slice(0, 7)}.zip`;
+            const sent = await sendDocument(u.chat_id, zip, fname, { caption: BACKUP_CAPTION[lang], parse_mode: "HTML" });
+            if (sent) stats.backups++;
+          } catch (e) { console.error("obsidian backup", u.id, e); }
+        }
       }
 
       // Напоминания о регулярных платежах, у которых сегодня день списания.
