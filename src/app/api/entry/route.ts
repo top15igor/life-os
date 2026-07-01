@@ -17,10 +17,12 @@ export async function POST(req: NextRequest) {
   // Местные дата/время клиента — чтобы запись была по времени пользователя, а не сервера (UTC).
   const entry_date = /^\d{4}-\d{2}-\d{2}$/.test(String(body?.date || "")) ? body.date : undefined;
   const entry_time = /^\d{2}:\d{2}(:\d{2})?$/.test(String(body?.time || "")) ? body.time : undefined;
+  // Источник записи: сайт по умолчанию, приложение помечает себя (только буквы, до 16).
+  const source = /^[a-z]{1,16}$/.test(String(body?.source || "")) ? body.source : "web";
 
   try {
     const analysis = await analyze(text, user.id);
-    const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web", analysis, entry_date, entry_time });
+    const entry = await saveEntry({ userId: user.id, raw_text: text, source, analysis, entry_date, entry_time });
     return NextResponse.json({ ok: true, id: entry.id });
   } catch (e) {
     console.error(e);
