@@ -1,28 +1,12 @@
-import Onboarding from "@/components/Onboarding";
-import { getLocale } from "@/lib/locale";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-async function getBotLink(): Promise<string> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token) return "https://t.me";
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/getMe`, { cache: "no-store" }).then((x) => x.json());
-    const u = r?.result?.username;
-    return u ? `https://t.me/${u}` : "https://t.me";
-  } catch {
-    return "https://t.me";
-  }
-}
-
+// /welcome исторически показывал слайд-онбординг. Теперь гостя ведём на реальную
+// презентацию сайта /about (с сохранением реферала), чтобы человек читал про продукт
+// на самом сайте, а не на отдельной карусели.
 export default async function WelcomePage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   const sp = await searchParams;
-  const locale = await getLocale();
-  let botLink = await getBotLink();
-  const ref = sp.ref;
-  // Реферал: короткий код или legacy-UUID → передаём пригласившего в бота (start=ref_<x>).
-  if (ref && /^[A-Za-z0-9-]{3,40}$/.test(ref) && botLink.startsWith("https://t.me/")) {
-    botLink += `?start=ref_${ref}`;
-  }
-  return <Onboarding locale={locale} botLink={botLink} />;
+  const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? `?ref=${encodeURIComponent(sp.ref)}` : "";
+  redirect(`/about${ref}`);
 }

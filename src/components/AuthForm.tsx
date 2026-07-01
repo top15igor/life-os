@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ResumeSessionLink from "@/components/ResumeSessionLink";
 
 type Mode = "login" | "register";
 
@@ -261,10 +262,11 @@ export default function AuthForm({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: 18 }}>
-          <a href={botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--text-2)", fontSize: 13, textDecoration: "none" }}>
+          <a href={ref ? `${botLink}${botLink.includes("?") ? "&" : "?"}start=ref_${encodeURIComponent(ref)}` : botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--text-2)", fontSize: 13, textDecoration: "none" }}>
             <i className="ti ti-brand-telegram" style={{ fontSize: 16, color: "#229ED9" }} />
             {t.tg}
           </a>
+          <ResumeSessionLink locale={locale} />
           <div style={{ display: "flex", gap: 16 }}>
             <a href="/about" style={{ color: "var(--text-3)", fontSize: 12.5, textDecoration: "none" }}>{t.about}</a>
             <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12.5, textDecoration: "none" }}>🔒 {locale === "en" || locale === "fr" ? "Privacy" : "Приватность"}</a>
