@@ -9,8 +9,6 @@ import PromiseList from "./PromiseList";
 import HomeEditor from "./HomeEditor";
 import AwarenessCard from "./AwarenessCard";
 import BookWidget from "./BookWidget";
-import LangMenu from "./LangMenu";
-import DesignToggle from "./DesignToggle";
 
 // Какие опциональные блоки показывать при каждом «акценте главной» (undefined = показать все).
 const PRESET_VIS: Record<string, string[] | undefined> = {
@@ -164,25 +162,23 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
 
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 19, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>{data.greeting}<Hint text={data.hint} /></div>
-        <div style={{ fontSize: 13, color: "var(--text-2)" }}>{data.dateLine}</div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 19, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>{data.greeting}<Hint text={data.hint} /></div>
+          <div style={{ fontSize: 13, color: "var(--text-2)" }}>{data.dateLine}</div>
+        </div>
+        {tab === 0 && (
+          <button onClick={() => setEditOpen(true)} title={GEAR_LABEL[locale] || GEAR_LABEL.ru} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
+            <i className="ti ti-adjustments" style={{ fontSize: 16 }} /><span>{GEAR_LABEL[locale] || GEAR_LABEL.ru}</span>
+          </button>
+        )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
         <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", borderRadius: 12, padding: 4 }}>
           {s.tabs.map((label: string, i: number) => (
             <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
           ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <LangMenu current={locale} align="right" />
-          {onSetDesign && <DesignToggle locale={locale} design={design || "classic"} onSet={onSetDesign} />}
-          {tab === 0 && (
-            <button onClick={() => setEditOpen(true)} title={GEAR_LABEL[locale] || GEAR_LABEL.ru} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
-              <i className="ti ti-adjustments" style={{ fontSize: 16 }} /><span>{GEAR_LABEL[locale] || GEAR_LABEL.ru}</span>
-            </button>
-          )}
         </div>
       </div>
 
