@@ -1,16 +1,23 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { unlockToken } from "./pin";
 
 export type CurrentUser = { id: string; name: string | null; chat_id: number | null };
 
-// Текущий пользователь по cookie-сессии.
-// Cookie хранит session_secret (стабильный ключ сессии). Код входа из URL (users.token)
-// одноразовый и ротируется при /u — поэтому он НЕ равен значению cookie после миграции.
-// Фолбэк на token — для старых сессий до миграции (там cookie ещё == token), чтобы никого не разлогинить.
+// Текущий пользователь по сессии.
+// Cookie хранит session_secret (стабильный ключ сессии). Нативное приложение шлёт
+// тот же ключ ЗАГОЛОВКОМ x-lifeos-token (в обход общего cookie-хранилища iOS, чтобы
+// старая cookie из веб-вью не перебивала свежий ключ). Заголовок приоритетнее cookie.
+// Фолбэк на token — для старых сессий до миграции (там cookie ещё == token).
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const c = (await cookies()).get("lifeos_token")?.value;
+  let c: string | undefined;
+  try {
+    c = (await headers()).get("x-lifeos-token") || undefined;
+  } catch {
+    // headers() недоступен в этом контексте — используем cookie ниже
+  }
+  if (!c) c = (await cookies()).get("lifeos_token")?.value;
   if (!c) return null;
   const db = supabaseAdmin();
   try {
