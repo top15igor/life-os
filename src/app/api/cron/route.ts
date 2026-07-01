@@ -121,6 +121,27 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
   }
 }
 
+const MOOD_ASK: Record<Lang, string> = {
+  ru: "🌙 Как настроение сегодня? Отметь одним тапом — так я лучше пойму, что на тебя влияет.",
+  en: "🌙 How's your mood today? Tap once — it helps me see what affects you.",
+  uk: "🌙 Який сьогодні настрій? Познач одним дотиком — так я краще зрозумію, що на тебе впливає.",
+  fr: "🌙 Ton humeur aujourd'hui ? Un seul tap — ça m'aide à voir ce qui t'influence.",
+};
+
+// Gentle one-tap mood check — only if today has no mood signal yet (no manual
+// override and no entry with mood). Silently disabled until day_moods migration runs.
+async function sendMoodCheckIfMissing(db: any, u: any, today: string, lang: Lang): Promise<boolean> {
+  const r1 = await db.from("day_moods").select("day").eq("user_id", u.id).eq("day", today).maybeSingle();
+  if (r1.error) return false; // table not migrated yet
+  if (r1.data) return false;
+  const { data: em } = await db.from("entries").select("id").eq("user_id", u.id).eq("entry_date", today).not("mood", "is", null).limit(1);
+  if (em && em.length) return false;
+  const faces: [string, number][] = [["😄", 5], ["🙂", 4], ["😐", 3], ["🙁", 2], ["😢", 1]];
+  const kb = { inline_keyboard: [faces.map(([e, b]) => ({ text: e, callback_data: `mood:${today}:${b}` }))] };
+  await sendMessage(u.chat_id, MOOD_ASK[lang] || MOOD_ASK.ru, { reply_markup: kb });
+  return true;
+}
+
 export async function GET(req: NextRequest) {
   // Безопасный самотест доставки: /api/cron?test=<TELEGRAM_WEBHOOK_SECRET>
   // Шлёт ОДИН тестовый пуш владельцу и выходит (без массовой рассылки).
@@ -302,11 +323,16 @@ export async function GET(req: NextRequest) {
             }
           } catch (e) { console.error("anticipation active", u.id, e); }
         }
+        let bookFired = false;
         if (ev.enabled && isBookQuestionDay && !isWeeklyDay) {
           try {
             const q = await personalEvening(u.id, lang, prefs);
-            if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; }
+            if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; bookFired = true; }
           } catch (e) { console.error("book prompt active", u.id, e); }
+        }
+        // Иначе — мягкий вопрос про настроение (только если сегодня нет сигнала).
+        if (!bookFired && ev.enabled && !isWeeklyDay) {
+          try { if (await sendMoodCheckIfMissing(db, u, today, lang)) (stats as any).moodChecks = ((stats as any).moodChecks || 0) + 1; } catch (e) { console.error("mood check", u.id, e); }
         }
         continue;
       }

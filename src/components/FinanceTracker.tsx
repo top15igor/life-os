@@ -533,19 +533,23 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       </button>
 
       {/* Шапка: переключатель месяца + настройки */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
         <button onClick={() => gotoMonth(-1)} aria-label="prev" style={{ ...btnG, padding: "6px 10px" }}>
           <i className="ti ti-chevron-left" style={{ fontSize: 16, verticalAlign: "-3px" }} />
         </button>
-        <button onClick={openPicker} title={s.pickPeriod} style={{ ...btnG, flex: 1, fontSize: 15, fontWeight: 600, textTransform: "capitalize", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--text)", background: pickerOpen ? "var(--surface-2)" : "var(--surface)" }}>
+        <button onClick={openPicker} title={s.pickPeriod} style={{ ...btnG, flex: "1 1 160px", fontSize: 15, fontWeight: 600, textTransform: "capitalize", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--text)", background: pickerOpen ? "var(--surface-2)" : "var(--surface)" }}>
           {monthLabel(month, locale)}
           <i className="ti ti-calendar-event" style={{ fontSize: 14, color: "var(--accent)" }} />
         </button>
-        <button onClick={() => { setSetOpenS((o) => !o); setBaseSel(base); setPickerOpen(false); }} aria-label="settings" title={s.settings} style={{ ...btnG, padding: "6px 10px" }}>
-          <i className="ti ti-settings" style={{ fontSize: 16, verticalAlign: "-3px" }} />
-        </button>
         <button onClick={() => gotoMonth(1)} disabled={isCur} aria-label="next" style={{ ...btnG, padding: "6px 10px", opacity: isCur ? 0.4 : 1, cursor: isCur ? "default" : "pointer" }}>
           <i className="ti ti-chevron-right" style={{ fontSize: 16, verticalAlign: "-3px" }} />
+        </button>
+        <button onClick={() => { setSetOpenS((o) => !o); setBaseSel(base); setPickerOpen(false); }} title={s.settings}
+          style={{ ...btnG, padding: "8px 16px", fontSize: 13.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7,
+            color: setOpenS ? "#fff" : "var(--accent)",
+            background: setOpenS ? "var(--accent)" : "color-mix(in srgb, var(--accent) 10%, var(--surface))",
+            border: `1px solid ${setOpenS ? "var(--accent)" : "color-mix(in srgb, var(--accent) 35%, transparent)"}` }}>
+          <i className="ti ti-settings" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {s.settings}
         </button>
       </div>
 
@@ -711,8 +715,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* Баланс + AI-советник в одну строку: бюджет шире, советник уже (на мобиле — в столбик) */}
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
+      {/* ЛЕВАЯ КОЛОНКА: баланс, под ним календарь месяца */}
+      <div style={{ flex: "2 1 380px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Баланс + доходы/расходы */}
-      <div className="card" style={{ flex: "2 1 380px", minWidth: 0 }}>
+      <div className="card" style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 5 }}>
           <i className="ti ti-wallet" style={{ fontSize: 14, color: "var(--accent)" }} />{s.balance}
         </div>
@@ -790,9 +796,59 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         )}
       </div>
 
+      {/* Календарь месяца по дням: под балансом */}
+      {data.byDay.length > 0 && (
+        <div className="card" style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-calendar-month" style={{ fontSize: 15, color: "var(--accent)" }} />{s.calendar}
+            {selDay && (
+              <button onClick={() => setSelectedDay(null)} style={{ ...btnG, padding: "3px 10px", fontSize: 11.5, marginLeft: "auto" }}>
+                <i className="ti ti-x" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.allDays}
+              </button>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 5 }}>
+            {s.weekdays.map((w: string) => <div key={w} style={{ textAlign: "center", fontSize: 10.5, color: "var(--text-3)" }}>{w}</div>)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+            {cells.map((cell, i) => {
+              if (!cell) return <div key={i} />;
+              const slice = dayMap.get(cell);
+              const has = !!slice;
+              const isSel = selDay === cell;
+              const isToday = cell === todayISO();
+              const net = slice?.net ?? 0;
+              return (
+                <button key={i} onClick={() => has && setSelectedDay(isSel ? null : cell)} disabled={!has} title={isToday ? s.today : undefined}
+                  style={{
+                    minHeight: 50, padding: "3px 4px", borderRadius: 8, cursor: has ? "pointer" : "default",
+                    border: `1px solid ${isSel || (isToday && !has) ? "var(--accent)" : "var(--border)"}`,
+                    background: isSel ? "var(--accent)" : has ? "var(--surface-2)" : "var(--surface)",
+                    display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, textAlign: "left", overflow: "hidden",
+                    opacity: has ? 1 : 0.45,
+                  }}>
+                  <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isSel ? "#fff" : isToday ? "var(--accent)" : "var(--text)" }}>{Number(cell.slice(8, 10))}</span>
+                  {has && (
+                    <>
+                      <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isSel ? "#fff" : net >= 0 ? "#10b981" : "#ef4444" }}>
+                        {net > 0 ? "+" : net < 0 ? "−" : ""}{compactMoney(net, base)}
+                      </span>
+                      <span style={{ fontSize: 9, color: isSel ? "rgba(255,255,255,.85)" : "var(--text-3)" }}>{slice!.count} {s.ops}</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      </div>
+
+      {/* ПРАВАЯ КОЛОНКА: AI-советник, под ним цели по накоплениям */}
+      <div style={{ flex: "1 1 300px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
       {/* AI-советник по финансам (по требованию) */}
       {data.hasAny && (
-        <div className="card" style={{ flex: "1 1 300px", minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
+        <div className="card" style={{ minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: advice ? 10 : 0 }}>
             <i className="ti ti-sparkles" style={{ fontSize: 16, color: "var(--accent)" }} />{s.adviceTitle}
             {advice && !adviceLoading && (
@@ -812,11 +868,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           )}
         </div>
       )}
-      </div>
-
-      {/* Цели по накоплениям */}
+      {/* Цели по накоплениям — под советником */}
       {goals != null && (goals.length > 0 || goalAddOpen) && (
-        <div className="card" style={{ marginBottom: 14 }}>
+        <div className="card" style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
             <i className="ti ti-target-arrow" style={{ fontSize: 15, color: "var(--accent)" }} />{s.goalsTitle}
             <button onClick={() => { setGoalAddOpen((o) => !o); setGCurrency(base); }} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
@@ -876,7 +930,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* Кнопка «добавить первую цель», если целей ещё нет */}
       {goals != null && goals.length === 0 && !goalAddOpen && (
-        <div className="card" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <i className="ti ti-target-arrow" style={{ fontSize: 18, color: "var(--accent)" }} />
           <span style={{ fontSize: 13, color: "var(--text-2)", flex: 1, minWidth: 140 }}>{s.goalsHint}</span>
           <button onClick={() => { setGoalAddOpen(true); setGCurrency(base); }} style={{ ...btnG, padding: "6px 14px", fontSize: 12.5 }}>
@@ -884,6 +938,8 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           </button>
         </div>
       )}
+      </div>
+      </div>
 
       {/* График динамики по месяцам (по требованию) */}
       {data.hasAny && (

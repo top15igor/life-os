@@ -27,6 +27,7 @@ import { morningMessage } from "@/lib/morningPush";
 import { markPushResponded } from "@/lib/pushLog";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
+import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
 
 export const runtime = "nodejs";
 
@@ -344,7 +345,23 @@ export async function POST(req: NextRequest) {
   if (cq) {
     const data: string = cq.data || "";
     const cqChat: number | undefined = cq.message?.chat?.id;
-    if (data.startsWith("lang:") && cqChat) {
+    if (data.startsWith("mood:") && cqChat) {
+      // mood:<YYYY-MM-DD>:<band 1-5> — one-tap evening mood check.
+      const [, day, bandStr] = data.split(":");
+      const band = Number(bandStr) as MoodBand;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(day) && band >= 1 && band <= 5) {
+        try {
+          const db = supabaseAdmin();
+          const { data: u } = await db.from("users").select("id").eq("chat_id", cqChat).maybeSingle();
+          if (u) {
+            await db.from("day_moods").upsert({ user_id: (u as any).id, day, mood: BAND_TO_MOOD[band], source: "bot", updated_at: new Date().toISOString() }, { onConflict: "user_id,day" });
+          }
+          await answerCallback(cq.id, `Записал: ${bandMeta(band).label}`);
+        } catch { await answerCallback(cq.id); }
+      } else {
+        await answerCallback(cq.id);
+      }
+    } else if (data.startsWith("lang:") && cqChat) {
       const lng = data.slice(5);
       if (["ru", "en", "uk", "fr"].includes(lng)) {
         try { await supabaseAdmin().from("users").update({ lang: lng }).eq("chat_id", cqChat); } catch {}

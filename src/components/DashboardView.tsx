@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { bandOf, bandMeta } from "@/lib/mood";
 
 type TL = { date: string; mood: number | null; steps: number | null; sleep_hours: number | null; hr_resting: number | null; active_kcal: number | null; hrv: number | null; azm: number | null };
 type LatestHealth = { sleep_hours?: number | null; sleep_deep_min?: number | null; sleep_rem_min?: number | null; sleep_light_min?: number | null } | null;
@@ -262,6 +263,21 @@ export default function DashboardView() {
 
       {/* Sleep stages */}
       {d.healthConnected && d.latestHealth && <SleepStages h={d.latestHealth} />}
+
+      {/* Mood calendar entry */}
+      <Link href="/mood" className="card" style={{ ...card, marginTop: 14, display: "block", textDecoration: "none", color: "var(--text)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={secLbl}>Календарь настроения</div>
+          <i className="ti ti-chevron-right" style={{ fontSize: 16, color: "var(--text-3)" }} />
+        </div>
+        <div style={{ display: "flex", gap: 5, marginTop: 12 }}>
+          {tl.slice(-12).map((day: any, i: number) => {
+            const b = day.mood != null ? bandMeta(bandOf(day.mood)) : null;
+            return <div key={i} style={{ flex: 1, height: 22, borderRadius: 6, background: b ? b.color : "var(--surface-2)", border: b ? "none" : "1px dashed var(--border)" }} />;
+          })}
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 10 }}>Весь месяц, смайлы и ручная правка — тапни</div>
+      </Link>
 
       {/* Body ↔ mind */}
       {d.healthConnected && ((d.bodyMind?.length ?? 0) > 0 ? (
