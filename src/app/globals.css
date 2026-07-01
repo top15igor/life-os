@@ -35,6 +35,9 @@ html[data-app] {
   color-scheme: dark;
 }
 html[data-app], html[data-app] body { background: var(--bg); color: var(--text); }
+/* В приложении есть свой нативный AI-друг → плавающий веб-помощник лишний
+   (тормозит в webview и наезжает на кнопки). Прячем только внутри приложения. */
+html[data-app] .asst-fab { display: none !important; }
 /* Тема всегда светлая (тёмную можно вернуть позже как переключатель). */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
