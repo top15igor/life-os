@@ -168,8 +168,8 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
           <div style={{ fontSize: 13, color: "var(--text-2)" }}>{data.dateLine}</div>
         </div>
         {tab === 0 && (
-          <button onClick={() => setEditOpen(true)} title={GEAR_LABEL[locale] || GEAR_LABEL.ru} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer", flexShrink: 0 }}>
-            <i className="ti ti-adjustments" style={{ fontSize: 16 }} /><span>{GEAR_LABEL[locale] || GEAR_LABEL.ru}</span>
+          <button onClick={() => setEditOpen(true)} title={GEAR_LABEL[locale] || GEAR_LABEL.ru} aria-label={GEAR_LABEL[locale] || GEAR_LABEL.ru} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", flexShrink: 0 }}>
+            <i className="ti ti-settings" style={{ fontSize: 19 }} />
           </button>
         )}
       </div>
