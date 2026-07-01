@@ -19,6 +19,11 @@ export const maxDuration = 60;
 
 type Lang = "ru" | "en" | "uk" | "fr";
 
+// Экранируем спецсимволы для parse_mode:HTML (иначе Telegram молча отклоняет).
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 const MSG: Record<Lang, {
   reminder: string;
   reminderStreak: (n: number) => string;
@@ -158,16 +163,8 @@ export async function GET(req: NextRequest) {
       try { await db.from("anticipations").delete().eq("user_id", (u as any).id); } catch {}
     }
     const nudge = await getAnticipation((u as any).id, ((u as any).lang as any) || "ru");
-    let tg: any = null;
-    if (nudge && chat) {
-      const token = process.env.TELEGRAM_BOT_TOKEN;
-      tg = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chat_id: Number(chat), text: `✨ ${nudge}`, disable_web_page_preview: true }),
-      }).then((x) => x.json()).catch((e) => ({ error: String(e) }));
-    }
-    return NextResponse.json({ ok: true, chat, anticipation: nudge || null, telegram: tg });
+    if (nudge && chat) await sendMessage(Number(chat), `✨ ${escHtml(nudge)}`);
+    return NextResponse.json({ ok: true, chat, anticipation: nudge || null });
   }
 
   // Самотест ежемесячной выгрузки: /api/cron?backup=<secret> — собирает и шлёт .zip владельцу.
@@ -324,7 +321,7 @@ export async function GET(req: NextRequest) {
           try {
             const nudge = await getAnticipation(u.id, lang);
             if (nudge) {
-              await sendMessage(u.chat_id, `✨ ${nudge}`);
+              await sendMessage(u.chat_id, `✨ ${escHtml(nudge)}`);
               logPush(u.id, "evening").catch(() => {});
               (stats as any).anticipations = ((stats as any).anticipations || 0) + 1;
               continue;
