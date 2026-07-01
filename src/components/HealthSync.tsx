@@ -166,6 +166,10 @@ function Stat({ label, value, unit, sub }: { label: string; value: string; unit?
 export default function HealthSync({ days, token, locale, fitbitConnected, fitbitConfigured, fitbitMsg }: { days: HealthDay[]; token: string; locale: string; fitbitConnected?: boolean; fitbitConfigured?: boolean; fitbitMsg?: string }) {
   const s = STR[locale] || STR.en;
   const router = useRouter();
+  // Внутри нативного приложения (webview ставит data-app) OAuth в webview Google
+  // блокирует (disallowed_useragent) → прячем веб-кнопку, ведём на нативный экран.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => { setInApp(document.documentElement.getAttribute("data-app") === "1"); }, []);
   const [open, setOpen] = useState(days.length === 0);
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState("");
@@ -283,8 +287,11 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
           <span style={{ fontSize: 13.5, fontWeight: 600 }}>{s.fb_title}</span>
           {fitbitConnected && <span style={{ fontSize: 12, color: "#10b981" }}>{s.fb_connected}</span>}
           <span style={{ flex: 1 }} />
-          {!fitbitConnected && fitbitConfigured && (
+          {!fitbitConnected && fitbitConfigured && !inApp && (
             <a href="/api/integrations/google-health/start" style={{ fontSize: 12.5, padding: "8px 14px", borderRadius: 9, background: "#00b0b9", color: "#fff", textDecoration: "none" }}>{s.fb_connect}</a>
+          )}
+          {!fitbitConnected && fitbitConfigured && inApp && (
+            <span style={{ fontSize: 12, color: "var(--text-3)" }}>Подключить: Профиль → Здоровье</span>
           )}
           {fitbitConnected && (
             <>
