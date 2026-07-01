@@ -713,7 +713,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         </div>
       )}
 
-      {/* Баланс + AI-советник в одну строку: бюджет шире, советник уже (на мобиле — в столбик) */}
+      {/* Две колонки: слева баланс + календарь месяца, справа AI-советник + цели (на мобиле — в столбик) */}
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
       {/* ЛЕВАЯ КОЛОНКА: баланс, под ним календарь месяца */}
       <div style={{ flex: "2 1 380px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -941,45 +941,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       </div>
       </div>
 
-      {/* График динамики по месяцам (по требованию) */}
-      {data.hasAny && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: trend ? 12 : 0, display: "flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-chart-bar" style={{ fontSize: 15, color: "var(--accent)" }} />{s.trendTitle}
-            {!trend && (
-              <button onClick={loadTrend} disabled={trendLoading} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
-                {trendLoading ? s.trendLoading : s.trendShow}
-              </button>
-            )}
-          </div>
-          {trend && (trend.length === 0 ? (
-            <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{s.trendEmpty}</div>
-          ) : (() => {
-            const maxV = Math.max(1, ...trend.map((p) => Math.max(p.income, p.expense)));
-            return (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: trend.length > 8 ? 4 : 8, height: 130, overflowX: "auto", paddingBottom: 4 }}>
-                {trend.map((p) => (
-                  <div key={p.month} style={{ flex: "1 0 auto", minWidth: 26, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 96 }}>
-                      <div title={`${s.income}: ${fmtMoney(p.income, base, locale)}`} style={{ width: 8, height: `max(${(p.income / maxV) * 100}%, 2px)`, background: "#10b981", borderRadius: "3px 3px 0 0" }} />
-                      <div title={`${s.expense}: ${fmtMoney(p.expense, base, locale)}`} style={{ width: 8, height: `max(${(p.expense / maxV) * 100}%, 2px)`, background: "#ef4444", borderRadius: "3px 3px 0 0" }} />
-                    </div>
-                    <span style={{ fontSize: 9.5, color: p.net < 0 ? "#ef4444" : "#10b981", fontWeight: 600 }}>{p.net >= 0 ? "+" : "−"}{compactMoney(p.net, base)}</span>
-                    <span style={{ fontSize: 9, color: "var(--text-3)" }}>{p.month.slice(2).replace("-", "·")}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })())}
-          {trend && trend.length > 0 && (
-            <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 11, color: "var(--text-3)" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#10b981", borderRadius: 2 }} />{s.income}</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: 2 }} />{s.expense}</span>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Сводный бюджет на месяц */}
       {budgetTotal && (
         <div className="card" style={{ marginBottom: 14 }}>
@@ -1108,6 +1069,45 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         </div>
       )}
 
+      {/* График динамики по месяцам (по требованию) */}
+      {data.hasAny && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: trend ? 12 : 0, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-chart-bar" style={{ fontSize: 15, color: "var(--accent)" }} />{s.trendTitle}
+            {!trend && (
+              <button onClick={loadTrend} disabled={trendLoading} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
+                {trendLoading ? s.trendLoading : s.trendShow}
+              </button>
+            )}
+          </div>
+          {trend && (trend.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{s.trendEmpty}</div>
+          ) : (() => {
+            const maxV = Math.max(1, ...trend.map((p) => Math.max(p.income, p.expense)));
+            return (
+              <div style={{ display: "flex", alignItems: "flex-end", gap: trend.length > 8 ? 4 : 8, height: 130, overflowX: "auto", paddingBottom: 4 }}>
+                {trend.map((p) => (
+                  <div key={p.month} style={{ flex: "1 0 auto", minWidth: 26, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 96 }}>
+                      <div title={`${s.income}: ${fmtMoney(p.income, base, locale)}`} style={{ width: 8, height: `max(${(p.income / maxV) * 100}%, 2px)`, background: "#10b981", borderRadius: "3px 3px 0 0" }} />
+                      <div title={`${s.expense}: ${fmtMoney(p.expense, base, locale)}`} style={{ width: 8, height: `max(${(p.expense / maxV) * 100}%, 2px)`, background: "#ef4444", borderRadius: "3px 3px 0 0" }} />
+                    </div>
+                    <span style={{ fontSize: 9.5, color: p.net < 0 ? "#ef4444" : "#10b981", fontWeight: 600 }}>{p.net >= 0 ? "+" : "−"}{compactMoney(p.net, base)}</span>
+                    <span style={{ fontSize: 9, color: "var(--text-3)" }}>{p.month.slice(2).replace("-", "·")}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })())}
+          {trend && trend.length > 0 && (
+            <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 11, color: "var(--text-3)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#10b981", borderRadius: 2 }} />{s.income}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, background: "#ef4444", borderRadius: 2 }} />{s.expense}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Регулярные платежи (подписки) */}
       <div className="card" style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -1171,53 +1171,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           <div style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 10 }}>{s.recurEmpty}</div>
         )}
       </div>
-
-      {/* Календарь месяца по дням: сальдо и число операций на каждом дне */}
-      {data.byDay.length > 0 && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-calendar-month" style={{ fontSize: 15, color: "var(--accent)" }} />{s.calendar}
-            {selDay && (
-              <button onClick={() => setSelectedDay(null)} style={{ ...btnG, padding: "3px 10px", fontSize: 11.5, marginLeft: "auto" }}>
-                <i className="ti ti-x" style={{ fontSize: 13, verticalAlign: "-2px" }} /> {s.allDays}
-              </button>
-            )}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 5 }}>
-            {s.weekdays.map((w: string) => <div key={w} style={{ textAlign: "center", fontSize: 10.5, color: "var(--text-3)" }}>{w}</div>)}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-            {cells.map((cell, i) => {
-              if (!cell) return <div key={i} />;
-              const slice = dayMap.get(cell);
-              const has = !!slice;
-              const isSel = selDay === cell;
-              const isToday = cell === todayISO();
-              const net = slice?.net ?? 0;
-              return (
-                <button key={i} onClick={() => has && setSelectedDay(isSel ? null : cell)} disabled={!has} title={isToday ? s.today : undefined}
-                  style={{
-                    minHeight: 50, padding: "3px 4px", borderRadius: 8, cursor: has ? "pointer" : "default",
-                    border: `1px solid ${isSel || (isToday && !has) ? "var(--accent)" : "var(--border)"}`,
-                    background: isSel ? "var(--accent)" : has ? "var(--surface-2)" : "var(--surface)",
-                    display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1, textAlign: "left", overflow: "hidden",
-                    opacity: has ? 1 : 0.45,
-                  }}>
-                  <span style={{ fontSize: 11, fontWeight: isToday ? 700 : 500, color: isSel ? "#fff" : isToday ? "var(--accent)" : "var(--text)" }}>{Number(cell.slice(8, 10))}</span>
-                  {has && (
-                    <>
-                      <span style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: isSel ? "#fff" : net >= 0 ? "#10b981" : "#ef4444" }}>
-                        {net > 0 ? "+" : net < 0 ? "−" : ""}{compactMoney(net, base)}
-                      </span>
-                      <span style={{ fontSize: 9, color: isSel ? "rgba(255,255,255,.85)" : "var(--text-3)" }}>{slice!.count} {s.ops}</span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Список операций */}
       {txs.length === 0 ? (
