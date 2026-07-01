@@ -813,11 +813,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         )}
       </div>
 
-      {/* Верх справа: AI-советник + цели по накоплениям (одна ячейка сетки — по высоте баланса) */}
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14, justifyContent: "space-between" }}>
+      {/* Верх справа: AI-советник + цели по накоплениям (одна ячейка сетки — по высоте баланса, карточки тянутся поровну) */}
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
       {/* AI-советник по финансам (по требованию) */}
       {data.hasAny && (
-        <div className="card" style={{ minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
+        <div className="card" style={{ flex: "1 1 0", minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: advice ? 10 : 0 }}>
             <i className="ti ti-sparkles" style={{ fontSize: 16, color: "var(--accent)" }} />{s.adviceTitle}
             {advice && !adviceLoading && (
@@ -839,7 +839,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       )}
       {/* Цели по накоплениям — под советником */}
       {goals != null && (goals.length > 0 || goalAddOpen) && (
-        <div className="card" style={{ minWidth: 0 }}>
+        <div className="card" style={{ flex: "1 1 0", minWidth: 0 }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
             <i className="ti ti-target-arrow" style={{ fontSize: 15, color: "var(--accent)" }} />{s.goalsTitle}
             <button onClick={() => { setGoalAddOpen((o) => !o); setGCurrency(base); }} style={{ ...btnG, padding: "4px 12px", fontSize: 12, marginLeft: "auto" }}>
@@ -899,7 +899,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* Кнопка «добавить первую цель», если целей ещё нет */}
       {goals != null && goals.length === 0 && !goalAddOpen && (
-        <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="card" style={{ flex: "1 1 0", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <i className="ti ti-target-arrow" style={{ fontSize: 18, color: "var(--accent)" }} />
           <span style={{ fontSize: 13, color: "var(--text-2)", flex: 1, minWidth: 140 }}>{s.goalsHint}</span>
           <button onClick={() => { setGoalAddOpen(true); setGCurrency(base); }} style={{ ...btnG, padding: "6px 14px", fontSize: 12.5 }}>
