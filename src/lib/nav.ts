@@ -1,5 +1,6 @@
 export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "today", href: "/", icon: "ti-home" },
+  { key: "dashboard", href: "/dashboard", icon: "ti-chart-histogram" },
   { key: "diary", href: "/diary", icon: "ti-book" },
   { key: "wellness", href: "/health", icon: "ti-heartbeat" },
   { key: "plans", href: "/goals", icon: "ti-target" },
@@ -26,7 +27,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
 
 // Смысловые блоки бокового меню (порядок по умолчанию).
 export const NAV_GROUPS: { id: string; keys: string[] }[] = [
-  { id: "main", keys: ["today", "diary", "wellness"] },
+  { id: "main", keys: ["today", "dashboard", "diary", "wellness"] },
   { id: "life", keys: ["plans", "reminders", "finance", "trace", "family", "projects"] },
   { id: "memory", keys: ["lifebook", "knowledge", "books", "memory", "people", "places"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
