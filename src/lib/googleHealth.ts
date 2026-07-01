@@ -132,10 +132,13 @@ function dayOf(c: any): string | null {
   if (!dt) return null;
   return `${dt.year}-${String(dt.month).padStart(2, "0")}-${String(dt.day).padStart(2, "0")}`;
 }
-function civilToMs(c: any): number | null {
-  const dt = civilParts(c);
-  if (!dt) return null;
-  return Date.UTC(dt.year, (dt.month || 1) - 1, dt.day || 1, dt.hours || 0, dt.minutes || 0, dt.seconds || 0);
+// Локальный день из ISO-времени + смещение вида "7200s" (сон Google Health отдаёт так).
+function localDayFromIso(iso?: string, offset?: string): string | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  if (!isFinite(ms)) return null;
+  const offSec = parseInt(String(offset || "0"), 10) || 0;
+  return new Date(ms + offSec * 1000).toISOString().slice(0, 10);
 }
 
 async function ghGet(token: string, path: string): Promise<any | null> {
@@ -187,17 +190,18 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
     if (d && isFinite(bpm) && bpm > 0) get(d).hr_resting = Math.round(bpm);
   }
 
-  // Сон — сессии, относим минуты сна к дню пробуждения (civilEndTime).
+  // Сон — сессии. interval.endTime/startTime приходят ISO-строками + endUtcOffset ("7200s").
+  // Минуты сна берём из summary.minutesAsleep; день = локальная дата пробуждения.
   const sleep = await ghGet(token, `/users/me/dataTypes/sleep/dataPoints?pageSize=100&filter=${encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`)}`);
   for (const dp of sleep?.dataPoints || []) {
     const sl = dp.sleep || {};
-    const d = dayOf(sl.interval?.civilEndTime);
-    // Prefer minutesAsleep; fall back to the session length if that field is absent.
-    let mins = Number(sl.summary?.minutesAsleep ?? sl.summary?.sleepDurationMinutes ?? sl.summary?.totalSleepMinutes);
+    const iv = sl.interval || {};
+    const d = localDayFromIso(iv.endTime, iv.endUtcOffset);
+    let mins = Number(sl.summary?.minutesAsleep);
     if (!(isFinite(mins) && mins > 0)) {
-      const st = civilToMs(sl.interval?.civilStartTime);
-      const en = civilToMs(sl.interval?.civilEndTime);
-      if (st != null && en != null && en > st) mins = Math.round((en - st) / 60000);
+      const startMs = Date.parse(iv.startTime || "");
+      const endMs = Date.parse(iv.endTime || "");
+      if (isFinite(startMs) && isFinite(endMs) && endMs > startMs) mins = Math.round((endMs - startMs) / 60000);
     }
     if (d && isFinite(mins) && mins > 0) {
       const h = get(d);
@@ -208,38 +212,50 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   return upsertHealthDays(userId, [...byDay.values()], "googlehealth");
 }
 
-// Диагностика: сырые ответы Google Health, чтобы понять реальные поля/типы.
+// Диагностика: компактно показываем, что реально отдаёт Google Health,
+// и какие ДОП. типы данных доступны (чтобы добавить максимум метрик).
 export async function googleHealthProbe(userId: string): Promise<any> {
   const token = await getAccessToken(userId);
   if (!token) return { connected: false };
-  const startIso = isoDay(13);
+  const startIso = isoDay(6);
   const endExclIso = isoDay(-1);
-  async function probe(path: string, init?: RequestInit) {
+  async function get(path: string) {
     try {
-      const r = await fetch(`${API}${path}`, {
-        ...init,
-        headers: { Authorization: `Bearer ${token}`, ...(init?.headers || {}) },
-      });
+      const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token}` } });
       const text = await r.text();
       let body: any = text;
       try { body = JSON.parse(text); } catch {}
       return { status: r.status, body };
     } catch (e: any) {
-      return { status: -1, error: String(e?.message || e) };
+      return { status: -1, body: String(e?.message || e) };
     }
   }
+  // Сон — только интервал и summary (без массива стадий), чтобы ответ читался.
   const sleepFilter = encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`);
-  const [dataTypes, sleep, sleepNoFilter, rollupSleep] = await Promise.all([
-    probe(`/users/me/dataTypes`),
-    probe(`/users/me/dataTypes/sleep/dataPoints?pageSize=20&filter=${sleepFilter}`),
-    probe(`/users/me/dataTypes/sleep/dataPoints?pageSize=5`),
-    probe(`/users/me/dataTypes/sleep/dataPoints:dailyRollUp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ range: { start: civil(startIso), end: civil(endExclIso) }, windowSizeDays: 1 }),
-    }),
-  ]);
-  return { connected: true, range: { startIso, endExclIso }, dataTypes, sleep, sleepNoFilter, rollupSleep };
+  const sleepRaw = await get(`/users/me/dataTypes/sleep/dataPoints?pageSize=10&filter=${sleepFilter}`);
+  const sleepPts = (sleepRaw.body?.dataPoints || []).slice(0, 3).map((dp: any) => ({
+    endTime: dp.sleep?.interval?.endTime,
+    endUtcOffset: dp.sleep?.interval?.endUtcOffset,
+    minutesAsleep: dp.sleep?.summary?.minutesAsleep,
+    stagesSummary: dp.sleep?.summary?.stagesSummary,
+  }));
+  // Кандидаты доп. типов данных — узнаём, что доступно и как называются поля.
+  const candidates = [
+    "heart-rate", "daily-heart-rate", "oxygen-saturation", "heart-rate-variability",
+    "respiratory-rate", "floors-climbed", "elevation-gained", "total-calories-burned",
+    "active-zone-minutes", "active-minutes", "weight", "skin-temperature",
+  ];
+  const results = await Promise.all(
+    candidates.map((c) => get(`/users/me/dataTypes/${c}/dataPoints?pageSize=1`))
+  );
+  const probes: Record<string, any> = {};
+  candidates.forEach((c, i) => {
+    const r = results[i];
+    probes[c] = r.status === 200
+      ? { ok: true, sample: r.body?.dataPoints?.[0] ?? "empty" }
+      : { status: r.status, msg: r.body?.error?.message || r.body?.error?.status || null };
+  });
+  return { connected: true, range: { startIso, endExclIso }, sleepStatus: sleepRaw.status, sleepCount: sleepPts.length, sleepPts, probes };
 }
 
 // Все пользователи с подключённым Google Health (для крона).
