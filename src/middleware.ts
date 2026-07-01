@@ -7,7 +7,16 @@ export function middleware(req: NextRequest) {
   if (token) return NextResponse.next();
 
   const url = req.nextUrl.clone();
-  url.pathname = "/about";
+  // Гость на корне — показываем презентацию (контент /about), но АДРЕС остаётся "/".
+  // Так сайт открывается по чистому mylifebookai.vercel.app, без /about в строке.
+  // Query (?ref=...) сохраняется, чтобы реферал не терялся.
+  if (url.pathname === "/") {
+    url.pathname = "/about";
+    return NextResponse.rewrite(url);
+  }
+  // Прочие защищённые страницы гостю — на чистый корень (там он увидит презентацию).
+  url.pathname = "/";
+  url.search = "";
   return NextResponse.redirect(url);
 }
 

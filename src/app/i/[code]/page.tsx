@@ -21,8 +21,8 @@ export default async function InvitePage({ params }: { params: Promise<{ code: s
     }
   }
 
-  // Гость / не-владелец — на презентацию сайта. Реферал пробрасываем меткой ?ref=<code>
-  // (сохраняется через /login в бота и в email/Google-регистрацию).
+  // Гость / не-владелец — на корень сайта (там презентация). Реферал пробрасываем
+  // меткой ?ref=<code> (сохраняется через /login в бота и в email/Google-регистрацию).
   const ref = code && /^[A-Za-z0-9-]{3,40}$/.test(code) ? `?ref=${encodeURIComponent(code)}` : "";
-  redirect(`/about${ref}`);
+  redirect(`/${ref}`);
 }
