@@ -125,7 +125,9 @@ function parseHealthXml(xml: string): HealthDay[] {
       case "HKCategoryTypeIdentifierSleepAnalysis": {
         if (!/Asleep/i.test(valStr)) break; // только фазы сна, не «в кровати»/«проснулся»
         const end = /\bendDate="([^"]+)"/.exec(attrs)?.[1] || "";
-        const t0 = Date.parse(start.replace(" ", "T")), t1 = Date.parse(end.replace(" ", "T"));
+        // Apple пишет "YYYY-MM-DD HH:MM:SS +0200" — обрезаем смещение (для длительности оно не важно),
+        // иначе Date.parse спотыкается о пробел перед +0200 и сон не считается.
+        const t0 = Date.parse(start.slice(0, 19).replace(" ", "T")), t1 = Date.parse(end.slice(0, 19).replace(" ", "T"));
         if (!isFinite(t0) || !isFinite(t1) || t1 <= t0) break;
         const hours = (t1 - t0) / 3600000;
         const endDay = end.slice(0, 10); // сон относим к дню пробуждения
