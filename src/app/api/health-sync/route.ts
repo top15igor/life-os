@@ -63,3 +63,20 @@ export async function GET(req: NextRequest) {
   const user = await userByToken(req);
   return NextResponse.json({ ok: !!user });
 }
+
+// Удалить данные Apple-источника пользователя (отключить Apple / убрать демо).
+// Авторизация — токеном (как у POST) либо cookie-сессией.
+export async function DELETE(req: NextRequest) {
+  let user = await userByToken(req);
+  if (!user) {
+    const { getCurrentUser } = await import("@/lib/auth");
+    user = await getCurrentUser();
+  }
+  if (!user) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  try {
+    await supabaseAdmin().from("health_metrics").delete().eq("user_id", user.id).eq("source", "apple");
+  } catch {
+    return NextResponse.json({ ok: false, error: "delete_failed" }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
