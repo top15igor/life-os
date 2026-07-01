@@ -12,18 +12,18 @@ function normKey(s: string): string {
   return (s || "").toLowerCase().replace(/ё/g, "е").replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
-type Proj = { id: string; name: string; created_at?: string | null };
+type Proj = { id: number; name: string };
 
 // Собираем план слияния: группы проектов с одинаковым normKey (size > 1).
-// В каждой группе canonical = у кого больше записей (при равенстве — самый старый).
+// В каждой группе canonical = у кого больше записей (при равенстве — меньший id = старше).
 async function buildPlan(userId: string) {
   const db = supabaseAdmin();
-  const { data: projs } = await db.from("projects").select("id,name,created_at").eq("user_id", userId);
-  const projects = ((projs as Proj[]) ?? []).filter((p) => p?.id);
+  const { data: projs } = await db.from("projects").select("id,name").eq("user_id", userId);
+  const projects = ((projs as Proj[]) ?? []).filter((p) => p?.id != null);
 
   // Кол-во записей у каждого проекта.
   const ids = projects.map((p) => p.id);
-  const counts = new Map<string, number>();
+  const counts = new Map<number, number>();
   if (ids.length) {
     const { data: links } = await db.from("entry_projects").select("project_id").in("project_id", ids);
     for (const l of (links as any[]) ?? []) counts.set(l.project_id, (counts.get(l.project_id) ?? 0) + 1);
@@ -40,21 +40,19 @@ async function buildPlan(userId: string) {
   }
 
   const plan: {
-    canonical: { id: string; name: string; entries: number };
-    dups: { id: string; name: string; entries: number }[];
+    canonical: { id: number; name: string; entries: number };
+    dups: { id: number; name: string; entries: number }[];
     mergedEntries: number;
   }[] = [];
 
   for (const arr of groups.values()) {
     if (arr.length < 2) continue;
-    // canonical: max entries, затем самый старый (created_at по возрастанию).
+    // canonical: max entries, затем меньший id (создан раньше).
     const sorted = [...arr].sort((a, b) => {
       const ca = counts.get(a.id) ?? 0;
       const cb = counts.get(b.id) ?? 0;
       if (cb !== ca) return cb - ca;
-      const ta = a.created_at ? Date.parse(a.created_at) : Infinity;
-      const tb = b.created_at ? Date.parse(b.created_at) : Infinity;
-      return ta - tb;
+      return a.id - b.id;
     });
     const canonical = sorted[0];
     const dups = sorted.slice(1);
