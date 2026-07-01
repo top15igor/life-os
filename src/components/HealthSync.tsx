@@ -369,8 +369,8 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
         {fbStatus && <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 7 }}>{fbStatus}</div>}
       </div>
 
-      <button onClick={() => setOpen((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
-        <i className={`ti ${open ? "ti-chevron-up" : "ti-plug"}`} style={{ fontSize: 15 }} />{open ? s.hide : s.connect}
+      <button onClick={() => setOpen((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", fontSize: 15, fontWeight: 600, color: open ? "var(--text)" : "#fff", background: open ? "var(--surface-2)" : "var(--accent)", border: open ? "1px solid var(--border)" : "none", borderRadius: 12, padding: "14px 16px", cursor: "pointer", marginTop: 2 }}>
+        <i className={`ti ${open ? "ti-chevron-up" : "ti-brand-apple"}`} style={{ fontSize: 18 }} />{open ? s.hide : s.connect}
       </button>
 
       {open && (
