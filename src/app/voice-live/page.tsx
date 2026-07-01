@@ -255,7 +255,12 @@ export default function VoiceLivePage() {
       <audio ref={audioRef} autoPlay />
 
       <div style={S.top}>
-        <div style={{ ...S.orb, ...(status === "speaking" ? S.orbSpeak : live ? S.orbListen : {}) }}>
+        <div
+          style={{
+            ...S.orb,
+            ...(status === "speaking" ? S.orbSpeak : live ? S.orbListen : S.orbIdle),
+          }}
+        >
           {status === "thinking" && <div style={S.spinner} />}
         </div>
         <div style={S.label}>{label}</div>
@@ -268,7 +273,19 @@ export default function VoiceLivePage() {
       </div>
 
       <div ref={scrollRef} style={S.transcript}>
-        {lines.length === 0 && live ? (
+        {lines.length === 0 && !live ? (
+          <div style={S.ideas}>
+            <div style={S.ideasTitle}>Можешь спросить или попросить:</div>
+            {[
+              "Как прошёл мой день?",
+              "Что ты заметил обо мне за эту неделю?",
+              "Напомни завтра в 9 позвонить маме",
+              "Мне тревожно — поддержи и посоветуй",
+            ].map((t) => (
+              <div key={t} style={S.ideaChip}>{t}</div>
+            ))}
+          </div>
+        ) : lines.length === 0 && live ? (
           <div style={S.placeholder}>Здесь появится расшифровка разговора…</div>
         ) : (
           lines.map((l) =>
@@ -296,7 +313,13 @@ export default function VoiceLivePage() {
         <div style={S.hint}>Говори свободно — можешь перебивать в любой момент.</div>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 40px 4px rgba(91,140,255,0.25); }
+          50% { transform: scale(1.06); box-shadow: 0 0 70px 12px rgba(91,140,255,0.45); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -323,6 +346,19 @@ const S: Record<string, React.CSSProperties> = {
   },
   orbListen: { boxShadow: "0 0 50px 6px rgba(91,140,255,0.35)" },
   orbSpeak: { transform: "scale(1.1)", boxShadow: "0 0 80px 16px rgba(91,140,255,0.55)" },
+  orbIdle: { animation: "breathe 3.4s ease-in-out infinite" },
+  ideas: { display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 8 },
+  ideasTitle: { color: "#7e848e", fontSize: 13, marginBottom: 4 },
+  ideaChip: {
+    maxWidth: "90%",
+    background: "#1a1d24",
+    border: "1px solid #262a33",
+    color: "#d7dbe2",
+    borderRadius: 18,
+    padding: "10px 15px",
+    fontSize: 14.5,
+    textAlign: "center",
+  },
   spinner: {
     width: 34,
     height: 34,
