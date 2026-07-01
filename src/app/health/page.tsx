@@ -118,10 +118,14 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   if (tab === "health") {
     // Ключ Apple Health = session_secret (стабильный, не ротируется при входе). Фолбэк на token до миграции.
     let u: any = null;
-    try { u = (await supabaseAdmin().from("users").select("session_secret, token, health_source").eq("id", user.id).maybeSingle()).data; }
+    try { u = (await supabaseAdmin().from("users").select("session_secret, token").eq("id", user.id).maybeSingle()).data; }
     catch { u = (await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle()).data; }
     healthToken = u?.session_secret || u?.token || "";
-    healthSource = u?.health_source || "auto";
+    // health_source — отдельным запросом: колонка появляется после миграции health_sources.sql.
+    try {
+      const { data: hs } = await supabaseAdmin().from("users").select("health_source").eq("id", user.id).maybeSingle();
+      healthSource = (hs as any)?.health_source || "auto";
+    } catch {}
     fbConnected = await isGoogleHealthConnected(user.id);
     // Apple подключён, если есть хоть один день не из Google Health.
     try {
