@@ -9,6 +9,9 @@ type HealthDay = {
   active_kcal?: number | null;
   distance_km?: number | null;
   sleep_hours?: number | null;
+  sleep_deep_min?: number | null;
+  sleep_rem_min?: number | null;
+  sleep_light_min?: number | null;
   hr_avg?: number | null;
   hr_resting?: number | null;
   hrv?: number | null;
@@ -94,7 +97,7 @@ function avgOf(days: HealthDay[], key: keyof HealthDay): number | null {
 }
 
 // Разбор записей export.xml из архива Apple «Здоровье» → дневные итоги.
-type Acc = { steps?: number; dist?: number; kcal?: number; hrSum?: number; hrN?: number; restSum?: number; restN?: number; hrvSum?: number; hrvN?: number; sleep?: number };
+type Acc = { steps?: number; dist?: number; kcal?: number; hrSum?: number; hrN?: number; restSum?: number; restN?: number; hrvSum?: number; hrvN?: number; sleep?: number; sDeep?: number; sRem?: number; sLight?: number };
 
 // Обработать одну запись <Record .../> (принимает строку с её атрибутами).
 function applyRecord(s: string, get: (d: string) => Acc) {
@@ -133,7 +136,13 @@ function applyRecord(s: string, get: (d: string) => Acc) {
       const hours = (t1 - t0) / 3600000;
       const endDay = end.slice(0, 10); // сон относим к дню пробуждения
       const a = get(/^\d{4}-\d{2}-\d{2}$/.test(endDay) ? endDay : day);
-      a.sleep = (a.sleep || 0) + hours; break;
+      a.sleep = (a.sleep || 0) + hours;
+      // Фазы (Apple Watch): Deep / REM / Core(≈лёгкий). Unspecified — только в общий сон.
+      const mins = hours * 60;
+      if (/AsleepDeep/i.test(valStr)) a.sDeep = (a.sDeep || 0) + mins;
+      else if (/AsleepREM/i.test(valStr)) a.sRem = (a.sRem || 0) + mins;
+      else if (/AsleepCore/i.test(valStr)) a.sLight = (a.sLight || 0) + mins;
+      break;
     }
   }
 }
@@ -149,6 +158,9 @@ function finalizeDays(by: Map<string, Acc>): HealthDay[] {
     if (a.restN) d.hr_resting = Math.round(a.restSum! / a.restN);
     if (a.hrvN) d.hrv = round1(a.hrvSum! / a.hrvN);
     if (a.sleep != null) d.sleep_hours = round1(a.sleep);
+    if (a.sDeep != null) d.sleep_deep_min = Math.round(a.sDeep);
+    if (a.sRem != null) d.sleep_rem_min = Math.round(a.sRem);
+    if (a.sLight != null) d.sleep_light_min = Math.round(a.sLight);
     out.push(d);
   }
   out.sort((a, b) => a.day.localeCompare(b.day));
