@@ -148,6 +148,31 @@ const E: Record<Locale, Extras> = {
         ],
       },
       {
+        key: "monobank", icon: "ti-building-bank", color: "#10b981", title: "Подключение Monobank",
+        short: "Подключи карту Monobank — покупки и поступления сами попадают в «Деньги».",
+        sections: [
+          { p: "Monobank можно подключить по личному токену — и новые операции по карте будут автоматически появляться в разделе «Деньги». Токен даёт доступ ТОЛЬКО на чтение выписки: платить или переводить им нельзя." },
+          { h: "Как получить токен Monobank", steps: [
+            "Открой раздел «Деньги» → блок «Банк Monobank» → нажми ссылку «Получить токен на api.monobank.ua».",
+            "На открывшемся сайте нажми «Отримати токен» (Получить токен).",
+            "Подтверди в приложении Monobank на телефоне — отсканируй QR-код или подтверди вход.",
+            "Сайт покажет твой токен (длинная строка). Скопируй его целиком.",
+          ] },
+          { h: "Как подключить в LIFE OS", steps: [
+            "Вернись в «Деньги» → «Банк Monobank», вставь токен в поле «Вставь токен Monobank».",
+            "Нажми «Подключить». Появится «✅ Подключено» с твоим именем.",
+            "Готово: новые покупки и поступления теперь попадают в «Деньги» сами, в реальном времени.",
+            "Чтобы подтянуть историю за последний месяц — нажми «Импорт за 30 дней».",
+          ] },
+          { h: "Подсказки", tips: [
+            "Если у тебя несколько счетов/карт, Monobank отдаёт историю по одному счёту в минуту — просто нажми «Импорт за 30 дней» ещё раз через минуту, чтобы догрузить остальные.",
+            "Валюта берётся по счёту (гривна), даже если покупка была за границей в евро/долларах — сумма в списке остаётся в валюте счёта.",
+            "Токен можно убрать в любой момент кнопкой «Отключить» — уже добавленные операции останутся.",
+            "Если после подключения написало, что вебхук не встал — подожди минуту и переподключи; иногда Monobank ставит его не сразу.",
+          ] },
+        ],
+      },
+      {
         key: "social", icon: "ti-share-2", color: "#4f46e5", title: "Поделиться: карточки, книга и пути",
         short: "Делись успехами и веди публичную книгу жизни — приватность остаётся за тобой.",
         sections: [
@@ -393,6 +418,31 @@ const E: Record<Locale, Extras> = {
             "10 currencies supported ($ € ₴ ₽ £ zł ₸ ₾ ₺ AED) — a symbol or word is recognized automatically.",
             "Until rates are set, totals across currencies are approximate — a hint shows up on top.",
             "Every transaction is included in your data export, and deleting an entry also removes its linked spending.",
+          ] },
+        ],
+      },
+      {
+        key: "monobank", icon: "ti-building-bank", color: "#10b981", title: "Connect Monobank",
+        short: "Connect your Monobank card — purchases and income flow into Money automatically.",
+        sections: [
+          { p: "You can connect Monobank with a personal token, and new card transactions appear in Money automatically. The token is READ-ONLY for your statement: it can't pay or transfer money." },
+          { h: "Get your Monobank token", steps: [
+            "Open Money → the “Monobank” block → tap “Get a token at api.monobank.ua”.",
+            "On the site that opens, tap “Отримати токен” (Get token).",
+            "Confirm in the Monobank app on your phone — scan the QR or approve.",
+            "The site shows your token (a long string). Copy the whole thing.",
+          ] },
+          { h: "Connect it in LIFE OS", steps: [
+            "Back in Money → “Monobank”, paste the token into “Paste your Monobank token”.",
+            "Tap “Connect”. You'll see “✅ Connected” with your name.",
+            "Done: new purchases and income now flow into Money in real time.",
+            "To pull the last month of history — tap “Import last 30 days”.",
+          ] },
+          { h: "Tips", tips: [
+            "If you have several accounts/cards, Monobank returns history one account per minute — just tap “Import last 30 days” again after a minute to load the rest.",
+            "Currency follows the account (e.g. UAH), even for a purchase abroad in EUR/USD — the amount stays in the account currency.",
+            "You can remove the token anytime with “Disconnect” — already-added transactions stay.",
+            "If it says the webhook didn't register — wait a minute and reconnect; Monobank sometimes sets it up with a delay.",
           ] },
         ],
       },
