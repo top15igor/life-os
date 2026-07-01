@@ -129,12 +129,12 @@ const ROUTING = [
 ];
 
 // Публичные маршруты (middleware их НЕ закрывает): /welcome, /login, /about, /privacy,
-// /u/* (вход по ссылке), /i/* (инвайт), /p/* (публичная книга), /path/* (публичный путь), /api/*.
-const PUBLIC_ROUTES = "/welcome · /login · /about · /privacy · /u/* · /i/* · /p/* · /path/* · /api/*";
+// /u/* (вход по ссылке), /i/* (инвайт), /p/* (книга), /w/* (вишлист), /b/* (библиотека), /path/* (путь), /api/*.
+const PUBLIC_ROUTES = "/welcome · /login · /about · /privacy · /u/* · /i/* · /p/* · /w/* · /b/* · /path/* · /api/*";
 
 const TABLES = [
   ["entries", "Записи — центр базы", "id, user_id, raw_text, summary, source, mood, energy, health, sleep_hours, weight, focus, importance, entry_date, entry_time"],
-  ["users", "Аккаунты", "id, token, name, chat_id, referred_by, pin_hash, created_at"],
+  ["users", "Аккаунты", "id, token, name, chat_id, referred_by, pin_hash, plan (free/pro/premium), email, password_hash, tg_username, relay_off, lang, ref_code, created_at"],
   ["categories", "16 общих категорий", "id, slug"],
   ["tags / people / places / projects", "Сущности пользователя", "id, user_id, name"],
   ["entry_categories/tags/people/places/projects", "Связи запись ↔ сущность", "entry_id, *_id"],
@@ -145,12 +145,26 @@ const TABLES = [
   ["experiments", "Эксперименты Лаборатории", "id, user_id, title, hypothesis, duration_days, start_date, status, result (jsonb)"],
   ["biographer_chats", "История Биографа", "id, user_id, question, answer, created_at"],
   ["life_overview", "Кэш «Что заметил AI»", "user_id, day, entry_count, data (jsonb), updated_at"],
+  ["dreams", "Мечты (Карта желаний)", "id, user_id, sphere, text, emoji, image_url, status"],
+  ["good_deeds / promises", "Мой след: добрые дела и обещания", "id, user_id, text, person, status, done_at"],
+  ["finance_tx", "Операции (доходы/расходы)", "id, user_id, day, kind, amount, currency, category, scope, source, ext_id"],
+  ["finance_budget / finance_settings", "Лимиты категорий и валюты", "user_id, category, limit, base_currency, rates"],
+  ["bank_monobank", "Подключение Monobank", "user_id, token, accounts (jsonb), hook_secret, webhook_set"],
+  ["reminders / calendar_links", "Напоминания + связь с Google Календарём", "id, user_id, text, due_at, recurrence, all_day, gcal_event_id"],
+  ["saved_items", "База знаний (Instagram/YouTube/TikTok)", "id, user_id, source, url, title, summary, key_points, tags, image_url"],
+  ["books / book_quotes", "Читательский дневник", "id, user_id, title, author, status, rating, liked, review, notes; цитаты"],
+  ["wishes", "Вишлист (+ тайный резерв)", "id, user_id, url, title, image_url, price, reserved_token"],
+  ["message_relays / relay_aliases", "Сообщения между юзерами + прозвища", "from_user, to_user, body; owner_id, target_id, alias"],
+  ["memories", "Визуальная память (фото/доки)", "id, user_id, category, title, summary, fields (jsonb), image_url"],
+  ["public_profile", "Публичные страницы", "user_id, slug, enabled, wish_public, books_public, book_goal, blocks"],
+  ["anticipations", "Кэш «Джарвис заметил»", "user_id, day, kind, text, dismissed"],
+  ["admin_tasks", "Бэклог владельца (отложенные задачи)", "id, title, note, done"],
 ];
 
 const MODELS = [
-  ["claude-sonnet-4-6", "Разбор записи, Биограф, «Что заметил AI», Лаборатория, дайджест", "Anthropic"],
-  ["claude-haiku-4-5", "Классификатор «вопрос / запись» (быстрый и дешёвый)", "Anthropic"],
-  ["whisper-1", "Распознавание голоса → текст", "OpenAI"],
+  ["claude-sonnet-4-6", "Разбор записи, Биограф, «Что заметил AI», Лаборатория, AI-друг, финсоветник, вебпоиск, AI-советы книг", "Anthropic"],
+  ["claude-haiku-4-5", "Роутер бота (действие/вопрос/запись), утренний пуш, «Джарвис заметил», разбор ссылок в Базу знаний, распознавание книги/обложки, зрение фото", "Anthropic"],
+  ["whisper-1", "Распознавание голоса → текст (голосовые, reels)", "OpenAI"],
 ];
 
 const ENDPOINTS = [
@@ -160,8 +174,15 @@ const ENDPOINTS = [
   ["/api/intelligence", "Связи записи: причины, последствия, закономерности"],
   ["/api/life-overview", "«Что заметил AI» и «Зеркало жизни» (с кэшем)"],
   ["/api/task · /api/goal · /api/project · /api/experiment", "Управление задачами, целями, проектами, экспериментами"],
+  ["/api/finance · /api/finance/import", "Финансы: операции, перенос из MoneyOK (CSV)"],
+  ["/api/bank/monobank (+ /webhook · /import)", "Monobank: подключение по токену, приём операций, импорт истории"],
+  ["/api/reminder", "Напоминания + синхра в Google Календарь; /api/calendar, /api/google-calendar/*"],
+  ["/api/books · /api/wishlist · /api/wish/reserve", "Книги, Вишлист и тайный резерв подарка (гость)"],
+  ["/api/relay", "Сообщения между пользователями (веб-кнопка «Написать»)"],
+  ["/api/auth/* (register · login · link-email · google)", "Регистрация/вход: почта+пароль, привязка почты, Google OAuth"],
+  ["/api/admin/tasks · /api/admin/anticipation", "Админ: отложенные задачи, тест антиципации (owner-only)"],
   ["/api/pin · /api/account · /api/logout · /api/me", "Безопасность и аккаунт (PIN, удаление, выход)"],
-  ["/api/cron", "По расписанию: вечерние напоминания и недельный дайджест"],
+  ["/api/cron", "По расписанию: утренний/вечерний пуш, антиципация, недельный дайджест"],
   ["/api/setup-webhook · /api/setup-commands", "Настройка бота (вебхук, меню команд)"],
   ["/api/check-db · /api/resummarize · /api/diag", "Служебные: проверка миграций, перегенерация, диагностика"],
 ];
@@ -169,11 +190,19 @@ const ENDPOINTS = [
 const COMMANDS = [
   ["/start", "Приветствие и личная ссылка на дневник"],
   ["/link", "Получить ссылку на веб-дневник заново"],
-  ["/ask · /q", "Спросить ассистента (можно и просто текстом — поймёт по смыслу)"],
+  ["/ask · /q", "Спросить Биографа (можно и просто текстом — поймёт по смыслу)"],
   ["/save", "Принудительно сохранить как запись"],
+  ["/lang", "Сменить язык бота (RU/EN/UK/FR)"],
+  ["/chat · /stop · /newchat", "Режим живой беседы с AI-другом: вкл / выкл / с чистого листа"],
+  ["/send @имя текст", "Передать сообщение другому пользователю (или голосом «передай …»)"],
+  ["/nick · /nicks · /unnick", "Прозвища контактов: задать / список / удалить"],
+  ["/relay", "Вкл/выкл приём сообщений от других"],
+  ["/wish <ссылка>", "Добавить товар в Вишлист (или ссылка из магазина)"],
+  ["ссылка IG/YT/TikTok", "Сохранить суть в Базу знаний; фото с подписью «книга» → в Книги"],
   ["/invite", "Пригласить друга (реферальная ссылка)"],
   ["/resetpin", "Сбросить PIN-замок"],
   ["/demo", "Показать приветственный диалог заново"],
+  ["обычная просьба", "Агентный слой: «добавь цель…», «отметь задачу выполненной», «запиши вес 78», «напомни …»"],
 ];
 
 const INFRA = [

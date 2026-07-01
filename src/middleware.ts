@@ -13,8 +13,8 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Защищаем страницы, кроме публичных: /welcome, /login, /about (лендинг), /privacy, /u/* (вход по ссылке),
-  // /i/* (приглашение), /p/* (публичная книга-витрина), /path/* (публичный путь), /voice-live (вебвью приложения,
-  // авторизуется сама по токену ?k=), /api/* и статики.
-  // Слэш в p/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /paths, /insights.
-  matcher: ["/((?!welcome|login|about|privacy|u|m/|api|p/|path/|i/|voice-live|auth/app-done|_next/static|_next/image|favicon.ico).*)"],
+  // /i/* (приглашение), /p/* (публичная книга-витрина), /w/* (публичный вишлист), /b/* (публичная библиотека),
+  // /path/* (публичный путь), /voice-live (вебвью приложения, авторизуется сама по токену ?k=), /api/* и статики.
+  // Слэш в p/, w/, b/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /wishlist, /books, /biographer, /paths, /insights.
+  matcher: ["/((?!welcome|login|about|privacy|u|m/|api|p/|w/|b/|path/|i/|voice-live|auth/app-done|_next/static|_next/image|favicon.ico).*)"],
 };
