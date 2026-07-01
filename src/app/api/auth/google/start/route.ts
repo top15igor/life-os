@@ -34,5 +34,7 @@ export async function GET(req: NextRequest) {
   if (ref) res.cookies.set("lifeos_oauth_ref", ref, opts);
   // Режим привязки: ?link=1 — присоединить Google к текущему аккаунту, а не заводить новый.
   if (req.nextUrl.searchParams.get("link") === "1") res.cookies.set("lifeos_oauth_link", "1", opts);
+  // Режим приложения: ?mobile=1 — после входа отдать токен сессии в URL для нативного приложения.
+  if (req.nextUrl.searchParams.get("mobile") === "1") res.cookies.set("lifeos_oauth_mobile", "1", opts);
   return res;
 }

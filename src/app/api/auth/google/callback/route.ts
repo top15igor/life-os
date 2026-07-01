@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { findOrCreateGoogleUser, attachLoginToUser, secureAccountSessions } from "@/lib/emailAuth";
 import { setSessionCookie } from "@/lib/authCookie";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -94,6 +95,31 @@ export async function GET(req: NextRequest) {
     const result = await findOrCreateGoogleUser(email, info?.name, ref);
     if (!result) return fail(req);
 
+    // Native app login: hand a STABLE session_secret back to the app via the URL
+    // (the app's WebView intercepts /auth/app-done and stores it). session_secret
+    // isn't rotated by web /u links, so the app session stays durable.
+    if (req.cookies.get("lifeos_oauth_mobile")?.value === "1") {
+      const db = supabaseAdmin();
+      const { data: u } = await db.from("users").select("id, session_secret").eq("token", result.token).maybeSingle();
+      let secret: string = (u as any)?.session_secret || "";
+      if (u && !secret) {
+        const fresh = randomUUID();
+        const { error } = await db.from("users").update({ session_secret: fresh }).eq("id", (u as any).id);
+        secret = error ? result.token : fresh;
+      }
+      if (!secret) secret = result.token;
+      const url = new URL("/auth/app-done", req.url);
+      url.searchParams.set("token", secret);
+      url.searchParams.set("new", result.created ? "1" : "0");
+      const res = NextResponse.redirect(url);
+      setSessionCookie(res, secret);
+      res.cookies.delete("lifeos_oauth_state");
+      res.cookies.delete("lifeos_oauth_ref");
+      res.cookies.delete("lifeos_oauth_link");
+      res.cookies.delete("lifeos_oauth_mobile");
+      return res;
+    }
+
     // Brand-new Google account → ask if they already kept a diary in Telegram,
     // so they don't end up confused on an empty duplicate. Existing → straight in.
     const dest = result.created ? "/just-joined" : "/";
@@ -102,6 +128,7 @@ export async function GET(req: NextRequest) {
     res.cookies.delete("lifeos_oauth_state");
     res.cookies.delete("lifeos_oauth_ref");
     res.cookies.delete("lifeos_oauth_link");
+    res.cookies.delete("lifeos_oauth_mobile");
     return res;
   } catch (e) {
     console.error("google callback", e);
