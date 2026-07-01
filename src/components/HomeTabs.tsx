@@ -190,7 +190,13 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
 
           {data.bookPrompt && (
             <button
-              onClick={() => { window.dispatchEvent(new Event("lifeos-open-capture")); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              onClick={() => {
+                // Фокус — СИНХРОННО в жесте тапа, иначе на iOS клавиатура не всплывает.
+                const el = document.getElementById("lifeos-capture-input") as HTMLTextAreaElement | null;
+                el?.focus();
+                window.dispatchEvent(new Event("lifeos-open-capture"));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               style={{ display: "block", width: "100%", textAlign: "left", marginBottom: 12, padding: "10px 14px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--accent-bg)", cursor: "pointer", color: "var(--text)", fontFamily: "inherit" }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5, color: "var(--accent-text)", fontWeight: 600 }}>

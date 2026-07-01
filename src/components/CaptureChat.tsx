@@ -259,6 +259,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 8, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface-2)", padding: "9px 12px", minHeight: 88 }}>
         <textarea
           ref={taRef}
+          id="lifeos-capture-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
