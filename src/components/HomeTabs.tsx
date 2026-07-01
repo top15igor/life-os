@@ -214,7 +214,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
           )}
 
           {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
-            <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8 }}>
+            <Link href="/dashboard" className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8, textDecoration: "none", color: "var(--text)" }}>
               {data.habit && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 500 }}>
                   <span style={{ fontSize: 17, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
@@ -224,12 +224,17 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
               {data.book && data.book.entries > 0 && (
                 <>
                   <span style={{ color: "var(--text-3)" }}>·</span>
-                  <Link href="/lifebook" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500, color: "var(--text)", textDecoration: "none" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500 }}>
                     <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
-                  </Link>
+                  </span>
                 </>
               )}
-            </div>
+              <span style={{ flex: 1 }} />
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>
+                <i className="ti ti-chart-histogram" style={{ fontSize: 16 }} />Дашборд
+                <i className="ti ti-chevron-right" style={{ fontSize: 15 }} />
+              </span>
+            </Link>
           )}
 
           {curPreset !== "minimal" && vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}
