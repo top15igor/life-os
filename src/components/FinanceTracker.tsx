@@ -814,7 +814,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       </div>
 
       {/* Верх справа: AI-советник + цели по накоплениям (одна ячейка сетки — по высоте баланса) */}
-      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14, justifyContent: "space-between" }}>
       {/* AI-советник по финансам (по требованию) */}
       {data.hasAny && (
         <div className="card" style={{ minWidth: 0, background: "linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)" }}>
