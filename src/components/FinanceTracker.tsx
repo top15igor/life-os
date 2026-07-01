@@ -938,6 +938,78 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           </button>
         </div>
       )}
+
+      {/* Список операций — под целями, справа от календаря (заполняет пустую колонку) */}
+      {txs.length === 0 ? (
+        <div className="card" style={{ color: "var(--text-2)", fontSize: 14, textAlign: "center", padding: "26px 16px" }}>
+          {data.hasAny ? s.empty : s.emptyAll}
+        </div>
+      ) : (
+        <div className="card">
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
+          </div>
+          {days.map((d) => (
+            <div key={d} style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
+              {byDay.get(d)!.map((t) => {
+                const m = catView(t.kind, t.category, locale);
+                const pos = t.kind === "income";
+                if (editTx === t.id) {
+                  return (
+                    <div key={t.id} style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
+                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                        {(["expense", "income"] as const).map((k) => (
+                          <button key={k} onClick={() => setEKind(k)} style={{
+                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
+                            color: eKind === k ? "#fff" : "var(--text-2)",
+                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
+                        <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+                        </select>
+                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+                      </div>
+                      <input type="text" placeholder={s.category} value={eCategory} onChange={(e) => setECategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+                        <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
+                        <button disabled={busy} onClick={() => { setEditTx(null); del(t.id); }} title={s.delConfirm} style={{ ...btnG, color: "#ef4444" }}>
+                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
+                    <button onClick={() => startEdit(t)} style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</button>
+                    <div onClick={() => startEdit(t)} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {m.label}
+                        {t.subcategory && <span style={{ fontSize: 11.5, fontWeight: 500, color: m.color, background: `${m.color}1f`, padding: "1px 7px", borderRadius: 10, marginLeft: 6 }}>{t.subcategory}</span>}
+                      </div>
+                      {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
+                    </div>
+                    <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      {pos ? "+" : "−"}{fmtMoney(t.amount, t.currency, locale)}
+                    </div>
+                    <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                      <i className="ti ti-pencil" style={{ fontSize: 15 }} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
       </div>
       </div>
 
@@ -1172,77 +1244,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         )}
       </div>
 
-      {/* Список операций */}
-      {txs.length === 0 ? (
-        <div className="card" style={{ color: "var(--text-2)", fontSize: 14, textAlign: "center", padding: "26px 16px" }}>
-          {data.hasAny ? s.empty : s.emptyAll}
-        </div>
-      ) : (
-        <div className="card">
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
-          </div>
-          {days.map((d) => (
-            <div key={d} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
-              {byDay.get(d)!.map((t) => {
-                const m = catView(t.kind, t.category, locale);
-                const pos = t.kind === "income";
-                if (editTx === t.id) {
-                  return (
-                    <div key={t.id} style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
-                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
-                        {(["expense", "income"] as const).map((k) => (
-                          <button key={k} onClick={() => setEKind(k)} style={{
-                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
-                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
-                            color: eKind === k ? "#fff" : "var(--text-2)",
-                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                        <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
-                        <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
-                          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
-                        </select>
-                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
-                      </div>
-                      <input type="text" placeholder={s.category} value={eCategory} onChange={(e) => setECategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-                      <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
-                        <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
-                        <button disabled={busy} onClick={() => { setEditTx(null); del(t.id); }} title={s.delConfirm} style={{ ...btnG, color: "#ef4444" }}>
-                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
-                    <button onClick={() => startEdit(t)} style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</button>
-                    <div onClick={() => startEdit(t)} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {m.label}
-                        {t.subcategory && <span style={{ fontSize: 11.5, fontWeight: 500, color: m.color, background: `${m.color}1f`, padding: "1px 7px", borderRadius: 10, marginLeft: 6 }}>{t.subcategory}</span>}
-                      </div>
-                      {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
-                    </div>
-                    <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer" }}>
-                      {pos ? "+" : "−"}{fmtMoney(t.amount, t.currency, locale)}
-                    </div>
-                    <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
-                      <i className="ti ti-pencil" style={{ fontSize: 15 }} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
