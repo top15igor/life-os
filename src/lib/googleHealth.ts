@@ -234,14 +234,16 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   }
   for (const [d, a] of hrvAcc) if (a.n) get(d).hrv = Math.round((a.s / a.n) * 10) / 10;
 
-  // Зоны активности (Active Zone Minutes) — интервалы, суммируем минуты за день.
-  const azmResp = await ghGet(token, `/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000`);
-  for (const dp of azmResp?.dataPoints || []) {
-    const iv = dp.interval || {};
-    const d = localDayFromIso(iv.endTime, iv.endUtcOffset) || dayOf(iv.civilEndTime);
-    if (!d || d < startIso || d >= endExclIso) continue;
-    const v = Number(dp.activeZoneMinutes);
-    if (isFinite(v) && v > 0) get(d).azm = (get(d).azm || 0) + v;
+  // Зоны активности (Active Zone Minutes) — дневная агрегация по зонам.
+  // Формула Fitbit: Fat Burn = 1 AZM/мин, Cardio и Peak = 2 AZM/мин.
+  for (const rp of await dailyRollUp(token, "active-zone-minutes", startIso, endExclIso)) {
+    const d = dayOf(rp.civilStartTime);
+    const z = rp.activeZoneMinutes || {};
+    const fat = Number(z.sumInFatBurnHeartZone) || 0;
+    const cardio = Number(z.sumInCardioHeartZone) || 0;
+    const peak = Number(z.sumInPeakHeartZone) || 0;
+    const azm = fat + 2 * (cardio + peak);
+    if (d && azm > 0) get(d).azm = azm;
   }
 
   return upsertHealthDays(userId, [...byDay.values()], "googlehealth");
