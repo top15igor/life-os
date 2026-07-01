@@ -99,7 +99,7 @@ function HealthNow({ focus, s, locale }: any) {
 
 export default async function WellnessPage({ searchParams }: { searchParams: Promise<{ tab?: string; fitbit?: string }> }) {
   const sp = await searchParams;
-  const tab = ["dashboard", "health", "energy", "sport", "food"].includes(sp.tab || "") ? sp.tab! : "dashboard";
+  const tab = ["dashboard", "health", "energy", "sport", "food", "settings"].includes(sp.tab || "") ? sp.tab! : "dashboard";
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
@@ -108,14 +108,15 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const all = await getEntries(user.id, 300);
 
   const energy = dailyTrend(all, [{ name: "energy", color: "#f59e0b", key: "energy" }]);
+  const conn = tab === "health" || tab === "settings";
   const focus = tab === "health" ? await getHealthFocus(user.id) : null;
   const weight = tab === "health" ? await getWeightData(user.id) : null;
-  const metrics = tab === "health" ? await getHealthMetrics(user.id) : null;
+  const metrics = conn ? await getHealthMetrics(user.id) : null;
   let healthToken = "";
   let fbConnected = false;
   let appleConnected = false;
   let healthSource = "auto";
-  if (tab === "health") {
+  if (conn) {
     // Ключ Apple Health = session_secret (стабильный, не ротируется при входе). Фолбэк на token до миграции.
     let u: any = null;
     try { u = (await supabaseAdmin().from("users").select("session_secret, token").eq("id", user.id).maybeSingle()).data; }
@@ -140,12 +141,14 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
 
   const overview: Record<string, string> = { ru: "Обзор", en: "Overview", uk: "Огляд", fr: "Aperçu" };
   const dashLabel: Record<string, string> = { ru: "Дашборд", en: "Dashboard", uk: "Дашборд", fr: "Tableau de bord" };
+  const settingsLabel: Record<string, string> = { ru: "Настройки", en: "Settings", uk: "Налаштування", fr: "Paramètres" };
   const tabs = [
     { key: "dashboard", label: dashLabel[locale] || dashLabel.en },
     { key: "health", label: overview[locale] || overview.en },
     { key: "energy", label: t.nav.energy },
     { key: "sport", label: t.nav.sport },
     { key: "food", label: t.nav.food },
+    { key: "settings", label: settingsLabel[locale] || settingsLabel.en },
   ];
 
   return (
@@ -157,11 +160,14 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
 
         {tab === "dashboard" && <DashboardView />}
 
+        {tab === "settings" && metrics && (
+          <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} appleConnected={appleConnected} healthSource={healthSource} />
+        )}
+
         {tab === "health" && (
           <>
             <HealthNow focus={focus} s={s} locale={locale} />
             {weight && <WeightTracker data={weight} locale={locale} />}
-            {metrics && <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} appleConnected={appleConnected} healthSource={healthSource} />}
 
             <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 8 }}>{s.entries}</div>
             {healthEntries.length === 0 ? (
