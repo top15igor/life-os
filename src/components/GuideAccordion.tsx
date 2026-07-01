@@ -42,8 +42,8 @@ export default function GuideAccordion({ items, tocLabel }: { items: AccItem[]; 
           background: var(--surface-2); font-size: 19px;
         }
         .guide-acc-t { flex: 1; min-width: 0; }
-        .guide-acc-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-        .guide-acc-sub { font-size: 12.5px; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+        .guide-acc-title { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+        .guide-acc-sub { display: block; font-size: 12.5px; color: var(--text-3); margin-top: 3px; line-height: 1.4; }
         .guide-acc-chev { flex-shrink: 0; color: var(--text-3); transition: transform .25s ease; font-size: 20px; display: inline-flex; }
         .guide-acc-item.is-open .guide-acc-chev { transform: rotate(180deg); color: var(--accent); }
         /* Плавное раскрытие по высоте */
