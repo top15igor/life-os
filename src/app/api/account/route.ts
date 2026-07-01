@@ -24,7 +24,15 @@ export async function POST(req: NextRequest) {
         await db.from(tbl).delete().in("entry_id", ids);
       }
     }
-    for (const tbl of ["tasks", "insights", "gratitude", "finance_tx", "finance_budget", "finance_settings", "entries", "goals", "projects", "tags", "people", "places", "experiments", "biographer_chats", "life_overview"]) {
+    for (const tbl of [
+      "tasks", "insights", "gratitude", "finance_tx", "finance_budget", "finance_settings",
+      "entries", "goals", "projects", "tags", "people", "places", "experiments",
+      "biographer_chats", "life_overview",
+      // здоровье и прочие данные пользователя
+      "health_metrics", "googlehealth_tokens", "weight_log", "weight_goal", "health_focus",
+      "reminders", "calendar_links", "books", "book_meta", "wishlist", "knowledge",
+      "memories", "anticipations", "relay_aliases", "companion_messages",
+    ]) {
       try { await db.from(tbl).delete().eq("user_id", uid); } catch {}
     }
     // Владельца не удаляем как пользователя (иначе сломается админка) — только его данные.
