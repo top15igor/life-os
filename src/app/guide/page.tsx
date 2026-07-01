@@ -126,19 +126,6 @@ export default async function GuidePage() {
       id: "bot-guide", icon: "ti-brand-telegram", color: "#0ea5e9", title: botGuideLabel, subtitle: botGuideSub, href: "/guide/bot",
     },
     {
-      id: "cmd", icon: "ti-terminal-2", color: "#8b5cf6", title: g.cmdTitle,
-      content: (
-        <div>
-          {g.cmds.map(([cmd, desc], i) => (
-            <div key={cmd} style={{ display: "flex", gap: 12, alignItems: "baseline", padding: "9px 0", borderTop: i ? "1px solid var(--border)" : "none", fontSize: 14 }}>
-              <code style={{ background: "var(--surface-2)", padding: "2px 9px", borderRadius: 6, color: "var(--accent)", fontSize: 13, minWidth: 64 }}>{cmd}</code>
-              <span style={{ color: "var(--text-2)" }}>{desc}</span>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
       id: "sections", icon: "ti-layout-grid", color: "#3b82f6", title: g.sectionsTitle,
       content: (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(250px, 100%), 1fr))", gap: 10 }}>
