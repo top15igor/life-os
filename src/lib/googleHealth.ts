@@ -207,6 +207,41 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
       const h = get(d);
       h.sleep_hours = Math.round(((h.sleep_hours || 0) + mins / 60) * 10) / 10;
     }
+    // Фазы сна: summary.stagesSummary = [{ type: DEEP|REM|LIGHT|AWAKE, minutes, count }].
+    if (d) {
+      for (const stg of sl.summary?.stagesSummary || []) {
+        const m = Number(stg.minutes);
+        if (!(isFinite(m) && m > 0)) continue;
+        const h = get(d);
+        if (stg.type === "DEEP") h.sleep_deep_min = (h.sleep_deep_min || 0) + m;
+        else if (stg.type === "REM") h.sleep_rem_min = (h.sleep_rem_min || 0) + m;
+        else if (stg.type === "LIGHT") h.sleep_light_min = (h.sleep_light_min || 0) + m;
+      }
+    }
+  }
+
+  // HRV (вариабельность пульса) — ~1 замер за ночь (RMSSD, мс). Усредняем по дню.
+  const hrvResp = await ghGet(token, `/users/me/dataTypes/heart-rate-variability/dataPoints?pageSize=200`);
+  const hrvAcc = new Map<string, { s: number; n: number }>();
+  for (const dp of hrvResp?.dataPoints || []) {
+    const o = dp.heartRateVariability || {};
+    const stime = o.sampleTime || {};
+    const d = localDayFromIso(stime.physicalTime, stime.utcOffset) || dayOf(stime.civilTime);
+    if (!d || d < startIso || d >= endExclIso) continue;
+    const v = Number(o.rootMeanSquareOfSuccessiveDifferencesMilliseconds);
+    if (!(isFinite(v) && v > 0)) continue;
+    const a = hrvAcc.get(d) || { s: 0, n: 0 }; a.s += v; a.n += 1; hrvAcc.set(d, a);
+  }
+  for (const [d, a] of hrvAcc) if (a.n) get(d).hrv = Math.round((a.s / a.n) * 10) / 10;
+
+  // Зоны активности (Active Zone Minutes) — интервалы, суммируем минуты за день.
+  const azmResp = await ghGet(token, `/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000`);
+  for (const dp of azmResp?.dataPoints || []) {
+    const iv = dp.interval || {};
+    const d = localDayFromIso(iv.endTime, iv.endUtcOffset) || dayOf(iv.civilEndTime);
+    if (!d || d < startIso || d >= endExclIso) continue;
+    const v = Number(dp.activeZoneMinutes);
+    if (isFinite(v) && v > 0) get(d).azm = (get(d).azm || 0) + v;
   }
 
   return upsertHealthDays(userId, [...byDay.values()], "googlehealth");

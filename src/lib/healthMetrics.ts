@@ -7,9 +7,13 @@ export type HealthDay = {
   active_kcal?: number | null;
   distance_km?: number | null;
   sleep_hours?: number | null;
+  sleep_deep_min?: number | null;
+  sleep_rem_min?: number | null;
+  sleep_light_min?: number | null;
   hr_avg?: number | null;
   hr_resting?: number | null;
   hrv?: number | null;
+  azm?: number | null;
 };
 
 export type HealthMetricsData = {
@@ -17,14 +21,14 @@ export type HealthMetricsData = {
   latest: HealthDay | null;     // самый свежий день
 };
 
-const NUM_KEYS = ["steps", "active_kcal", "distance_km", "sleep_hours", "hr_avg", "hr_resting", "hrv"] as const;
+const NUM_KEYS = ["steps", "active_kcal", "distance_km", "sleep_hours", "sleep_deep_min", "sleep_rem_min", "sleep_light_min", "hr_avg", "hr_resting", "hrv", "azm"] as const;
 
 // Прочитать дневные метрики пользователя (последние N дней).
 export async function getHealthMetrics(userId: string, limit = 30): Promise<HealthMetricsData> {
   try {
     const { data } = await supabaseAdmin()
       .from("health_metrics")
-      .select("day, steps, active_kcal, distance_km, sleep_hours, hr_avg, hr_resting, hrv")
+      .select("day, steps, active_kcal, distance_km, sleep_hours, sleep_deep_min, sleep_rem_min, sleep_light_min, hr_avg, hr_resting, hrv, azm")
       .eq("user_id", userId)
       .order("day", { ascending: false })
       .limit(limit);

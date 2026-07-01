@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-type TL = { date: string; mood: number | null; steps: number | null; sleep_hours: number | null; hr_resting: number | null; active_kcal: number | null };
+type TL = { date: string; mood: number | null; steps: number | null; sleep_hours: number | null; hr_resting: number | null; active_kcal: number | null; hrv: number | null; azm: number | null };
+type LatestHealth = { sleep_hours?: number | null; sleep_deep_min?: number | null; sleep_rem_min?: number | null; sleep_light_min?: number | null } | null;
 type Dash = {
   name: string | null;
   streak: number;
   totalEntries: number;
   timeline: TL[];
-  weekAvg: { mood: number | null; steps: number | null; sleep: number | null; hr_resting: number | null; active_kcal: number | null };
+  weekAvg: { mood: number | null; steps: number | null; sleep: number | null; hr_resting: number | null; active_kcal: number | null; hrv: number | null; azm: number | null };
   sleepMood: { r: number; n: number } | null;
   topTags: { name: string; count: number }[];
   healthConnected: boolean;
+  latestHealth: LatestHealth;
 };
 
 function moodColor(n: number): string {
@@ -46,6 +48,39 @@ function Metric({ icon, color, label, value, unit, series }: { icon: string; col
         {value ?? "—"}{value != null && unit ? <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 600 }}> {unit}</span> : null}
       </div>
       <Spark series={series} color={color} />
+    </div>
+  );
+}
+
+function hm(min: number): string {
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h > 0 ? `${h} ч ${m} мин` : `${m} мин`;
+}
+
+function SleepStages({ h }: { h: NonNullable<LatestHealth> }) {
+  const deep = h.sleep_deep_min || 0, rem = h.sleep_rem_min || 0, light = h.sleep_light_min || 0;
+  const total = deep + rem + light;
+  if (total <= 0) return null;
+  const parts = [
+    { k: "Глубокий", v: deep, c: "#5b6cff" },
+    { k: "REM", v: rem, c: "#9b7dff" },
+    { k: "Лёгкий", v: light, c: "#7fb0ff" },
+  ];
+  return (
+    <div className="card" style={{ padding: 16, marginTop: 14 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-3)" }}>Фазы сна · последняя ночь</div>
+      <div style={{ display: "flex", height: 12, borderRadius: 6, overflow: "hidden", marginTop: 12 }}>
+        {parts.map((p) => p.v > 0 && <div key={p.k} style={{ width: `${(p.v / total) * 100}%`, background: p.c }} />)}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 12 }}>
+        {parts.map((p) => (
+          <div key={p.k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: p.c, display: "inline-block" }} />
+            <span style={{ fontSize: 13, color: "var(--text-2)" }}>{p.k}</span>
+            <span style={{ fontSize: 13, fontWeight: 700 }}>{hm(p.v)}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -126,6 +161,8 @@ export default function DashboardView() {
           <Metric icon="ti-moon" color="#9b7dff" label="Сон" unit="ч" value={fmt(d.weekAvg.sleep, 1)} series={tl.map((x) => x.sleep_hours)} />
           <Metric icon="ti-heartbeat" color="#ff6b6b" label="Пульс покоя" unit="уд" value={fmt(d.weekAvg.hr_resting)} series={tl.map((x) => x.hr_resting)} />
           <Metric icon="ti-flame" color="#f0983a" label="Актив. ккал" unit="" value={fmt(d.weekAvg.active_kcal)} series={tl.map((x) => x.active_kcal)} />
+          <Metric icon="ti-activity-heartbeat" color="#2fb6a8" label="Вариабельность пульса" unit="мс" value={fmt(d.weekAvg.hrv)} series={tl.map((x) => x.hrv)} />
+          <Metric icon="ti-bolt" color="#e6b800" label="Зоны активности" unit="мин" value={fmt(d.weekAvg.azm)} series={tl.map((x) => x.azm)} />
         </div>
       ) : (
         <div className="card" style={card}>
@@ -133,6 +170,9 @@ export default function DashboardView() {
           <Link href="/health" style={{ fontSize: 13, color: "var(--accent)", textDecoration: "none", marginTop: 6, display: "inline-block" }}>Подключить Fitbit / Google Health →</Link>
         </div>
       )}
+
+      {/* Sleep stages */}
+      {d.healthConnected && d.latestHealth && <SleepStages h={d.latestHealth} />}
 
       {/* Themes */}
       {d.topTags.length > 0 && (

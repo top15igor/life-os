@@ -76,6 +76,8 @@ export async function GET() {
       sleep_hours: h.sleep_hours ?? null,
       hr_resting: h.hr_resting ?? null,
       active_kcal: h.active_kcal ?? null,
+      hrv: h.hrv ?? null,
+      azm: h.azm ?? null,
     };
   });
 
@@ -92,6 +94,8 @@ export async function GET() {
     sleep: round(avg(last7.map((d) => d.sleep_hours)), 1),
     hr_resting: round(avg(last7.map((d) => d.hr_resting)), 0),
     active_kcal: round(avg(last7.map((d) => d.active_kcal)), 0),
+    hrv: round(avg(last7.map((d) => d.hrv)), 0),
+    azm: round(avg(last7.map((d) => d.azm)), 0),
   };
 
   // Sleep ↔ mood correlation (Pearson) over days where both exist.
