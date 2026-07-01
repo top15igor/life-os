@@ -255,8 +255,8 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   const canSend = !!text.trim() && !busy;
 
   const bar = (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 8, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface-2)", padding: "9px 12px" }}>
+    <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "flex-end", gap: 8, border: "1px solid var(--border)", borderRadius: 12, background: "var(--surface-2)", padding: "9px 12px", minHeight: 88 }}>
         <textarea
           ref={taRef}
           value={text}
@@ -265,7 +265,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
           placeholder={chatOpen ? s.phChat : s.ph}
           rows={1}
           disabled={busy && recording}
-          style={{ flex: 1, border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 140, overflowY: "auto" }}
+          style={{ flex: 1, alignSelf: "stretch", border: "none", outline: "none", resize: "none", background: "transparent", color: "var(--text)", fontSize: 14, fontFamily: "inherit", lineHeight: 1.5, overflowY: "auto" }}
         />
         <span className="cc-tip" data-tip={recSrc === "bar" ? s.stop : s.mic}>
           <button onClick={() => startRec("bar", (t) => { setText((p) => (p ? p + " " : "") + t); setTimeout(() => taRef.current?.focus(), 20); })} aria-label={recSrc === "bar" ? s.stop : s.mic}
@@ -275,28 +275,31 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
         </span>
       </div>
 
-      <span className="cc-tip" data-tip={s.tipWrite}>
-        <button onClick={saveEntry} disabled={!canSend} aria-label={s.write} className="cc-act"
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 16px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 600, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
-          <i className="ti ti-pencil" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.write}</span>
-        </button>
-      </span>
+      {/* Две кнопки в столбик; поле ввода слева тянется на их высоту. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "stretch" }}>
+        <span className="cc-tip" data-tip={s.tipWrite} style={{ display: "flex" }}>
+          <button onClick={saveEntry} disabled={!canSend} aria-label={s.write} className="cc-act"
+            style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, height: 40, padding: "0 16px", borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", fontSize: 13, fontWeight: 600, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap" }}>
+            <i className="ti ti-pencil" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.write}</span>
+          </button>
+        </span>
 
-      {chatOpen ? (
-        <span className="cc-tip cc-tip-r" data-tip={s.tipSend}>
-          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.tipSend}
-            style={{ width: 40, height: 40, borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", cursor: canSend ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-            <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
-          </button>
-        </span>
-      ) : (
-        <span className="cc-tip cc-tip-r" data-tip={s.tipChat}>
-          <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat} className="cc-act"
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "1px solid var(--accent)", background: "var(--surface)", color: canSend ? "var(--accent)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap", opacity: canSend ? 1 : 0.6 }}>
-            <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
-          </button>
-        </span>
-      )}
+        {chatOpen ? (
+          <span className="cc-tip cc-tip-r" data-tip={s.tipSend} style={{ display: "flex" }}>
+            <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.tipSend}
+              style={{ flex: 1, height: 40, borderRadius: 11, border: "none", background: canSend ? "var(--accent)" : "var(--surface-2)", color: canSend ? "#fff" : "var(--text-3)", cursor: canSend ? "pointer" : "default", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <i className="ti ti-arrow-up" style={{ fontSize: 18 }} />
+            </button>
+          </span>
+        ) : (
+          <span className="cc-tip cc-tip-r" data-tip={s.tipChat} style={{ display: "flex" }}>
+            <button onClick={() => sendChat()} disabled={!canSend} aria-label={s.chat} className="cc-act"
+              style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, height: 40, padding: "0 14px", borderRadius: 11, border: "1px solid var(--accent)", background: "var(--surface)", color: canSend ? "var(--accent)" : "var(--text-3)", fontSize: 13, fontWeight: 500, cursor: canSend ? "pointer" : "default", whiteSpace: "nowrap", opacity: canSend ? 1 : 0.6 }}>
+              <i className="ti ti-sparkles" style={{ fontSize: 16 }} /><span className="cc-lbl">{s.chat}</span>
+            </button>
+          </span>
+        )}
+      </div>
     </div>
   );
 
