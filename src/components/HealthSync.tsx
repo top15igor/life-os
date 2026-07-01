@@ -45,6 +45,8 @@ const STR: Record<string, any> = {
     fb_notconfigured: "Fitbit пока не настроен (нужны ключи приложения).",
     fb_ok: "Fitbit подключён — данные загружены ✓", fb_err: "Не удалось подключить Fitbit, попробуй ещё раз.",
     fb_denied: "Доступ к Fitbit не выдан.", fb_synced: (n: number) => `Обновлено дней: ${n}`,
+    src_title: "Основной источник", src_hint: "Подключены оба источника — выбери, чей показывать в дашборде.",
+    src_auto: "Авто", src_google: "Fitbit", src_apple: "Apple",
   },
   en: {
     title: "Apple Health",
@@ -76,6 +78,8 @@ const STR: Record<string, any> = {
     fb_notconfigured: "Fitbit is not set up yet (app keys required).",
     fb_ok: "Fitbit connected — data loaded ✓", fb_err: "Could not connect Fitbit, please try again.",
     fb_denied: "Fitbit access was not granted.", fb_synced: (n: number) => `${n} days updated`,
+    src_title: "Primary source", src_hint: "Both sources are connected — choose which one to show on the dashboard.",
+    src_auto: "Auto", src_google: "Fitbit", src_apple: "Apple",
   },
 };
 
@@ -165,9 +169,14 @@ function Stat({ label, value, unit, sub }: { label: string; value: string; unit?
   );
 }
 
-export default function HealthSync({ days, token, locale, fitbitConnected, fitbitConfigured, fitbitMsg }: { days: HealthDay[]; token: string; locale: string; fitbitConnected?: boolean; fitbitConfigured?: boolean; fitbitMsg?: string }) {
+export default function HealthSync({ days, token, locale, fitbitConnected, fitbitConfigured, fitbitMsg, appleConnected, healthSource }: { days: HealthDay[]; token: string; locale: string; fitbitConnected?: boolean; fitbitConfigured?: boolean; fitbitMsg?: string; appleConnected?: boolean; healthSource?: string }) {
   const s = STR[locale] || STR.en;
   const router = useRouter();
+  const [src, setSrc] = useState<string>(healthSource || "auto");
+  async function chooseSrc(v: string) {
+    setSrc(v);
+    try { await fetch("/api/health-source", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: v }) }); router.refresh(); } catch {}
+  }
   // Внутри нативного приложения (webview ставит data-app) OAuth в webview Google
   // блокирует (disallowed_useragent) → прячем веб-кнопку, ведём на нативный экран.
   const [inApp, setInApp] = useState(false);
@@ -267,6 +276,22 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
         <i className="ti ti-brand-apple" style={{ fontSize: 15, color: "var(--text-2)" }} />
         <span style={{ fontSize: 13, color: "var(--text-2)" }}>{s.title}</span>
       </div>
+
+      {fitbitConnected && appleConnected && (
+        <div className="card" style={{ padding: 14, marginBottom: 10 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 2 }}>{s.src_title}</div>
+          <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 9 }}>{s.src_hint}</div>
+          <div style={{ display: "inline-flex", background: "var(--surface-2)", borderRadius: 10, padding: 3, gap: 2 }}>
+            {[{ k: "auto", l: s.src_auto }, { k: "google", l: s.src_google }, { k: "apple", l: s.src_apple }].map((o) => (
+              <button key={o.k} onClick={() => chooseSrc(o.k)}
+                style={{ fontSize: 12.5, fontWeight: 600, padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer",
+                  background: src === o.k ? "var(--accent)" : "transparent", color: src === o.k ? "#fff" : "var(--text-2)" }}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {latest ? (
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginBottom: 10 }}>

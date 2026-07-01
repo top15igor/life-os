@@ -113,13 +113,21 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const metrics = tab === "health" ? await getHealthMetrics(user.id) : null;
   let healthToken = "";
   let fbConnected = false;
+  let appleConnected = false;
+  let healthSource = "auto";
   if (tab === "health") {
     // Ключ Apple Health = session_secret (стабильный, не ротируется при входе). Фолбэк на token до миграции.
     let u: any = null;
-    try { u = (await supabaseAdmin().from("users").select("session_secret, token").eq("id", user.id).maybeSingle()).data; }
+    try { u = (await supabaseAdmin().from("users").select("session_secret, token, health_source").eq("id", user.id).maybeSingle()).data; }
     catch { u = (await supabaseAdmin().from("users").select("token").eq("id", user.id).maybeSingle()).data; }
     healthToken = u?.session_secret || u?.token || "";
+    healthSource = u?.health_source || "auto";
     fbConnected = await isGoogleHealthConnected(user.id);
+    // Apple подключён, если есть хоть один день не из Google Health.
+    try {
+      const { count } = await supabaseAdmin().from("health_metrics").select("id", { count: "exact", head: true }).eq("user_id", user.id).neq("source", "googlehealth");
+      appleConnected = (count || 0) > 0;
+    } catch {}
   }
 
   const healthEntries = all.filter((e: Entry) => cats(e).some((c: any) => ["health", "sport", "food"].includes(c.slug)));
@@ -149,7 +157,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
           <>
             <HealthNow focus={focus} s={s} locale={locale} />
             {weight && <WeightTracker data={weight} locale={locale} />}
-            {metrics && <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} />}
+            {metrics && <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} appleConnected={appleConnected} healthSource={healthSource} />}
 
             <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 8 }}>{s.entries}</div>
             {healthEntries.length === 0 ? (

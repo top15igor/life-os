@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   let saved = 0;
   try {
-    saved = await upsertHealthDays(user.id, days, "import");
+    saved = await upsertHealthDays(user.id, days, "apple");
   } catch {
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
   }
