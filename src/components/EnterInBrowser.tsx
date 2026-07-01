@@ -16,6 +16,8 @@ export default function EnterInBrowser({ link, locale }: { link: string; locale:
 
   useEffect(() => {
     try {
+      // Внутри нашего нативного приложения (webview ставит data-app) баннер не нужен.
+      if (document.documentElement.getAttribute("data-app") === "1") return;
       if (localStorage.getItem("lifeos_safari_tip") === "off") return;
       const ua = navigator.userAgent || "";
       const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || (navigator as any).standalone;
