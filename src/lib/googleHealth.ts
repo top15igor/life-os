@@ -290,7 +290,19 @@ export async function googleHealthProbe(userId: string): Promise<any> {
       ? { ok: true, sample: r.body?.dataPoints?.[0] ?? "empty" }
       : { status: r.status, msg: r.body?.error?.message || r.body?.error?.status || null };
   });
-  return { connected: true, range: { startIso, endExclIso }, sleepStatus: sleepRaw.status, sleepCount: sleepPts.length, sleepPts, probes };
+  // Диагностика AZM: почему не подтянулось (варианты pageSize / filter).
+  const azmFilter = encodeURIComponent(`active_zone_minutes.interval.civil_end_time >= "${startIso}" AND active_zone_minutes.interval.civil_end_time < "${endExclIso}"`);
+  const [azm1000, azm200, azmFiltered] = await Promise.all([
+    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000`),
+    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=200`),
+    get(`/users/me/dataTypes/active-zone-minutes/dataPoints?pageSize=1000&filter=${azmFilter}`),
+  ]);
+  const azmDiag = {
+    p1000: { status: azm1000.status, count: azm1000.body?.dataPoints?.length ?? null, msg: azm1000.body?.error?.message || null },
+    p200: { status: azm200.status, count: azm200.body?.dataPoints?.length ?? null, msg: azm200.body?.error?.message || null },
+    filtered: { status: azmFiltered.status, count: azmFiltered.body?.dataPoints?.length ?? null, msg: azmFiltered.body?.error?.message || null, sample: azmFiltered.body?.dataPoints?.[0] ?? null },
+  };
+  return { connected: true, range: { startIso, endExclIso }, sleepStatus: sleepRaw.status, sleepCount: sleepPts.length, sleepPts, probes, azmDiag };
 }
 
 // Все пользователи с подключённым Google Health (для крона).
