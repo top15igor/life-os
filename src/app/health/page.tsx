@@ -14,6 +14,7 @@ import { getWeightData } from "@/lib/weight";
 import WeightTracker from "@/components/WeightTracker";
 import { getHealthMetrics } from "@/lib/healthMetrics";
 import HealthSync from "@/components/HealthSync";
+import DashboardView from "@/components/DashboardView";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { isGoogleHealthConnected, googleHealthConfigured } from "@/lib/googleHealth";
 
@@ -98,7 +99,7 @@ function HealthNow({ focus, s, locale }: any) {
 
 export default async function WellnessPage({ searchParams }: { searchParams: Promise<{ tab?: string; fitbit?: string }> }) {
   const sp = await searchParams;
-  const tab = ["health", "energy", "sport", "food"].includes(sp.tab || "") ? sp.tab! : "health";
+  const tab = ["dashboard", "health", "energy", "sport", "food"].includes(sp.tab || "") ? sp.tab! : "dashboard";
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
@@ -126,7 +127,9 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const foodEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "food"));
 
   const overview: Record<string, string> = { ru: "Обзор", en: "Overview", uk: "Огляд", fr: "Aperçu" };
+  const dashLabel: Record<string, string> = { ru: "Дашборд", en: "Dashboard", uk: "Дашборд", fr: "Tableau de bord" };
   const tabs = [
+    { key: "dashboard", label: dashLabel[locale] || dashLabel.en },
     { key: "health", label: overview[locale] || overview.en },
     { key: "energy", label: t.nav.energy },
     { key: "sport", label: t.nav.sport },
@@ -139,6 +142,8 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
       <main className="main">
         <PageHead icon="ti-heartbeat" color="#ef4444" title={t.nav.wellness} hint={h.wellness} />
         <SubTabs base="/health" active={tab} tabs={tabs} />
+
+        {tab === "dashboard" && <DashboardView />}
 
         {tab === "health" && (
           <>

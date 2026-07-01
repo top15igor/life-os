@@ -120,10 +120,22 @@ function civil(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
   return { date: { year: y, month: m, day: d } };
 }
-function dayOf(c: any): string | null {
-  const dt = c?.date;
+// Civil-время у Google приходит в двух формах: дневной rollup даёт { date: {year,month,day} },
+// а метка сессии (сон) — плоский datetime { year,month,day,hours,minutes,... }. Понимаем оба.
+function civilParts(c: any): { year: number; month: number; day: number; hours?: number; minutes?: number; seconds?: number } | null {
+  const dt = c?.date ?? c;
   if (!dt?.year) return null;
+  return dt;
+}
+function dayOf(c: any): string | null {
+  const dt = civilParts(c);
+  if (!dt) return null;
   return `${dt.year}-${String(dt.month).padStart(2, "0")}-${String(dt.day).padStart(2, "0")}`;
+}
+function civilToMs(c: any): number | null {
+  const dt = civilParts(c);
+  if (!dt) return null;
+  return Date.UTC(dt.year, (dt.month || 1) - 1, dt.day || 1, dt.hours || 0, dt.minutes || 0, dt.seconds || 0);
 }
 
 async function ghGet(token: string, path: string): Promise<any | null> {
@@ -181,14 +193,11 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
     const sl = dp.sleep || {};
     const d = dayOf(sl.interval?.civilEndTime);
     // Prefer minutesAsleep; fall back to the session length if that field is absent.
-    let mins = Number(sl.summary?.minutesAsleep ?? sl.summary?.sleepDurationMinutes);
+    let mins = Number(sl.summary?.minutesAsleep ?? sl.summary?.sleepDurationMinutes ?? sl.summary?.totalSleepMinutes);
     if (!(isFinite(mins) && mins > 0)) {
-      const st = sl.interval?.civilStartTime;
-      const en = sl.interval?.civilEndTime;
-      if (st && en) {
-        const ms = new Date(en).getTime() - new Date(st).getTime();
-        if (ms > 0) mins = Math.round(ms / 60000);
-      }
+      const st = civilToMs(sl.interval?.civilStartTime);
+      const en = civilToMs(sl.interval?.civilEndTime);
+      if (st != null && en != null && en > st) mins = Math.round((en - st) / 60000);
     }
     if (d && isFinite(mins) && mins > 0) {
       const h = get(d);
@@ -197,6 +206,40 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   }
 
   return upsertHealthDays(userId, [...byDay.values()], "googlehealth");
+}
+
+// Диагностика: сырые ответы Google Health, чтобы понять реальные поля/типы.
+export async function googleHealthProbe(userId: string): Promise<any> {
+  const token = await getAccessToken(userId);
+  if (!token) return { connected: false };
+  const startIso = isoDay(13);
+  const endExclIso = isoDay(-1);
+  async function probe(path: string, init?: RequestInit) {
+    try {
+      const r = await fetch(`${API}${path}`, {
+        ...init,
+        headers: { Authorization: `Bearer ${token}`, ...(init?.headers || {}) },
+      });
+      const text = await r.text();
+      let body: any = text;
+      try { body = JSON.parse(text); } catch {}
+      return { status: r.status, body };
+    } catch (e: any) {
+      return { status: -1, error: String(e?.message || e) };
+    }
+  }
+  const sleepFilter = encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`);
+  const [dataTypes, sleep, sleepNoFilter, rollupSleep] = await Promise.all([
+    probe(`/users/me/dataTypes`),
+    probe(`/users/me/dataTypes/sleep/dataPoints?pageSize=20&filter=${sleepFilter}`),
+    probe(`/users/me/dataTypes/sleep/dataPoints?pageSize=5`),
+    probe(`/users/me/dataTypes/sleep/dataPoints:dailyRollUp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ range: { start: civil(startIso), end: civil(endExclIso) }, windowSizeDays: 1 }),
+    }),
+  ]);
+  return { connected: true, range: { startIso, endExclIso }, dataTypes, sleep, sleepNoFilter, rollupSleep };
 }
 
 // Все пользователи с подключённым Google Health (для крона).

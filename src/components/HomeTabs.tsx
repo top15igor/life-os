@@ -214,7 +214,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
           )}
 
           {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
-            <Link href="/dashboard" className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8, textDecoration: "none", color: "var(--text)" }}>
+            <Link href="/health" className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8, textDecoration: "none", color: "var(--text)" }}>
               {data.habit && (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 500 }}>
                   <span style={{ fontSize: 17, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
