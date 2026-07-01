@@ -38,6 +38,13 @@ html[data-app], html[data-app] body { background: var(--bg); color: var(--text);
 /* В приложении есть свой нативный AI-друг → плавающий веб-помощник лишний
    (тормозит в webview и наезжает на кнопки). Прячем только внутри приложения. */
 html[data-app] .asst-fab { display: none !important; }
+
+/* Одиночный раздел в нативном приложении (html[data-solo]): прячем веб-навигацию
+   сайта — нижний таб-бар и «назад к…»-крошки. Назад = нативное «Закрыть».
+   «Открыть сайт полностью» не ставит data-solo, там навигация остаётся. */
+html[data-solo] .mobilenav { display: none !important; }
+html[data-solo] .main { padding-bottom: 24px !important; }
+html[data-solo] .app-back { display: none !important; }
 /* Тема всегда светлая (тёмную можно вернуть позже как переключатель). */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

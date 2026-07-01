@@ -34,7 +34,7 @@ export default async function SecurityPage() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <div style={{ maxWidth: 560 }}>
-          <Link href="/profile" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-2)", textDecoration: "none", marginBottom: 14 }}>
+          <Link href="/profile" className="app-back" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-2)", textDecoration: "none", marginBottom: 14 }}>
             <i className="ti ti-chevron-left" style={{ fontSize: 16 }} />{s.back}
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
