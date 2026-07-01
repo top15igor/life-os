@@ -55,7 +55,10 @@ export function mapStatementItem(item: any, accountCurrency?: string): MonoMappe
   const kind: "income" | "expense" = amountMinor < 0 ? "expense" : "income";
   const amount = Math.round((Math.abs(amountMinor) / 100) * 100) / 100;
   if (!(amount > 0)) return null;
-  const currency = accountCurrency || currencyAlpha(Number(item.currencyCode));
+  // item.currencyCode — валюта ОПЕРАЦИИ (для трат за границей ≠ валюте счёта),
+  // а amount — в валюте СЧЁТА. Если валюту счёта не передали — безопасный дефолт UAH
+  // (Monobank украинский; счёт почти всегда в гривне), НЕ валюта операции.
+  const currency = accountCurrency || "UAH";
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();

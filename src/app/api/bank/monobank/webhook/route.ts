@@ -15,13 +15,15 @@ export async function POST(req: NextRequest) {
   if (!secret) return NextResponse.json({ ok: true }); // всегда 200, чтобы Monobank не отключал вебхук
 
   const db = supabaseAdmin();
-  // По секрету из URL находим владельца и его счета.
+  // По секрету из URL находим владельца, его счета и токен.
   let userId: string | null = null;
   let accounts: any[] = [];
+  let token: string | null = null;
   try {
-    const { data } = await db.from("bank_monobank").select("user_id, accounts").eq("hook_secret", secret).maybeSingle();
+    const { data } = await db.from("bank_monobank").select("user_id, accounts, token").eq("hook_secret", secret).maybeSingle();
     userId = (data as any)?.user_id || null;
     accounts = Array.isArray((data as any)?.accounts) ? (data as any).accounts : [];
+    token = (data as any)?.token || null;
   } catch {
     try { const { data } = await db.from("bank_monobank").select("user_id").eq("hook_secret", secret).maybeSingle(); userId = (data as any)?.user_id || null; } catch { /* нет таблицы */ }
   }
@@ -30,8 +32,23 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const item = body?.data?.statementItem;
   const accountId = body?.data?.account;
-  // Валюта — по счёту операции (amount у Monobank в валюте счёта).
-  const acc = accounts.find((a: any) => a?.id === accountId);
+  // Валюта операции = валюта СЧЁТА (amount у Monobank в валюте счёта, а item.currencyCode — валюта операции).
+  let acc = accounts.find((a: any) => a?.id === accountId);
+  // Счёт не найден (старое подключение без списка счетов) → дотягиваем из client-info и сохраняем.
+  if (!acc && token) {
+    try {
+      const r = await fetch("https://api.monobank.ua/personal/client-info", { headers: { "X-Token": token }, cache: "no-store" });
+      if (r.ok) {
+        const info = await r.json();
+        const fresh = (info?.accounts || []).filter((a: any) => a?.id).map((a: any) => ({ id: a.id, currencyCode: a.currencyCode, type: a.type }));
+        if (fresh.length) {
+          accounts = fresh;
+          acc = fresh.find((a: any) => a.id === accountId);
+          await db.from("bank_monobank").update({ accounts: fresh }).eq("hook_secret", secret);
+        }
+      }
+    } catch { /* лимит/сеть — упадём на дефолт UAH */ }
+  }
   const accCurrency = acc ? currencyAlpha(Number(acc.currencyCode)) : undefined;
   const mapped = item ? mapStatementItem(item, accCurrency) : null;
   if (!mapped) return NextResponse.json({ ok: true });
