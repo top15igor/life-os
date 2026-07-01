@@ -12,10 +12,10 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const SCOPES: { key: Scope | "all"; ru: string; en: string; uk: string; fr: string }[] = [
+  { key: "all", ru: "Всё", en: "All", uk: "Все", fr: "Tout" },
   { key: "personal", ru: "Личное", en: "Personal", uk: "Особисте", fr: "Perso" },
   { key: "business", ru: "Бизнес", en: "Business", uk: "Бізнес", fr: "Pro" },
   { key: "transfer", ru: "Переводы", en: "Transfers", uk: "Перекази", fr: "Virements" },
-  { key: "all", ru: "Всё", en: "All", uk: "Все", fr: "Tout" },
 ];
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ m?: string; scope?: string }> }) {
@@ -24,7 +24,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const locale = await getLocale();
   const t = getDict(locale);
   const h = hints(locale);
-  const view = (["personal", "business", "transfer", "all"].includes(sp.scope || "") ? sp.scope : "personal") as Scope | "all";
+  const view = (["personal", "business", "transfer", "all"].includes(sp.scope || "") ? sp.scope : "all") as Scope | "all";
   const data = await getFinanceData(user.id, sp.m, view);
   const lc = (locale === "uk" ? "uk" : locale === "fr" ? "fr" : locale === "en" ? "en" : "ru") as "ru" | "en" | "uk" | "fr";
 
