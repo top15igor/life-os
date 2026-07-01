@@ -12,6 +12,7 @@ type Dash = {
   timeline: TL[];
   weekAvg: { mood: number | null; steps: number | null; sleep: number | null; hr_resting: number | null; active_kcal: number | null; hrv: number | null; azm: number | null };
   sleepMood: { r: number; n: number } | null;
+  bodyMind: { text: string }[];
   topTags: { name: string; count: number }[];
   healthConnected: boolean;
   latestHealth: LatestHealth;
@@ -262,17 +263,26 @@ export default function DashboardView() {
       {/* Sleep stages */}
       {d.healthConnected && d.latestHealth && <SleepStages h={d.latestHealth} />}
 
-      {/* Themes */}
-      {d.topTags.length > 0 && (
+      {/* Body ↔ mind */}
+      {d.healthConnected && ((d.bodyMind?.length ?? 0) > 0 ? (
         <div className="card" style={{ ...card, marginTop: 14 }}>
-          <div style={secLbl}>Главные темы</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-            {d.topTags.map((t) => (
-              <span key={t.name} style={{ fontSize: 13, padding: "5px 12px", borderRadius: 20, border: "1px solid var(--border)", background: "var(--surface)" }}>{t.name} · {t.count}</span>
-            ))}
+          <div style={secLbl}>Тело и настроение</div>
+          {d.bodyMind.map((c, i) => (
+            <div key={i} style={{ display: "flex", gap: 9, marginTop: 11, alignItems: "flex-start" }}>
+              <i className="ti ti-link" style={{ fontSize: 15, color: "var(--accent)", marginTop: 2, flexShrink: 0 }} />
+              <span style={{ fontSize: 14, lineHeight: 1.45 }}>{c.text}</span>
+            </div>
+          ))}
+          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 12 }}>по твоим записям за 2 недели</div>
+        </div>
+      ) : (
+        <div className="card" style={{ ...card, marginTop: 14 }}>
+          <div style={secLbl}>Тело и настроение</div>
+          <div style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 8, lineHeight: 1.45 }}>
+            Ставь настроение и энергию к записям — и здесь появятся связи с твоим сном, шагами и пульсом.
           </div>
         </div>
-      )}
+      ))}
 
       {open && (() => {
         const def = METRICS.find((m) => m.key === open);
