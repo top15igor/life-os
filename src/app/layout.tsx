@@ -4,7 +4,7 @@ import Assistant from "@/components/Assistant";
 
 export const metadata = {
   title: "LIFE OS",
-  description: "Твой личный дневник жизни — второй мозг.",
+  description: "Твой архив жизни — второй мозг.",
   applicationName: "LIFE OS",
   appleWebApp: { capable: true, title: "LIFE OS", statusBarStyle: "default" as const },
   formatDetection: { telephone: false },

@@ -6,7 +6,7 @@ type Mode = "login" | "register";
 
 const T = {
   ru: {
-    tagline: "Личный дневник жизни",
+    tagline: "Архив жизни",
     login: "Вход",
     register: "Регистрация",
     google: "Продолжить с Google",
@@ -34,7 +34,7 @@ const T = {
     } as Record<string, string>,
   },
   en: {
-    tagline: "Your personal life diary",
+    tagline: "Your life archive",
     login: "Sign in",
     register: "Sign up",
     google: "Continue with Google",

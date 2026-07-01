@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "LIFE OS",
     short_name: "LIFE OS",
-    description: "Твой личный дневник жизни — второй мозг.",
+    description: "Твой архив жизни — второй мозг.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
