@@ -1,4 +1,5 @@
 import "./globals.css";
+import { cookies } from "next/headers";
 import LangFromQuery from "@/components/LangFromQuery";
 import Assistant from "@/components/Assistant";
 
@@ -17,9 +18,15 @@ export const viewport = {
   viewportFit: "cover" as const, // чтобы env(safe-area-inset-*) работал и нижняя навигация не пряталась за панелью Safari
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Нативное приложение открывает веб-разделы через /m, который ставит cookie app=1
+  // (и solo=1 для одиночного раздела). Тёмную тему и скрытие веб-навигации задаём
+  // СРАЗУ на сервере — без зависимости от JS-инъекции в webview (та не переживает 307-редирект).
+  const c = await cookies();
+  const inApp = c.get("app")?.value === "1";
+  const solo = inApp && c.get("solo")?.value !== "0";
   return (
-    <html lang="ru">
+    <html lang="ru" data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined}>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link

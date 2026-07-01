@@ -31,10 +31,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   const res = NextResponse.redirect(new URL(destFrom(req), req.url));
   setSessionCookie(res, token);
+  const year = 60 * 60 * 24 * 365;
+  // Флаг «внутри приложения» → layout рендерит тёмную тему (data-app) сразу на сервере.
+  res.cookies.set("app", "1", { path: "/", maxAge: year });
+  // solo=1 — одиночный раздел (прячем веб-навигацию); solo=0 — «Открыть сайт полностью».
+  res.cookies.set("solo", req.nextUrl.searchParams.get("solo") === "0" ? "0" : "1", { path: "/", maxAge: year });
   // Язык из приложения → cookie locale, чтобы веб-разделы рендерились на выбранном языке.
   const loc = req.nextUrl.searchParams.get("locale");
   if (loc && ["ru", "en", "uk", "fr"].includes(loc)) {
-    res.cookies.set("locale", loc, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+    res.cookies.set("locale", loc, { path: "/", maxAge: year });
   }
   return res;
 }
