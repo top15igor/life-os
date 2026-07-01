@@ -37,12 +37,13 @@ function Spark({ series, color }: { series: (number | null)[]; color: string }) 
   );
 }
 
-function Metric({ icon, color, label, value, unit, series }: { icon: string; color: string; label: string; value: string | null; unit: string; series: (number | null)[] }) {
+function Metric({ icon, color, label, value, unit, series, onClick }: { icon: string; color: string; label: string; value: string | null; unit: string; series: (number | null)[]; onClick?: () => void }) {
   return (
-    <div className="card" style={{ padding: 15 }}>
+    <div className="card" onClick={onClick} style={{ padding: 15, cursor: onClick ? "pointer" : "default", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
         <i className={`ti ${icon}`} style={{ fontSize: 17, color }} />
         <span style={{ fontSize: 13, color: "var(--text-2)", fontWeight: 600 }}>{label}</span>
+        {onClick && <i className="ti ti-chevron-right" style={{ fontSize: 15, color: "var(--text-3)", marginLeft: "auto" }} />}
       </div>
       <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
         {value ?? "—"}{value != null && unit ? <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 600 }}> {unit}</span> : null}
@@ -85,9 +86,93 @@ function SleepStages({ h }: { h: NonNullable<LatestHealth> }) {
   );
 }
 
+type MetricDef = { key: string; icon: string; color: string; label: string; unit: string; digits: number; get: (x: TL) => number | null; moodColored?: boolean };
+
+const METRICS: MetricDef[] = [
+  { key: "mood", icon: "ti-mood-smile", color: "#7fc23f", label: "Настроение", unit: "/10", digits: 1, get: (x) => x.mood, moodColored: true },
+  { key: "steps", icon: "ti-walk", color: "#5b8cff", label: "Шаги", unit: "", digits: 0, get: (x) => x.steps },
+  { key: "sleep_hours", icon: "ti-moon", color: "#9b7dff", label: "Сон", unit: "ч", digits: 1, get: (x) => x.sleep_hours },
+  { key: "hr_resting", icon: "ti-heartbeat", color: "#ff6b6b", label: "Пульс покоя", unit: "уд", digits: 0, get: (x) => x.hr_resting },
+  { key: "active_kcal", icon: "ti-flame", color: "#f0983a", label: "Актив. ккал", unit: "", digits: 0, get: (x) => x.active_kcal },
+  { key: "hrv", icon: "ti-activity-heartbeat", color: "#2fb6a8", label: "Вариабельность пульса", unit: "мс", digits: 0, get: (x) => x.hrv },
+  { key: "azm", icon: "ti-bolt", color: "#e6b800", label: "Зоны активности", unit: "мин", digits: 0, get: (x) => x.azm },
+];
+
+const WD = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+function dayLabel(date: string): string {
+  const [y, m, dd] = date.split("-").map(Number);
+  const wd = WD[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()];
+  return `${wd}, ${dd}.${String(m).padStart(2, "0")}`;
+}
+
+function MetricDetail({ def, tl, onClose }: { def: MetricDef; tl: TL[]; onClose: () => void }) {
+  const rows = tl.map((x) => ({ date: x.date, v: def.get(x) })).filter((r) => r.v != null) as { date: string; v: number }[];
+  const vals = rows.map((r) => r.v);
+  const nf = (v: number) => (def.digits ? v.toFixed(def.digits) : String(Math.round(v)));
+  const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  const max = vals.length ? Math.max(...vals) : null;
+  const min = vals.length ? Math.min(...vals) : null;
+  const chartMax = max ?? 1;
+  const barColor = (v: number | null) => (v == null ? "var(--surface-2)" : def.moodColored ? moodColor(v) : def.color);
+
+  const stat = (lbl: string, v: number | null) => (
+    <div style={{ flex: 1, textAlign: "center" }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>{v == null ? "—" : nf(v)}<span style={{ fontSize: 12, color: "var(--text-3)", fontWeight: 600 }}>{v != null && def.unit ? ` ${def.unit}` : ""}</span></div>
+      <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 2 }}>{lbl}</div>
+    </div>
+  );
+
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={(e) => e.stopPropagation()} className="card" style={{ width: "100%", maxWidth: 640, maxHeight: "88vh", overflowY: "auto", borderRadius: "18px 18px 0 0", padding: 20, margin: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+          <i className={`ti ${def.icon}`} style={{ fontSize: 20, color: def.color }} />
+          <span style={{ fontSize: 17, fontWeight: 800 }}>{def.label}</span>
+          <button onClick={onClose} style={{ marginLeft: "auto", background: "var(--surface-2)", border: "none", borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: "var(--text-2)", fontSize: 16 }}>✕</button>
+        </div>
+
+        {rows.length === 0 ? (
+          <div style={{ color: "var(--text-3)", padding: "24px 0", textAlign: "center" }}>Пока нет данных за период.</div>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 8, margin: "14px 0 18px" }}>
+              {stat("среднее", avg)}
+              {stat("максимум", max)}
+              {stat("минимум", min)}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "flex-end", height: 130, gap: 4, marginBottom: 18 }}>
+              {tl.map((x, i) => {
+                const v = def.get(x);
+                return (
+                  <div key={x.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
+                    <div style={{ width: "70%", height: v != null && v > 0 ? Math.max(4, (v / chartMax) * 108) : 4, borderRadius: 3, background: barColor(v) }} />
+                    <div style={{ fontSize: 9, color: i === tl.length - 1 ? "var(--accent)" : "var(--text-3)", marginTop: 5 }}>{i === tl.length - 1 ? "сег" : x.date.slice(8, 10)}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-3)", marginBottom: 4 }}>По дням</div>
+            <div>
+              {[...rows].reverse().map((r) => (
+                <div key={r.date} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 2px", borderBottom: "1px solid var(--border)" }}>
+                  <span style={{ fontSize: 14, color: "var(--text-2)" }}>{dayLabel(r.date)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{nf(r.v)}{def.unit ? <span style={{ fontSize: 12, color: "var(--text-3)", fontWeight: 600 }}> {def.unit}</span> : null}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardView() {
   const [d, setD] = useState<Dash | null>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -130,8 +215,11 @@ export default function DashboardView() {
       </div>
 
       {/* Mood chart */}
-      <div className="card" style={card}>
-        <div style={secLbl}>Настроение · 14 дней</div>
+      <div className="card" style={{ ...card, cursor: "pointer" }} onClick={() => setOpen("mood")}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={secLbl}>Настроение · 14 дней</div>
+          <i className="ti ti-chevron-right" style={{ marginLeft: "auto", color: "var(--text-3)", fontSize: 15 }} />
+        </div>
         <div style={{ display: "flex", alignItems: "flex-end", height: 120, gap: 5, marginTop: 12 }}>
           {tl.map((day, i) => (
             <div key={day.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
@@ -157,12 +245,12 @@ export default function DashboardView() {
       <div style={{ ...secLbl, margin: "20px 2px 10px" }}>Здоровье · среднее за неделю</div>
       {d.healthConnected ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Metric icon="ti-walk" color="#5b8cff" label="Шаги" unit="" value={fmt(d.weekAvg.steps)} series={tl.map((x) => x.steps)} />
-          <Metric icon="ti-moon" color="#9b7dff" label="Сон" unit="ч" value={fmt(d.weekAvg.sleep, 1)} series={tl.map((x) => x.sleep_hours)} />
-          <Metric icon="ti-heartbeat" color="#ff6b6b" label="Пульс покоя" unit="уд" value={fmt(d.weekAvg.hr_resting)} series={tl.map((x) => x.hr_resting)} />
-          <Metric icon="ti-flame" color="#f0983a" label="Актив. ккал" unit="" value={fmt(d.weekAvg.active_kcal)} series={tl.map((x) => x.active_kcal)} />
-          <Metric icon="ti-activity-heartbeat" color="#2fb6a8" label="Вариабельность пульса" unit="мс" value={fmt(d.weekAvg.hrv)} series={tl.map((x) => x.hrv)} />
-          <Metric icon="ti-bolt" color="#e6b800" label="Зоны активности" unit="мин" value={fmt(d.weekAvg.azm)} series={tl.map((x) => x.azm)} />
+          {METRICS.filter((m) => m.key !== "mood").map((m) => {
+            const wk = m.key === "sleep_hours" ? d.weekAvg.sleep : (d.weekAvg as any)[m.key];
+            return (
+              <Metric key={m.key} icon={m.icon} color={m.color} label={m.label} unit={m.unit} value={fmt(wk, m.digits)} series={tl.map(m.get)} onClick={() => setOpen(m.key)} />
+            );
+          })}
         </div>
       ) : (
         <div className="card" style={card}>
@@ -185,6 +273,11 @@ export default function DashboardView() {
           </div>
         </div>
       )}
+
+      {open && (() => {
+        const def = METRICS.find((m) => m.key === open);
+        return def ? <MetricDetail def={def} tl={tl} onClose={() => setOpen(null)} /> : null;
+      })()}
     </div>
   );
 }
