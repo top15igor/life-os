@@ -158,8 +158,16 @@ export async function GET(req: NextRequest) {
       try { await db.from("anticipations").delete().eq("user_id", (u as any).id); } catch {}
     }
     const nudge = await getAnticipation((u as any).id, ((u as any).lang as any) || "ru");
-    if (nudge && chat) await sendMessage(Number(chat), `✨ ${nudge}`);
-    return NextResponse.json({ ok: true, anticipation: nudge || null });
+    let tg: any = null;
+    if (nudge && chat) {
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      tg = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: Number(chat), text: `✨ ${nudge}`, disable_web_page_preview: true }),
+      }).then((x) => x.json()).catch((e) => ({ error: String(e) }));
+    }
+    return NextResponse.json({ ok: true, chat, anticipation: nudge || null, telegram: tg });
   }
 
   // Самотест ежемесячной выгрузки: /api/cron?backup=<secret> — собирает и шлёт .zip владельцу.
