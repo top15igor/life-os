@@ -35,6 +35,7 @@ const STR: Record<string, any> = {
     b_lead: "На айфоне: «Здоровье» → твой профиль вверху → «Экспортировать все данные» → получишь архив export.zip. Загрузи его сюда — файл не покидает браузер, на сервер уходят только итоги по дням.",
     pick: "Выбрать архив export.zip",
     parsing: "Читаю архив… это может занять минуту",
+    parsingN: (n: number) => `Читаю архив… обработано дней: ${n}`,
     sending: "Сохраняю…",
     done: (n: number) => `Готово: загружено дней — ${n}`,
     err: "Не удалось прочитать архив. Убедись, что это export.zip из «Здоровья».",
@@ -68,6 +69,7 @@ const STR: Record<string, any> = {
     b_lead: "On iPhone: Health → your profile → “Export All Health Data” → you get export.zip. Upload it here — the file never leaves your browser, only daily totals are sent to the server.",
     pick: "Choose export.zip",
     parsing: "Reading archive… this can take a minute",
+    parsingN: (n: number) => `Reading archive… days processed: ${n}`,
     sending: "Saving…",
     done: (n: number) => `Done: ${n} days imported`,
     err: "Could not read the archive. Make sure it is export.zip from Health.",
@@ -91,56 +93,52 @@ function avgOf(days: HealthDay[], key: keyof HealthDay): number | null {
   return round1(vals.reduce((a, b) => a + b, 0) / vals.length);
 }
 
-// Разбор export.xml из архива Apple «Здоровье» в браузере → дневные итоги.
-function parseHealthXml(xml: string): HealthDay[] {
-  type Acc = { steps?: number; dist?: number; kcal?: number; hrSum?: number; hrN?: number; restSum?: number; restN?: number; hrvSum?: number; hrvN?: number; sleep?: number };
-  const by = new Map<string, Acc>();
-  const get = (d: string) => { let a = by.get(d); if (!a) { a = {}; by.set(d, a); } return a; };
+// Разбор записей export.xml из архива Apple «Здоровье» → дневные итоги.
+type Acc = { steps?: number; dist?: number; kcal?: number; hrSum?: number; hrN?: number; restSum?: number; restN?: number; hrvSum?: number; hrvN?: number; sleep?: number };
 
-  const re = /<Record\b([^>]*?)\/?>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml))) {
-    const attrs = m[1];
-    const type = /\btype="([^"]+)"/.exec(attrs)?.[1];
-    if (!type) continue;
-    const start = /\bstartDate="([^"]+)"/.exec(attrs)?.[1] || "";
-    const day = start.slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
-    const valStr = /\bvalue="([^"]*)"/.exec(attrs)?.[1] || "";
-    const val = Number(valStr);
-    const unit = /\bunit="([^"]*)"/.exec(attrs)?.[1] || "";
+// Обработать одну запись <Record .../> (принимает строку с её атрибутами).
+function applyRecord(s: string, get: (d: string) => Acc) {
+  const type = /\btype="([^"]+)"/.exec(s)?.[1];
+  if (!type) return;
+  const start = /\bstartDate="([^"]+)"/.exec(s)?.[1] || "";
+  const day = start.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+  const valStr = /\bvalue="([^"]*)"/.exec(s)?.[1] || "";
+  const val = Number(valStr);
+  const unit = /\bunit="([^"]*)"/.exec(s)?.[1] || "";
 
-    switch (type) {
-      case "HKQuantityTypeIdentifierStepCount":
-        if (isFinite(val)) { const a = get(day); a.steps = (a.steps || 0) + val; } break;
-      case "HKQuantityTypeIdentifierDistanceWalkingRunning": {
-        if (!isFinite(val)) break;
-        const km = /mi/i.test(unit) ? val * 1.60934 : val;
-        const a = get(day); a.dist = (a.dist || 0) + km; break;
-      }
-      case "HKQuantityTypeIdentifierActiveEnergyBurned":
-        if (isFinite(val)) { const a = get(day); a.kcal = (a.kcal || 0) + val; } break;
-      case "HKQuantityTypeIdentifierHeartRate":
-        if (isFinite(val)) { const a = get(day); a.hrSum = (a.hrSum || 0) + val; a.hrN = (a.hrN || 0) + 1; } break;
-      case "HKQuantityTypeIdentifierRestingHeartRate":
-        if (isFinite(val)) { const a = get(day); a.restSum = (a.restSum || 0) + val; a.restN = (a.restN || 0) + 1; } break;
-      case "HKQuantityTypeIdentifierHeartRateVariabilitySDNN":
-        if (isFinite(val)) { const a = get(day); a.hrvSum = (a.hrvSum || 0) + val; a.hrvN = (a.hrvN || 0) + 1; } break;
-      case "HKCategoryTypeIdentifierSleepAnalysis": {
-        if (!/Asleep/i.test(valStr)) break; // только фазы сна, не «в кровати»/«проснулся»
-        const end = /\bendDate="([^"]+)"/.exec(attrs)?.[1] || "";
-        // Apple пишет "YYYY-MM-DD HH:MM:SS +0200" — обрезаем смещение (для длительности оно не важно),
-        // иначе Date.parse спотыкается о пробел перед +0200 и сон не считается.
-        const t0 = Date.parse(start.slice(0, 19).replace(" ", "T")), t1 = Date.parse(end.slice(0, 19).replace(" ", "T"));
-        if (!isFinite(t0) || !isFinite(t1) || t1 <= t0) break;
-        const hours = (t1 - t0) / 3600000;
-        const endDay = end.slice(0, 10); // сон относим к дню пробуждения
-        const a = get(/^\d{4}-\d{2}-\d{2}$/.test(endDay) ? endDay : day);
-        a.sleep = (a.sleep || 0) + hours; break;
-      }
+  switch (type) {
+    case "HKQuantityTypeIdentifierStepCount":
+      if (isFinite(val)) { const a = get(day); a.steps = (a.steps || 0) + val; } break;
+    case "HKQuantityTypeIdentifierDistanceWalkingRunning": {
+      if (!isFinite(val)) break;
+      const km = /mi/i.test(unit) ? val * 1.60934 : val;
+      const a = get(day); a.dist = (a.dist || 0) + km; break;
+    }
+    case "HKQuantityTypeIdentifierActiveEnergyBurned":
+      if (isFinite(val)) { const a = get(day); a.kcal = (a.kcal || 0) + val; } break;
+    case "HKQuantityTypeIdentifierHeartRate":
+      if (isFinite(val)) { const a = get(day); a.hrSum = (a.hrSum || 0) + val; a.hrN = (a.hrN || 0) + 1; } break;
+    case "HKQuantityTypeIdentifierRestingHeartRate":
+      if (isFinite(val)) { const a = get(day); a.restSum = (a.restSum || 0) + val; a.restN = (a.restN || 0) + 1; } break;
+    case "HKQuantityTypeIdentifierHeartRateVariabilitySDNN":
+      if (isFinite(val)) { const a = get(day); a.hrvSum = (a.hrvSum || 0) + val; a.hrvN = (a.hrvN || 0) + 1; } break;
+    case "HKCategoryTypeIdentifierSleepAnalysis": {
+      if (!/Asleep/i.test(valStr)) break; // только фазы сна, не «в кровати»/«проснулся»
+      const end = /\bendDate="([^"]+)"/.exec(s)?.[1] || "";
+      // Apple пишет "YYYY-MM-DD HH:MM:SS +0200" — обрезаем смещение (для длительности оно не важно),
+      // иначе Date.parse спотыкается о пробел перед +0200 и сон не считается.
+      const t0 = Date.parse(start.slice(0, 19).replace(" ", "T")), t1 = Date.parse(end.slice(0, 19).replace(" ", "T"));
+      if (!isFinite(t0) || !isFinite(t1) || t1 <= t0) break;
+      const hours = (t1 - t0) / 3600000;
+      const endDay = end.slice(0, 10); // сон относим к дню пробуждения
+      const a = get(/^\d{4}-\d{2}-\d{2}$/.test(endDay) ? endDay : day);
+      a.sleep = (a.sleep || 0) + hours; break;
     }
   }
+}
 
+function finalizeDays(by: Map<string, Acc>): HealthDay[] {
   const out: HealthDay[] = [];
   for (const [day, a] of by) {
     const d: HealthDay = { day };
@@ -155,6 +153,30 @@ function parseHealthXml(xml: string): HealthDay[] {
   }
   out.sort((a, b) => a.day.localeCompare(b.day));
   return out;
+}
+
+// Потоковый разбор большого export.xml прямо из архива: не держим весь файл
+// (у активных пользователей это сотни МБ) в памяти — читаем построчно чанками.
+async function streamParseHealthXml(entry: any, onProgress?: (days: number) => void): Promise<HealthDay[]> {
+  const by = new Map<string, Acc>();
+  const get = (d: string) => { let a = by.get(d); if (!a) { a = {}; by.set(d, a); } return a; };
+  let carry = "";
+  let seen = 0;
+  await new Promise<void>((resolve, reject) => {
+    entry.internalStream("string")
+      .on("data", (chunk: string) => {
+        carry += chunk;
+        const parts = carry.split("\n");
+        carry = parts.pop() || "";
+        for (const line of parts) {
+          if (line.indexOf("<Record ") !== -1) { applyRecord(line, get); if ((++seen % 100000) === 0 && onProgress) onProgress(by.size); }
+        }
+      })
+      .on("error", (e: any) => reject(e))
+      .on("end", () => { if (carry.indexOf("<Record ") !== -1) applyRecord(carry, get); resolve(); })
+      .resume();
+  });
+  return finalizeDays(by);
 }
 
 function Stat({ label, value, unit, sub }: { label: string; value: string; unit?: string; sub?: string }) {
@@ -240,10 +262,12 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
     try {
       const { default: JSZip } = await import("jszip");
       const zip = await JSZip.loadAsync(file);
-      const entry = Object.values(zip.files).find((f) => /export\.xml$/i.test(f.name) && !f.dir);
+      // Имя главного XML зависит от языка айфона ("export.xml", "экспорт.xml", ...),
+      // поэтому ищем любой .xml, кроме служебного *_cda.xml.
+      const entry: any = Object.values(zip.files).find((f: any) => !f.dir && /\.xml$/i.test(f.name) && !/_cda\.xml$/i.test(f.name));
       if (!entry) throw new Error("no export.xml");
-      const xml = await entry.async("string");
-      const parsed = parseHealthXml(xml);
+      // Потоковый разбор — большой архив (сотни МБ) не грузим целиком, иначе браузер виснет.
+      const parsed = await streamParseHealthXml(entry, (nDays) => setStatus(s.parsingN(nDays)));
       if (!parsed.length) throw new Error("empty");
       setStatus(s.sending);
       // Шлём чанками, чтобы не упереться в лимит тела запроса.
