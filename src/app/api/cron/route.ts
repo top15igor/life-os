@@ -144,7 +144,8 @@ export async function GET(req: NextRequest) {
   // Самотест ежемесячной выгрузки: /api/cron?backup=<secret> — собирает и шлёт .zip владельцу.
   const bkp = req.nextUrl.searchParams.get("backup");
   if (bkp !== null) {
-    if (bkp !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const okKey = bkp === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.BACKUP_KEY && bkp === process.env.BACKUP_KEY);
+    if (!okKey) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
     const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
     const db = supabaseAdmin();
     const { data: u } = await db.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
