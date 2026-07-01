@@ -178,8 +178,18 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   // Сон — сессии, относим минуты сна к дню пробуждения (civilEndTime).
   const sleep = await ghGet(token, `/users/me/dataTypes/sleep/dataPoints?pageSize=100&filter=${encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`)}`);
   for (const dp of sleep?.dataPoints || []) {
-    const d = dayOf(dp.sleep?.interval?.civilEndTime);
-    const mins = Number(dp.sleep?.summary?.minutesAsleep);
+    const sl = dp.sleep || {};
+    const d = dayOf(sl.interval?.civilEndTime);
+    // Prefer minutesAsleep; fall back to the session length if that field is absent.
+    let mins = Number(sl.summary?.minutesAsleep ?? sl.summary?.sleepDurationMinutes);
+    if (!(isFinite(mins) && mins > 0)) {
+      const st = sl.interval?.civilStartTime;
+      const en = sl.interval?.civilEndTime;
+      if (st && en) {
+        const ms = new Date(en).getTime() - new Date(st).getTime();
+        if (ms > 0) mins = Math.round(ms / 60000);
+      }
+    }
     if (d && isFinite(mins) && mins > 0) {
       const h = get(d);
       h.sleep_hours = Math.round(((h.sleep_hours || 0) + mins / 60) * 10) / 10;

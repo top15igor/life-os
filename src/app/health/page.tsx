@@ -125,8 +125,9 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const sportEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "sport"));
   const foodEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "food"));
 
+  const overview: Record<string, string> = { ru: "Обзор", en: "Overview", uk: "Огляд", fr: "Aperçu" };
   const tabs = [
-    { key: "health", label: t.nav.health },
+    { key: "health", label: overview[locale] || overview.en },
     { key: "energy", label: t.nav.energy },
     { key: "sport", label: t.nav.sport },
     { key: "food", label: t.nav.food },
