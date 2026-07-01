@@ -108,15 +108,25 @@ export async function GET(req: NextRequest) {
         secret = error ? result.token : fresh;
       }
       if (!secret) secret = result.token;
-      const url = new URL("/auth/app-done", req.url);
-      url.searchParams.set("token", secret);
-      url.searchParams.set("new", result.created ? "1" : "0");
-      const res = NextResponse.redirect(url);
+      // Prefer the app's deep link (opened in the system browser → no captcha).
+      // Falls back to the in-app page if no return link was provided.
+      const ret = req.cookies.get("lifeos_oauth_return")?.value || "";
+      const sep = ret.includes("?") ? "&" : "?";
+      const target = /^(exp|exps|lifeos):\/\//.test(ret)
+        ? `${ret}${sep}token=${encodeURIComponent(secret)}&new=${result.created ? "1" : "0"}`
+        : (() => {
+            const url = new URL("/auth/app-done", req.url);
+            url.searchParams.set("token", secret);
+            url.searchParams.set("new", result.created ? "1" : "0");
+            return url.toString();
+          })();
+      const res = NextResponse.redirect(target);
       setSessionCookie(res, secret);
       res.cookies.delete("lifeos_oauth_state");
       res.cookies.delete("lifeos_oauth_ref");
       res.cookies.delete("lifeos_oauth_link");
       res.cookies.delete("lifeos_oauth_mobile");
+      res.cookies.delete("lifeos_oauth_return");
       return res;
     }
 

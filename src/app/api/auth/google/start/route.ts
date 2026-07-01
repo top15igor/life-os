@@ -36,5 +36,9 @@ export async function GET(req: NextRequest) {
   if (req.nextUrl.searchParams.get("link") === "1") res.cookies.set("lifeos_oauth_link", "1", opts);
   // Режим приложения: ?mobile=1 — после входа отдать токен сессии в URL для нативного приложения.
   if (req.nextUrl.searchParams.get("mobile") === "1") res.cookies.set("lifeos_oauth_mobile", "1", opts);
+  // Deep link приложения для возврата (открывается в системном браузере). Разрешаем
+  // только схемы приложения — чтобы токен нельзя было увести на произвольный сайт.
+  const ret = req.nextUrl.searchParams.get("return") || "";
+  if (/^(exp|exps|lifeos):\/\//.test(ret)) res.cookies.set("lifeos_oauth_return", ret, opts);
   return res;
 }
