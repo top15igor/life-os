@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
+import { supabaseAdmin } from "./supabaseAdmin";
 
 function client() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -127,8 +128,12 @@ const TOOL: Anthropic.Tool = {
   },
 };
 
-function prompt(text: string): string {
-  return `Ты — аналитик личного дневника LIFE OS. Тебе дают одну дневниковую запись на русском (расшифровка голоса или текст). Разбери её и вызови инструмент save_analysis.
+function prompt(text: string, projectNames?: string[]): string {
+  const projectsHint = projectNames?.length
+    ? `\n\nУже существующие проекты пользователя: ${projectNames.map((n) => `«${n}»`).join(", ")}.
+ВАЖНО про projects: если запись относится к одному из этих проектов — верни его ТОЧНОЕ название из списка (тот же регистр и написание), НЕ придумывай новый вариант («LIFE OS», «Life OS», «LifeOS», «суперапп» — это один проект, не создавай синонимы). Новый проект добавляй только если это действительно другой, новый проект.`
+    : "";
+  return `Ты — аналитик личного дневника LIFE OS. Тебе дают одну дневниковую запись на русском (расшифровка голоса или текст). Разбери её и вызови инструмент save_analysis.${projectsHint}
 
 Правила:
 - Пиши на ТОМ ЖЕ языке, что и сама запись (русский / украинский / английский / французский). Не выдумывай того, чего нет в тексте.
@@ -180,12 +185,23 @@ export async function classifyIntent(text: string, userId?: string): Promise<"qu
 }
 
 export async function analyze(text: string, userId?: string): Promise<Analysis> {
+  // Подтягиваем существующие проекты пользователя, чтобы модель переиспользовала их
+  // и не плодила дубли-синонимы (авто-дедуп на уровне разбора).
+  let projectNames: string[] = [];
+  if (userId) {
+    try {
+      const { data } = await supabaseAdmin().from("projects").select("name").eq("user_id", userId).limit(80);
+      projectNames = ((data as any[]) ?? []).map((r) => r.name).filter(Boolean);
+    } catch {
+      // нет таблицы/колонки — просто без подсказки
+    }
+  }
   const msg = await client().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
     tools: [TOOL],
     tool_choice: { type: "tool", name: "save_analysis" },
-    messages: [{ role: "user", content: prompt(text) }],
+    messages: [{ role: "user", content: prompt(text, projectNames) }],
   });
   logClaude(userId, "analyze", "sonnet", (msg as any).usage);
   const block = msg.content.find((b) => b.type === "tool_use");

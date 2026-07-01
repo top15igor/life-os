@@ -144,6 +144,13 @@ export async function clearDerived(id: string) {
   }
 }
 
+// Нормализованный ключ имени: без регистра, пробелов, дефисов/слэшей и пунктуации,
+// ё=е. Нужен, чтобы «LIFE OS», «Life OS», «LifeOS», «life-os» считались одним проектом
+// и не плодили дубли-карточки.
+function normKey(s: string): string {
+  return (s || "").toLowerCase().replace(/ё/g, "е").replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
 async function linkNames(
   owner: string,
   table: string,
@@ -154,9 +161,46 @@ async function linkNames(
 ) {
   if (!names?.length) return;
   const db = supabaseAdmin();
-  const rows = names.map((name) => ({ user_id: owner, name }));
-  const { data } = await db.from(table).upsert(rows, { onConflict: "user_id,name" }).select("id");
-  if (data?.length) {
-    await db.from(linkTable).insert(data.map((r) => ({ entry_id: entryId, [fk]: r.id })));
+  const clean = [...new Set(names.map((n) => (n || "").trim()).filter(Boolean))];
+  if (!clean.length) return;
+
+  // Уже существующие сущности пользователя — чтобы переиспользовать их по нормализованному
+  // ключу вместо создания дубля (авто-дедуп проектов/людей/тегов/мест).
+  let existing: { id: string; name: string }[] = [];
+  try {
+    const { data } = await db.from(table).select("id,name").eq("user_id", owner);
+    existing = (data as any[]) ?? [];
+  } catch {
+    // таблица без нужных колонок — падать не будем, пойдём по старому пути upsert
+  }
+  const byKey = new Map<string, string>(); // normKey -> id
+  for (const r of existing) {
+    const k = normKey(r.name);
+    if (k && !byKey.has(k)) byKey.set(k, r.id);
+  }
+
+  const ids: string[] = [];
+  const toCreate: string[] = [];
+  const seen = new Set<string>();
+  for (const name of clean) {
+    const k = normKey(name);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    const hit = byKey.get(k);
+    if (hit) ids.push(hit);
+    else toCreate.push(name);
+  }
+
+  if (toCreate.length) {
+    const { data: created } = await db
+      .from(table)
+      .upsert(toCreate.map((name) => ({ user_id: owner, name })), { onConflict: "user_id,name" })
+      .select("id");
+    for (const r of (created as any[]) ?? []) ids.push(r.id);
+  }
+
+  const uniqueIds = [...new Set(ids)];
+  if (uniqueIds.length) {
+    await db.from(linkTable).insert(uniqueIds.map((rid) => ({ entry_id: entryId, [fk]: rid })));
   }
 }
