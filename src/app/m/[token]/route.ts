@@ -31,5 +31,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
 
   const res = NextResponse.redirect(new URL(destFrom(req), req.url));
   setSessionCookie(res, token);
+  // Язык из приложения → cookie locale, чтобы веб-разделы рендерились на выбранном языке.
+  const loc = req.nextUrl.searchParams.get("locale");
+  if (loc && ["ru", "en", "uk", "fr"].includes(loc)) {
+    res.cookies.set("locale", loc, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+  }
   return res;
 }
