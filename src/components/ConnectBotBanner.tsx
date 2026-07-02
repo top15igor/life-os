@@ -28,7 +28,7 @@ export default function ConnectBotBanner() {
   if (!show) return null;
 
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 200, background: "#229ED9", color: "#fff", display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", fontSize: 13.5 }}>
+    <div style={{ position: "sticky", top: 10, zIndex: 200, margin: "10px 12px 0", borderRadius: 12, background: "#229ED9", color: "#fff", display: "flex", alignItems: "center", gap: 12, padding: "10px 15px", fontSize: 13.5, boxShadow: "0 3px 12px rgba(34,158,217,.28)" }}>
       <i className="ti ti-brand-telegram" style={{ fontSize: 19, flex: "none" }} aria-hidden="true" />
       <div style={{ flex: 1, minWidth: 0, lineHeight: 1.35 }}>
         <b style={{ fontWeight: 700 }}>Подключи Telegram-бота</b>
