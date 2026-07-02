@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { askLife, saveChat } from "@/lib/biographer";
 import { isPremium } from "@/lib/plan";
+import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!question) return NextResponse.json({ ok: false }, { status: 400 });
 
   try {
-    const answer = await askLife(user.id, question);
+    const answer = await askLife(user.id, question, await getLocale());
     await saveChat(user.id, question, answer);
     return NextResponse.json({ ok: true, answer });
   } catch (e) {

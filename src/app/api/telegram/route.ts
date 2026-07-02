@@ -13,7 +13,7 @@ import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPubl
 import { addBookFromImage } from "@/lib/books";
 import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
-import { getOrCreateUser, getInviteCode, noteTgUsername } from "@/lib/users";
+import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
@@ -143,6 +143,30 @@ const FIXED: Record<string, string> = {
   en: "✏️ Updated your previous entry:",
   uk: "✏️ Виправив попередній запис:",
   fr: "✏️ J'ai corrigé l'entrée précédente :",
+};
+
+// /voicetext — настройка «показывать распознанный текст под голосовыми».
+const VOICETEXT: Record<string, { on: string; off: string; na: string }> = {
+  ru: {
+    on: "📝 Готово! Теперь под голосовыми буду показывать распознанный текст — так проще заметить, если что-то распозналось криво (например, суммы). Выключить: /voicetext off",
+    off: "🙈 Готово! Больше не дублирую распознанный текст под голосовыми — оставлю только «Коротко» и разбор. Вернуть: /voicetext on",
+    na: "⏳ Настройка пока недоступна — загляни чуть позже.",
+  },
+  en: {
+    on: "📝 Done! I'll now show the recognized text under voice messages — easier to spot if something was misheard (e.g. amounts). Turn off: /voicetext off",
+    off: "🙈 Done! I'll no longer echo the recognized text under voice messages — only the summary and breakdown. Turn back on: /voicetext on",
+    na: "⏳ This setting isn't available yet — try again a bit later.",
+  },
+  uk: {
+    on: "📝 Готово! Тепер під голосовими показуватиму розпізнаний текст — так легше помітити, якщо щось розпізналося криво (напр. суми). Вимкнути: /voicetext off",
+    off: "🙈 Готово! Більше не дублюю розпізнаний текст під голосовими — залишу лише «Коротко» та розбір. Повернути: /voicetext on",
+    na: "⏳ Налаштування поки недоступне — зазирни трохи пізніше.",
+  },
+  fr: {
+    on: "📝 C'est fait ! J'afficherai le texte reconnu sous les messages vocaux — plus facile de repérer une erreur (ex. montants). Désactiver : /voicetext off",
+    off: "🙈 C'est fait ! Je ne répète plus le texte reconnu sous les vocaux — seulement le résumé et le détail. Réactiver : /voicetext on",
+    na: "⏳ Ce réglage n'est pas encore disponible — réessaie un peu plus tard.",
+  },
 };
 
 const BOOK_PHOTO: Record<string, { working: string; saved: string; open: string; failed: string }> = {
@@ -455,6 +479,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // 📝 /voicetext [on|off] — показывать ли распознанный текст под голосовыми.
+  if (typeof msg.text === "string" && /^\/voicetext\b/i.test(msg.text.trim())) {
+    const lang = langOf(user, msg);
+    const arg = msg.text.trim().replace(/^\/voicetext\s*/i, "").toLowerCase();
+    const desired = arg === "on" ? true : arg === "off" ? false : !(await getVoiceTextPref(user.id));
+    const res = await setVoiceTextPref(user.id, desired);
+    const V = VOICETEXT[lang] || VOICETEXT.ru;
+    await sendMessage(chatId, res === null ? V.na : desired ? V.on : V.off);
+    return NextResponse.json({ ok: true });
+  }
+
   // 📨 /send @имя текст — передать сообщение другому пользователю LIFE OS (с подписью «от кого»).
   if (typeof msg.text === "string" && /^\/send\b/i.test(msg.text.trim())) {
     const lang = langOf(user, msg);
@@ -670,7 +705,7 @@ export async function POST(req: NextRequest) {
     }
     await sendChatAction(chatId, "typing");
     try {
-      const ans = await askLife(user.id, q);
+      const ans = await askLife(user.id, q, langOf(user, msg));
       await saveChat(user.id, q, ans);
       await sendMessage(chatId, mdToTelegram(ans) || "—");
     } catch (e) {
@@ -916,7 +951,7 @@ export async function POST(req: NextRequest) {
       }
       if (route.kind === "question") {
         await sendChatAction(chatId, "typing");
-        const ans = await askLife(user.id, text);
+        const ans = await askLife(user.id, text, langOf(user, msg));
         await saveChat(user.id, text, ans);
         await sendMessage(chatId, mdToTelegram(ans) || "—");
         return NextResponse.json({ ok: true });
@@ -936,7 +971,8 @@ export async function POST(req: NextRequest) {
     const L = CONFIRM[lang] || CONFIRM.ru;
     const financeOk = !analysis.finance?.length || ((entry as any).financeSaved ?? 0) > 0;
     if (analysis.finance?.length && !financeOk) console.error("finance not saved", (entry as any).financeError);
-    let body = formatConfirm(analysis, streak, lang, financeOk, isVoice ? text : undefined);
+    const showVT = isVoice ? await getVoiceTextPref(user.id) : true;
+    let body = formatConfirm(analysis, streak, lang, financeOk, isVoice ? text : undefined, showVT);
     const ms = milestoneFor(count, streak, lang);
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
@@ -963,7 +999,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true, fullText?: string): string {
+function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved = true, fullText?: string, showVoiceText = true): string {
   const L = CONFIRM[lang] || CONFIRM.ru;
   const isVoice = !!(fullText && fullText.trim());
 
@@ -1009,7 +1045,7 @@ function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved =
   const head = [`✅ <b>${L.saved}</b>`];
   // Полная расшифровка голоса (слово в слово) занимает ОСТАТОК места до лимита
   // Telegram (4096) — так структурная часть (задачи/инсайты) никогда не обрезается.
-  if (isVoice) {
+  if (isVoice && showVoiceText) {
     const ft = fullText!.trim();
     const used = head.join("\n").length + rest.join("\n").length + 80; // запас на разметку/заголовок
     const budget = Math.max(400, 4000 - used);

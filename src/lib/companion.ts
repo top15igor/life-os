@@ -141,14 +141,20 @@ function nowLocal(off?: number | null): string {
   return `${d.toISOString().slice(0, 16).replace("T", " ")} (${dow})`;
 }
 
-function buildSystem(name: string | null, context: string, off?: number | null): string {
+// Язык ответа закреплён за пользователем (его выбор/язык клиента), а НЕ определяется
+// по языку конкретной реплики — иначе бот «уплывает» (напр. украинский голос → украинский ответ).
+const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "английском (English)", uk: "українській", fr: "французском (français)" };
+
+function buildSystem(name: string | null, context: string, off?: number | null, lang: Lang = "ru"): string {
   const who = name ? name : "собеседника";
   return `Местное время собеседника сейчас: ${nowLocal(off)}. Используй его для дат «сегодня/завтра/через час/в 9».
+
+ЯЗЫК ОТВЕТА: всегда отвечай на ${LANG_NAME[lang] || LANG_NAME.ru} языке — даже если собеседник написал или наговорил сообщение на другом языке. Не переключай язык сам.
 
 Ты — близкий тёплый друг и личный AI-компаньон ${who} в приложении LIFE OS. Ты знаешь о нём почти всё — из его дневника, заметок и финансов (они ниже). Веди живую беседу, как лучший друг, который всегда рядом: слушай, поддерживай, размышляй вместе, давай честный совет, по-доброму напоминай о важном и подмечай закономерности в его жизни.
 
 КАК СЕБЯ ВЕСТИ:
-- Говори по-человечески, тепло и по делу, на языке собеседника. Без канцелярита и без фраз вроде «как ИИ я не могу».
+- Говори по-человечески, тепло и по делу, на закреплённом выше языке ответа. Без канцелярита и без фраз вроде «как ИИ я не могу».
 - Опирайся на то, что знаешь о нём (раздел «ЧТО Я ЗНАЮ О ТЕБЕ» ниже): называй конкретику, вспоминай прошлое, связывай события — это и делает тебя «своим».
 - Это БЕСЕДА. Помни предыдущие реплики и держи нить разговора.
 - Когда нужен свежий факт из открытого мира (новости, цены, погода, «как сделать…», проверить информацию) — у тебя есть веб-поиск, пользуйся им и приводи актуальные данные. НИКОГДА не отвечай «у меня нет доступа к интернету».
@@ -178,10 +184,11 @@ export function voiceActionTools() {
 export async function buildVoiceInstructions(
   userId: string,
   name: string | null,
-  tzOffset?: number | null
+  tzOffset?: number | null,
+  lang: Lang = "ru"
 ): Promise<string> {
   const context = await gatherContext(userId);
-  const base = buildSystem(name, context, tzOffset);
+  const base = buildSystem(name, context, tzOffset, lang);
   return `${base}
 
 ЭТО ЖИВОЙ ГОЛОСОВОЙ РАЗГОВОР (как звонок другу):
@@ -210,7 +217,7 @@ export async function talkToCompanion(
     getHistory(userId, 20),
     recallContext(userId, userText).catch(() => ""),
   ]);
-  const system = buildSystem(name, recall ? `${recall}\n\n${context}` : context, tzOffset);
+  const system = buildSystem(name, recall ? `${recall}\n\n${context}` : context, tzOffset, lang);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   // Веб-поиск (серверный) + действия-инструменты (исполняем сами через runAction).

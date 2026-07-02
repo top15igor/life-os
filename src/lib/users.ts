@@ -6,6 +6,31 @@ const OWNER = "00000000-0000-0000-0000-000000000000";
 
 export type User = { id: string; token: string; name: string | null; lang?: string | null; chat_id?: number; isNew?: boolean };
 
+// ===== Настройка: показывать полную расшифровку голоса под ответом бота =====
+// По умолчанию ВКЛ (помогает поймать кривое распознавание, напр. сумм). Защищённо:
+// если колонки show_voice_text ещё нет — считаем, что включено.
+export async function getVoiceTextPref(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin().from("users").select("show_voice_text").eq("id", userId).maybeSingle();
+    if (error) return true;
+    const v = (data as any)?.show_voice_text;
+    return v === null || v === undefined ? true : !!v;
+  } catch {
+    return true;
+  }
+}
+
+// Меняет настройку и возвращает новое значение (или null, если колонки нет).
+export async function setVoiceTextPref(userId: string, on: boolean): Promise<boolean | null> {
+  try {
+    const { error } = await supabaseAdmin().from("users").update({ show_voice_text: on }).eq("id", userId);
+    if (error) return null;
+    return on;
+  } catch {
+    return null;
+  }
+}
+
 // ===== Короткий код-приглашение (для аккуратных реф-ссылок /i/<code>) =====
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // без похожих 0/o/1/l
 function genCode(): string {

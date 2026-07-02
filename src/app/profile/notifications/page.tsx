@@ -2,6 +2,7 @@ import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
 import { NotificationToggle } from "@/components/ProfileActions";
 import PushSettings from "@/components/PushSettings";
+import VoiceTextToggle from "@/components/VoiceTextToggle";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -30,6 +31,12 @@ export default async function NotificationsPage() {
     pushEnabled = (data as any)?.push_enabled !== false;
     morningPrefs = normalizeMorningPrefs((data as any)?.morning_prefs);
   } catch { /* колонок может не быть — дефолты */ }
+  // Отдельно и защищённо: колонки show_voice_text может ещё не быть (до миграции).
+  let showVoiceText = true;
+  try {
+    const { data, error } = await supabaseAdmin().from("users").select("show_voice_text").eq("id", user.id).maybeSingle();
+    if (!error) showVoiceText = (data as any)?.show_voice_text !== false;
+  } catch { /* нет колонки — по умолчанию показываем */ }
   const hasTg = !!user.chat_id;
 
   return (
@@ -49,6 +56,7 @@ export default async function NotificationsPage() {
           {hasTg ? (
             <>
               <NotificationToggle locale={locale} enabled={pushEnabled} />
+              <VoiceTextToggle locale={locale} initial={showVoiceText} />
               <PushSettings locale={locale} initial={morningPrefs} />
             </>
           ) : (
