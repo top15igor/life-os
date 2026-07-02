@@ -2,7 +2,6 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
-import DesignSwitch from "@/components/about/DesignSwitch";
 import LangMenu from "@/components/LangMenu";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +77,7 @@ const C = {
 
     foot_priv: "Приватность",
     foot_code: "Код на GitHub",
+    foot_tester: "Тестировщикам",
     design_a: "Классика",
     design_b: "Новый",
   },
@@ -151,6 +151,7 @@ const C = {
 
     foot_priv: "Privacy",
     foot_code: "Code on GitHub",
+    foot_tester: "For testers",
     design_a: "Classic",
     design_b: "New",
   },
@@ -223,6 +224,7 @@ const C = {
 
     foot_priv: "Приватність",
     foot_code: "Код на GitHub",
+    foot_tester: "Тестувальникам",
     design_a: "Класика",
     design_b: "Новий",
   },
@@ -295,6 +297,7 @@ const C = {
 
     foot_priv: "Confidentialité",
     foot_code: "Code sur GitHub",
+    foot_tester: "Pour les testeurs",
     design_a: "Classique",
     design_b: "Nouveau",
   },
@@ -313,14 +316,9 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Какой дизайн показывать: B (новый) или A (классический, по умолчанию).
   const design = sp.d === "b" ? "b" : "a";
 
-  // Новый дизайн (Дизайн B) — отдельный компонент.
+  // Новый дизайн (Дизайн B) — доступен по ?d=b (переключатель убран, основной — A).
   if (design === "b") {
-    return (
-      <>
-        <DesignSwitch active="b" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
-        <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} />
-      </>
-    );
+    return <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} />;
   }
 
   const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
@@ -335,7 +333,6 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
 
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh" }}>
-      <DesignSwitch active="a" refCode={ref} labelA={t.design_a} labelB={t.design_b} />
       {/* Top bar */}
       <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -518,6 +515,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </div>
           <div style={{ display: "flex", gap: 18 }}>
             <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_priv}</a>
+            <a href="/tester.html" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
             <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
           </div>
         </div>
