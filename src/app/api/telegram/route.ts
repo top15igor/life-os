@@ -184,10 +184,10 @@ const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: 
 };
 
 const IG_MSG: Record<string, { working: string; saved: string; open: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
-  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из Instagram. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор Instagram. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
-  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this Instagram post. Try another link or send a screenshot/video.", limited: "📉 Monthly Instagram limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
-  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з Instagram. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір Instagram. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
-  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post Instagram. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle Instagram atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
+  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из {src}. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор постов. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
+  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
+  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
+  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
 };
 
 const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string; shareHint: string }> = {
@@ -811,6 +811,8 @@ export async function POST(req: NextRequest) {
     if (igUrl || yt || ttUrl) {
       const lang = langOf(user, msg);
       const L = IG_MSG[lang] || IG_MSG.ru;
+      const srcName = igUrl ? "Instagram" : ttUrl ? "TikTok" : "YouTube";
+      const failedMsg = L.failed.replace("{src}", srcName);
       await sendMessage(chatId, L.working);
       try {
         const r = igUrl
@@ -819,7 +821,7 @@ export async function POST(req: NextRequest) {
             ? await importTiktok(user.id, ttUrl, lang)
             : await importYoutube(user.id, yt!.url, yt!.kind, lang);
         if (r.ok === false) {
-          await sendMessage(chatId, r.reason === "limited" ? L.limited : L.failed);
+          await sendMessage(chatId, r.reason === "limited" ? L.limited : failedMsg);
           return NextResponse.json({ ok: true });
         }
         // Разбор удался, но запись в базу упала — честно предупреждаем, а не врём «сохранил».
@@ -836,8 +838,8 @@ export async function POST(req: NextRequest) {
         if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
       } catch (e) {
-        console.error("instagram", e);
-        await sendMessage(chatId, L.failed);
+        console.error("import link", e);
+        await sendMessage(chatId, failedMsg);
       }
       return NextResponse.json({ ok: true });
     }

@@ -69,11 +69,36 @@ async function unpackTiktok(url: string): Promise<TtMedia> {
     const html = await fetch(full, { headers: { "user-agent": UA, "accept-language": "ru,en;q=0.9" }, redirect: "follow" }).then((r) => r.text());
     const title = ogTag(html, "title") || "";
     const desc = ogTag(html, "description") || "";
-    const author = (title.match(/^(.+?)\s+(?:on TikTok|в TikTok|\| TikTok)/i)?.[1] || "").trim() || null;
-    return { caption: desc || title, imageUrl: ogTag(html, "image"), author, shortcode: shortcodeOf(full) };
+    let author = (title.match(/^(.+?)\s+(?:on TikTok|в TikTok|\| TikTok)/i)?.[1] || "").trim() || null;
+    let caption = (desc || title).trim();
+    let image = ogTag(html, "image");
+    // Способ 3: photo-посты (oEmbed → 400, og-теги пусты) — подпись/автор из встроенного
+    // JSON страницы. Без этого слайдшоу-посты не сохранялись вообще.
+    if (!caption || /^tiktok\b/i.test(caption) || /make your day/i.test(caption)) {
+      const j = extractTiktokJson(html);
+      if (j.caption) caption = j.caption;
+      if (!author && j.author) author = j.author;
+      if (!image && j.image) image = j.image;
+    }
+    return { caption, imageUrl: image, author, shortcode: shortcodeOf(full) };
   } catch {
     return { caption: "", imageUrl: null, author: null, shortcode: shortcodeOf(full) };
   }
+}
+
+function jsonUnescape(s: string): string {
+  try { return JSON.parse('"' + s + '"'); } catch { return s; }
+}
+
+// Подпись/автор/обложка из встроенного JSON страницы TikTok (для photo-постов).
+function extractTiktokJson(html: string): { caption: string | null; author: string | null; image: string | null } {
+  const descs = [...html.matchAll(/"desc":"((?:[^"\\]|\\.)*)"/g)].map((m) => jsonUnescape(m[1]).trim()).filter((d) => d.length > 3);
+  const clean = descs.filter((d) => !/^(лайки|likes|reproduc|j'aime|aime|\d)/i.test(d)).sort((a, b) => b.length - a.length);
+  const caption = clean[0] || descs.sort((a, b) => b.length - a.length)[0] || null;
+  const author = /"uniqueId":"([^"]+)"/.exec(html)?.[1] || /"nickname":"((?:[^"\\]|\\.)+)"/.exec(html)?.[1] || null;
+  const cover = /"(?:originCover|cover|dynamicCover)":"((?:[^"\\]|\\.)+)"/.exec(html)?.[1];
+  const image = cover ? jsonUnescape(cover) : null;
+  return { caption, author: author ? jsonUnescape(author) : null, image };
 }
 
 // Главная: ссылка TikTok -> подпись/автор/обложка -> AI-разбор -> запись в saved_items.
