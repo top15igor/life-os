@@ -110,13 +110,29 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
   }
   if (a.finance?.length) {
     const txDay = /^\d{4}-\d{2}-\d{2}$/.test(day || "") ? (day as string) : new Date().toISOString().slice(0, 10);
+    // Дефолт для операций с неясной валютой — базовая валюта пользователя (или самая
+    // частая из его операций, иначе гривна). Раньше молча ставился USD и раздувал
+    // баланс не-долларовых юзеров (напр. исландские кроны → доллары, ×~150).
+    let baseCur = "UAH";
+    try {
+      const { data: fs } = await db.from("finance_settings").select("base_currency").eq("user_id", owner).maybeSingle();
+      if ((fs as any)?.base_currency && FINANCE_CURRENCIES.includes((fs as any).base_currency)) {
+        baseCur = (fs as any).base_currency;
+      } else {
+        const { data: prev } = await db.from("finance_tx").select("currency").eq("user_id", owner).limit(200);
+        const cnt: Record<string, number> = {};
+        for (const p of prev || []) if ((p as any).currency) cnt[(p as any).currency] = (cnt[(p as any).currency] || 0) + 1;
+        const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0]?.[0];
+        if (top) baseCur = top;
+      }
+    } catch {}
     const rows = a.finance
       .filter((f) => f && (f.kind === "income" || f.kind === "expense") && Number(f.amount) > 0)
       .map((f) => {
         const kind = f.kind;
         const allowed = kind === "income" ? INCOME_CAT_KEYS : EXPENSE_CAT_KEYS;
         const category = f.category && allowed.includes(f.category) ? f.category : "other";
-        const currency = f.currency && FINANCE_CURRENCIES.includes(f.currency) ? f.currency : "USD";
+        const currency = f.currency && FINANCE_CURRENCIES.includes(f.currency) ? f.currency : baseCur;
         return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
       });
     if (rows.length) {

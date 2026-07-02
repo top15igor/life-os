@@ -23,7 +23,7 @@ export const DREAM_SPHERES = ["home", "transport", "body", "travel", "family", "
 export const EXPENSE_CAT_KEYS = ["food", "cafe", "transport", "housing", "bills", "shopping", "health", "fun", "education", "travel", "gifts", "other"];
 export const INCOME_CAT_KEYS = ["salary", "freelance", "business", "gift", "investment", "other"];
 export const FINANCE_CATS = [...new Set([...EXPENSE_CAT_KEYS, ...INCOME_CAT_KEYS])];
-export const FINANCE_CURRENCIES = ["USD", "EUR", "UAH", "RUB", "GBP", "PLN", "KZT", "GEL", "TRY", "AED"];
+export const FINANCE_CURRENCIES = ["USD", "EUR", "UAH", "RUB", "GBP", "PLN", "KZT", "GEL", "TRY", "AED", "ISK", "CZK", "SEK", "NOK", "DKK", "CHF", "CAD", "JPY", "CNY", "ILS", "HUF", "RON", "BGN", "MDL"];
 
 export type Analysis = {
   summary: string;
@@ -116,7 +116,7 @@ const TOOL: Anthropic.Tool = {
           properties: {
             kind: { type: "string", enum: ["income", "expense"], description: "expense — трата, income — доход." },
             amount: { type: "number", description: "Сумма, положительное число." },
-            currency: { type: "string", enum: FINANCE_CURRENCIES, description: "Код валюты, если ясен из текста или символа (₴ → UAH, $ → USD, € → EUR, ₽ → RUB, грн → UAH, руб → RUB). Если не ясно — не указывай." },
+            currency: { type: "string", enum: FINANCE_CURRENCIES, description: "Код валюты, если ясен из текста или символа (₴/грн → UAH, $ → USD, € → EUR, ₽/руб → RUB, злотый → PLN, крон/исландские кроны → ISK, шведские кроны → SEK, датские кроны → DKK, норвежские кроны → NOK, чешские кроны → CZK, франк → CHF, иена → JPY, юань → CNY, шекель → ILS, форинт → HUF, лей → RON/MDL, лев → BGN). Если валюта не ясна — НЕ указывай (тогда возьмётся базовая валюта пользователя, не доллар)." },
             category: { type: "string", enum: FINANCE_CATS, description: "Категория. Расходы: food (продукты), cafe (кафе/рестораны), transport, housing (жильё/аренда), bills (счета/связь), shopping (покупки), health (здоровье/аптека), fun (развлечения), education, travel, gifts, other. Доходы: salary, freelance (подработка), business, gift, investment, other." },
             note: { type: "string", description: "Короткое пояснение — на что/откуда, если есть." },
           },
