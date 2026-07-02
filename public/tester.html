@@ -40,6 +40,9 @@
   .hero-nav{display:inline-flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:14px; position:relative}
   .hero .who.link{text-decoration:none; color:#dbe2f2; background:rgba(91,140,255,.16); border-color:rgba(91,140,255,.4); font-weight:600; transition:background .15s}
   .hero .who.link:hover{background:rgba(91,140,255,.28)}
+  .lang-switch{display:inline-flex; gap:4px; margin-top:16px; padding:4px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid var(--dark-line); position:relative}
+  .lang-switch button{border:none; background:transparent; color:#aab3c9; font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:999px; cursor:pointer; letter-spacing:.04em; transition:background .15s,color .15s}
+  .lang-switch button.on{background:var(--accent); color:#fff}
 
   main{max-width:760px; margin:0 auto; padding:34px 22px 56px}
   section{margin-bottom:38px}
@@ -100,41 +103,47 @@
 <body>
   <header class="hero">
     <div class="brand"><span class="dot"></span><span class="bw">LIFE OS</span></div>
-    <h1>Памятка тестировщика</h1>
-    <p>Спасибо, что берёшься 🙌 Здесь — как работаем и сколько платим.</p>
+    <h1 data-i18n="title">Памятка тестировщика</h1>
+    <p data-i18n="subtitle">Спасибо, что берёшься 🙌 Здесь — как работаем и сколько платим.</p>
     <div class="hero-nav">
-      <span class="who">оплачиваемое тестирование</span>
-      <a class="who link" href="https://mylifebookai.vercel.app/about">Что такое LIFE OS →</a>
+      <span class="who" data-i18n="badge">оплачиваемое тестирование</span>
+      <a class="who link" href="https://mylifebookai.vercel.app/about" data-i18n="aboutLink">Что такое LIFE OS →</a>
+    </div>
+    <div class="lang-switch">
+      <button data-lang="ru">RU</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="uk">UK</button>
+      <button data-lang="fr">FR</button>
     </div>
   </header>
 
   <main>
     <section>
-      <div class="sec-head"><span class="eyebrow">Что это за сервис</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="svc_kicker">Что это за сервис</span><span class="line"></span></div>
       <div class="card-plain" style="padding:20px">
-        <p style="margin:0 0 11px; font-size:15.5px"><b>LIFE OS — личный дневник жизни.</b> Человек просто рассказывает, как прошёл день — голосом или текстом, — а AI сам расшифровывает, раскладывает по смыслу и собирает из этого историю жизни. Никаких форм и таблиц: говоришь как другу, остальное делает AI.</p>
-        <p style="margin:0 0 11px; font-size:14.5px; color:var(--muted)">В одном месте: <b style="color:var(--ink)">дневник</b>, <b style="color:var(--ink)">книга жизни</b>, цели и задачи, здоровье, финансы, медиатека (книги/фильмы/сериалы), люди и места, AI-друг. Работает через <b style="color:var(--ink)">Telegram-бота</b> и <b style="color:var(--ink)">веб-приложение</b>.</p>
-        <p style="margin:0; font-size:14.5px; color:var(--muted)">Твоя задача — <b style="color:var(--ink)">пожить в нём как обычный пользователь</b> и подмечать, где что работает не так. Подробнее о продукте — на странице <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">«Что такое LIFE OS»</a>.</p>
+        <p style="margin:0 0 11px; font-size:15.5px" data-i18n="svc_p1"><b>LIFE OS — личный дневник жизни.</b> Человек просто рассказывает, как прошёл день — голосом или текстом, — а AI сам расшифровывает, раскладывает по смыслу и собирает из этого историю жизни. Никаких форм и таблиц: говоришь как другу, остальное делает AI.</p>
+        <p style="margin:0 0 11px; font-size:14.5px; color:var(--muted)" data-i18n="svc_p2">В одном месте: <b style="color:var(--ink)">дневник</b>, <b style="color:var(--ink)">книга жизни</b>, цели и задачи, здоровье, финансы, медиатека (книги/фильмы/сериалы), люди и места, AI-друг. Работает через <b style="color:var(--ink)">Telegram-бота</b> и <b style="color:var(--ink)">веб-приложение</b>.</p>
+        <p style="margin:0; font-size:14.5px; color:var(--muted)" data-i18n="svc_p3">Твоя задача — <b style="color:var(--ink)">пожить в нём как обычный пользователь</b> и подмечать, где что работает не так. Подробнее о продукте — на странице <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">«Что такое LIFE OS»</a>.</p>
       </div>
     </section>
 
     <section>
-      <div class="sec-head"><span class="eyebrow">Оплата</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="pay_kicker">Оплата</span><span class="line"></span></div>
       <div class="tiers">
         <div class="tier small">
           <div class="amt num"><small>$</small>5</div>
-          <div class="t">Мелкая ошибка</div>
-          <div class="d">Опечатка, косметика, мелкий сбой, кривая вёрстка — что-то некритичное, но неаккуратное.</div>
+          <div class="t" data-i18n="t5_t">Мелкая ошибка</div>
+          <div class="d" data-i18n="t5_d">Опечатка, косметика, мелкий сбой, кривая вёрстка — что-то некритичное, но неаккуратное.</div>
         </div>
         <div class="tier bug">
           <div class="amt num"><small>$</small>10</div>
-          <div class="t">Баг или неверная запись</div>
-          <div class="d">Что-то не работает, нелогичный ответ AI, или бот неправильно распознал / записал в журнал (не то настроение, сумма, категория).</div>
+          <div class="t" data-i18n="t10_t">Баг или неверная запись</div>
+          <div class="d" data-i18n="t10_d">Что-то не работает, нелогичный ответ AI, или бот неправильно распознал / записал в журнал (не то настроение, сумма, категория).</div>
         </div>
         <div class="tier bonus">
           <div class="row">
             <div class="amt num"><small>$</small>100</div>
-            <div class="cond">
+            <div class="cond" data-i18n="bonus_cond">
               <b>Бонус за месяц активного тестирования.</b> Ориентир — <b>~10 записей в день</b>. Тестируешь вживую, как настоящий пользователь.
               <span class="free">Пропустил(а) день — бонус не сгорает 🙂</span>
             </div>
@@ -144,78 +153,295 @@
     </section>
 
     <section>
-      <div class="sec-head"><span class="eyebrow">Каждый день</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="daily_kicker">Каждый день</span><span class="line"></span></div>
       <div class="daily">
-        <div class="step"><span class="n">1</span><div class="b"><b>10+ записей</b> про свою реальную жизнь <span>— события, мысли, настроение, траты, здоровье, идеи, планы.</span></div></div>
-        <div class="step"><span class="n">2</span><div class="b">Разными способами: <span class="pill">текст</span><span class="pill">голос</span><span class="pill">фото</span> <span>— не только одним.</span></div></div>
-        <div class="step"><span class="n">3</span><div class="b">Написать <b>AI-другу</b> <span>— и текстом, и голосом. Проверь, отвечает ли на твоём языке.</span></div></div>
-        <div class="step"><span class="n">4</span><div class="b">Проверить <b>1–2 фичи</b> из списка ниже <span>— по очереди, чтобы за месяц пройти все.</span></div></div>
-        <div class="step"><span class="n">5</span><div class="b">Нашёл(ла) баг — <b>записать по формату</b> <span>и скинуть в конце дня короткий отчёт.</span></div></div>
+        <div class="step"><span class="n">1</span><div class="b" data-i18n="d1"><b>10+ записей</b> про свою реальную жизнь <span>— события, мысли, настроение, траты, здоровье, идеи, планы.</span></div></div>
+        <div class="step"><span class="n">2</span><div class="b" data-i18n="d2">Разными способами: <span class="pill">текст</span><span class="pill">голос</span><span class="pill">фото</span> <span>— не только одним.</span></div></div>
+        <div class="step"><span class="n">3</span><div class="b" data-i18n="d3">Написать <b>AI-другу</b> <span>— и текстом, и голосом. Проверь, отвечает ли на твоём языке.</span></div></div>
+        <div class="step"><span class="n">4</span><div class="b" data-i18n="d4">Проверить <b>1–2 фичи</b> из списка ниже <span>— по очереди, чтобы за месяц пройти все.</span></div></div>
+        <div class="step"><span class="n">5</span><div class="b" data-i18n="d5">Нашёл(ла) баг — <b>записать по формату</b> <span>и скинуть в конце дня короткий отчёт.</span></div></div>
       </div>
     </section>
 
     <section>
-      <div class="sec-head"><span class="eyebrow">Что проверить за месяц</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="feat_kicker">Что проверить за месяц</span><span class="line"></span></div>
       <div class="feat">
-        <div class="fi"><span class="ic">✍️</span><div><div class="ft">Запись</div><div class="fd">Текст / голос / фото. Верно ли AI понял настроение, категории, задачи, людей.</div></div></div>
-        <div class="fi"><span class="ic">🤖</span><div><div class="ft">Бот в Telegram</div><div class="fd">Команды, беседа, действия голосом: «поставь напоминание», «запиши вес».</div></div></div>
-        <div class="fi"><span class="ic">💰</span><div><div class="ft">Деньги</div><div class="fd">Траты и доходы голосом, разные валюты, Личное / Бизнес.</div></div></div>
-        <div class="fi"><span class="ic">❤️</span><div><div class="ft">Здоровье</div><div class="fd">Дашборд, фазы сна, подключение Fitbit / Apple, календарь настроения.</div></div></div>
-        <div class="fi"><span class="ic">🎬</span><div><div class="ft">Медиатека</div><div class="fd">«хочу посмотреть …», «добавь сериал …» — фильмы, сериалы, книги.</div></div></div>
-        <div class="fi"><span class="ic">📚</span><div><div class="ft">База знаний</div><div class="fd">Кидай ссылки Instagram / TikTok / YouTube — сохраняет и разбирает.</div></div></div>
-        <div class="fi"><span class="ic">🔔</span><div><div class="ft">Напоминания</div><div class="fd">Голосом и вручную, синхро с Google Календарём, повтор, «весь день».</div></div></div>
-        <div class="fi"><span class="ic">🎁</span><div><div class="ft">Вишлист</div><div class="fd">Ссылки на товары — подтягивает фото, название, цену.</div></div></div>
-        <div class="fi"><span class="ic">🎙️</span><div><div class="ft">AI-друг</div><div class="fd">Чат и голос, перебивание, ответы на нужном языке.</div></div></div>
-        <div class="fi"><span class="ic">📖</span><div><div class="ft">Книга жизни · Биограф</div><div class="fd">Главы, вопросы о прошлом, «Что заметил AI».</div></div></div>
-        <div class="fi"><span class="ic">🔗</span><div><div class="ft">Поделиться · Пригласить</div><div class="fd">Карточки, публичная страница, реф-ссылка.</div></div></div>
-        <div class="fi"><span class="ic">📱</span><div><div class="ft">Приложение</div><div class="fd">Вкладки, меню, языки, тёмная тема, свайпы (если установлено).</div></div></div>
+        <div class="fi"><span class="ic">✍️</span><div><div class="ft" data-i18n="feat1_t">Запись</div><div class="fd" data-i18n="feat1_d">Текст / голос / фото. Верно ли AI понял настроение, категории, задачи, людей.</div></div></div>
+        <div class="fi"><span class="ic">🤖</span><div><div class="ft" data-i18n="feat2_t">Бот в Telegram</div><div class="fd" data-i18n="feat2_d">Команды, беседа, действия голосом: «поставь напоминание», «запиши вес».</div></div></div>
+        <div class="fi"><span class="ic">💰</span><div><div class="ft" data-i18n="feat3_t">Деньги</div><div class="fd" data-i18n="feat3_d">Траты и доходы голосом, разные валюты, Личное / Бизнес.</div></div></div>
+        <div class="fi"><span class="ic">❤️</span><div><div class="ft" data-i18n="feat4_t">Здоровье</div><div class="fd" data-i18n="feat4_d">Дашборд, фазы сна, подключение Fitbit / Apple, календарь настроения.</div></div></div>
+        <div class="fi"><span class="ic">🎬</span><div><div class="ft" data-i18n="feat5_t">Медиатека</div><div class="fd" data-i18n="feat5_d">«хочу посмотреть …», «добавь сериал …» — фильмы, сериалы, книги.</div></div></div>
+        <div class="fi"><span class="ic">📚</span><div><div class="ft" data-i18n="feat6_t">База знаний</div><div class="fd" data-i18n="feat6_d">Кидай ссылки Instagram / TikTok / YouTube — сохраняет и разбирает.</div></div></div>
+        <div class="fi"><span class="ic">🔔</span><div><div class="ft" data-i18n="feat7_t">Напоминания</div><div class="fd" data-i18n="feat7_d">Голосом и вручную, синхро с Google Календарём, повтор, «весь день».</div></div></div>
+        <div class="fi"><span class="ic">🎁</span><div><div class="ft" data-i18n="feat8_t">Вишлист</div><div class="fd" data-i18n="feat8_d">Ссылки на товары — подтягивает фото, название, цену.</div></div></div>
+        <div class="fi"><span class="ic">🎙️</span><div><div class="ft" data-i18n="feat9_t">AI-друг</div><div class="fd" data-i18n="feat9_d">Чат и голос, перебивание, ответы на нужном языке.</div></div></div>
+        <div class="fi"><span class="ic">📖</span><div><div class="ft" data-i18n="feat10_t">Книга жизни · Биограф</div><div class="fd" data-i18n="feat10_d">Главы, вопросы о прошлом, «Что заметил AI».</div></div></div>
+        <div class="fi"><span class="ic">🔗</span><div><div class="ft" data-i18n="feat11_t">Поделиться · Пригласить</div><div class="fd" data-i18n="feat11_d">Карточки, публичная страница, реф-ссылка.</div></div></div>
+        <div class="fi"><span class="ic">📱</span><div><div class="ft" data-i18n="feat12_t">Приложение</div><div class="fd" data-i18n="feat12_d">Вкладки, меню, языки, тёмная тема, свайпы (если установлено).</div></div></div>
       </div>
     </section>
 
     <section>
-      <div class="sec-head"><span class="eyebrow">Как сообщать о баге</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="bug_kicker">Как сообщать о баге</span><span class="line"></span></div>
       <div class="card-plain">
         <ol class="bug">
-          <li><b>Что делал(а)</b> <span>— по шагам.</span></li>
-          <li><b>Что ожидал(а)</b> <span>— как должно было быть.</span></li>
-          <li><b>Что получилось</b> <span>— что пошло не так.</span></li>
-          <li><b>Скрин или видео.</b></li>
-          <li><b>Если про бота</b> <span>— примерно во сколько и какое было сообщение.</span></li>
+          <li data-i18n="bug1"><b>Что делал(а)</b> <span>— по шагам.</span></li>
+          <li data-i18n="bug2"><b>Что ожидал(а)</b> <span>— как должно было быть.</span></li>
+          <li data-i18n="bug3"><b>Что получилось</b> <span>— что пошло не так.</span></li>
+          <li data-i18n="bug4"><b>Скрин или видео.</b></li>
+          <li data-i18n="bug5"><b>Если про бота</b> <span>— примерно во сколько и какое было сообщение.</span></li>
         </ol>
       </div>
     </section>
 
     <section style="margin-bottom:26px">
-      <div class="sec-head"><span class="eyebrow">Отчёт дня</span><span class="line"></span></div>
+      <div class="sec-head"><span class="eyebrow" data-i18n="rep_kicker">Отчёт дня</span><span class="line"></span></div>
       <div class="report">
-        Один короткий итог в конце дня — сколько записей, что проверил(а), какие баги.
-        <div class="ex">Записей: 12 · Проверила: Деньги + Медиатека · Баги: 2 (скрины ниже)</div>
+        <span data-i18n="rep_text">Один короткий итог в конце дня — сколько записей, что проверил(а), какие баги.</span>
+        <div class="ex" data-i18n="rep_ex">Записей: 12 · Проверила: Деньги + Медиатека · Баги: 2 (скрины ниже)</div>
       </div>
     </section>
 
-    <div class="foot">Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b></div>
+    <div class="foot" data-i18n="foot">Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b></div>
 
     <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:26px 0 4px">
       <a id="tester-start" href="https://t.me/Life_OS" style="display:inline-flex; align-items:center; gap:9px; padding:15px 34px; border-radius:14px; background:linear-gradient(135deg,#5b8cff,#3f62e6); color:#fff; font-size:16px; font-weight:700; text-decoration:none; box-shadow:0 12px 28px -12px rgba(63,98,230,.6)">
-        Начать в Telegram
+        <span data-i18n="btn_start">Начать в Telegram</span>
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
       <a href="https://mylifebookai.vercel.app/about" style="display:inline-flex; align-items:center; gap:8px; padding:15px 28px; border-radius:14px; background:var(--card); color:var(--accent-2); font-size:16px; font-weight:700; text-decoration:none; border:1px solid var(--border); box-shadow:var(--shadow)">
-        Узнать о сервисе
+        <span data-i18n="btn_about">Узнать о сервисе</span>
       </a>
     </div>
   </main>
   <script>
-    // Реферал: если пришли по ссылке ?ref=<код> — кнопка открывает бота с start=ref_<код>,
-    // чтобы приведённый тестировщик засчитался пригласившему.
-    (function () {
+    var DICT = {
+      ru: {
+        title: "Памятка тестировщика",
+        subtitle: "Спасибо, что берёшься 🙌 Здесь — как работаем и сколько платим.",
+        badge: "оплачиваемое тестирование",
+        aboutLink: "Что такое LIFE OS →",
+        svc_kicker: "Что это за сервис",
+        svc_p1: `<b>LIFE OS — личный дневник жизни.</b> Человек просто рассказывает, как прошёл день — голосом или текстом, — а AI сам расшифровывает, раскладывает по смыслу и собирает из этого историю жизни. Никаких форм и таблиц: говоришь как другу, остальное делает AI.`,
+        svc_p2: `В одном месте: <b style="color:var(--ink)">дневник</b>, <b style="color:var(--ink)">книга жизни</b>, цели и задачи, здоровье, финансы, медиатека (книги/фильмы/сериалы), люди и места, AI-друг. Работает через <b style="color:var(--ink)">Telegram-бота</b> и <b style="color:var(--ink)">веб-приложение</b>.`,
+        svc_p3: `Твоя задача — <b style="color:var(--ink)">пожить в нём как обычный пользователь</b> и подмечать, где что работает не так. Подробнее о продукте — на странице <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">«Что такое LIFE OS»</a>.`,
+        pay_kicker: "Оплата",
+        t5_t: "Мелкая ошибка",
+        t5_d: "Опечатка, косметика, мелкий сбой, кривая вёрстка — что-то некритичное, но неаккуратное.",
+        t10_t: "Баг или неверная запись",
+        t10_d: "Что-то не работает, нелогичный ответ AI, или бот неправильно распознал / записал в журнал (не то настроение, сумма, категория).",
+        bonus_cond: `<b>Бонус за месяц активного тестирования.</b> Ориентир — <b>~10 записей в день</b>. Тестируешь вживую, как настоящий пользователь.<span class="free">Пропустил(а) день — бонус не сгорает 🙂</span>`,
+        daily_kicker: "Каждый день",
+        d1: `<b>10+ записей</b> про свою реальную жизнь <span>— события, мысли, настроение, траты, здоровье, идеи, планы.</span>`,
+        d2: `Разными способами: <span class="pill">текст</span><span class="pill">голос</span><span class="pill">фото</span> <span>— не только одним.</span>`,
+        d3: `Написать <b>AI-другу</b> <span>— и текстом, и голосом. Проверь, отвечает ли на твоём языке.</span>`,
+        d4: `Проверить <b>1–2 фичи</b> из списка ниже <span>— по очереди, чтобы за месяц пройти все.</span>`,
+        d5: `Нашёл(ла) баг — <b>записать по формату</b> <span>и скинуть в конце дня короткий отчёт.</span>`,
+        feat_kicker: "Что проверить за месяц",
+        feat1_t: "Запись", feat1_d: "Текст / голос / фото. Верно ли AI понял настроение, категории, задачи, людей.",
+        feat2_t: "Бот в Telegram", feat2_d: "Команды, беседа, действия голосом: «поставь напоминание», «запиши вес».",
+        feat3_t: "Деньги", feat3_d: "Траты и доходы голосом, разные валюты, Личное / Бизнес.",
+        feat4_t: "Здоровье", feat4_d: "Дашборд, фазы сна, подключение Fitbit / Apple, календарь настроения.",
+        feat5_t: "Медиатека", feat5_d: "«хочу посмотреть …», «добавь сериал …» — фильмы, сериалы, книги.",
+        feat6_t: "База знаний", feat6_d: "Кидай ссылки Instagram / TikTok / YouTube — сохраняет и разбирает.",
+        feat7_t: "Напоминания", feat7_d: "Голосом и вручную, синхро с Google Календарём, повтор, «весь день».",
+        feat8_t: "Вишлист", feat8_d: "Ссылки на товары — подтягивает фото, название, цену.",
+        feat9_t: "AI-друг", feat9_d: "Чат и голос, перебивание, ответы на нужном языке.",
+        feat10_t: "Книга жизни · Биограф", feat10_d: "Главы, вопросы о прошлом, «Что заметил AI».",
+        feat11_t: "Поделиться · Пригласить", feat11_d: "Карточки, публичная страница, реф-ссылка.",
+        feat12_t: "Приложение", feat12_d: "Вкладки, меню, языки, тёмная тема, свайпы (если установлено).",
+        bug_kicker: "Как сообщать о баге",
+        bug1: `<b>Что делал(а)</b> <span>— по шагам.</span>`,
+        bug2: `<b>Что ожидал(а)</b> <span>— как должно было быть.</span>`,
+        bug3: `<b>Что получилось</b> <span>— что пошло не так.</span>`,
+        bug4: `<b>Скрин или видео.</b>`,
+        bug5: `<b>Если про бота</b> <span>— примерно во сколько и какое было сообщение.</span>`,
+        rep_kicker: "Отчёт дня",
+        rep_text: "Один короткий итог в конце дня — сколько записей, что проверил(а), какие баги.",
+        rep_ex: "Записей: 12 · Проверила: Деньги + Медиатека · Баги: 2 (скрины ниже)",
+        foot: `Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b>`,
+        btn_start: "Начать в Telegram",
+        btn_about: "Узнать о сервисе"
+      },
+      en: {
+        title: "Tester guide",
+        subtitle: "Thanks for jumping in 🙌 Here's how we work and what we pay.",
+        badge: "paid testing",
+        aboutLink: "What is LIFE OS →",
+        svc_kicker: "What this service is",
+        svc_p1: `<b>LIFE OS is a personal life diary.</b> You just tell how your day went — by voice or text — and AI transcribes it, makes sense of it and builds it into the story of your life. No forms or tables: you talk like to a friend, AI does the rest.`,
+        svc_p2: `All in one place: <b style="color:var(--ink)">diary</b>, <b style="color:var(--ink)">book of life</b>, goals &amp; tasks, health, finances, media library (books/films/series), people &amp; places, AI friend. Works via a <b style="color:var(--ink)">Telegram bot</b> and a <b style="color:var(--ink)">web app</b>.`,
+        svc_p3: `Your job — <b style="color:var(--ink)">live in it like a regular user</b> and spot where something works wrong. More about the product on the <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">“What is LIFE OS”</a> page.`,
+        pay_kicker: "Payment",
+        t5_t: "Minor issue",
+        t5_d: "A typo, cosmetics, a small glitch, broken layout — something non-critical but sloppy.",
+        t10_t: "Bug or wrong entry",
+        t10_d: "Something doesn't work, an illogical AI reply, or the bot misrecognized / logged the wrong thing (wrong mood, amount, category).",
+        bonus_cond: `<b>Bonus for a month of active testing.</b> Target — <b>~10 entries a day</b>. You test live, like a real user.<span class="free">Missed a day — the bonus doesn't burn 🙂</span>`,
+        daily_kicker: "Every day",
+        d1: `<b>10+ entries</b> about your real life <span>— events, thoughts, mood, spending, health, ideas, plans.</span>`,
+        d2: `In different ways: <span class="pill">text</span><span class="pill">voice</span><span class="pill">photo</span> <span>— not just one.</span>`,
+        d3: `Message the <b>AI friend</b> <span>— by text and by voice. Check it replies in your language.</span>`,
+        d4: `Test <b>1–2 features</b> from the list below <span>— one by one, to cover them all in a month.</span>`,
+        d5: `Found a bug — <b>write it in the format</b> <span>and send a short summary at the end of the day.</span>`,
+        feat_kicker: "What to test over the month",
+        feat1_t: "Entry", feat1_d: "Text / voice / photo. Did AI read the mood, categories, tasks, people right.",
+        feat2_t: "Telegram bot", feat2_d: "Commands, chat, voice actions: “set a reminder”, “log my weight”.",
+        feat3_t: "Money", feat3_d: "Expenses and income by voice, different currencies, Personal / Business.",
+        feat4_t: "Health", feat4_d: "Dashboard, sleep phases, Fitbit / Apple connect, mood calendar.",
+        feat5_t: "Media library", feat5_d: "“I want to watch …”, “add series …” — films, series, books.",
+        feat6_t: "Knowledge base", feat6_d: "Send Instagram / TikTok / YouTube links — it saves and parses them.",
+        feat7_t: "Reminders", feat7_d: "By voice and manually, Google Calendar sync, repeat, “all day”.",
+        feat8_t: "Wishlist", feat8_d: "Product links — pulls photo, title, price.",
+        feat9_t: "AI friend", feat9_d: "Chat and voice, interruption, replies in the right language.",
+        feat10_t: "Book of life · Biographer", feat10_d: "Chapters, questions about the past, “What AI noticed”.",
+        feat11_t: "Share · Invite", feat11_d: "Cards, public page, referral link.",
+        feat12_t: "App", feat12_d: "Tabs, menu, languages, dark theme, swipes (if installed).",
+        bug_kicker: "How to report a bug",
+        bug1: `<b>What you did</b> <span>— step by step.</span>`,
+        bug2: `<b>What you expected</b> <span>— how it should have been.</span>`,
+        bug3: `<b>What happened</b> <span>— what went wrong.</span>`,
+        bug4: `<b>Screenshot or video.</b>`,
+        bug5: `<b>If it's about the bot</b> <span>— roughly what time and what the message was.</span>`,
+        rep_kicker: "Daily report",
+        rep_text: "One short summary at the end of the day — how many entries, what you tested, which bugs.",
+        rep_ex: "Entries: 12 · Tested: Money + Media library · Bugs: 2 (screens below)",
+        foot: `The more you really use it — the more you find. <b>Thanks for helping make LIFE OS better 💙</b>`,
+        btn_start: "Start in Telegram",
+        btn_about: "About the service"
+      },
+      uk: {
+        title: "Пам'ятка тестувальника",
+        subtitle: "Дякую, що берешся 🙌 Тут — як працюємо і скільки платимо.",
+        badge: "оплачуване тестування",
+        aboutLink: "Що таке LIFE OS →",
+        svc_kicker: "Що це за сервіс",
+        svc_p1: `<b>LIFE OS — особистий щоденник життя.</b> Людина просто розповідає, як минув день — голосом або текстом, — а AI сам розшифровує, розкладає за змістом і збирає з цього історію життя. Жодних форм і таблиць: говориш як другу, решту робить AI.`,
+        svc_p2: `В одному місці: <b style="color:var(--ink)">щоденник</b>, <b style="color:var(--ink)">книга життя</b>, цілі та завдання, здоров'я, фінанси, медіатека (книги/фільми/серіали), люди та місця, AI-друг. Працює через <b style="color:var(--ink)">Telegram-бота</b> та <b style="color:var(--ink)">вебзастосунок</b>.`,
+        svc_p3: `Твоє завдання — <b style="color:var(--ink)">пожити в ньому як звичайний користувач</b> і помічати, де що працює не так. Докладніше про продукт — на сторінці <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">«Що таке LIFE OS»</a>.`,
+        pay_kicker: "Оплата",
+        t5_t: "Дрібна помилка",
+        t5_d: "Одрук, косметика, дрібний збій, крива верстка — щось некритичне, але неохайне.",
+        t10_t: "Баг або неправильний запис",
+        t10_d: "Щось не працює, нелогічна відповідь AI, або бот неправильно розпізнав / записав у журнал (не той настрій, сума, категорія).",
+        bonus_cond: `<b>Бонус за місяць активного тестування.</b> Орієнтир — <b>~10 записів на день</b>. Тестуєш вживу, як справжній користувач.<span class="free">Пропустив(ла) день — бонус не згорає 🙂</span>`,
+        daily_kicker: "Щодня",
+        d1: `<b>10+ записів</b> про своє реальне життя <span>— події, думки, настрій, витрати, здоров'я, ідеї, плани.</span>`,
+        d2: `Різними способами: <span class="pill">текст</span><span class="pill">голос</span><span class="pill">фото</span> <span>— не лише одним.</span>`,
+        d3: `Написати <b>AI-другу</b> <span>— і текстом, і голосом. Перевір, чи відповідає твоєю мовою.</span>`,
+        d4: `Перевірити <b>1–2 фічі</b> зі списку нижче <span>— по черзі, щоб за місяць пройти всі.</span>`,
+        d5: `Знайшов(ла) баг — <b>записати за форматом</b> <span>і надіслати в кінці дня короткий звіт.</span>`,
+        feat_kicker: "Що перевірити за місяць",
+        feat1_t: "Запис", feat1_d: "Текст / голос / фото. Чи правильно AI зрозумів настрій, категорії, завдання, людей.",
+        feat2_t: "Бот у Telegram", feat2_d: "Команди, бесіда, дії голосом: «постав нагадування», «запиши вагу».",
+        feat3_t: "Гроші", feat3_d: "Витрати й доходи голосом, різні валюти, Особисте / Бізнес.",
+        feat4_t: "Здоров'я", feat4_d: "Дашборд, фази сну, підключення Fitbit / Apple, календар настрою.",
+        feat5_t: "Медіатека", feat5_d: "«хочу подивитися …», «додай серіал …» — фільми, серіали, книги.",
+        feat6_t: "База знань", feat6_d: "Кидай посилання Instagram / TikTok / YouTube — зберігає й розбирає.",
+        feat7_t: "Нагадування", feat7_d: "Голосом і вручну, синхро з Google Календарем, повтор, «весь день».",
+        feat8_t: "Вішліст", feat8_d: "Посилання на товари — підтягує фото, назву, ціну.",
+        feat9_t: "AI-друг", feat9_d: "Чат і голос, перебивання, відповіді потрібною мовою.",
+        feat10_t: "Книга життя · Біограф", feat10_d: "Розділи, питання про минуле, «Що помітив AI».",
+        feat11_t: "Поділитися · Запросити", feat11_d: "Картки, публічна сторінка, реф-посилання.",
+        feat12_t: "Застосунок", feat12_d: "Вкладки, меню, мови, темна тема, свайпи (якщо встановлено).",
+        bug_kicker: "Як повідомляти про баг",
+        bug1: `<b>Що робив(ла)</b> <span>— по кроках.</span>`,
+        bug2: `<b>Що очікував(ла)</b> <span>— як мало бути.</span>`,
+        bug3: `<b>Що вийшло</b> <span>— що пішло не так.</span>`,
+        bug4: `<b>Скрін або відео.</b>`,
+        bug5: `<b>Якщо про бота</b> <span>— приблизно о котрій і яке було повідомлення.</span>`,
+        rep_kicker: "Звіт дня",
+        rep_text: "Один короткий підсумок у кінці дня — скільки записів, що перевірив(ла), які баги.",
+        rep_ex: "Записів: 12 · Перевірила: Гроші + Медіатека · Баги: 2 (скріни нижче)",
+        foot: `Що живіше користуєшся — тим більше знаходиш. <b>Дякую, що допомагаєш зробити LIFE OS кращим 💙</b>`,
+        btn_start: "Почати в Telegram",
+        btn_about: "Дізнатися про сервіс"
+      },
+      fr: {
+        title: "Guide du testeur",
+        subtitle: "Merci de te lancer 🙌 Voici comment on travaille et combien on paie.",
+        badge: "test rémunéré",
+        aboutLink: "C'est quoi LIFE OS →",
+        svc_kicker: "C'est quoi ce service",
+        svc_p1: `<b>LIFE OS est un journal de vie personnel.</b> Tu racontes simplement ta journée — à la voix ou au texte — et l'IA transcrit, donne du sens et en fait l'histoire de ta vie. Ni formulaires ni tableaux : tu parles comme à un ami, l'IA fait le reste.`,
+        svc_p2: `Tout au même endroit : <b style="color:var(--ink)">journal</b>, <b style="color:var(--ink)">livre de vie</b>, objectifs et tâches, santé, finances, médiathèque (livres/films/séries), personnes et lieux, ami IA. Fonctionne via un <b style="color:var(--ink)">bot Telegram</b> et une <b style="color:var(--ink)">application web</b>.`,
+        svc_p3: `Ton rôle — <b style="color:var(--ink)">l'utiliser comme un vrai utilisateur</b> et repérer là où quelque chose ne marche pas. Plus d'infos sur le produit sur la page <a href="https://mylifebookai.vercel.app/about" style="color:var(--accent); font-weight:600; text-decoration:none">« C'est quoi LIFE OS »</a>.`,
+        pay_kicker: "Rémunération",
+        t5_t: "Petit défaut",
+        t5_d: "Une faute, du cosmétique, un petit bug, une mise en page cassée — non critique mais négligé.",
+        t10_t: "Bug ou entrée erronée",
+        t10_d: "Quelque chose ne marche pas, une réponse illogique de l'IA, ou le bot a mal reconnu / enregistré (mauvaise humeur, montant, catégorie).",
+        bonus_cond: `<b>Bonus pour un mois de test actif.</b> Repère — <b>~10 entrées par jour</b>. Tu testes en vrai, comme un vrai utilisateur.<span class="free">Un jour manqué — le bonus ne saute pas 🙂</span>`,
+        daily_kicker: "Chaque jour",
+        d1: `<b>10+ entrées</b> sur ta vraie vie <span>— événements, pensées, humeur, dépenses, santé, idées, plans.</span>`,
+        d2: `De différentes façons : <span class="pill">texte</span><span class="pill">voix</span><span class="pill">photo</span> <span>— pas une seule.</span>`,
+        d3: `Écris à <b>l'ami IA</b> <span>— au texte et à la voix. Vérifie qu'il répond dans ta langue.</span>`,
+        d4: `Teste <b>1–2 fonctions</b> de la liste ci-dessous <span>— une par une, pour toutes les couvrir en un mois.</span>`,
+        d5: `Un bug trouvé — <b>note-le au format</b> <span>et envoie un court résumé en fin de journée.</span>`,
+        feat_kicker: "À tester sur le mois",
+        feat1_t: "Entrée", feat1_d: "Texte / voix / photo. L'IA a-t-elle bien saisi l'humeur, les catégories, les tâches, les gens.",
+        feat2_t: "Bot Telegram", feat2_d: "Commandes, conversation, actions vocales : « mets un rappel », « note mon poids ».",
+        feat3_t: "Argent", feat3_d: "Dépenses et revenus à la voix, différentes devises, Perso / Pro.",
+        feat4_t: "Santé", feat4_d: "Tableau de bord, phases de sommeil, connexion Fitbit / Apple, calendrier d'humeur.",
+        feat5_t: "Médiathèque", feat5_d: "« je veux voir … », « ajoute la série … » — films, séries, livres.",
+        feat6_t: "Base de connaissances", feat6_d: "Envoie des liens Instagram / TikTok / YouTube — elle enregistre et analyse.",
+        feat7_t: "Rappels", feat7_d: "À la voix et à la main, sync Google Agenda, répétition, « toute la journée ».",
+        feat8_t: "Liste de souhaits", feat8_d: "Liens produits — récupère photo, titre, prix.",
+        feat9_t: "Ami IA", feat9_d: "Chat et voix, interruption, réponses dans la bonne langue.",
+        feat10_t: "Livre de vie · Biographe", feat10_d: "Chapitres, questions sur le passé, « Vu par l'IA ».",
+        feat11_t: "Partager · Inviter", feat11_d: "Cartes, page publique, lien de parrainage.",
+        feat12_t: "Application", feat12_d: "Onglets, menu, langues, thème sombre, swipes (si installée).",
+        bug_kicker: "Comment signaler un bug",
+        bug1: `<b>Ce que tu as fait</b> <span>— étape par étape.</span>`,
+        bug2: `<b>Ce que tu attendais</b> <span>— comment ça aurait dû être.</span>`,
+        bug3: `<b>Ce qui s'est passé</b> <span>— ce qui a foiré.</span>`,
+        bug4: `<b>Capture ou vidéo.</b>`,
+        bug5: `<b>Si c'est le bot</b> <span>— vers quelle heure et quel était le message.</span>`,
+        rep_kicker: "Rapport du jour",
+        rep_text: "Un court bilan en fin de journée — combien d'entrées, ce que tu as testé, quels bugs.",
+        rep_ex: "Entrées : 12 · Testé : Argent + Médiathèque · Bugs : 2 (captures ci-dessous)",
+        foot: `Plus tu l'utilises vraiment — plus tu trouves. <b>Merci d'aider à rendre LIFE OS meilleur 💙</b>`,
+        btn_start: "Démarrer sur Telegram",
+        btn_about: "En savoir plus"
+      }
+    };
+
+    function applyLang(lang) {
+      if (!DICT[lang]) lang = "ru";
+      var d = DICT[lang];
+      document.documentElement.lang = lang;
+      if (d.title) document.title = "LIFE OS — " + d.title;
+      document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        var k = el.getAttribute("data-i18n");
+        if (d[k] != null) el.innerHTML = d[k];
+      });
+      document.querySelectorAll(".lang-switch button").forEach(function (b) {
+        b.classList.toggle("on", b.getAttribute("data-lang") === lang);
+      });
+      try { localStorage.setItem("tester_lang", lang); } catch (e) {}
+    }
+
+    (function init() {
+      // Реферал: если пришли по ссылке ?ref=<код> — кнопка открывает бота с start=ref_<код>.
       try {
-        var ref = new URLSearchParams(location.search).get('ref');
+        var ref = new URLSearchParams(location.search).get("ref");
         if (ref && /^[A-Za-z0-9-]{3,40}$/.test(ref)) {
-          var a = document.getElementById('tester-start');
-          if (a) a.href = 'https://t.me/Life_OS?start=ref_' + encodeURIComponent(ref);
+          var a = document.getElementById("tester-start");
+          if (a) a.href = "https://t.me/Life_OS?start=ref_" + encodeURIComponent(ref);
         }
       } catch (e) {}
+
+      // Язык: ?lang= → сохранённый → язык браузера → ru.
+      var q, saved, nav;
+      try { q = new URLSearchParams(location.search).get("lang"); } catch (e) {}
+      try { saved = localStorage.getItem("tester_lang"); } catch (e) {}
+      nav = (navigator.language || "ru").slice(0, 2).toLowerCase();
+      var lang = (q || saved || nav || "ru").toLowerCase();
+      if (!DICT[lang]) lang = "ru";
+      document.querySelectorAll(".lang-switch button").forEach(function (b) {
+        b.addEventListener("click", function () { applyLang(b.getAttribute("data-lang")); });
+      });
+      applyLang(lang);
     })();
   </script>
 </body>
