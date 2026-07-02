@@ -128,3 +128,68 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
   }
   return { ...data, lang: lang || null, isNew: true } as User;
 }
+
+// ===== Связка веб-аккаунта с ботом =====
+// Веб-аккаунт (почта/Google) кладёт одноразовый tg_link_token в deep-link
+// t.me/<bot>?start=link_<token>. Пользователь жмёт → бот вызывает это, привязывая
+// свой chat_id к веб-аккаунту. Пустой телеграм-аккаунт, случайно созданный на этот
+// chat_id, удаляется; телеграм с реальными записями НЕ трогаем (reason "tg_busy").
+export type LinkTgResult =
+  | { ok: true; user: { id: string; token: string }; already?: boolean }
+  | { ok: false; reason: "expired" | "tg_busy" | "server" };
+
+export async function linkTelegramToWebUser(
+  chatId: number,
+  linkToken: string,
+  from?: { first_name?: string; username?: string; language_code?: string }
+): Promise<LinkTgResult> {
+  const db = supabaseAdmin();
+  if (!linkToken || linkToken.length < 8) return { ok: false, reason: "expired" };
+
+  const { data: web } = await db
+    .from("users")
+    .select("id, token, name, chat_id, lang")
+    .eq("tg_link_token", linkToken)
+    .maybeSingle();
+  if (!web) return { ok: false, reason: "expired" };
+  const webUser = web as any;
+
+  // Уже привязан к этому же телеграму — просто гасим токен.
+  if (webUser.chat_id != null && Number(webUser.chat_id) === chatId) {
+    await db.from("users").update({ tg_link_token: null }).eq("id", webUser.id);
+    return { ok: true, user: { id: webUser.id, token: webUser.token }, already: true };
+  }
+
+  // Аккаунт, который сейчас держит этот chat_id (мог быть создан ботом «пустым»).
+  const { data: ex } = await db.from("users").select("id").eq("chat_id", chatId).maybeSingle();
+  if (ex && (ex as any).id !== webUser.id) {
+    const exId = (ex as any).id;
+    if (exId === OWNER) return { ok: false, reason: "tg_busy" };
+    const { count } = await db.from("entries").select("id", { count: "exact", head: true }).eq("user_id", exId);
+    if ((count || 0) > 0) return { ok: false, reason: "tg_busy" }; // в этом телеграме есть свой дневник — не трогаем
+    await db.from("users").delete().eq("id", exId); // пустой дубль — освобождаем chat_id
+  }
+
+  const patch: Record<string, any> = { chat_id: chatId, tg_link_token: null };
+  if (!webUser.name && from?.first_name) patch.name = from.first_name;
+  if (!webUser.lang && from?.language_code) patch.lang = String(from.language_code).slice(0, 2).toLowerCase();
+
+  const { error } = await db.from("users").update(patch).eq("id", webUser.id);
+  if (error) {
+    console.error("linkTelegramToWebUser", error);
+    return { ok: false, reason: "server" };
+  }
+  return { ok: true, user: { id: webUser.id, token: webUser.token } };
+}
+
+// Генерирует новый одноразовый токен связки для веб-аккаунта и возвращает его.
+export async function issueTgLinkToken(userId: string): Promise<string | null> {
+  const token = randomUUID().replace(/-/g, "");
+  try {
+    const { error } = await supabaseAdmin().from("users").update({ tg_link_token: token }).eq("id", userId);
+    if (error) return null;
+    return token;
+  } catch {
+    return null;
+  }
+}

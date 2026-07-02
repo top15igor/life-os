@@ -13,7 +13,7 @@ import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPubl
 import { addBookFromImage } from "@/lib/books";
 import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
 import { saveEntry } from "@/lib/saveEntry";
-import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref } from "@/lib/users";
+import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref, linkTelegramToWebUser } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
@@ -288,6 +288,31 @@ function parseQuickFinance(rest: string, defaultCur: string): { amount: number; 
   };
 }
 const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
+
+// Сообщения при связке веб-аккаунта с ботом (/start link_<token>).
+const LINK_TG: Record<string, { ok: string; busy: string; expired: string }> = {
+  ru: {
+    ok: "✅ Готово! Твой аккаунт связан с ботом.\nТеперь просто наговаривай сюда — голосом, текстом, фото. Я всё сохраню в твой дневник.",
+    busy: "⚠️ Этот Telegram уже привязан к другому аккаунту LIFE OS с записями. Войди в тот аккаунт или напиши /link, чтобы открыть его дневник.",
+    expired: "⚠️ Ссылка связки устарела. Открой сайт → «Подключить Telegram» ещё раз и нажми свежую ссылку.",
+  },
+  en: {
+    ok: "✅ Done! Your account is now linked to the bot.\nJust talk to me here — voice, text, photos. I'll save it all to your diary.",
+    busy: "⚠️ This Telegram is already linked to another LIFE OS account with entries. Sign in to that one, or send /link to open its diary.",
+    expired: "⚠️ This link expired. Open the site → «Connect Telegram» again and tap the fresh link.",
+  },
+  uk: {
+    ok: "✅ Готово! Твій акаунт пов'язаний з ботом.\nПросто наговорюй сюди — голосом, текстом, фото. Я збережу все у твій щоденник.",
+    busy: "⚠️ Цей Telegram уже прив'язаний до іншого акаунта LIFE OS із записами. Увійди в той акаунт або напиши /link.",
+    expired: "⚠️ Посилання застаріло. Відкрий сайт → «Підключити Telegram» ще раз і натисни свіже посилання.",
+  },
+  fr: {
+    ok: "✅ C'est fait ! Ton compte est lié au bot.\nParle-moi ici — voix, texte, photos. Je note tout dans ton journal.",
+    busy: "⚠️ Ce Telegram est déjà lié à un autre compte LIFE OS avec des entrées. Connecte-toi à celui-ci ou envoie /link.",
+    expired: "⚠️ Ce lien a expiré. Ouvre le site → « Connecter Telegram » puis clique le nouveau lien.",
+  },
+};
+
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
 }
@@ -405,6 +430,25 @@ export async function POST(req: NextRequest) {
 
   const chatId: number = msg.chat.id;
   const origin = req.nextUrl.origin;
+
+  // Связка веб-аккаунта с ботом: /start link_<token>. Обрабатываем ДО getOrCreateUser,
+  // чтобы не плодить лишний телеграм-аккаунт.
+  if (typeof msg.text === "string" && msg.text.startsWith("/start ")) {
+    const p = msg.text.slice(7).trim();
+    if (p.startsWith("link_")) {
+      const lang = pickLang(msg.from?.language_code);
+      const res = await linkTelegramToWebUser(chatId, p.slice(5), msg.from);
+      if (res.ok) {
+        await noteTgUsername(res.user.id, msg.from?.username);
+        const link = `${origin}/u/${res.user.token}`;
+        await sendMessage(chatId, LINK_TG[lang].ok, openBtn(lang, link));
+      } else {
+        const reason = (res as { reason?: string }).reason;
+        await sendMessage(chatId, reason === "tg_busy" ? LINK_TG[lang].busy : LINK_TG[lang].expired);
+      }
+      return NextResponse.json({ ok: true });
+    }
+  }
 
   // Реферал: /start ref_<id> — кто пригласил.
   let referredBy: string | undefined;

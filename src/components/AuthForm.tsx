@@ -98,7 +98,8 @@ export default function AuthForm({
       });
       const data = await r.json().catch(() => ({}));
       if (data?.ok) {
-        window.location.href = "/";
+        // Новичок с почты → сначала экран подключения бота (главный ввод); вход → сразу в портал.
+        window.location.href = mode === "register" ? "/just-joined" : "/";
         return;
       }
       setErr(t.errors[data?.error] || t.errors.server);
