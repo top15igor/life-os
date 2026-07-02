@@ -267,13 +267,13 @@ export async function GET(req: NextRequest) {
 
       // 1-го числа — ежемесячный финансовый отчёт за прошлый месяц (если были операции).
       if (isFirstOfMonth) {
-        try {
+        if (prefs.financeEnabled !== false) try {
           const fin = await monthlyFinanceDigest(u.id, lang, prevMonth);
           if (fin) { await sendMessage(u.chat_id, fin); stats.financeDigests++; }
         } catch (e) { console.error("finance digest", u.id, e); }
 
         // Ежемесячная авто-выгрузка дневника в Obsidian (.zip) — только если есть записи.
-        if (days.length) {
+        if (prefs.backupEnabled !== false && days.length) {
           try {
             const zip = await buildObsidianZip(u.id, u.name || undefined);
             const fname = `LIFE_OS_Obsidian_${today.slice(0, 7)}.zip`;
@@ -284,7 +284,7 @@ export async function GET(req: NextRequest) {
       }
 
       // Напоминания о регулярных платежах, у которых сегодня день списания.
-      try {
+      if (prefs.recurringEnabled !== false) try {
         const due = await getDueRecurring(u.id, today);
         if (due.length) {
           const sym: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
@@ -362,10 +362,12 @@ export async function GET(req: NextRequest) {
       if (gap <= 2) {
         // Активные — мягкое напоминание; если серия жива (писал вчера) — мотивируем не разорвать.
         if (gap === 1 && streak >= 2) {
-          await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy));
-          stats.streakReminders++;
+          if (prefs.remindersEnabled !== false) {
+            await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy));
+            stats.streakReminders++;
+          }
         } else {
-          // В «вопросный день» — тёплый наводящий вопрос для книги вместо общего напоминания.
+          // В «вопросный день» — тёплый наводящий вопрос для книги (не зависит от «напоминаний записать»).
           let asked = false;
           if (ev.enabled && isBookQuestionDay) {
             try {
@@ -373,12 +375,14 @@ export async function GET(req: NextRequest) {
               if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; asked = true; }
             } catch (e) { console.error("book prompt", u.id, e); }
           }
-          if (!asked) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy)); stats.reminders++; }
+          if (!asked && prefs.remindersEnabled !== false) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy)); stats.reminders++; }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.
-        await sendMessage(u.chat_id, m.back[gap]);
-        stats.winbacks++;
+        if (prefs.remindersEnabled !== false) {
+          await sendMessage(u.chat_id, m.back[gap]);
+          stats.winbacks++;
+        }
       }
     } catch (e) {
       console.error("cron user", u.id, e);

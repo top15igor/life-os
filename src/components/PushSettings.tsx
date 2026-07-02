@@ -12,7 +12,10 @@ type L = {
   styleLabel: string; stylePh: string; off: string;
   eTitle: string; eSub: string; eOn: string; eAi: string; themesLabel: string; allThemes: string;
   customLabel: string; customPh: string; add: string;
-  schedTitle: string; quietLabel: string; quietHint: string; weeklyOn: string; weeklyDay: string;
+  schedTitle: string; quietLabel: string; quietHint: string; weeklyOn: string; weeklyDay: string; weeklyDesc: string;
+  moreTitle: string; moreSub: string;
+  remindTitle: string; remindDesc: string; financeTitle: string; financeDesc: string;
+  recurTitle: string; recurDesc: string; backupTitle: string; backupDesc: string;
   preview: string; loading: string; saved: string; autoHint: string;
   tone: Record<string, string>; topic: Record<MorningTopic, string>; length: Record<MorningLength, string>;
   theme: Record<EveningTheme, string>; dow: string[];
@@ -31,6 +34,12 @@ const STR: Record<string, L> = {
     customLabel: "Свои подсказки", customPh: "Напиши свой вопрос или тему…", add: "Добавить",
     schedTitle: "Расписание и тишина", quietLabel: "Тихие дни (без пушей)", quietHint: "В эти дни не приходит ничего.",
     weeklyOn: "Недельный итог", weeklyDay: "День итога",
+    weeklyDesc: "AI-обзор недели: главные события, повторяющаяся тема, инсайт и мягкий совет на следующую неделю.",
+    moreTitle: "Ещё уведомления", moreSub: "Что ещё присылает бот. Любое можно выключить отдельно.",
+    remindTitle: "Напоминания записать", remindDesc: "Вечернее «как прошёл день?», напоминание не разорвать серию и мягкий возврат, если давно не заходил.",
+    financeTitle: "Месячный финансовый отчёт", financeDesc: "1-го числа — короткий итог доходов и расходов за прошлый месяц (если были операции).",
+    recurTitle: "Регулярные платежи", recurDesc: "Напоминание в день списания подписки или счёта — с готовой командой, чтобы сразу записать.",
+    backupTitle: "Авто-бэкап в Obsidian", backupDesc: "1-го числа бот присылает весь дневник папкой Markdown (.zip) — на всякий случай, храни у себя.",
     preview: "Показать пример", loading: "Собираю…", saved: "Сохранено", autoHint: "Бот подстроится под твою манеру письма.",
     tone: { auto: "Под мой стиль", friend: "Тёплый", direct: "Прямой", calm: "Спокойный", business: "Деловой", energetic: "Энергичный" },
     topic: { motivation: "Мотивация", goals: "Цели", tasks: "Задачи", diary: "Дневник", insight: "Инсайты", gratitude: "Благодарность", movement: "Зарядка" },
@@ -50,6 +59,12 @@ const STR: Record<string, L> = {
     customLabel: "Your own prompts", customPh: "Write your own question or topic…", add: "Add",
     schedTitle: "Schedule & quiet", quietLabel: "Quiet days (no pushes)", quietHint: "Nothing is sent on these days.",
     weeklyOn: "Weekly summary", weeklyDay: "Summary day",
+    weeklyDesc: "An AI recap of your week: key events, a recurring theme, an insight and a gentle tip for next week.",
+    moreTitle: "More notifications", moreSub: "What else the bot sends. Each can be turned off separately.",
+    remindTitle: "Reminders to write", remindDesc: "The evening “how was your day?”, a nudge not to break your streak, and a soft win-back if you've been away.",
+    financeTitle: "Monthly finance report", financeDesc: "On the 1st — a short recap of last month's income and expenses (if there were any).",
+    recurTitle: "Recurring payments", recurDesc: "A reminder on the due date of a subscription or bill — with a ready command to log it.",
+    backupTitle: "Auto-backup to Obsidian", backupDesc: "On the 1st the bot sends your whole diary as a Markdown folder (.zip) — just in case, keep it yourself.",
     preview: "Show example", loading: "Building…", saved: "Saved", autoHint: "The bot will mirror how you write.",
     tone: { auto: "My style", friend: "Warm", direct: "Direct", calm: "Calm", business: "Business", energetic: "Energetic" },
     topic: { motivation: "Motivation", goals: "Goals", tasks: "Tasks", diary: "Diary", insight: "Insights", gratitude: "Gratitude", movement: "Movement" },
@@ -69,6 +84,12 @@ const STR: Record<string, L> = {
     customLabel: "Свої підказки", customPh: "Напиши своє питання чи тему…", add: "Додати",
     schedTitle: "Розклад і тиша", quietLabel: "Тихі дні (без пушів)", quietHint: "У ці дні не приходить нічого.",
     weeklyOn: "Тижневий підсумок", weeklyDay: "День підсумку",
+    weeklyDesc: "AI-огляд тижня: головні події, повторювана тема, інсайт і м'яка порада на наступний тиждень.",
+    moreTitle: "Ще сповіщення", moreSub: "Що ще надсилає бот. Будь-що можна вимкнути окремо.",
+    remindTitle: "Нагадування записати", remindDesc: "Вечірнє «як минув день?», нагадування не розірвати серію і м'яке повернення, якщо давно не заходив.",
+    financeTitle: "Місячний фінансовий звіт", financeDesc: "1-го числа — короткий підсумок доходів і витрат за минулий місяць (якщо були операції).",
+    recurTitle: "Регулярні платежі", recurDesc: "Нагадування в день списання підписки чи рахунку — з готовою командою, щоб одразу записати.",
+    backupTitle: "Авто-бекап в Obsidian", backupDesc: "1-го числа бот надсилає весь щоденник текою Markdown (.zip) — про всяк випадок, зберігай у себе.",
     preview: "Показати приклад", loading: "Збираю…", saved: "Збережено", autoHint: "Бот підлаштується під твою манеру письма.",
     tone: { auto: "Під мій стиль", friend: "Теплий", direct: "Прямий", calm: "Спокійний", business: "Діловий", energetic: "Енергійний" },
     topic: { motivation: "Мотивація", goals: "Цілі", tasks: "Завдання", diary: "Щоденник", insight: "Інсайти", gratitude: "Вдячність", movement: "Зарядка" },
@@ -88,6 +109,12 @@ const STR: Record<string, L> = {
     customLabel: "Tes propres questions", customPh: "Écris ta question ou ton thème…", add: "Ajouter",
     schedTitle: "Planning & silence", quietLabel: "Jours sans push", quietHint: "Rien n'est envoyé ces jours-là.",
     weeklyOn: "Bilan hebdo", weeklyDay: "Jour du bilan",
+    weeklyDesc: "Un récap IA de ta semaine : événements clés, thème récurrent, un insight et un conseil doux pour la semaine suivante.",
+    moreTitle: "Autres notifications", moreSub: "Ce que le bot envoie aussi. Chacune peut être désactivée séparément.",
+    remindTitle: "Rappels d'écrire", remindDesc: "Le « comment s'est passée ta journée ? » du soir, un rappel pour ne pas casser ta série, et un retour en douceur après une absence.",
+    financeTitle: "Bilan financier mensuel", financeDesc: "Le 1er — un court récap des revenus et dépenses du mois dernier (s'il y en a eu).",
+    recurTitle: "Paiements récurrents", recurDesc: "Un rappel le jour du prélèvement d'un abonnement ou d'une facture — avec une commande prête pour l'enregistrer.",
+    backupTitle: "Sauvegarde auto vers Obsidian", backupDesc: "Le 1er, le bot envoie tout ton journal en dossier Markdown (.zip) — au cas où, garde-le chez toi.",
     preview: "Voir un exemple", loading: "Génération…", saved: "Enregistré", autoHint: "Le bot s'alignera sur ta façon d'écrire.",
     tone: { auto: "Mon style", friend: "Chaleureux", direct: "Direct", calm: "Calme", business: "Pro", energetic: "Énergique" },
     topic: { motivation: "Motivation", goals: "Objectifs", tasks: "Tâches", diary: "Journal", insight: "Insights", gratitude: "Gratitude", movement: "Mouvement" },
@@ -107,6 +134,22 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; la
       <span style={{ fontSize: 13.5, fontWeight: 500 }}>{label}</span>
       <button onClick={onChange} role="switch" aria-checked={on} aria-label={label}
         style={{ flexShrink: 0, width: 46, height: 28, borderRadius: 999, border: "none", cursor: "pointer", background: on ? "var(--accent)" : "var(--border)", position: "relative", transition: "background .15s" }}>
+        <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: 999, background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+      </button>
+    </div>
+  );
+}
+
+// Строка-переключатель с подробным описанием под лейблом.
+function ToggleRow({ on, onChange, label, desc }: { on: boolean; onChange: () => void; label: string; desc: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, padding: "11px 0", borderTop: "1px solid var(--border)" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600 }}>{label}</div>
+        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.45, marginTop: 2 }}>{desc}</div>
+      </div>
+      <button onClick={onChange} role="switch" aria-checked={on} aria-label={label}
+        style={{ flexShrink: 0, marginTop: 2, width: 46, height: 28, borderRadius: 999, border: "none", cursor: "pointer", background: on ? "var(--accent)" : "var(--border)", position: "relative", transition: "background .15s" }}>
         <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: 999, background: "#fff", transition: "left .15s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
       </button>
     </div>
@@ -292,6 +335,7 @@ export default function PushSettings({ locale, initial }: { locale: string; init
         <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 16 }}>{s.quietHint}</div>
 
         <Toggle on={p.weekly.enabled} onChange={() => set({ weekly: { ...p.weekly, enabled: !p.weekly.enabled } })} label={s.weeklyOn} />
+        <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.45, marginTop: -8, marginBottom: p.weekly.enabled ? 12 : 0 }}>{s.weeklyDesc}</div>
         {p.weekly.enabled && (
           <>
             <div style={lbl}>{s.weeklyDay}</div>
@@ -300,6 +344,16 @@ export default function PushSettings({ locale, initial }: { locale: string; init
             </select>
           </>
         )}
+      </div>
+
+      {/* Ещё уведомления — каждое можно выключить отдельно */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>🔔 {s.moreTitle}</div>
+        <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginBottom: 6 }}>{s.moreSub}</div>
+        <ToggleRow on={p.remindersEnabled !== false} onChange={() => set({ remindersEnabled: p.remindersEnabled === false })} label={s.remindTitle} desc={s.remindDesc} />
+        <ToggleRow on={p.financeEnabled !== false} onChange={() => set({ financeEnabled: p.financeEnabled === false })} label={s.financeTitle} desc={s.financeDesc} />
+        <ToggleRow on={p.recurringEnabled !== false} onChange={() => set({ recurringEnabled: p.recurringEnabled === false })} label={s.recurTitle} desc={s.recurDesc} />
+        <ToggleRow on={p.backupEnabled !== false} onChange={() => set({ backupEnabled: p.backupEnabled === false })} label={s.backupTitle} desc={s.backupDesc} />
       </div>
     </>
   );

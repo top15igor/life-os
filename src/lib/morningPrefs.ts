@@ -35,6 +35,10 @@ export interface MorningPrefs {
   quietDays: number[];        // дни недели без пушей вообще (0=Вс … 6=Сб)
   weekly: WeeklyPrefs;        // недельный итог
   evening: EveningPrefs;      // настройки вечерних пушей
+  remindersEnabled: boolean;  // напоминания записать (вечернее «как прошёл день», серия, возврат)
+  financeEnabled: boolean;    // месячный финансовый отчёт (1-го числа)
+  recurringEnabled: boolean;  // напоминания о регулярных платежах в день списания
+  backupEnabled: boolean;     // ежемесячная авто-выгрузка дневника в Obsidian (.zip)
 }
 
 // Для UI профиля (порядок чипов). Старые тоны (coach/mentor/funny) остаются
@@ -52,6 +56,7 @@ export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
+  remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true,
 };
 
 const validHour = (h: any): number | null =>
@@ -90,6 +95,10 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
     morningEnabled: raw.morningEnabled !== false, quietDays, weekly,
     evening: normalizeEvening(raw.evening),
+    remindersEnabled: raw.remindersEnabled !== false,
+    financeEnabled: raw.financeEnabled !== false,
+    recurringEnabled: raw.recurringEnabled !== false,
+    backupEnabled: raw.backupEnabled !== false,
   };
 }
 
