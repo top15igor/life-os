@@ -4,6 +4,7 @@ import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
 import DesignSwitch from "@/components/about/DesignSwitch";
 import LangMenu from "@/components/LangMenu";
+import { capabilities } from "@/lib/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,9 @@ const C = {
       { i: "ti-users", t: "Люди и места", d: "Кто рядом и где ты был — само складывается в карту твоей жизни." },
       { i: "ti-sparkles", t: "Что заметил AI", d: "Закономерности, что даёт тебе энергию и счастье — взгляд со стороны." },
       { i: "ti-message-chatbot", t: "AI-биограф", d: "«Когда я был счастливее всего?» — ответ за секунды по твоим записям." },
+      { i: "ti-bookmarks", t: "База знаний", d: "Ссылки из Instagram и YouTube — AI вытащит суть и сохранит, чтобы найти по смыслу." },
+      { i: "ti-camera", t: "Память в фото", d: "Чеки, гарантии, важные моменты — AI понимает фото и раскладывает по полкам." },
+      { i: "ti-books", t: "Книги и чтение", d: "Что читаешь и прочитал, оценки и цитаты, цель года и AI-советы." },
     ],
 
     founder_kicker: "Об основателе",
@@ -114,6 +118,9 @@ const C = {
       { i: "ti-users", t: "People & places", d: "Who's around and where you've been — your life map builds itself." },
       { i: "ti-sparkles", t: "What AI noticed", d: "Patterns, what gives you energy and happiness — an outside view." },
       { i: "ti-message-chatbot", t: "AI biographer", d: "“When was I happiest?” — answered in seconds from your entries." },
+      { i: "ti-bookmarks", t: "Knowledge base", d: "Instagram and YouTube links — AI pulls the gist and saves it so you can find it by meaning." },
+      { i: "ti-camera", t: "Memory in photos", d: "Receipts, warranties, moments — AI understands photos and files them for you." },
+      { i: "ti-books", t: "Books & reading", d: "What you read and finished, ratings and quotes, a year goal and AI picks." },
     ],
 
     founder_kicker: "About the founder",
@@ -187,6 +194,9 @@ const C = {
       { i: "ti-users", t: "Люди та місця", d: "Хто поруч і де ти був — само складається в карту твого життя." },
       { i: "ti-sparkles", t: "Що помітив AI", d: "Закономірності, що дає тобі енергію і щастя — погляд збоку." },
       { i: "ti-message-chatbot", t: "AI-біограф", d: "«Коли я був найщасливіший?» — відповідь за секунди за твоїми записами." },
+      { i: "ti-bookmarks", t: "База знань", d: "Посилання з Instagram і YouTube — AI витягне суть і збереже, щоб знайти за змістом." },
+      { i: "ti-camera", t: "Пам'ять у фото", d: "Чеки, гарантії, важливі моменти — AI розуміє фото й розкладає по поличках." },
+      { i: "ti-books", t: "Книги та читання", d: "Що читаєш і прочитав, оцінки й цитати, ціль року та AI-поради." },
     ],
 
     founder_kicker: "Про засновника",
@@ -259,6 +269,9 @@ const C = {
       { i: "ti-users", t: "Gens et lieux", d: "Qui est là et où tu es allé — la carte de ta vie se construit seule." },
       { i: "ti-sparkles", t: "Ce que l'IA a remarqué", d: "Des tendances, ce qui te donne énergie et bonheur — un regard extérieur." },
       { i: "ti-message-chatbot", t: "Biographe IA", d: "« Quand étais-je le plus heureux ? » — réponse en secondes d'après tes entrées." },
+      { i: "ti-bookmarks", t: "Base de connaissances", d: "Liens Instagram et YouTube — l'IA en tire l'essentiel et l'enregistre pour le retrouver par le sens." },
+      { i: "ti-camera", t: "Mémoire en photos", d: "Reçus, garanties, moments — l'IA comprend les photos et les classe pour toi." },
+      { i: "ti-books", t: "Livres & lecture", d: "Ce que tu lis et as lu, notes et citations, objectif de l'année et suggestions IA." },
     ],
 
     founder_kicker: "À propos du fondateur",
@@ -332,6 +345,9 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
     letterSpacing: "0.06em",
     marginBottom: 10,
   };
+
+  // Полный перечень возможностей для раскрывающегося блока «Как использовать».
+  const caps = capabilities(locale);
 
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh" }}>
@@ -420,6 +436,56 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
               <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55 }}>{f.d}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Capabilities — how to use / full feature list (expandable) */}
+      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
+        <div style={section}>
+          <div style={kicker}>{caps.kicker}</div>
+          <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{caps.title}</h2>
+          <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 22px", maxWidth: 640 }}>{caps.sub}</p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 12, alignItems: "start" }}>
+            {caps.groups.map((grp, gi) => (
+              <details
+                key={grp.title}
+                className="about-caps"
+                open={gi === 0}
+                style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}
+              >
+                <summary
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "16px 18px",
+                    cursor: "pointer",
+                    listStyle: "none",
+                    userSelect: "none",
+                  }}
+                >
+                  <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--accent-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <i className={`ti ${grp.icon}`} style={{ fontSize: 20, color: grp.color }} />
+                  </span>
+                  <span style={{ flex: 1, fontSize: 16.5, fontWeight: 600 }}>{grp.title}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--text-3)", flexShrink: 0 }}>{grp.items.length}</span>
+                  <i className="ti ti-chevron-down about-caps-chevron" style={{ fontSize: 18, color: "var(--text-3)", flexShrink: 0, transition: "transform 0.2s" }} />
+                </summary>
+                <div style={{ padding: "2px 18px 16px" }}>
+                  {grp.items.map((it) => (
+                    <div key={it.name} style={{ display: "flex", gap: 12, padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+                      <i className={`ti ${it.icon}`} style={{ fontSize: 18, color: grp.color, flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 3 }}>{it.name}</div>
+                        <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5 }}>{it.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
         </div>
       </div>
 
