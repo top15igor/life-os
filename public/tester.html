@@ -181,11 +181,24 @@
     <div class="foot">Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b></div>
 
     <div style="text-align:center; margin:26px 0 4px">
-      <a href="https://t.me/Life_OS" style="display:inline-flex; align-items:center; gap:9px; padding:15px 34px; border-radius:14px; background:linear-gradient(135deg,#5b8cff,#3f62e6); color:#fff; font-size:16px; font-weight:700; text-decoration:none; box-shadow:0 12px 28px -12px rgba(63,98,230,.6)">
+      <a id="tester-start" href="https://t.me/Life_OS" style="display:inline-flex; align-items:center; gap:9px; padding:15px 34px; border-radius:14px; background:linear-gradient(135deg,#5b8cff,#3f62e6); color:#fff; font-size:16px; font-weight:700; text-decoration:none; box-shadow:0 12px 28px -12px rgba(63,98,230,.6)">
         Начать в Telegram
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
       </a>
     </div>
   </main>
+  <script>
+    // Реферал: если пришли по ссылке ?ref=<код> — кнопка открывает бота с start=ref_<код>,
+    // чтобы приведённый тестировщик засчитался пригласившему.
+    (function () {
+      try {
+        var ref = new URLSearchParams(location.search).get('ref');
+        if (ref && /^[A-Za-z0-9-]{3,40}$/.test(ref)) {
+          var a = document.getElementById('tester-start');
+          if (a) a.href = 'https://t.me/Life_OS?start=ref_' + encodeURIComponent(ref);
+        }
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>

@@ -515,7 +515,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </div>
           <div style={{ display: "flex", gap: 18 }}>
             <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_priv}</a>
-            <a href="/tester.html" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
+            <a href={ref ? `/tester.html?ref=${encodeURIComponent(ref)}` : "/tester.html"} style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
             <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
           </div>
         </div>
