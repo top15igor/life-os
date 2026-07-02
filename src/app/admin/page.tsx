@@ -185,6 +185,14 @@ export default async function AdminPage() {
             </div>
             <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
           </Link>
+          <Link href="/admin/tests" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "#0e9f6e12", border: "1px solid #0e9f6e55" }}>
+            <i className="ti ti-checklist" style={{ fontSize: 24, color: "#0e9f6e" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#0e9f6e" }}>Тесты</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Отчёты тестировщиков: кто, когда начал, сколько записей, баги — и сколько кому платить</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "#0e9f6e", fontSize: 18 }} />
+          </Link>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 24 }}>

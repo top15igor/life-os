@@ -2,6 +2,61 @@ import { supabaseAdmin } from "./supabaseAdmin";
 
 const dayStr = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
+// Сводка по тестировщикам для админки: кто, когда начал, записи, баги — чтобы
+// понять, кому сколько платить.
+export type TesterReportRow = { day: string; entries: number; ok: number; bug: number; skip: number; bugs: string | null; notes: string | null; updated_at: string | null };
+export type TesterRow = {
+  id: string; name: string; email: string | null; since: string | null; lastDay: string | null;
+  reportDays: number; totalEntries: number; daysWith10: number; bugMarks: number; okMarks: number; bugReports: number;
+  reports: TesterReportRow[];
+};
+
+export async function getTesterData(): Promise<TesterRow[]> {
+  const db = supabaseAdmin();
+  let testers: any[] = [];
+  try {
+    const { data } = await db.from("users").select("id, name, email, created_at").eq("tester", true);
+    testers = data || [];
+  } catch { return []; }
+  if (!testers.length) return [];
+
+  const ids = testers.map((u) => u.id);
+  let reports: any[] = [];
+  try {
+    const { data } = await db.from("tester_reports").select("user_id, day, entries, checklist, bugs, notes, updated_at").in("user_id", ids).order("day", { ascending: false });
+    reports = data || [];
+  } catch {}
+
+  const byUser: Record<string, any[]> = {};
+  for (const r of reports) (byUser[r.user_id] ||= []).push(r);
+
+  const rows: TesterRow[] = testers.map((u) => {
+    const rs = byUser[u.id] || [];
+    let totalEntries = 0, daysWith10 = 0, bugMarks = 0, okMarks = 0, bugReports = 0;
+    const reports: TesterReportRow[] = rs.map((r) => {
+      const list = Array.isArray(r.checklist) ? r.checklist : [];
+      const ok = list.filter((c: any) => c?.result === "ok").length;
+      const bug = list.filter((c: any) => c?.result === "bug").length;
+      const skip = list.filter((c: any) => c?.result === "skip").length;
+      const entries = Number(r.entries) || 0;
+      totalEntries += entries; okMarks += ok; bugMarks += bug;
+      if (entries >= 10) daysWith10++;
+      if (r.bugs && String(r.bugs).trim()) bugReports++;
+      return { day: String(r.day).slice(0, 10), entries, ok, bug, skip, bugs: r.bugs || null, notes: r.notes || null, updated_at: r.updated_at || null };
+    });
+    const days = reports.map((r) => r.day).sort();
+    return {
+      id: u.id, name: u.name || "—", email: u.email || null,
+      since: days[0] || (u.created_at ? String(u.created_at).slice(0, 10) : null),
+      lastDay: days[days.length - 1] || null,
+      reportDays: reports.length, totalEntries, daysWith10, bugMarks, okMarks, bugReports, reports,
+    };
+  });
+  // самые активные сверху
+  rows.sort((a, b) => (b.lastDay || "").localeCompare(a.lastDay || "") || b.totalEntries - a.totalEntries);
+  return rows;
+}
+
 export async function getAdminData() {
   const db = supabaseAdmin();
 
