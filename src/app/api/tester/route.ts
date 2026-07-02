@@ -26,7 +26,12 @@ export async function GET() {
     history = data || [];
     todayReport = history.find((r) => String(r.day).slice(0, 10) === today) || null;
   } catch {}
-  return NextResponse.json({ ok: true, tester, today, todayReport, history });
+  let bugs: any[] = [];
+  try {
+    const { data } = await db.from("tester_bugs").select("id, day, text, status, payout, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100);
+    bugs = data || [];
+  } catch {}
+  return NextResponse.json({ ok: true, tester, today, todayReport, history, bugs });
 }
 
 // POST { action: "mode", on }  |  { action: "report", day, entries, checklist, bugs, notes }
@@ -43,6 +48,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
     }
     return NextResponse.json({ ok: true, tester: !!body.on });
+  }
+
+  if (body?.action === "bug") {
+    const text = String(body.text || "").trim().slice(0, 4000);
+    if (!text) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
+    try {
+      const { error } = await db.from("tester_bugs").insert({ user_id: user.id, day: todayKyiv(), text });
+      if (error) throw error;
+    } catch {
+      return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   if (body?.action === "report") {

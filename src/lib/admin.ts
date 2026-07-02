@@ -5,10 +5,12 @@ const dayStr = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 // Сводка по тестировщикам для админки: кто, когда начал, записи, баги — чтобы
 // понять, кому сколько платить.
 export type TesterReportRow = { day: string; entries: number; ok: number; bug: number; skip: number; bugs: string | null; notes: string | null; updated_at: string | null };
+export type TesterBug = { id: string; day: string | null; text: string; status: string; payout: number; created_at: string | null };
 export type TesterRow = {
   id: string; name: string; email: string | null; since: string | null; lastDay: string | null;
   reportDays: number; totalEntries: number; daysWith10: number; bugMarks: number; okMarks: number; bugReports: number;
   reports: TesterReportRow[];
+  bugs: TesterBug[]; bugsOwed: number; newBugs: number;
 };
 
 export async function getTesterData(): Promise<TesterRow[]> {
@@ -26,9 +28,16 @@ export async function getTesterData(): Promise<TesterRow[]> {
     const { data } = await db.from("tester_reports").select("user_id, day, entries, checklist, bugs, notes, updated_at").in("user_id", ids).order("day", { ascending: false });
     reports = data || [];
   } catch {}
+  let allBugs: any[] = [];
+  try {
+    const { data } = await db.from("tester_bugs").select("id, user_id, day, text, status, payout, created_at").in("user_id", ids).order("created_at", { ascending: false });
+    allBugs = data || [];
+  } catch {}
 
   const byUser: Record<string, any[]> = {};
   for (const r of reports) (byUser[r.user_id] ||= []).push(r);
+  const bugsByUser: Record<string, any[]> = {};
+  for (const b of allBugs) (bugsByUser[b.user_id] ||= []).push(b);
 
   const rows: TesterRow[] = testers.map((u) => {
     const rs = byUser[u.id] || [];
@@ -45,11 +54,16 @@ export async function getTesterData(): Promise<TesterRow[]> {
       return { day: String(r.day).slice(0, 10), entries, ok, bug, skip, bugs: r.bugs || null, notes: r.notes || null, updated_at: r.updated_at || null };
     });
     const days = reports.map((r) => r.day).sort();
+    const rawBugs = bugsByUser[u.id] || [];
+    const bugs: TesterBug[] = rawBugs.map((b) => ({ id: b.id, day: b.day ? String(b.day).slice(0, 10) : null, text: b.text || "", status: b.status || "new", payout: Number(b.payout) || 0, created_at: b.created_at || null }));
+    const bugsOwed = bugs.reduce((s, b) => s + (b.status === "paid" ? b.payout : 0), 0);
+    const newBugs = bugs.filter((b) => b.status === "new").length;
     return {
       id: u.id, name: u.name || "—", email: u.email || null,
       since: days[0] || (u.created_at ? String(u.created_at).slice(0, 10) : null),
       lastDay: days[days.length - 1] || null,
       reportDays: reports.length, totalEntries, daysWith10, bugMarks, okMarks, bugReports, reports,
+      bugs, bugsOwed, newBugs,
     };
   });
   // самые активные сверху

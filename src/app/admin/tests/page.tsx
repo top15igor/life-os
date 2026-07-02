@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getTesterData, type TesterRow } from "@/lib/admin";
+import AdminBugRater from "@/components/AdminBugRater";
 
 export const dynamic = "force-dynamic";
 const OWNER = "00000000-0000-0000-0000-000000000000";
@@ -24,6 +25,7 @@ function Chip({ children, color }: { children: any; color?: string }) {
 
 function TesterCard({ tr }: { tr: TesterRow }) {
   const bonus = tr.daysWith10 >= BONUS_DAYS;
+  const totalOwed = tr.bugsOwed + (bonus ? 100 : 0);
   return (
     <div className="card" style={{ marginBottom: 14, padding: "16px 18px" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
@@ -37,16 +39,26 @@ function TesterCard({ tr }: { tr: TesterRow }) {
         <Chip>📖 {tr.totalEntries} записей</Chip>
         <Chip>🗓 {tr.reportDays} дн. отчётов</Chip>
         <Chip color={tr.daysWith10 >= BONUS_DAYS ? "#0e9f6e" : "var(--text-2)"}>≥10 записей: {tr.daysWith10} дн.</Chip>
-        <Chip color="#e0533d">🐞 {tr.bugReports} описаний · {tr.bugMarks} отметок</Chip>
+        <Chip color="#e0533d">🐞 {tr.bugs.length} багов{tr.newBugs > 0 ? ` · ${tr.newBugs} новых` : ""}</Chip>
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 14, padding: "10px 12px", background: "var(--surface-2)", borderRadius: 10 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", color: "var(--text-3)" }}>К оплате:</span>
-        {bonus
-          ? <Chip color="#0e9f6e">🎁 бонус $100 заработан</Chip>
-          : <Chip>🎁 бонус: {tr.daysWith10}/{BONUS_DAYS} дн. с 10+</Chip>}
-        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>+ баги: смотри описания ниже, ставь $5 (мелкая) / $10 (баг)</span>
+        <span style={{ fontSize: 20, fontWeight: 800, color: totalOwed > 0 ? "#0e9f6e" : "var(--text-2)" }}>${totalOwed}</span>
+        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>= баги ${tr.bugsOwed}{bonus ? " + бонус $100" : ""}</span>
+        {!bonus && <Chip>🎁 бонус: {tr.daysWith10}/{BONUS_DAYS} дн. с 10+</Chip>}
       </div>
+
+      {tr.bugs.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", color: "var(--text-3)", marginBottom: 8 }}>
+            🐞 Баги — оцени $5 (мелкая) / $10 (баг)
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {tr.bugs.map((b) => <AdminBugRater key={b.id} bug={b} />)}
+          </div>
+        </div>
+      )}
 
       {tr.reports.length > 0 && (
         <details style={{ marginTop: 12 }}>
