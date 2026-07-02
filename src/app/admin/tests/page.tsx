@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getTesterData, type TesterRow } from "@/lib/admin";
 import AdminBugRater from "@/components/AdminBugRater";
+import TesterCalendar, { type CalDay } from "@/components/TesterCalendar";
 
 export const dynamic = "force-dynamic";
 const OWNER = "00000000-0000-0000-0000-000000000000";
@@ -12,20 +13,30 @@ function fmt(d: string | null): string {
   const [y, m, dd] = d.slice(0, 10).split("-").map(Number);
   return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, dd)));
 }
-function fmtShort(d: string): string {
-  const [y, m, dd] = d.slice(0, 10).split("-").map(Number);
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(new Date(Date.UTC(y, m - 1, dd)));
-}
-
 const BONUS_DAYS = 24; // сколько дней с 10+ записями считаем «месяцем» для бонуса
 
 function Chip({ children, color }: { children: any; color?: string }) {
   return <span style={{ fontSize: 12.5, fontWeight: 600, color: color || "var(--text-2)", background: "var(--surface-2)", border: "1px solid var(--border)", padding: "3px 9px", borderRadius: 8, whiteSpace: "nowrap" }}>{children}</span>;
 }
 
+function buildCalDays(tr: TesterRow): CalDay[] {
+  const map = new Map<string, CalDay>();
+  for (const r of tr.reports) {
+    map.set(r.day, { day: r.day, entries: r.entries, okCount: r.ok, bugCount: r.bug, checklist: null, notes: r.notes, bugs: [] });
+  }
+  for (const b of tr.bugs) {
+    if (!b.day) continue;
+    let d = map.get(b.day);
+    if (!d) { d = { day: b.day, entries: null, okCount: 0, bugCount: 0, checklist: null, notes: null, bugs: [] }; map.set(b.day, d); }
+    d.bugs.push({ text: b.text, status: b.status, payout: b.payout });
+  }
+  return [...map.values()];
+}
+
 function TesterCard({ tr }: { tr: TesterRow }) {
   const bonus = tr.daysWith10 >= BONUS_DAYS;
   const totalOwed = tr.bugsOwed + (bonus ? 100 : 0);
+  const calDays = buildCalDays(tr);
   return (
     <div className="card" style={{ marginBottom: 14, padding: "16px 18px" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
@@ -60,24 +71,11 @@ function TesterCard({ tr }: { tr: TesterRow }) {
         </div>
       )}
 
-      {tr.reports.length > 0 && (
-        <details style={{ marginTop: 12 }}>
-          <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>Отчёты по дням ({tr.reports.length})</summary>
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 9 }}>
-            {tr.reports.map((r) => (
-              <div key={r.day} style={{ borderLeft: "2px solid var(--border)", paddingLeft: 12 }}>
-                <div style={{ display: "flex", gap: 9, flexWrap: "wrap", alignItems: "baseline" }}>
-                  <b style={{ fontSize: 13.5 }}>{fmtShort(r.day)}</b>
-                  <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>📖 {r.entries}</span>
-                  {r.ok > 0 && <span style={{ fontSize: 12.5, color: "#0e9f6e" }}>✓ {r.ok}</span>}
-                  {r.bug > 0 && <span style={{ fontSize: 12.5, color: "#e0533d" }}>🐞 {r.bug}</span>}
-                </div>
-                {r.bugs && <div style={{ fontSize: 13, color: "var(--text)", marginTop: 4, whiteSpace: "pre-wrap", background: "#e0533d10", border: "1px solid #e0533d33", borderRadius: 8, padding: "8px 10px" }}>🐞 {r.bugs}</div>}
-                {r.notes && <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4, whiteSpace: "pre-wrap" }}>📝 {r.notes}</div>}
-              </div>
-            ))}
-          </div>
-        </details>
+      {calDays.length > 0 && (
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em", color: "var(--text-3)", marginBottom: 10 }}>Календарь активности</div>
+          <TesterCalendar days={calDays} />
+        </div>
       )}
     </div>
   );

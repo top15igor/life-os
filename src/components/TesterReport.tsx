@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TESTER_FEATURES } from "@/lib/testerFeatures";
+import TesterCalendar, { type CalDay } from "@/components/TesterCalendar";
 
 type Result = "ok" | "bug" | "skip";
 type Report = { day: string; entries: number | null; checklist: { key: string; result: Result }[] | null; bugs: string | null; notes: string | null; updated_at?: string };
@@ -83,7 +84,30 @@ export default function TesterReport() {
 
   if (loading) return <div style={{ color: "var(--text-3)", padding: 30 }}>Загрузка…</div>;
 
-  const label = (r: string) => (r === "ok" ? "работает" : r === "bug" ? "🐞 баг" : "не тестил");
+  const calDays: CalDay[] = (() => {
+    const map = new Map<string, CalDay>();
+    for (const r of history) {
+      const dd = r.day.slice(0, 10);
+      const cl = r.checklist || [];
+      map.set(dd, {
+        day: dd,
+        entries: r.entries,
+        okCount: cl.filter((c) => c.result === "ok").length,
+        bugCount: cl.filter((c) => c.result === "bug").length,
+        checklist: cl,
+        notes: r.notes,
+        bugs: [],
+      });
+    }
+    for (const b of myBugs) {
+      const dd = (b.day || "").slice(0, 10);
+      if (!dd) continue;
+      let d = map.get(dd);
+      if (!d) { d = { day: dd, entries: null, okCount: 0, bugCount: 0, checklist: null, notes: null, bugs: [] }; map.set(dd, d); }
+      d.bugs.push({ text: b.text, status: b.status, payout: b.payout });
+    }
+    return [...map.values()];
+  })();
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -91,6 +115,12 @@ export default function TesterReport() {
         <div style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 3 }}>Отчёт за</div>
         <div style={{ fontSize: 18, fontWeight: 700 }}>Сегодня · {day ? fmtDay(day) : ""}</div>
       </div>
+
+      {calDays.length > 0 && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <TesterCalendar days={calDays} />
+        </div>
+      )}
 
       {/* Записи */}
       <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -182,28 +212,6 @@ export default function TesterReport() {
         style={{ width: "100%", fontSize: 15, fontWeight: 700, padding: "14px 16px", borderRadius: 13, border: "none", cursor: saving ? "default" : "pointer", background: saved ? "#0e9f6e" : "var(--accent)", color: "#fff", opacity: saving ? 0.7 : 1 }}>
         {saving ? "Сохраняю…" : saved ? "✓ Сохранено" : "Сохранить отчёт за сегодня"}
       </button>
-
-      {/* История */}
-      {history.length > 0 && (
-        <div style={{ marginTop: 28 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-3)", margin: "0 2px 10px" }}>Прошлые дни</div>
-          {history.map((r) => {
-            const bugsN = (r.checklist || []).filter((c) => c.result === "bug").length;
-            const okN = (r.checklist || []).filter((c) => c.result === "ok").length;
-            return (
-              <div key={r.day} className="card" style={{ marginBottom: 8, padding: "12px 14px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 700 }}>{fmtDay(r.day)}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-3)" }}>📖 {r.entries ?? 0} записей</span>
-                  {okN > 0 && <span style={{ fontSize: 13, color: "#0e9f6e" }}>✓ {okN}</span>}
-                  {bugsN > 0 && <span style={{ fontSize: 13, color: "#e0533d" }}>🐞 {bugsN}</span>}
-                </div>
-                {r.bugs && <div style={{ fontSize: 13, color: "var(--text-2)", marginTop: 6, whiteSpace: "pre-wrap" }}>{r.bugs}</div>}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
