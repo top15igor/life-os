@@ -22,6 +22,7 @@ const T: Record<string, any> = {
     shareOn: "Поделиться библиотекой", shareOff: "Библиотека открыта по ссылке", copy: "Скопировать", copied: "Скопировано ✓", openPub: "Открыть как друг",
     shareHint: "Друзья откроют по ссылке и увидят, что ты читаешь и советуешь, с твоими оценками и ревью.",
     save: "Сохранить", manual: "Добавить вручную", manualTitle: "Название", manualAuthor: "Автор",
+    descr: "Описание",
     switcher: { book: "Книги", film: "Фильмы", series: "Сериалы" },
     kinds: {
       book: { icon: "ti-book", ph: "ti-book-2", lead: "Твоя библиотека: что читаешь, что хочешь и что прочитал. Ставь оценку, пиши мини-ревью «зашла или нет» и сохраняй цитаты.", add: "Добавить книгу", addPh: "Название книги или автор…", tabs: { all: "Все", want: "Хочу прочитать", reading: "Читаю", read: "Прочитал" }, empty: "Пока пусто. Добавь первую книгу 📚", goalSet: "Сколько книг прочитать за год?", booksY: "книг в этом году" },
@@ -47,6 +48,7 @@ const T: Record<string, any> = {
     shareOn: "Share library", shareOff: "Library is public by link", copy: "Copy", copied: "Copied ✓", openPub: "Open as a friend",
     shareHint: "Friends open it by link and see what you read and recommend, with your ratings and reviews.",
     save: "Save", manual: "Add manually", manualTitle: "Title", manualAuthor: "Author",
+    descr: "Overview",
     switcher: { book: "Books", film: "Films", series: "Series" },
     kinds: {
       book: { icon: "ti-book", ph: "ti-book-2", lead: "Your library: what you're reading, want to read, and have read. Rate books, write a quick “loved it or not” review and save quotes.", add: "Add a book", addPh: "Book title or author…", tabs: { all: "All", want: "Want to read", reading: "Reading", read: "Read" }, empty: "Empty for now. Add your first book 📚", goalSet: "How many books to read this year?", booksY: "books this year" },
@@ -117,13 +119,13 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
     setQ(query);
     if (query.trim().length < 2) { setHits([]); return; }
     setSearching(true);
-    const r = await api({ action: "search", q: query });
+    const r = await api(kind === "book" ? { action: "search", q: query } : { action: "searchMedia", q: query, kind });
     setSearching(false);
     if (r?.ok) setHits(r.hits || []);
   }
 
   async function addHit(h: BookHit, status = "want") {
-    const r = await api({ action: "add", title: h.title, author: h.author, coverUrl: h.coverUrl, year: h.year, isbn: h.isbn, olKey: h.olKey, genre: h.genre, status, kind });
+    const r = await api({ action: "add", title: h.title, author: h.author, coverUrl: h.coverUrl, year: h.year, isbn: h.isbn, olKey: h.olKey, genre: h.genre, description: (h as any).description, status, kind });
     if (r?.ok && r.book) { setBooks((b) => [r.book, ...b]); setAddOpen(false); setQ(""); setHits([]); }
   }
 
@@ -238,7 +240,7 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
 
       {/* Кнопки */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <button onClick={() => { setManual(kind !== "book"); setAddOpen(true); }} style={{ padding: "10px 18px", borderRadius: 11, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+        <button onClick={() => { setManual(false); setAddOpen(true); }} style={{ padding: "10px 18px", borderRadius: 11, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
           <i className="ti ti-plus" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {kd.add}
         </button>
         {kind === "book" && (
@@ -385,6 +387,14 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
               </div>
             </div>
           </div>
+
+          {/* Описание (из TMDb/Open Library) */}
+          {detail.description && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 4 }}>{t.descr}</div>
+              <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.55, maxHeight: 130, overflowY: "auto" }}>{detail.description}</div>
+            </div>
+          )}
 
           {/* Оценка + зашла/не зашла + любимое */}
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>

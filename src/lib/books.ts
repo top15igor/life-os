@@ -56,6 +56,44 @@ export async function searchBooks(query: string): Promise<BookHit[]> {
   }
 }
 
+// ---------- Поиск фильмов/сериалов (TMDb, нужен TMDB_API_KEY) ----------
+
+export type MediaHit = BookHit & { description: string | null; kind: MediaKind };
+
+const TMDB_LANG: Record<string, string> = { ru: "ru-RU", en: "en-US", uk: "uk-UA", fr: "fr-FR" };
+
+// Ищет фильм (kind=film) или сериал (kind=series) в TMDb: постер, описание, год.
+// Без ключа возвращает [] — тогда UI предложит добавить вручную по названию.
+export async function searchMedia(query: string, kind: MediaKind, locale = "ru"): Promise<MediaHit[]> {
+  const q = query.trim();
+  const key = process.env.TMDB_API_KEY;
+  if (!q || !key || kind === "book") return [];
+  const type = kind === "series" ? "tv" : "movie";
+  const lang = TMDB_LANG[locale] || "ru-RU";
+  try {
+    const url = `https://api.themoviedb.org/3/search/${type}?api_key=${key}&query=${encodeURIComponent(q)}&language=${lang}&include_adult=false&page=1`;
+    const data = await fetch(url).then((r) => r.json());
+    const results = (data?.results || []) as any[];
+    return results.slice(0, 8).map((m) => {
+      const date = String(m.release_date || m.first_air_date || "");
+      const y = date.slice(0, 4);
+      return {
+        title: String(m.title || m.name || "").slice(0, 250),
+        author: null,
+        year: /^\d{4}$/.test(y) ? Number(y) : null,
+        coverUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+        olKey: null,
+        isbn: null,
+        genre: null,
+        description: m.overview ? String(m.overview).slice(0, 1200) : null,
+        kind,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function fetchDescription(olKey: string | null): Promise<string | null> {
   if (!olKey) return null;
   try {
@@ -81,13 +119,13 @@ export async function getBooks(userId: string): Promise<Book[]> {
 
 export async function addBook(
   userId: string,
-  hit: Partial<BookHit> & { title: string; status?: string; kind?: MediaKind }
+  hit: Partial<BookHit> & { title: string; status?: string; kind?: MediaKind; description?: string | null }
 ): Promise<Book | null> {
   const title = String(hit.title || "").trim().slice(0, 250);
   if (!title) return null;
   const kind: MediaKind = hit.kind || "book";
-  // Обложку/описание книг тянем из Open Library; для фильмов/сериалов её нет.
-  const description = kind === "book" ? await fetchDescription(hit.olKey || null) : null;
+  // Описание книги тянем из Open Library; для фильмов/сериалов берём переданное (из TMDb).
+  const description = kind === "book" ? await fetchDescription(hit.olKey || null) : (hit.description ?? null);
   const row: any = {
     user_id: userId,
     kind,
@@ -129,10 +167,22 @@ export async function addBookByTitle(userId: string, title: string, author?: str
   return addBook(userId, { ...hit, title: hit.title || title, status: "want" });
 }
 
-// Добавить фильм/сериал по названию (без внешнего поиска обложки). Для бота и веб-ручного ввода.
-export async function addMediaByTitle(userId: string, title: string, kind: MediaKind, status = "want"): Promise<Book | null> {
+// Добавить фильм/сериал по названию. Пытаемся обогатить постером/описанием из TMDb
+// (берём наиболее похожее по названию); если ключа/совпадений нет — сохраняем как есть.
+export async function addMediaByTitle(userId: string, title: string, kind: MediaKind, status = "want", locale = "ru"): Promise<Book | null> {
   const clean = String(title || "").trim().slice(0, 250);
   if (!clean) return null;
+  if (kind === "book") return addBookByTitle(userId, clean);
+  const hits = await searchMedia(clean, kind, locale);
+  const words = clean.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  let best = hits[0];
+  let bestScore = -1;
+  for (const h of hits) {
+    const ht = (h.title || "").toLowerCase();
+    const score = words.filter((w) => ht.includes(w)).length + (h.coverUrl ? 0.5 : 0);
+    if (score > bestScore) { bestScore = score; best = h; }
+  }
+  if (best) return addBook(userId, { title: best.title || clean, coverUrl: best.coverUrl, year: best.year, description: best.description, kind, status });
   return addBook(userId, { title: clean, kind, status });
 }
 

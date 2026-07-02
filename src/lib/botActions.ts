@@ -279,7 +279,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!title) return { text: s.fail };
       // doing/done -> внутренние статусы медиатеки reading/read; иначе want.
       const status = input?.status === "done" ? "read" : input?.status === "doing" ? "reading" : "want";
-      const book = await addMediaByTitle(userId, title, kind, status);
+      const book = await addMediaByTitle(userId, title, kind, status, lang);
       if (!book) return { text: s.fail };
       const kindLabel = s.mvKind[kind] || s.mvKind.film;
       const statusLabel = (kind === "book" ? s.mvStatusRead : s.mvStatusWatch)[status];
