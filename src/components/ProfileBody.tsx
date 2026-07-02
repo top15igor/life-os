@@ -77,6 +77,16 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
         <span style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 500, whiteSpace: "nowrap" }}>{s.refBtn} →</span>
       </Link>
 
+      {/* Тестировщик → отдельная страница (режим + условия) */}
+      <Link href="/profile/tester" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
+        <i className="ti ti-bug" style={{ fontSize: 22, color: "var(--accent)", flexShrink: 0 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>Тестировщик</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45 }}>Тестируй приложение и получай за баги. Отчёты, условия, оплата.</div>
+        </div>
+        <span style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 500, whiteSpace: "nowrap" }}>{s.refBtn} →</span>
+      </Link>
+
       {/* Тариф */}
       <Link href="/pricing" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16, border: "1px solid #f59e0b55", background: "#f59e0b0d" }}>
         <i className="ti ti-star" style={{ fontSize: 22, color: "#f59e0b", flexShrink: 0 }} />

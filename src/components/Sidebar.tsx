@@ -31,6 +31,7 @@ const miniBtn = (dis: boolean): any => ({ background: "none", border: "none", cu
 export default function Sidebar({ navLabels, brand, locale }: { navLabels: Record<string, string>; brand: string; locale: Locale }) {
   const path = usePathname();
   const [isOwner, setIsOwner] = useState(false);
+  const [isTester, setIsTester] = useState(false);
   const [refCode, setRefCode] = useState<string | null>(null);
 
   const [order, setOrder] = useState<string[]>(DEFAULT_ORDER);
@@ -43,7 +44,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   const el = ED_L[locale] || ED_L.ru;
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setRefCode(d.handle || d.refCode || d.ref || null); }).catch(() => {});
+    fetch("/api/me").then((r) => r.json()).then((d) => { setIsOwner(!!d.isOwner); setIsTester(!!d.tester); setRefCode(d.handle || d.refCode || d.ref || null); }).catch(() => {});
     try {
       const o = JSON.parse(localStorage.getItem(K_ORDER) || "null");
       const h = JSON.parse(localStorage.getItem(K_HIDDEN) || "null");
@@ -137,6 +138,13 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
               );
             })}
           </div>
+        )}
+
+        {isTester && !editing && (
+          <Link href="/tests" className={`navlink${path === "/tests" ? " active" : ""}`} style={{ marginTop: 6, color: "#0e9f6e" }}>
+            <i className="ti ti-checklist" />
+            <span className="navlabel">Тесты</span>
+          </Link>
         )}
 
         {isOwner && !editing && (
