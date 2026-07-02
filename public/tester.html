@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LIFE OS — Памятка тестировщика</title>
+<meta name="description" content="Условия и ежедневные задачи для тестирования LIFE OS: оплата за баги, бонус за месяц, чек-лист фич.">
+<meta property="og:title" content="LIFE OS — Памятка тестировщика">
+<meta property="og:description" content="Как работаем и сколько платим: $5 за мелкую ошибку, $10 за баг, $100 бонус за месяц.">
+<meta property="og:type" content="website">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f1115'/%3E%3Crect x='30' y='26' width='40' height='48' rx='6' fill='%23fff'/%3E%3Crect x='30' y='26' width='9' height='48' rx='4' fill='%235b8cff'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#1b2130; --muted:#697086; --ground:#f4f6fb; --card:#ffffff;
+    --accent:#3f62e6; --accent-2:#2740b8; --accent-soft:#ecf0ff;
+    --good:#0e9f6e; --good-soft:#e6f7f0; --amber:#b7791f;
+    --border:#e6e9f4; --dark:#0f1115; --dark-2:#171b26; --dark-line:#262b38;
+    --shadow:0 1px 2px rgba(20,28,60,.05), 0 8px 24px rgba(20,28,60,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+    color:var(--ink); background:var(--ground); line-height:1.62;
+    -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+  }
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase}
+  .num{font-variant-numeric:tabular-nums}
+
+  .hero{background:var(--dark); color:#eef1f7; padding:44px 26px 40px; text-align:center; position:relative; overflow:hidden}
+  .hero::after{content:""; position:absolute; left:50%; top:-40%; width:520px; height:420px; transform:translateX(-50%);
+    background:radial-gradient(closest-side, rgba(63,98,230,.32), transparent 70%); pointer-events:none}
+  .brand{display:inline-flex; align-items:center; gap:9px; color:#aeb7cc; position:relative}
+  .brand .dot{width:20px; height:20px; border-radius:6px; background:linear-gradient(135deg,#5b8cff,#3f62e6); box-shadow:0 0 0 3px rgba(91,140,255,.14)}
+  .brand .bw{font-size:13.5px; font-weight:800; letter-spacing:.12em; color:#dbe2f2}
+  .hero h1{margin:16px 0 8px; font-size:33px; line-height:1.1; font-weight:800; letter-spacing:-.02em; text-wrap:balance; position:relative}
+  .hero p{margin:0 auto; max-width:520px; color:#aab3c9; font-size:15.5px; position:relative}
+  .hero .who{display:inline-block; margin-top:14px; font-size:13px; color:#cfd6e8; background:rgba(255,255,255,.06); border:1px solid var(--dark-line); padding:5px 13px; border-radius:999px; position:relative}
+
+  main{max-width:760px; margin:0 auto; padding:34px 22px 56px}
+  section{margin-bottom:38px}
+  .sec-head{display:flex; align-items:baseline; gap:12px; margin-bottom:16px}
+  .sec-head .eyebrow{color:var(--accent)}
+  .sec-head .line{flex:1; height:1px; background:var(--border)}
+  h2{font-size:21px; font-weight:800; letter-spacing:-.02em; margin:0}
+
+  .tiers{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .tier{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 18px 17px; box-shadow:var(--shadow)}
+  .tier .amt{font-size:38px; font-weight:800; letter-spacing:-.03em; line-height:1}
+  .tier .amt small{font-size:19px; font-weight:700; opacity:.6; margin-right:1px}
+  .tier .t{margin-top:9px; font-size:15px; font-weight:700}
+  .tier .d{margin-top:4px; font-size:13.5px; color:var(--muted); line-height:1.5}
+  .tier.small .amt{color:var(--amber)}
+  .tier.bug .amt{color:var(--accent)}
+  .tier.bonus{grid-column:1 / -1; background:linear-gradient(180deg,var(--good-soft),#fff); border-color:#bfe8d6}
+  .tier.bonus .amt{color:var(--good)}
+  .tier.bonus .row{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+  .tier.bonus .cond{flex:1; min-width:240px; font-size:13.5px; color:#3f5a4f}
+  .tier.bonus .cond b{color:var(--good)}
+  .cond .free{display:inline-block; margin-top:7px; font-size:12.5px; color:var(--good); background:#fff; border:1px solid #bfe8d6; padding:3px 10px; border-radius:999px}
+
+  .daily{display:flex; flex-direction:column; gap:10px}
+  .step{display:flex; gap:14px; background:var(--card); border:1px solid var(--border); border-radius:13px; padding:14px 16px; box-shadow:var(--shadow)}
+  .step .n{flex:none; width:27px; height:27px; border-radius:8px; background:var(--accent-soft); color:var(--accent-2); font-weight:800; font-size:14px; display:grid; place-items:center; font-variant-numeric:tabular-nums}
+  .step .b b{font-weight:700}
+  .step .b{font-size:15px}
+  .step .b span{color:var(--muted); font-size:13.5px}
+  .pill{display:inline-block; background:var(--accent-soft); color:var(--accent-2); font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; margin:0 2px}
+
+  .feat{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .fi{display:flex; gap:11px; align-items:flex-start; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 13px; box-shadow:var(--shadow)}
+  .fi .ic{font-size:18px; line-height:1.2; flex:none}
+  .fi .ft{font-size:14px; font-weight:700}
+  .fi .fd{font-size:12.5px; color:var(--muted); margin-top:1px; line-height:1.45}
+
+  .card-plain{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 20px 8px; box-shadow:var(--shadow)}
+  .bug{list-style:none; counter-reset:b; padding:0; margin:0}
+  .bug li{position:relative; padding-left:34px; font-size:14.5px; margin:0 0 12px}
+  .bug li::before{counter-increment:b; content:counter(b); position:absolute; left:0; top:-1px; width:23px; height:23px; border-radius:7px; background:var(--ink); color:#fff; font-size:12.5px; font-weight:800; display:grid; place-items:center}
+  .bug li b{font-weight:700}
+  .bug li span{color:var(--muted)}
+
+  .report{background:var(--dark); color:#dfe4f0; border-radius:16px; padding:18px 20px; font-size:14.5px}
+  .report .ex{margin-top:9px; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:13px; color:#c7cfe4; background:rgba(255,255,255,.05); border:1px solid var(--dark-line); border-radius:10px; padding:11px 13px; line-height:1.55}
+
+  .foot{text-align:center; color:var(--muted); font-size:14px; margin-top:8px}
+  .foot b{color:var(--ink)}
+
+  @media (max-width:560px){
+    .tiers{grid-template-columns:1fr}
+    .feat{grid-template-columns:1fr}
+    .hero h1{font-size:28px}
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="brand"><span class="dot"></span><span class="bw">LIFE OS</span></div>
+    <h1>Памятка тестировщика</h1>
+    <p>Спасибо, что берёшься 🙌 Здесь — как работаем и сколько платим.</p>
+    <span class="who">оплачиваемое тестирование</span>
+  </header>
+
+  <main>
+    <section>
+      <div class="sec-head"><span class="eyebrow">Оплата</span><span class="line"></span></div>
+      <div class="tiers">
+        <div class="tier small">
+          <div class="amt num"><small>$</small>5</div>
+          <div class="t">Мелкая ошибка</div>
+          <div class="d">Опечатка, косметика, мелкий сбой, кривая вёрстка — что-то некритичное, но неаккуратное.</div>
+        </div>
+        <div class="tier bug">
+          <div class="amt num"><small>$</small>10</div>
+          <div class="t">Баг или неверная запись</div>
+          <div class="d">Что-то не работает, нелогичный ответ AI, или бот неправильно распознал / записал в журнал (не то настроение, сумма, категория).</div>
+        </div>
+        <div class="tier bonus">
+          <div class="row">
+            <div class="amt num"><small>$</small>100</div>
+            <div class="cond">
+              <b>Бонус за месяц активного тестирования.</b> Ориентир — <b>~10 записей в день</b>. Тестируешь вживую, как настоящий пользователь.
+              <span class="free">Пропустил(а) день — бонус не сгорает 🙂</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="eyebrow">Каждый день</span><span class="line"></span></div>
+      <div class="daily">
+        <div class="step"><span class="n">1</span><div class="b"><b>10+ записей</b> про свою реальную жизнь <span>— события, мысли, настроение, траты, здоровье, идеи, планы.</span></div></div>
+        <div class="step"><span class="n">2</span><div class="b">Разными способами: <span class="pill">текст</span><span class="pill">голос</span><span class="pill">фото</span> <span>— не только одним.</span></div></div>
+        <div class="step"><span class="n">3</span><div class="b">Написать <b>AI-другу</b> <span>— и текстом, и голосом. Проверь, отвечает ли на твоём языке.</span></div></div>
+        <div class="step"><span class="n">4</span><div class="b">Проверить <b>1–2 фичи</b> из списка ниже <span>— по очереди, чтобы за месяц пройти все.</span></div></div>
+        <div class="step"><span class="n">5</span><div class="b">Нашёл(ла) баг — <b>записать по формату</b> <span>и скинуть в конце дня короткий отчёт.</span></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="eyebrow">Что проверить за месяц</span><span class="line"></span></div>
+      <div class="feat">
+        <div class="fi"><span class="ic">✍️</span><div><div class="ft">Запись</div><div class="fd">Текст / голос / фото. Верно ли AI понял настроение, категории, задачи, людей.</div></div></div>
+        <div class="fi"><span class="ic">🤖</span><div><div class="ft">Бот в Telegram</div><div class="fd">Команды, беседа, действия голосом: «поставь напоминание», «запиши вес».</div></div></div>
+        <div class="fi"><span class="ic">💰</span><div><div class="ft">Деньги</div><div class="fd">Траты и доходы голосом, разные валюты, Личное / Бизнес.</div></div></div>
+        <div class="fi"><span class="ic">❤️</span><div><div class="ft">Здоровье</div><div class="fd">Дашборд, фазы сна, подключение Fitbit / Apple, календарь настроения.</div></div></div>
+        <div class="fi"><span class="ic">🎬</span><div><div class="ft">Медиатека</div><div class="fd">«хочу посмотреть …», «добавь сериал …» — фильмы, сериалы, книги.</div></div></div>
+        <div class="fi"><span class="ic">📚</span><div><div class="ft">База знаний</div><div class="fd">Кидай ссылки Instagram / TikTok / YouTube — сохраняет и разбирает.</div></div></div>
+        <div class="fi"><span class="ic">🔔</span><div><div class="ft">Напоминания</div><div class="fd">Голосом и вручную, синхро с Google Календарём, повтор, «весь день».</div></div></div>
+        <div class="fi"><span class="ic">🎁</span><div><div class="ft">Вишлист</div><div class="fd">Ссылки на товары — подтягивает фото, название, цену.</div></div></div>
+        <div class="fi"><span class="ic">🎙️</span><div><div class="ft">AI-друг</div><div class="fd">Чат и голос, перебивание, ответы на нужном языке.</div></div></div>
+        <div class="fi"><span class="ic">📖</span><div><div class="ft">Книга жизни · Биограф</div><div class="fd">Главы, вопросы о прошлом, «Что заметил AI».</div></div></div>
+        <div class="fi"><span class="ic">🔗</span><div><div class="ft">Поделиться · Пригласить</div><div class="fd">Карточки, публичная страница, реф-ссылка.</div></div></div>
+        <div class="fi"><span class="ic">📱</span><div><div class="ft">Приложение</div><div class="fd">Вкладки, меню, языки, тёмная тема, свайпы (если установлено).</div></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><span class="eyebrow">Как сообщать о баге</span><span class="line"></span></div>
+      <div class="card-plain">
+        <ol class="bug">
+          <li><b>Что делал(а)</b> <span>— по шагам.</span></li>
+          <li><b>Что ожидал(а)</b> <span>— как должно было быть.</span></li>
+          <li><b>Что получилось</b> <span>— что пошло не так.</span></li>
+          <li><b>Скрин или видео.</b></li>
+          <li><b>Если про бота</b> <span>— примерно во сколько и какое было сообщение.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section style="margin-bottom:26px">
+      <div class="sec-head"><span class="eyebrow">Отчёт дня</span><span class="line"></span></div>
+      <div class="report">
+        Один короткий итог в конце дня — сколько записей, что проверил(а), какие баги.
+        <div class="ex">Записей: 12 · Проверила: Деньги + Медиатека · Баги: 2 (скрины ниже)</div>
+      </div>
+    </section>
+
+    <div class="foot">Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b></div>
+  </main>
+</body>
+</html>
