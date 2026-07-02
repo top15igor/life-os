@@ -98,6 +98,8 @@ export default function AuthForm({
       });
       const data = await r.json().catch(() => ({}));
       if (data?.ok) {
+        // Новый вход сбрасывает «скрытие на сессию» плашки подключения бота.
+        try { sessionStorage.removeItem("cbBannerHidden"); } catch {}
         // Новичок с почты → сначала экран подключения бота (главный ввод); вход → сразу в портал.
         window.location.href = mode === "register" ? "/just-joined" : "/";
         return;
