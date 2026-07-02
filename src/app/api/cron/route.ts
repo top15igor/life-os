@@ -10,6 +10,7 @@ import { bookPromptMessage } from "@/lib/bookPrompts";
 import { personalEvening } from "@/lib/eveningPersonal";
 import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
+import { eveningQuestion } from "@/lib/dailyQuestions";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
 import Anthropic from "@anthropic-ai/sdk";
@@ -361,7 +362,7 @@ export async function GET(req: NextRequest) {
       if (gap <= 2) {
         // Активные — мягкое напоминание; если серия жива (писал вчера) — мотивируем не разорвать.
         if (gap === 1 && streak >= 2) {
-          await sendMessage(u.chat_id, m.reminderStreak(streak));
+          await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy));
           stats.streakReminders++;
         } else {
           // В «вопросный день» — тёплый наводящий вопрос для книги вместо общего напоминания.
@@ -372,7 +373,7 @@ export async function GET(req: NextRequest) {
               if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; asked = true; }
             } catch (e) { console.error("book prompt", u.id, e); }
           }
-          if (!asked) { await sendMessage(u.chat_id, m.reminder); stats.reminders++; }
+          if (!asked) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy)); stats.reminders++; }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.

@@ -8,6 +8,7 @@ import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { saveChat } from "@/lib/biographer";
+import { morningQuestion } from "@/lib/dailyQuestions";
 
 // Метка утреннего пуша в истории диалога — чтобы ассистент потом связывал
 // уточняющие вопросы пользователя с тем, что сам прислал утром.
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
       } catch { /* нет такого юзера — уйдёт статичная фраза */ }
       const personalized = !!text;
       text = text || morningMessage(lang, doy);
+      text = text + "\n\n" + morningQuestion(lang, doy); // короткий вопрос — чтобы человек сразу ответил
       await sendMessage(Number(chat), text, { reply_markup: mainKeyboard(lang) });
       if (uid) saveChat(uid, MORNING_TAG, text).catch(() => {});
       return NextResponse.json({ ok: true, test: true, personalized });
@@ -135,6 +137,7 @@ export async function GET(req: NextRequest) {
           if (text) personalized++;
         }
         if (!text) text = morningMessage(lang, doy); // мало данных / лимит времени / ошибка
+        text = text + "\n\n" + morningQuestion(lang, doy); // короткий вопрос — чтобы человек сразу ответил
         await sendMessage(u.chat_id, text, { reply_markup: mainKeyboard(lang) });
         saveChat(u.id, MORNING_TAG, text).catch(() => {}); // в историю, не тормозя рассылку
         logPush(u.id, "morning").catch(() => {});
