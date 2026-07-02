@@ -36,7 +36,10 @@
   .brand .bw{font-size:13.5px; font-weight:800; letter-spacing:.12em; color:#dbe2f2}
   .hero h1{margin:16px 0 8px; font-size:33px; line-height:1.1; font-weight:800; letter-spacing:-.02em; text-wrap:balance; position:relative}
   .hero p{margin:0 auto; max-width:520px; color:#aab3c9; font-size:15.5px; position:relative}
-  .hero .who{display:inline-block; margin-top:14px; font-size:13px; color:#cfd6e8; background:rgba(255,255,255,.06); border:1px solid var(--dark-line); padding:5px 13px; border-radius:999px; position:relative}
+  .hero .who{display:inline-block; font-size:13px; color:#cfd6e8; background:rgba(255,255,255,.06); border:1px solid var(--dark-line); padding:5px 13px; border-radius:999px; position:relative}
+  .hero-nav{display:inline-flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:14px; position:relative}
+  .hero .who.link{text-decoration:none; color:#dbe2f2; background:rgba(91,140,255,.16); border-color:rgba(91,140,255,.4); font-weight:600; transition:background .15s}
+  .hero .who.link:hover{background:rgba(91,140,255,.28)}
 
   main{max-width:760px; margin:0 auto; padding:34px 22px 56px}
   section{margin-bottom:38px}
@@ -99,7 +102,10 @@
     <div class="brand"><span class="dot"></span><span class="bw">LIFE OS</span></div>
     <h1>Памятка тестировщика</h1>
     <p>Спасибо, что берёшься 🙌 Здесь — как работаем и сколько платим.</p>
-    <span class="who">оплачиваемое тестирование</span>
+    <div class="hero-nav">
+      <span class="who">оплачиваемое тестирование</span>
+      <a class="who link" href="https://mylifebookai.vercel.app/about">Что такое LIFE OS →</a>
+    </div>
   </header>
 
   <main>
@@ -180,10 +186,13 @@
 
     <div class="foot">Чем живее пользуешься — тем больше находишь. <b>Спасибо, что помогаешь сделать LIFE OS лучше 💙</b></div>
 
-    <div style="text-align:center; margin:26px 0 4px">
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:26px 0 4px">
       <a id="tester-start" href="https://t.me/Life_OS" style="display:inline-flex; align-items:center; gap:9px; padding:15px 34px; border-radius:14px; background:linear-gradient(135deg,#5b8cff,#3f62e6); color:#fff; font-size:16px; font-weight:700; text-decoration:none; box-shadow:0 12px 28px -12px rgba(63,98,230,.6)">
         Начать в Telegram
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </a>
+      <a href="https://mylifebookai.vercel.app/about" style="display:inline-flex; align-items:center; gap:8px; padding:15px 28px; border-radius:14px; background:var(--card); color:var(--accent-2); font-size:16px; font-weight:700; text-decoration:none; border:1px solid var(--border); box-shadow:var(--shadow)">
+        Узнать о сервисе
       </a>
     </div>
   </main>
