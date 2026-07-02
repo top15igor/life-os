@@ -2,6 +2,7 @@ import "./globals.css";
 import { cookies } from "next/headers";
 import LangFromQuery from "@/components/LangFromQuery";
 import Assistant from "@/components/Assistant";
+import ConnectBotBanner from "@/components/ConnectBotBanner";
 
 export const metadata = {
   title: "LIFE OS",
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <LangFromQuery />
+        <ConnectBotBanner />
         {children}
         <Assistant />
       </body>
