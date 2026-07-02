@@ -2,8 +2,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { getHandle } from "./handle";
 
+// kind: тип единицы медиатеки — 'book' | 'film' | 'series'. По умолчанию 'book'.
+export type MediaKind = "book" | "film" | "series";
+
 export type Book = {
   id: string;
+  kind: MediaKind;
   title: string;
   author: string | null;
   cover_url: string | null;
@@ -23,7 +27,9 @@ export type Book = {
   created_at: string;
 };
 
-const COLS = "id, title, author, cover_url, description, genre, year, pages, status, rating, liked, review, notes, current_page, started_at, finished_at, favorite, created_at";
+// kind добавлен последним — если колонки ещё нет (до миграции), getBooks мягко деградирует.
+const COLS = "id, kind, title, author, cover_url, description, genre, year, pages, status, rating, liked, review, notes, current_page, started_at, finished_at, favorite, created_at";
+const COLS_LEGACY = "id, title, author, cover_url, description, genre, year, pages, status, rating, liked, review, notes, current_page, started_at, finished_at, favorite, created_at";
 
 // ---------- Поиск книг (Open Library, без ключа) ----------
 
@@ -65,39 +71,45 @@ async function fetchDescription(olKey: string | null): Promise<string | null> {
 // ---------- CRUD ----------
 
 export async function getBooks(userId: string): Promise<Book[]> {
-  try {
-    const { data } = await supabaseAdmin()
-      .from("books")
-      .select(COLS)
-      .eq("user_id", userId)
-      .order("updated_at", { ascending: false });
-    return (data as any) || [];
-  } catch {
-    return [];
-  }
+  const db = supabaseAdmin();
+  // Пробуем с kind; если колонки ещё нет (до миграции) — падаем на legacy и проставляем kind='book'.
+  const { data, error } = await db.from("books").select(COLS).eq("user_id", userId).order("updated_at", { ascending: false });
+  if (!error) return ((data as any[]) || []).map((b) => ({ ...b, kind: b.kind || "book" }));
+  const { data: legacy } = await db.from("books").select(COLS_LEGACY).eq("user_id", userId).order("updated_at", { ascending: false });
+  return ((legacy as any[]) || []).map((b) => ({ ...b, kind: "book" }));
 }
 
-export async function addBook(userId: string, hit: Partial<BookHit> & { title: string; status?: string }): Promise<Book | null> {
+export async function addBook(
+  userId: string,
+  hit: Partial<BookHit> & { title: string; status?: string; kind?: MediaKind }
+): Promise<Book | null> {
   const title = String(hit.title || "").trim().slice(0, 250);
   if (!title) return null;
-  const description = await fetchDescription(hit.olKey || null);
-  const { data } = await supabaseAdmin()
-    .from("books")
-    .insert({
-      user_id: userId,
-      title,
-      author: hit.author || null,
-      cover_url: hit.coverUrl || null,
-      year: hit.year || null,
-      isbn: hit.isbn || null,
-      ol_key: hit.olKey || null,
-      genre: hit.genre || null,
-      description,
-      status: hit.status || "want",
-    })
-    .select(COLS)
-    .single();
-  return (data as any) || null;
+  const kind: MediaKind = hit.kind || "book";
+  // Обложку/описание книг тянем из Open Library; для фильмов/сериалов её нет.
+  const description = kind === "book" ? await fetchDescription(hit.olKey || null) : null;
+  const row: any = {
+    user_id: userId,
+    kind,
+    title,
+    author: hit.author || null,
+    cover_url: hit.coverUrl || null,
+    year: hit.year || null,
+    isbn: hit.isbn || null,
+    ol_key: hit.olKey || null,
+    genre: hit.genre || null,
+    description,
+    status: hit.status || "want",
+  };
+  const db = supabaseAdmin();
+  let { data, error } = await db.from("books").insert(row).select(COLS).single();
+  if (error) {
+    // Колонки kind ещё нет — сохраняем как обычную книгу (legacy), без kind.
+    delete row.kind;
+    const r2 = await db.from("books").insert(row).select(COLS_LEGACY).single();
+    data = r2.data as any;
+  }
+  return data ? ({ ...(data as any), kind: (data as any).kind || kind }) : null;
 }
 
 // Добавить по названию (для AI-рекомендаций): ищем обложку/автора в Open Library.
@@ -115,6 +127,13 @@ export async function addBookByTitle(userId: string, title: string, author?: str
   }
   const hit = best || { title, author: author || null };
   return addBook(userId, { ...hit, title: hit.title || title, status: "want" });
+}
+
+// Добавить фильм/сериал по названию (без внешнего поиска обложки). Для бота и веб-ручного ввода.
+export async function addMediaByTitle(userId: string, title: string, kind: MediaKind, status = "want"): Promise<Book | null> {
+  const clean = String(title || "").trim().slice(0, 250);
+  if (!clean) return null;
+  return addBook(userId, { title: clean, kind, status });
 }
 
 export async function updateBook(userId: string, id: string, fields: any): Promise<boolean> {

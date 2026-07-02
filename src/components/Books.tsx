@@ -22,6 +22,12 @@ const T: Record<string, any> = {
     shareOn: "Поделиться библиотекой", shareOff: "Библиотека открыта по ссылке", copy: "Скопировать", copied: "Скопировано ✓", openPub: "Открыть как друг",
     shareHint: "Друзья откроют по ссылке и увидят, что ты читаешь и советуешь, с твоими оценками и ревью.",
     save: "Сохранить", manual: "Добавить вручную", manualTitle: "Название", manualAuthor: "Автор",
+    switcher: { book: "Книги", film: "Фильмы", series: "Сериалы" },
+    kinds: {
+      book: { icon: "ti-book", ph: "ti-book-2", lead: "Твоя библиотека: что читаешь, что хочешь и что прочитал. Ставь оценку, пиши мини-ревью «зашла или нет» и сохраняй цитаты.", add: "Добавить книгу", addPh: "Название книги или автор…", tabs: { all: "Все", want: "Хочу прочитать", reading: "Читаю", read: "Прочитал" }, empty: "Пока пусто. Добавь первую книгу 📚", goalSet: "Сколько книг прочитать за год?", booksY: "книг в этом году" },
+      film: { icon: "ti-movie", ph: "ti-movie", lead: "Твоя фильмотека: что хочешь посмотреть, что смотришь и что посмотрел. Ставь оценку и пиши мини-ревью.", add: "Добавить фильм", addPh: "Название фильма…", tabs: { all: "Все", want: "Хочу посмотреть", reading: "Смотрю", read: "Посмотрел" }, empty: "Пока пусто. Добавь первый фильм 🎬", goalSet: "Сколько фильмов посмотреть за год?", booksY: "фильмов в этом году" },
+      series: { icon: "ti-device-tv", ph: "ti-device-tv", lead: "Твои сериалы: что хочешь посмотреть, что смотришь и что уже посмотрел. Ставь оценку и пиши мини-ревью.", add: "Добавить сериал", addPh: "Название сериала…", tabs: { all: "Все", want: "Хочу посмотреть", reading: "Смотрю", read: "Посмотрел" }, empty: "Пока пусто. Добавь первый сериал 📺", goalSet: "Сколько сериалов посмотреть за год?", booksY: "сериалов в этом году" },
+    },
   },
   en: {
     lead: "Your library: what you're reading, want to read, and have read. Rate books, write a quick “loved it or not” review and save quotes.",
@@ -41,6 +47,12 @@ const T: Record<string, any> = {
     shareOn: "Share library", shareOff: "Library is public by link", copy: "Copy", copied: "Copied ✓", openPub: "Open as a friend",
     shareHint: "Friends open it by link and see what you read and recommend, with your ratings and reviews.",
     save: "Save", manual: "Add manually", manualTitle: "Title", manualAuthor: "Author",
+    switcher: { book: "Books", film: "Films", series: "Series" },
+    kinds: {
+      book: { icon: "ti-book", ph: "ti-book-2", lead: "Your library: what you're reading, want to read, and have read. Rate books, write a quick “loved it or not” review and save quotes.", add: "Add a book", addPh: "Book title or author…", tabs: { all: "All", want: "Want to read", reading: "Reading", read: "Read" }, empty: "Empty for now. Add your first book 📚", goalSet: "How many books to read this year?", booksY: "books this year" },
+      film: { icon: "ti-movie", ph: "ti-movie", lead: "Your films: what you want to watch, are watching, and have watched. Rate them and write a quick review.", add: "Add a film", addPh: "Film title…", tabs: { all: "All", want: "Want to watch", reading: "Watching", read: "Watched" }, empty: "Empty for now. Add your first film 🎬", goalSet: "How many films to watch this year?", booksY: "films this year" },
+      series: { icon: "ti-device-tv", ph: "ti-device-tv", lead: "Your series: what you want to watch, are watching, and have finished. Rate them and write a quick review.", add: "Add a series", addPh: "Series title…", tabs: { all: "All", want: "Want to watch", reading: "Watching", read: "Watched" }, empty: "Empty for now. Add your first series 📺", goalSet: "How many series to watch this year?", booksY: "series this year" },
+    },
   },
 };
 
@@ -64,6 +76,7 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [goal, setGoal] = useState(initialGoal);
   const [tab, setTab] = useState<"all" | "want" | "reading" | "read">("all");
+  const [kind, setKind] = useState<"book" | "film" | "series">("book");
   const [addOpen, setAddOpen] = useState(false);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<BookHit[]>([]);
@@ -82,13 +95,17 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
   const csvRef = useRef<HTMLInputElement>(null);
 
   const year = new Date().getFullYear();
-  const stats = useMemo(() => computeStats(books, goal, year), [books, goal, year]);
+  const kd = t.kinds[kind];
+  // Медиатека: показываем только выбранный тип (книги / фильмы / сериалы).
+  const kindBooks = useMemo(() => books.filter((b) => (b.kind || "book") === kind), [books, kind]);
+  const stats = useMemo(() => computeStats(kindBooks, goal, year), [kindBooks, goal, year]);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const pubUrl = slug ? `${origin}/b/${slug}` : "";
+  const statusLabel = (s: string) => (kd.tabs as any)[s] || s;
 
-  const counts = { all: books.length, want: 0, reading: 0, read: 0 } as any;
-  books.forEach((b) => (counts[b.status] = (counts[b.status] || 0) + 1));
-  const shown = tab === "all" ? books : books.filter((b) => b.status === tab);
+  const counts = { all: kindBooks.length, want: 0, reading: 0, read: 0 } as any;
+  kindBooks.forEach((b) => (counts[b.status] = (counts[b.status] || 0) + 1));
+  const shown = tab === "all" ? kindBooks : kindBooks.filter((b) => b.status === tab);
   const detail = books.find((b) => b.id === detailId) || null;
   const detailQuotes = quotes.filter((x) => x.book_id === detailId);
 
@@ -106,13 +123,13 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
   }
 
   async function addHit(h: BookHit, status = "want") {
-    const r = await api({ action: "add", title: h.title, author: h.author, coverUrl: h.coverUrl, year: h.year, isbn: h.isbn, olKey: h.olKey, genre: h.genre, status });
+    const r = await api({ action: "add", title: h.title, author: h.author, coverUrl: h.coverUrl, year: h.year, isbn: h.isbn, olKey: h.olKey, genre: h.genre, status, kind });
     if (r?.ok && r.book) { setBooks((b) => [r.book, ...b]); setAddOpen(false); setQ(""); setHits([]); }
   }
 
   async function addManual() {
     if (!mTitle.trim()) return;
-    const r = await api({ action: "add", title: mTitle, author: mAuthor || null, status: "want" });
+    const r = await api({ action: "add", title: mTitle, author: mAuthor || null, status: "want", kind });
     if (r?.ok && r.book) { setBooks((b) => [r.book, ...b]); setAddOpen(false); setManual(false); setMTitle(""); setMAuthor(""); }
   }
 
@@ -187,7 +204,16 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
 
   return (
     <div>
-      <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14, maxWidth: 640 }}>{t.lead}</div>
+      {/* Переключатель типа: Книги / Фильмы / Сериалы */}
+      <div style={{ display: "inline-flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--surface-2)", marginBottom: 14 }}>
+        {(["book", "film", "series"] as const).map((k) => (
+          <button key={k} onClick={() => { setKind(k); setTab("all"); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13.5, fontWeight: 600, background: kind === k ? "var(--accent)" : "transparent", color: kind === k ? "#fff" : "var(--text-2)", transition: "background .15s" }}>
+            <i className={`ti ${t.kinds[k].icon}`} style={{ fontSize: 16 }} />{t.switcher[k]}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14, maxWidth: 640 }}>{kd.lead}</div>
 
       {/* Цель года + статистика */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
@@ -202,28 +228,32 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
           <div>
             <div style={{ fontSize: 12, color: "var(--text-3)" }}>{t.goalTitle} {year}</div>
             <input type="number" min={0} value={goal || ""} onChange={(e) => saveGoal(Number(e.target.value) || 0)} placeholder="—" style={{ width: 54, fontSize: 15, fontWeight: 600, border: "none", borderBottom: "1px solid var(--border)", background: "none", color: "var(--text)", padding: "1px 2px" }} />
-            <span style={{ fontSize: 12, color: "var(--text-3)" }}> {t.booksY}</span>
+            <span style={{ fontSize: 12, color: "var(--text-3)" }}> {kd.booksY}</span>
           </div>
         </div>
         <Stat n={stats.total} label={t.statTotal} />
-        <Stat n={stats.reading} label={t.statReading} />
+        <Stat n={stats.reading} label={statusLabel("reading")} />
         <Stat n={stats.avgRating ?? "—"} label={t.statAvg} icon="ti-star-filled" />
       </div>
 
       {/* Кнопки */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <button onClick={() => setAddOpen(true)} style={{ padding: "10px 18px", borderRadius: 11, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-          <i className="ti ti-plus" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {t.add}
+        <button onClick={() => { setManual(kind !== "book"); setAddOpen(true); }} style={{ padding: "10px 18px", borderRadius: 11, border: "none", background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+          <i className="ti ti-plus" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {kd.add}
         </button>
-        <button onClick={loadRecs} disabled={recLoading} style={{ padding: "10px 18px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-          <i className="ti ti-sparkles" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {recLoading ? t.recLoading : t.rec}
-        </button>
-        <button onClick={() => photoRef.current?.click()} disabled={photoBusy} style={ghostBtn}>
-          <i className="ti ti-camera" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {photoBusy ? t.photoBusy : t.photo}
-        </button>
-        <button onClick={() => csvRef.current?.click()} disabled={impBusy} style={ghostBtn}>
-          <i className="ti ti-file-import" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {impBusy ? t.impBusy : t.imp}
-        </button>
+        {kind === "book" && (
+          <>
+            <button onClick={loadRecs} disabled={recLoading} style={{ padding: "10px 18px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+              <i className="ti ti-sparkles" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {recLoading ? t.recLoading : t.rec}
+            </button>
+            <button onClick={() => photoRef.current?.click()} disabled={photoBusy} style={ghostBtn}>
+              <i className="ti ti-camera" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {photoBusy ? t.photoBusy : t.photo}
+            </button>
+            <button onClick={() => csvRef.current?.click()} disabled={impBusy} style={ghostBtn}>
+              <i className="ti ti-file-import" style={{ fontSize: 16, verticalAlign: "-2px" }} /> {impBusy ? t.impBusy : t.imp}
+            </button>
+          </>
+        )}
         <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={onPhoto} style={{ display: "none" }} />
         <input ref={csvRef} type="file" accept=".csv,text/csv" onChange={onCsv} style={{ display: "none" }} />
       </div>
@@ -270,22 +300,22 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
         {(["all", "want", "reading", "read"] as const).map((k) => (
           <button key={k} onClick={() => setTab(k)} style={{ padding: "7px 13px", borderRadius: 999, border: "1px solid var(--border)", background: tab === k ? "var(--accent)" : "var(--surface)", color: tab === k ? "#fff" : "var(--text-2)", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-            {t.tabs[k]} {counts[k] ? <span style={{ opacity: 0.7 }}>{counts[k]}</span> : ""}
+            {(kd.tabs as any)[k]} {counts[k] ? <span style={{ opacity: 0.7 }}>{counts[k]}</span> : ""}
           </button>
         ))}
       </div>
 
       {/* Сетка книг */}
       {shown.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", color: "var(--text-2)", padding: "30px 20px" }}>{t.empty}</div>
+        <div className="card" style={{ textAlign: "center", color: "var(--text-2)", padding: "30px 20px" }}>{kd.empty}</div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
           {shown.map((b) => (
             <div key={b.id} onClick={() => setDetailId(b.id)} className="card" style={{ padding: 0, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
               <div style={{ aspectRatio: "2 / 3", background: "var(--surface-2)", position: "relative" }}>
-                {b.cover_url ? <img src={b.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><i className="ti ti-book-2" style={{ fontSize: 34, color: "var(--text-3)" }} /></div>}
+                {b.cover_url ? <img src={b.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${t.kinds[(b.kind || "book") as "book" | "film" | "series"]?.ph || "ti-book-2"}`} style={{ fontSize: 34, color: "var(--text-3)" }} /></div>}
                 {b.favorite && <i className="ti ti-heart-filled" style={{ position: "absolute", top: 7, right: 7, fontSize: 16, color: "#ec4899" }} />}
-                <span style={{ position: "absolute", left: 7, bottom: 7, fontSize: 10.5, fontWeight: 600, color: "#fff", background: STATUS_COLOR[b.status], borderRadius: 6, padding: "2px 7px" }}>{t.status[b.status]}</span>
+                <span style={{ position: "absolute", left: 7, bottom: 7, fontSize: 10.5, fontWeight: 600, color: "#fff", background: STATUS_COLOR[b.status], borderRadius: 6, padding: "2px 7px" }}>{statusLabel(b.status)}</span>
               </div>
               <div style={{ padding: "9px 10px 11px" }}>
                 <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>{b.title}</div>
@@ -308,7 +338,7 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
         <Modal onClose={() => { setAddOpen(false); setManual(false); }}>
           {!manual ? (
             <>
-              <input autoFocus value={q} onChange={(e) => runSearch(e.target.value)} placeholder={t.addPh} style={inp} />
+              <input autoFocus value={q} onChange={(e) => runSearch(e.target.value)} placeholder={kd.addPh} style={inp} />
               <div style={{ minHeight: 40, marginTop: 10 }}>
                 {searching && <div style={{ fontSize: 13, color: "var(--text-3)" }}>{t.searching}</div>}
                 {!searching && q.length >= 2 && hits.length === 0 && <div style={{ fontSize: 13, color: "var(--text-3)" }}>{t.noHits}</div>}
@@ -329,11 +359,11 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
             </>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
-              <input autoFocus value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder={t.manualTitle} style={inp} />
-              <input value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder={t.manualAuthor} style={inp} />
+              <input autoFocus value={mTitle} onChange={(e) => setMTitle(e.target.value)} placeholder={kind === "book" ? t.manualTitle : kd.addPh} style={inp} />
+              {kind === "book" && <input value={mAuthor} onChange={(e) => setMAuthor(e.target.value)} placeholder={t.manualAuthor} style={inp} />}
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={addManual} disabled={!mTitle.trim()} style={{ padding: "9px 16px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13.5, fontWeight: 500, cursor: "pointer" }}>{t.save}</button>
-                <button onClick={() => setManual(false)} style={{ padding: "9px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "none", color: "var(--text-2)", fontSize: 13.5, cursor: "pointer" }}>←</button>
+                {kind === "book" && <button onClick={() => setManual(false)} style={{ padding: "9px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "none", color: "var(--text-2)", fontSize: 13.5, cursor: "pointer" }}>←</button>}
               </div>
             </div>
           )}
@@ -344,13 +374,13 @@ export default function Books({ locale, initial, quotes: initialQuotes, goal: in
       {detail && (
         <Modal onClose={() => setDetailId(null)} wide>
           <div style={{ display: "flex", gap: 14, marginBottom: 14 }}>
-            <div style={{ width: 84, flexShrink: 0, aspectRatio: "2 / 3", background: "var(--surface-2)", borderRadius: 8, overflow: "hidden" }}>{detail.cover_url && <img src={detail.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}</div>
+            <div style={{ width: 84, flexShrink: 0, aspectRatio: "2 / 3", background: "var(--surface-2)", borderRadius: 8, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>{detail.cover_url ? <img src={detail.cover_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <i className={`ti ${t.kinds[(detail.kind || "book") as "book" | "film" | "series"].ph}`} style={{ fontSize: 30, color: "var(--text-3)" }} />}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{detail.title}</div>
               {detail.author && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 2 }}>{[detail.author, detail.year].filter(Boolean).join(" · ")}</div>}
               <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                 {(["want", "reading", "read"] as const).map((s) => (
-                  <button key={s} onClick={() => patch(detail.id, { status: s })} style={{ padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: detail.status === s ? STATUS_COLOR[s] : "var(--surface)", color: detail.status === s ? "#fff" : "var(--text-2)", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>{t.status[s]}</button>
+                  <button key={s} onClick={() => patch(detail.id, { status: s })} style={{ padding: "6px 11px", borderRadius: 8, border: "1px solid var(--border)", background: detail.status === s ? STATUS_COLOR[s] : "var(--surface)", color: detail.status === s ? "#fff" : "var(--text-2)", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>{(t.kinds[(detail.kind || "book") as "book" | "film" | "series"].tabs as any)[s]}</button>
                 ))}
               </div>
             </div>

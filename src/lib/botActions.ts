@@ -4,6 +4,7 @@ import { logClaude } from "./usage";
 import { DREAM_SPHERES } from "./ai";
 import { createReminder, localToISO } from "./reminders";
 import type { Recurrence } from "./googleCalendar";
+import { addMediaByTitle } from "./books";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -44,6 +45,20 @@ export const ACTION_TOOLS: any[] = [
   { name: "add_dream", description: "Добавить мечту в Карту желаний. Команда «добавь мечту …», «хочу чтобы это было моей мечтой …».", input_schema: { type: "object", properties: { text: { type: "string" }, sphere: { type: "string", enum: [...DREAM_SPHERES] } }, required: ["text"] } },
   { name: "complete_dream", description: "Отметить мечту сбывшейся. Команда «мечта … сбылась», «отметь мечту … исполненной». query — слова для поиска мечты.", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
   { name: "add_deed", description: "Добавить доброе дело в «Мой след». Команда «отметь доброе дело …», «запиши что я помог …». person — кому помог, если назван.", input_schema: { type: "object", properties: { text: { type: "string" }, person: { type: "string" } }, required: ["text"] } },
+  {
+    name: "add_media",
+    description:
+      "Добавить фильм, сериал или книгу в Медиатеку. Команды: «хочу посмотреть …», «добавь фильм …», «посмотрел сериал …», «хочу прочитать книгу …», «добавь в медиатеку …». title — название (без слов «фильм/сериал/хочу»); kind — film (фильм), series (сериал) или book (книга); status — want (хочу), doing (смотрю/читаю), done (посмотрел/прочитал), по умолчанию want.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "название фильма/сериала/книги" },
+        kind: { type: "string", enum: ["film", "series", "book"] },
+        status: { type: "string", enum: ["want", "doing", "done"], description: "want по умолчанию" },
+      },
+      required: ["title", "kind"],
+    },
+  },
   { name: "delete_last_entry", description: "Удалить ПОСЛЕДНЮЮ запись дневника. Команда «удали последнюю запись», «убери предыдущую запись».", input_schema: { type: "object", properties: {} } },
   { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать.", input_schema: { type: "object", properties: {} } },
   { name: "save_entry", description: "Обычная дневниковая запись: рассказ о дне, мысли, чувства, событие, идея. ПО УМОЛЧАНИЮ выбирай это.", input_schema: { type: "object", properties: {} } },
@@ -110,6 +125,10 @@ const M: Record<Lang, any> = {
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
     open: "Открыть",
+    mvKind: { film: "🎬 фильм", series: "📺 сериал", book: "📚 книгу" } as Record<string, string>,
+    mvStatusWatch: { want: "хочу посмотреть", reading: "смотрю", read: "посмотрел" } as Record<string, string>,
+    mvStatusRead: { want: "хочу прочитать", reading: "читаю", read: "прочитал" } as Record<string, string>,
+    media: (kindLabel: string, title: string, statusLabel: string) => `Добавил в Медиатеку: ${kindLabel} «${title}» — ${statusLabel}.`,
   },
   en: {
     goal: (t: string) => `🎯 Added a goal: “${t}”.`,
@@ -125,6 +144,10 @@ const M: Record<Lang, any> = {
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
     open: "Open",
+    mvKind: { film: "🎬 film", series: "📺 series", book: "📚 book" } as Record<string, string>,
+    mvStatusWatch: { want: "want to watch", reading: "watching", read: "watched" } as Record<string, string>,
+    mvStatusRead: { want: "want to read", reading: "reading", read: "read" } as Record<string, string>,
+    media: (kindLabel: string, title: string, statusLabel: string) => `Added to your Media library: ${kindLabel} “${title}” — ${statusLabel}.`,
   },
   uk: {
     goal: (t: string) => `🎯 Додав ціль: «${t}».`,
@@ -140,6 +163,10 @@ const M: Record<Lang, any> = {
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
     open: "Відкрити",
+    mvKind: { film: "🎬 фільм", series: "📺 серіал", book: "📚 книгу" } as Record<string, string>,
+    mvStatusWatch: { want: "хочу подивитися", reading: "дивлюся", read: "переглянув" } as Record<string, string>,
+    mvStatusRead: { want: "хочу прочитати", reading: "читаю", read: "прочитав" } as Record<string, string>,
+    media: (kindLabel: string, title: string, statusLabel: string) => `Додав у Медіатеку: ${kindLabel} «${title}» — ${statusLabel}.`,
   },
   fr: {
     goal: (t: string) => `🎯 Objectif ajouté : « ${t} ».`,
@@ -155,6 +182,10 @@ const M: Record<Lang, any> = {
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
     open: "Ouvrir",
+    mvKind: { film: "🎬 film", series: "📺 série", book: "📚 livre" } as Record<string, string>,
+    mvStatusWatch: { want: "à voir", reading: "en cours", read: "vu" } as Record<string, string>,
+    mvStatusRead: { want: "à lire", reading: "en cours", read: "lu" } as Record<string, string>,
+    media: (kindLabel: string, title: string, statusLabel: string) => `Ajouté à ta Médiathèque : ${kindLabel} « ${title} » — ${statusLabel}.`,
   },
 };
 
@@ -241,6 +272,18 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const person = input?.person ? String(input.person).trim() : null;
       await db.from("good_deeds").insert({ user_id: userId, text: t, kind: "other", person });
       return { text: s.deed(t), openNext: "/trace" };
+    }
+    if (name === "add_media") {
+      const title = String(input?.title || "").trim();
+      const kind = (["film", "series", "book"] as const).includes(input?.kind) ? input.kind : "film";
+      if (!title) return { text: s.fail };
+      // doing/done -> внутренние статусы медиатеки reading/read; иначе want.
+      const status = input?.status === "done" ? "read" : input?.status === "doing" ? "reading" : "want";
+      const book = await addMediaByTitle(userId, title, kind, status);
+      if (!book) return { text: s.fail };
+      const kindLabel = s.mvKind[kind] || s.mvKind.film;
+      const statusLabel = (kind === "book" ? s.mvStatusRead : s.mvStatusWatch)[status];
+      return { text: s.media(kindLabel, title, statusLabel), openNext: "/books" };
     }
     if (name === "delete_last_entry") {
       const { data } = await db.from("entries").select("id, summary, raw_text").eq("user_id", userId).order("created_at", { ascending: false }).limit(1);

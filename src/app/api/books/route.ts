@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "add") {
-    const book = await addBook(user.id, { title: String(body?.title || ""), author: body?.author, coverUrl: body?.coverUrl, year: body?.year, isbn: body?.isbn, olKey: body?.olKey, genre: body?.genre, status: body?.status });
+    const kind = ["book", "film", "series"].includes(body?.kind) ? body.kind : "book";
+    const book = await addBook(user.id, { title: String(body?.title || ""), author: body?.author, coverUrl: body?.coverUrl, year: body?.year, isbn: body?.isbn, olKey: body?.olKey, genre: body?.genre, status: body?.status, kind });
     if (!book) return NextResponse.json({ ok: false }, { status: 400 });
     return NextResponse.json({ ok: true, book });
   }
