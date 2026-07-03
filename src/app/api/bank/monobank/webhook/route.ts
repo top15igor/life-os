@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const item = body?.data?.statementItem;
   const accountId = body?.data?.account;
-  // Валюта операции = валюта СЧЁТА (amount у Monobank в валюте счёта, а item.currencyCode — валюта операции).
+  // accCurrency — валюта СЧЁТА, нужна лишь как fallback: сумму пишем в валюте ОПЕРАЦИИ
+  // (item.operationAmount + item.currencyCode), см. mapStatementItem.
   let acc = accounts.find((a: any) => a?.id === accountId);
   // Счёт не найден (старое подключение без списка счетов) → дотягиваем из client-info и сохраняем.
   if (!acc && token) {

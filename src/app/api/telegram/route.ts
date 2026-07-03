@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, answerCallback, sendVoice } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
@@ -942,7 +942,7 @@ export async function POST(req: NextRequest) {
         // Джарвис отвечает голосом, если к нему обратились голосом.
         if (isVoice && reply) {
           await sendChatAction(chatId, "record_voice");
-          const audio = await speak(reply);
+          const audio = await speak(mdToPlain(reply));
           if (audio) await sendVoice(chatId, audio);
         }
       } catch (e) {

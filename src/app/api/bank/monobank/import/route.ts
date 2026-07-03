@@ -41,18 +41,19 @@ export async function POST() {
   const to = Math.floor(Date.now() / 1000);
   const from = to - 30 * 24 * 60 * 60;
 
-  // Уже сохранённые операции (ext_id → текущая валюта) — для анти-дубля и починки валюты.
-  const existing = new Map<string, string>();
+  // Уже сохранённые операции (ext_id → валюта+сумма) — для анти-дубля и починки
+  // валюты/суммы (напр. трата за границей раньше писалась в гривне со счёта).
+  const existing = new Map<string, { currency: string; amount: number }>();
   try {
-    const { data } = await db.from("finance_tx").select("ext_id, currency").eq("user_id", user.id).eq("source", "monobank").limit(20000);
-    for (const t of data || []) if ((t as any).ext_id) existing.set((t as any).ext_id, (t as any).currency);
+    const { data } = await db.from("finance_tx").select("ext_id, currency, amount").eq("user_id", user.id).eq("source", "monobank").limit(20000);
+    for (const t of data || []) if ((t as any).ext_id) existing.set((t as any).ext_id, { currency: (t as any).currency, amount: Number((t as any).amount) });
   } catch { /* нет колонок — дублей по определению нет */ }
 
   let inserted = 0;
   let fixed = 0;
   let rateLimited = false;
   const toInsert: any[] = [];
-  const toFix: { ext_id: string; currency: string }[] = [];
+  const toFix: { ext_id: string; currency: string; amount: number }[] = [];
   for (const acc of accounts) {
     let res: Response;
     try { res = await fetch(`${MONO}/personal/statement/${acc.id}/${from}/${to}`, { headers: { "X-Token": token }, cache: "no-store" }); }
@@ -64,18 +65,22 @@ export async function POST() {
       const m = mapStatementItem(it, acc.currency); // валюта — по счёту
       if (!m) continue;
       if (existing.has(m.ext_id)) {
-        // Уже есть: чиним валюту, если была сохранена неверно (баг с EUR).
-        if (existing.get(m.ext_id) !== m.currency) { toFix.push({ ext_id: m.ext_id, currency: m.currency }); existing.set(m.ext_id, m.currency); }
+        // Уже есть: чиним валюту И сумму, если сохранены неверно (напр. гривна вместо евро).
+        const cur = existing.get(m.ext_id)!;
+        if (cur.currency !== m.currency || Math.abs((cur.amount || 0) - m.amount) > 0.005) {
+          toFix.push({ ext_id: m.ext_id, currency: m.currency, amount: m.amount });
+          existing.set(m.ext_id, { currency: m.currency, amount: m.amount });
+        }
         continue;
       }
-      existing.set(m.ext_id, m.currency);
+      existing.set(m.ext_id, { currency: m.currency, amount: m.amount });
       toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id, scope: m.scope });
     }
   }
 
-  // Починка валюты у ранее импортированных операций.
+  // Починка валюты и суммы у ранее импортированных операций.
   for (const f of toFix) {
-    const { error } = await db.from("finance_tx").update({ currency: f.currency }).eq("user_id", user.id).eq("ext_id", f.ext_id).eq("source", "monobank");
+    const { error } = await db.from("finance_tx").update({ currency: f.currency, amount: f.amount }).eq("user_id", user.id).eq("ext_id", f.ext_id).eq("source", "monobank");
     if (!error) fixed++;
   }
 

@@ -46,19 +46,20 @@ export type MonoMapped = {
 };
 
 // Преобразовать statementItem из вебхука/выписки Monobank в операцию.
-// ВАЖНО: item.amount — в валюте СЧЁТА, поэтому валюту берём по счёту
-// (accountCurrency), а не по item.currencyCode (это может быть валюта операции).
-// Возвращает null, если данные неполные.
+// Пишем сумму и валюту ОПЕРАЦИИ (item.operationAmount + item.currencyCode): трата в
+// Париже на 134.82 € так и попадёт как 134.82 €, а не как её гривневый эквивалент со
+// счёта (item.amount). Для покупок дома в гривне operationAmount == amount → без разницы.
+// Знак (расход/доход) берём по счёту — он всегда согласован. Fallback на счёт, если
+// Monobank не прислал operationAmount/currencyCode.
 export function mapStatementItem(item: any, accountCurrency?: string): MonoMapped | null {
   if (!item || typeof item.amount !== "number" || !item.id) return null;
-  const amountMinor = item.amount; // в копейках, со знаком (расход < 0)
-  const kind: "income" | "expense" = amountMinor < 0 ? "expense" : "income";
-  const amount = Math.round((Math.abs(amountMinor) / 100) * 100) / 100;
+  const kind: "income" | "expense" = item.amount < 0 ? "expense" : "income";
+  const opMinor = typeof item.operationAmount === "number" ? item.operationAmount : item.amount;
+  const amount = Math.round((Math.abs(opMinor) / 100) * 100) / 100;
   if (!(amount > 0)) return null;
-  // item.currencyCode — валюта ОПЕРАЦИИ (для трат за границей ≠ валюте счёта),
-  // а amount — в валюте СЧЁТА. Если валюту счёта не передали — безопасный дефолт UAH
-  // (Monobank украинский; счёт почти всегда в гривне), НЕ валюта операции.
-  const currency = accountCurrency || "UAH";
+  const currency = Number.isFinite(Number(item.currencyCode))
+    ? currencyAlpha(Number(item.currencyCode))
+    : (accountCurrency || "UAH");
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();

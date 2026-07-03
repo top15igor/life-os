@@ -66,6 +66,19 @@ export async function sendChatAction(chatId: number, action = "typing"): Promise
 // убирает ## заголовки, таблицы | a | b |, цитаты >, превращает **жирный** в <b>.
 // Применять ТОЛЬКО к свободному тексту модели (askLife/companion), а не к
 // сообщениям, где мы сами уже расставляем HTML-теги.
+// Убрать markdown-разметку для озвучки (TTS не должен читать «звёздочки» и «решётки»).
+export function mdToPlain(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s*/gm, "")
+    .replace(/^\s*[-*•]\s+/gm, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function mdToTelegram(s: string): string {
   if (!s) return s;
   // Сначала экранируем спецсимволы HTML, чтобы стрелки/амперсанды не ломали разметку.
