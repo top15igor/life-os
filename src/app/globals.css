@@ -11,6 +11,7 @@
   --accent: #4f46e5;
   --accent-bg: #eef2ff;
   --accent-text: #3730a3;
+  --nav-fg: #374151; /* цвет пунктов бокового меню (адаптируется под тему) */
   --health: #ef4444;
   --energy: #d97706;
   --insight: #7c3aed;
@@ -33,6 +34,7 @@ html[data-theme="dark"] {
   --accent: #5b8cff;
   --accent-bg: rgba(91,140,255,0.16);
   --accent-text: #a9c1ff;
+  --nav-fg: #ccd2dd; /* светлее — чтобы пункты меню читались на тёмном фоне */
   color-scheme: dark;
 }
 html[data-theme="dark"], html[data-theme="dark"] body { background: var(--bg); color: var(--text); }
@@ -104,7 +106,7 @@ details.adm[open] > summary .adm-chev { transform: rotate(180deg); }
   display: flex; flex-direction: column; gap: 2px; background: var(--bg);
 }
 .brand { display: flex; align-items: center; gap: 9px; padding: 4px 9px 14px; font-size: 15px; font-weight: 500; }
-.navlink { display: flex; align-items: center; gap: 11px; padding: 8px 11px; border-radius: 9px; color: #374151; font-size: 14px; font-weight: 450; cursor: pointer; }
+.navlink { display: flex; align-items: center; gap: 11px; padding: 8px 11px; border-radius: 9px; color: var(--nav-fg); font-size: 14px; font-weight: 450; cursor: pointer; }
 .navlink:hover { background: var(--surface-2); }
 .navlink.active { background: var(--surface-2); color: var(--text); font-weight: 500; }
 .navlink.soon { opacity: 0.45; cursor: default; }
