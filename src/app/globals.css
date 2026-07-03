@@ -46,7 +46,6 @@ html[data-app] .asst-fab { display: none !important; }
 html[data-solo] .mobilenav { display: none !important; }
 html[data-solo] .main { padding-bottom: 24px !important; }
 html[data-solo] .app-back { display: none !important; }
-/* Тема всегда светлая (тёмную можно вернуть позже как переключатель). */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
