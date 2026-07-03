@@ -124,8 +124,34 @@ export default function AuthForm({
     boxSizing: "border-box",
   };
 
+  // Вход/регистрация — своя светлая палитра (в тон лендингу /about), не зависит
+  // от темы посетителя: единый светлый путь «лендинг → вход» + мягкая «аврора».
+  const shell = {
+    ["--bg" as any]: "#f7f8fc",
+    ["--surface" as any]: "#ffffff",
+    ["--surface-2" as any]: "#eef1f8",
+    ["--text" as any]: "#14161c",
+    ["--text-2" as any]: "#4a5261",
+    ["--text-3" as any]: "#8b93a3",
+    ["--border" as any]: "rgba(20,24,40,0.08)",
+    ["--accent" as any]: "#5b5bf5",
+    ["--accent-bg" as any]: "#edecff",
+    ["--accent-text" as any]: "#4338ca",
+    colorScheme: "light",
+    color: "var(--text)",
+    minHeight: "100dvh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    background:
+      "radial-gradient(720px 420px at 18% -12%, rgba(124,92,246,0.20), transparent 60%)," +
+      "radial-gradient(720px 420px at 84% -8%, rgba(91,91,245,0.16), transparent 60%)," +
+      "#f7f8fc",
+  } as React.CSSProperties;
+
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={shell}>
       <div style={{ width: "100%", maxWidth: 380 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, justifyContent: "center", marginBottom: 4 }}>
           <i className="ti ti-flower" style={{ fontSize: 24, color: "var(--accent)" }} />
@@ -137,9 +163,9 @@ export default function AuthForm({
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border)",
-            borderRadius: 18,
-            padding: "24px 22px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            borderRadius: 20,
+            padding: "26px 24px",
+            boxShadow: "0 1px 2px rgba(20,24,40,.05), 0 24px 54px -28px rgba(20,24,40,.28)",
           }}
         >
           {/* Tabs */}
@@ -244,12 +270,13 @@ export default function AuthForm({
                 borderRadius: 12,
                 border: "none",
                 cursor: busy ? "default" : "pointer",
-                background: "var(--accent)",
+                background: "linear-gradient(135deg,#6d6bf6,#8b5cf6)",
                 color: "#fff",
                 fontSize: 15.5,
                 fontWeight: 600,
                 opacity: busy ? 0.6 : 1,
                 marginTop: 4,
+                boxShadow: "0 12px 26px -12px rgba(91,91,245,.55)",
               }}
             >
               {busy ? t.busy : mode === "login" ? t.submitLogin : t.submitReg}
