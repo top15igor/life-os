@@ -39,6 +39,15 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [editing, setEditing] = useState(false);
   const [ready, setReady] = useState(false);
+  // Быстрый переключатель день/ночь у логотипа.
+  const [dark, setDark] = useState(false);
+  useEffect(() => { try { setDark(document.documentElement.dataset.theme === "dark"); } catch {} }, []);
+  const toggleTheme = () => {
+    const next = dark ? "light" : "dark";
+    setDark(!dark);
+    try { document.documentElement.dataset.theme = next; document.cookie = `theme=${next}; path=/; max-age=31536000`; } catch {}
+    fetch("/api/theme", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ theme: next }) }).catch(() => {});
+  };
 
   const gl = GROUPS_L[locale] || GROUPS_L.ru;
   const el = ED_L[locale] || ED_L.ru;
@@ -90,10 +99,20 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   return (
     <>
       <aside className="sidebar">
-        <Link href="/about" className="brand" style={{ textDecoration: "none" }}>
-          <i className="ti ti-flower" style={{ fontSize: 18, color: "var(--accent)" }} />
-          <span>{brand}</span>
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 10 }}>
+          <Link href="/about" className="brand" style={{ textDecoration: "none", padding: "4px 9px 4px", flex: 1, minWidth: 0 }}>
+            <i className="ti ti-flower" style={{ fontSize: 18, color: "var(--accent)" }} />
+            <span>{brand}</span>
+          </Link>
+          <button
+            onClick={toggleTheme}
+            aria-label={dark ? "Светлая тема" : "Тёмная тема"}
+            title={dark ? "Светлая тема" : "Тёмная тема"}
+            style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <i className={`ti ${dark ? "ti-sun" : "ti-moon"}`} style={{ fontSize: 16 }} />
+          </button>
+        </div>
 
         {editing ? (
           /* ===== РЕЖИМ НАСТРОЙКИ ===== */
