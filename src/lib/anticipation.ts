@@ -73,14 +73,14 @@ export async function getAnticipation(userId: string, lang: Lang = "ru", tzOffse
       `4) Если сигнал слабый, надуманный, или ты не уверен в датах/логике — found=false. Лучше промолчать, чем выдать неточность: пользователь не должен ловить тебя на ерунде. ` +
       `При found=true: тёплая, конкретная, КРАТКАЯ подсказка — строго 1-2 коротких предложения на ${LANG_NAME[lang]} языке, от лица друга, по конкретике из записей. Не выдумывай фактов. Всегда вызывай инструмент anticipation.`;
     const resp = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: 300,
       system,
       tools: [TOOL as any],
       tool_choice: { type: "tool", name: "anticipation" },
       messages: [{ role: "user", content: context }],
     });
-    logClaude(userId, "anticipation", "haiku", (resp as any).usage);
+    logClaude(userId, "anticipation", "sonnet", (resp as any).usage);
     const block: any = (resp as any).content.find((b: any) => b.type === "tool_use");
     if (block?.input) result = block.input;
   } catch (e) {
