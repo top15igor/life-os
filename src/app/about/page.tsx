@@ -347,8 +347,27 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
 
+  // Лендинг всегда тёмный, со СВОЕЙ палитрой (не зависит от темы посетителя) —
+  // осознанный премиальный тёмный вид + мягкое свечение под первым экраном.
+  const shell = {
+    ["--bg" as any]: "#0d0f14",
+    ["--surface" as any]: "#171a21",
+    ["--surface-2" as any]: "#1f232c",
+    ["--text" as any]: "#f3f4f6",
+    ["--text-2" as any]: "#aeb6c2",
+    ["--text-3" as any]: "#7e8794",
+    ["--border" as any]: "rgba(255,255,255,0.09)",
+    ["--accent" as any]: "#6b8dff",
+    ["--accent-bg" as any]: "rgba(107,141,255,0.16)",
+    ["--accent-text" as any]: "#b9c8ff",
+    colorScheme: "dark",
+    color: "var(--text)",
+    minHeight: "100dvh",
+    background: "radial-gradient(1100px 520px at 50% -8%, rgba(107,141,255,0.13), transparent 60%), #0d0f14",
+  } as React.CSSProperties;
+
   return (
-    <div style={{ background: "var(--bg)", color: "var(--text)", minHeight: "100dvh" }}>
+    <div style={shell}>
       {/* Top bar */}
       <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
