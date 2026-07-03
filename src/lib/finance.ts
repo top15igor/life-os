@@ -327,12 +327,12 @@ export async function getMonthlyTrend(userId: string, n = 12): Promise<{ month: 
 // курсы, чтобы ответ бота не тормозил.
 export async function getFinanceSummary(userId: string): Promise<string> {
   const db = supabaseAdmin();
-  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null; subcategory: string | null; scope?: string | null }> = [];
+  let all: Array<{ day: string; kind: string; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null }> = [];
   try {
-    let raw = await fetchAllTx(db, "day, kind, amount, currency, category, subcategory, scope", userId);
+    let raw = await fetchAllTx(db, "day, kind, amount, currency, category, subcategory, note, scope", userId);
     // Старая база без колонки scope/subcategory — повторяем без них.
-    if (!raw.length) raw = await fetchAllTx(db, "day, kind, amount, currency, category", userId);
-    all = raw.map((t: any) => ({ subcategory: null, scope: null, ...t, amount: Number(t.amount) }));
+    if (!raw.length) raw = await fetchAllTx(db, "day, kind, amount, currency, category, note", userId);
+    all = raw.map((t: any) => ({ subcategory: null, scope: null, note: null, ...t, amount: Number(t.amount) }));
   } catch {
     return "";
   }
@@ -419,6 +419,30 @@ export async function getFinanceSummary(userId: string): Promise<string> {
     for (const [cat, sm] of withSubs) {
       const tot = Math.round([...sm.values()].reduce((a, b) => a + b, 0));
       lines.push(`${cat} (всего ${tot}): ${top(sm, 8)}`);
+    }
+  }
+
+  // ПОИМЁННЫЕ ОПЕРАЦИИ за последние месяцы — чтобы на вопрос «покажи все траты за
+  // июль» ассистент перечислял реальные операции из кошелька «Деньги» (в т.ч.
+  // добавленные вручную/из банка, которых нет в тексте дневника), а не пересобирал
+  // список из дневниковых записей. Раньше таких строк не было — только помесячные
+  // итоги, поэтому отдельные траты терялись, а месяцы смешивались.
+  const sinceMonth = shiftMonth(currentMonth(), -3); // текущий + 3 предыдущих месяца
+  const recent = all
+    .filter((t) => t.day.slice(0, 7) >= sinceMonth)
+    .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
+    .slice(0, 300); // разумный потолок, чтобы не раздувать промпт
+  if (recent.length) {
+    lines.push(
+      "",
+      `ОПЕРАЦИИ ПОИМЁННО за последние месяцы (с ${sinceMonth}; свежие сверху; суммы в ИСХОДНОЙ валюте операции — это реальный кошелёк «Деньги»). Для вопросов «покажи траты/доходы за <месяц>» перечисляй ТОЛЬКО операции запрошенного месяца отсюда и НЕ смешивай другие месяцы:`
+    );
+    for (const t of recent) {
+      const kind = t.kind === "income" ? "доход" : "расход";
+      const cat = t.category || "—";
+      const sub = t.subcategory ? ` › ${t.subcategory}` : "";
+      const note = t.note ? ` (${String(t.note).slice(0, 60)})` : "";
+      lines.push(`${t.day}: ${kind} ${t.amount} ${t.currency} · ${cat}${sub}${note}`);
     }
   }
   return lines.join("\n");
