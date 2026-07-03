@@ -13,7 +13,7 @@ export function currencyAlpha(code: number): string {
 }
 
 // MCC (категория торговой точки) → наш ключ категории. null — не распознано.
-function mccCategory(mcc: number): string | null {
+export function mccCategory(mcc: number): string | null {
   if ([5411, 5412, 5422, 5441, 5451, 5462, 5499].includes(mcc)) return "food";          // продукты
   if ([5811, 5812, 5813, 5814].includes(mcc)) return "cafe";                              // кафе/рестораны
   if ([5541, 5542, 5172].includes(mcc)) return "transport";                               // топливо
