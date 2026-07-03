@@ -7,7 +7,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
-import { getFinanceData, getFinanceSummary, shiftMonth } from "./finance";
+import { getFinanceData, getFinanceSummary, shiftMonth, currentMonth } from "./finance";
 
 type Lang = "ru" | "en" | "uk" | "fr";
 const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
@@ -81,21 +81,35 @@ ${data}`;
 
 // Разбор по запросу (команда /money): вся картина — годы, месяцы, советы, урок.
 export async function financeReview(userId: string, lang: Lang): Promise<string> {
-  const summary = await getFinanceSummary(userId);
+  const [summary, cur] = await Promise.all([
+    getFinanceSummary(userId),
+    getFinanceData(userId, currentMonth()).catch(() => null),
+  ]);
   if (!summary) return HDR[lang].none;
+
+  // Точные цифры ТЕКУЩЕГО месяца, посчитанные из кошелька детерминированно (а не
+  // «на глаз» из общей сводки) — чтобы разбор не путал месяцы и не искажал суммы «сейчас».
+  let thisMonth = "";
+  if (cur && (cur.income !== 0 || cur.expense !== 0)) {
+    const c1 = cur.currency;
+    const cats = cur.byCategory.slice(0, 6).map((c) => `${c.category} ${Math.round(c.amount)}`).join(", ") || "—";
+    const savingsRate = cur.income > 0 ? Math.round(((cur.income - cur.expense) / cur.income) * 100) : null;
+    thisMonth = `ТЕКУЩИЙ МЕСЯЦ (${cur.month}) — точные цифры из кошелька «Деньги»: доход ${Math.round(cur.income)} ${c1}, расход ${Math.round(cur.expense)} ${c1}, баланс ${Math.round(cur.balance)} ${c1}${savingsRate != null ? `, норма сбережений ${savingsRate}%` : ""}. Крупнейшие статьи расходов: ${cats}. Для сумм текущего месяца используй ИМЕННО эти числа.`;
+  }
 
   const prompt = `${persona(lang)}
 
 Сделай полезный разбор финансов пользователя по сводке ниже. Структура:
-1) Общая картина: доходы, расходы и баланс за всё время и по годам — что видно (рост/спад, тенденции).
-2) Куда стабильно уходят деньги — главные статьи расходов; где есть потенциал сэкономить.
-3) Норма сбережений (сбережения = доход − расход, в % от дохода): оцени и объясни простыми словами, какой ориентир здоровый.
-4) 2 конкретных практичных совета под именно эти данные.
-5) Один короткий «урок финансовой грамотности» (понятие + как применить).
+1) Итог ТЕКУЩЕГО месяца (доход/расход/баланс) — по точным цифрам, если они даны ниже; не смешивай его с другими месяцами.
+2) Общая картина: доходы, расходы и баланс за всё время и по годам — что видно (рост/спад, тенденции).
+3) Куда стабильно уходят деньги — главные статьи расходов; где есть потенциал сэкономить.
+4) Норма сбережений (сбережения = доход − расход, в % от дохода): оцени и объясни простыми словами, какой ориентир здоровый.
+5) 2 конкретных практичных совета под именно эти данные.
+6) Один короткий «урок финансовой грамотности» (понятие + как применить).
 Пиши тепло и поддерживающе, 10–16 строк, с подзаголовками и эмодзи. Без воды.
 
 СВОДКА ФИНАНСОВ:
-${summary}`;
+${thisMonth ? thisMonth + "\n\n" : ""}${summary}`;
 
   const text = await run(userId, prompt);
   return `${HDR[lang].review}\n\n${text || HDR[lang].none}`;
