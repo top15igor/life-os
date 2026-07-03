@@ -316,6 +316,30 @@ const C = {
   },
 };
 
+// Премиальный светлый лендинг: ховеры, градиенты, мягкие тени, типографика.
+const LP_CSS = `
+.lp{ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; letter-spacing:-.011em; }
+.lp *{ box-sizing:border-box; }
+.lp a{ text-decoration:none; color:inherit; }
+.lp .lp-kicker{ font-size:12.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
+.lp .lp-h1{ font-size:clamp(34px,6.4vw,60px); font-weight:800; line-height:1.06; letter-spacing:-.03em; margin:0 0 20px; text-wrap:balance; }
+.lp .lp-h2{ font-size:clamp(25px,4vw,36px); font-weight:800; letter-spacing:-.025em; margin:0; text-wrap:balance; }
+.lp .lp-badge{ display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--accent-text); background:#fff; border:1px solid var(--border); padding:7px 14px; border-radius:999px; box-shadow:0 2px 10px -4px rgba(20,24,40,.14); }
+.lp .lp-badge .dot{ width:6px; height:6px; border-radius:50%; background:linear-gradient(135deg,#6d6bf6,#8b5cf6); box-shadow:0 0 0 3px rgba(124,92,246,.16); }
+.lp .lp-btn{ background:linear-gradient(135deg,#6d6bf6,#8b5cf6); color:#fff; box-shadow:0 12px 28px -12px rgba(91,91,245,.55); transition:transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+.lp .lp-btn:hover{ transform:translateY(-2px); box-shadow:0 18px 40px -12px rgba(91,91,245,.62); filter:brightness(1.04); }
+.lp .lp-ghost{ background:#fff; color:var(--text); border:1px solid var(--border); box-shadow:0 2px 10px -6px rgba(20,24,40,.18); transition:transform .18s ease, box-shadow .18s ease; }
+.lp .lp-ghost:hover{ transform:translateY(-2px); box-shadow:0 14px 30px -14px rgba(20,24,40,.3); }
+.lp .lp-card{ background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:0 1px 2px rgba(20,24,40,.04), 0 12px 32px -20px rgba(20,24,40,.18); transition:transform .2s ease, box-shadow .2s ease; }
+.lp .lp-card:hover{ transform:translateY(-4px); box-shadow:0 1px 2px rgba(20,24,40,.05), 0 26px 50px -24px rgba(20,24,40,.26); }
+.lp .lp-link{ transition:color .15s; }
+.lp .lp-link:hover{ color:var(--text); }
+.lp .lp-band{ background:var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.lp .about-caps summary::-webkit-details-marker{ display:none; }
+.lp details[open] .about-caps-chevron{ transform:rotate(180deg); }
+@media (max-width:600px){ .lp .lp-h1{ font-size:34px; } }
+`;
+
 export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string; d?: string }> }) {
   const sp = await searchParams;
   const locale = await getLocale();
@@ -347,27 +371,31 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
 
-  // Лендинг всегда тёмный, со СВОЕЙ палитрой (не зависит от темы посетителя) —
-  // осознанный премиальный тёмный вид + мягкое свечение под первым экраном.
+  // Лендинг — СВОЯ светлая палитра (не зависит от темы посетителя): чистый премиальный
+  // вид + мягкая «аврора» под первым экраном. Ховеры/градиенты — в LP_CSS ниже.
   const shell = {
-    ["--bg" as any]: "#0d0f14",
-    ["--surface" as any]: "#171a21",
-    ["--surface-2" as any]: "#1f232c",
-    ["--text" as any]: "#f3f4f6",
-    ["--text-2" as any]: "#aeb6c2",
-    ["--text-3" as any]: "#7e8794",
-    ["--border" as any]: "rgba(255,255,255,0.09)",
-    ["--accent" as any]: "#6b8dff",
-    ["--accent-bg" as any]: "rgba(107,141,255,0.16)",
-    ["--accent-text" as any]: "#b9c8ff",
-    colorScheme: "dark",
+    ["--bg" as any]: "#f7f8fc",
+    ["--surface" as any]: "#ffffff",
+    ["--surface-2" as any]: "#eef1f8",
+    ["--text" as any]: "#14161c",
+    ["--text-2" as any]: "#4a5261",
+    ["--text-3" as any]: "#8b93a3",
+    ["--border" as any]: "rgba(20,24,40,0.08)",
+    ["--accent" as any]: "#5b5bf5",
+    ["--accent-bg" as any]: "#edecff",
+    ["--accent-text" as any]: "#4338ca",
+    colorScheme: "light",
     color: "var(--text)",
     minHeight: "100dvh",
-    background: "radial-gradient(1100px 520px at 50% -8%, rgba(107,141,255,0.13), transparent 60%), #0d0f14",
+    background:
+      "radial-gradient(820px 460px at 16% -8%, rgba(124,92,246,0.20), transparent 60%)," +
+      "radial-gradient(820px 460px at 86% -4%, rgba(91,91,245,0.16), transparent 60%)," +
+      "#f7f8fc",
   } as React.CSSProperties;
 
   return (
-    <div style={shell}>
+    <div style={shell} className="lp">
+      <style dangerouslySetInnerHTML={{ __html: LP_CSS }} />
       {/* Top bar */}
       <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -378,7 +406,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <LangMenu current={locale} align="right" />
           <a
             href={isAuthed ? "/" : loginHref}
-            style={{ padding: "8px 16px", borderRadius: 10, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none" }}
+            className="lp-btn"
+            style={{ padding: "9px 17px", borderRadius: 11, fontSize: 14, fontWeight: 600 }}
           >
             {isAuthed ? t.back_to_app : t.nav_login}
           </a>
@@ -386,54 +415,42 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Hero */}
-      <div style={{ ...section, textAlign: "center", padding: "44px 22px 28px" }}>
-        <div
-          style={{
-            display: "inline-block",
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: "var(--accent-text)",
-            background: "var(--accent-bg)",
-            padding: "6px 13px",
-            borderRadius: 999,
-            marginBottom: 22,
-          }}
-        >
-          {t.hero_badge}
+      <div style={{ ...section, textAlign: "center", padding: "64px 22px 40px" }}>
+        <div className="lp-badge" style={{ marginBottom: 26 }}>
+          <span className="dot" />{t.hero_badge}
         </div>
-        <h1 style={{ fontSize: "clamp(30px, 6.5vw, 52px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.025em", margin: "0 0 18px" }}>
-          {t.hero_title}
-        </h1>
-        <p style={{ fontSize: "clamp(16px, 2.4vw, 19px)", color: "var(--text-2)", lineHeight: 1.55, maxWidth: 620, margin: "0 auto 28px" }}>
+        <h1 className="lp-h1">{t.hero_title}</h1>
+        <p style={{ fontSize: "clamp(16px, 2.4vw, 20px)", color: "var(--text-2)", lineHeight: 1.6, maxWidth: 640, margin: "0 auto 32px" }}>
           {t.hero_sub}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <a href={isAuthed ? "/" : loginHref} style={{ padding: "14px 26px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16, fontWeight: 600, textDecoration: "none" }}>
+          <a href={isAuthed ? "/" : loginHref} className="lp-btn" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 30px", borderRadius: 14, fontSize: 16, fontWeight: 600 }}>
             {isAuthed ? t.back_to_app : t.cta_create}
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>
         </div>
-        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 14 }}>{t.cta_hint}</div>}
+        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 16 }}>{t.cta_hint}</div>}
       </div>
 
       {/* Idea */}
-      <div style={{ ...section, padding: "48px 22px" }}>
-        <div style={kicker}>{t.idea_kicker}</div>
-        <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 18px" }}>{t.idea_title}</h2>
+      <div style={{ ...section, padding: "56px 22px" }}>
+        <div className="lp-kicker">{t.idea_kicker}</div>
+        <h2 className="lp-h2" style={{ margin: "10px 0 18px" }}>{t.idea_title}</h2>
         <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 700 }}>{t.idea_p1}</p>
         <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: 0, maxWidth: 700 }}>{t.idea_p2}</p>
       </div>
 
       {/* How */}
-      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
+      <div className="lp-band" style={{ padding: "60px 0" }}>
         <div style={section}>
-          <div style={kicker}>{t.how_kicker}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 8 }}>
+          <div className="lp-kicker">{t.how_kicker}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 18 }}>
             {t.how.map((s) => (
               <div key={s.n}>
-                <div style={{ width: 38, height: 38, borderRadius: 11, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, marginBottom: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(135deg,#6d6bf6,#8b5cf6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, marginBottom: 14, boxShadow: "0 10px 22px -10px rgba(91,91,245,.6)" }}>
                   {s.n}
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 6 }}>{s.t}</div>
+                <div style={{ fontSize: 18.5, fontWeight: 700, marginBottom: 6, letterSpacing: "-0.01em" }}>{s.t}</div>
                 <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55 }}>{s.d}</div>
               </div>
             ))}
@@ -442,13 +459,15 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Features */}
-      <div style={{ ...section, padding: "48px 22px" }}>
-        <div style={kicker}>{t.feat_kicker}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16, marginTop: 8 }}>
+      <div style={{ ...section, padding: "60px 22px" }}>
+        <div className="lp-kicker" style={{ marginBottom: 22 }}>{t.feat_kicker}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
           {t.feats.map((f) => (
-            <div key={f.t} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px" }}>
-              <i className={`ti ${f.i}`} style={{ fontSize: 24, color: "var(--accent)" }} />
-              <div style={{ fontSize: 17, fontWeight: 600, margin: "12px 0 6px" }}>{f.t}</div>
+            <div key={f.t} className="lp-card" style={{ padding: "22px 20px" }}>
+              <span style={{ display: "inline-flex", width: 44, height: 44, borderRadius: 13, background: "var(--accent-bg)", alignItems: "center", justifyContent: "center" }}>
+                <i className={`ti ${f.i}`} style={{ fontSize: 23, color: "var(--accent)" }} />
+              </span>
+              <div style={{ fontSize: 17, fontWeight: 700, margin: "14px 0 6px", letterSpacing: "-0.01em" }}>{f.t}</div>
               <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55 }}>{f.d}</div>
             </div>
           ))}
@@ -456,10 +475,10 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Capabilities — how to use / full feature list (expandable) */}
-      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "48px 0" }}>
+      <div className="lp-band" style={{ padding: "60px 0" }}>
         <div style={section}>
-          <div style={kicker}>{caps.kicker}</div>
-          <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{caps.title}</h2>
+          <div className="lp-kicker">{caps.kicker}</div>
+          <h2 className="lp-h2" style={{ margin: "10px 0 12px" }}>{caps.title}</h2>
           <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 22px", maxWidth: 640 }}>{caps.sub}</p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 12, alignItems: "start" }}>
@@ -506,10 +525,10 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Founder */}
-      <div style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", padding: "52px 0" }}>
+      <div style={{ padding: "64px 0" }}>
         <div style={{ ...section, maxWidth: 720 }}>
-          <div style={kicker}>{t.founder_kicker}</div>
-          <h2 style={{ fontSize: "clamp(23px, 3.6vw, 30px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 18px" }}>{t.founder_title}</h2>
+          <div className="lp-kicker">{t.founder_kicker}</div>
+          <h2 className="lp-h2" style={{ fontSize: "clamp(23px, 3.6vw, 32px)", margin: "10px 0 20px" }}>{t.founder_title}</h2>
           {t.founder_paras.map((p, i) => (
             <p key={i} style={{ fontSize: 17, color: i === 0 ? "var(--text)" : "var(--text-2)", lineHeight: 1.65, margin: "0 0 14px" }}>{p}</p>
           ))}
@@ -539,14 +558,15 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Testimonials */}
-      <div style={{ ...section, padding: "48px 22px" }}>
-        <div style={kicker}>{t.testi_kicker}</div>
-        <h2 style={{ fontSize: "clamp(24px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 24px" }}>{t.testi_title}</h2>
+      <div className="lp-band" style={{ padding: "60px 0" }}>
+        <div style={section}>
+        <div className="lp-kicker">{t.testi_kicker}</div>
+        <h2 className="lp-h2" style={{ margin: "10px 0 26px" }}>{t.testi_title}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           {t.testi.map((r, i) => (
-            <div key={i} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "22px 20px", display: "flex", flexDirection: "column" }}>
-              <div style={{ color: "var(--accent)", fontSize: 14, marginBottom: 10 }}>★★★★★</div>
-              <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 16px", flex: 1 }}>«{r.text}»</p>
+            <div key={i} className="lp-card" style={{ background: "var(--bg)", padding: "24px 22px", display: "flex", flexDirection: "column" }}>
+              <div style={{ color: "#f5a623", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>★★★★★</div>
+              <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 18px", flex: 1 }}>«{r.text}»</p>
               <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
                   {r.name.charAt(0)}
@@ -559,36 +579,41 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             </div>
           ))}
         </div>
+        </div>
       </div>
 
       {/* Trust */}
-      <div style={{ ...section, padding: "44px 22px" }}>
+      <div style={{ ...section, padding: "60px 22px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-          <div style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", color: "var(--text)" }}>
-            <i className="ti ti-download" style={{ fontSize: 22, color: "var(--accent)" }} />
-            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_own}</div>
+          <div className="lp-card" style={{ padding: "22px 20px" }}>
+            <i className="ti ti-download" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ fontSize: 16.5, fontWeight: 700, margin: "12px 0 5px" }}>{t.trust_own}</div>
             <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_own_d}</div>
           </div>
-          <a href={GH} target="_blank" rel="noreferrer" style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", textDecoration: "none", color: "var(--text)" }}>
-            <i className="ti ti-brand-github" style={{ fontSize: 22 }} />
-            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_open}</div>
+          <a href={GH} target="_blank" rel="noreferrer" className="lp-card" style={{ display: "block", padding: "22px 20px", color: "var(--text)" }}>
+            <i className="ti ti-brand-github" style={{ fontSize: 24 }} />
+            <div style={{ fontSize: 16.5, fontWeight: 700, margin: "12px 0 5px" }}>{t.trust_open}</div>
             <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_open_d}</div>
           </a>
-          <a href="/privacy" style={{ display: "block", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 18px", textDecoration: "none", color: "var(--text)" }}>
-            <span style={{ fontSize: 22 }}>🔒</span>
-            <div style={{ fontSize: 16.5, fontWeight: 600, margin: "10px 0 5px" }}>{t.trust_priv}</div>
+          <a href="/privacy" className="lp-card" style={{ display: "block", padding: "22px 20px", color: "var(--text)" }}>
+            <span style={{ fontSize: 23 }}>🔒</span>
+            <div style={{ fontSize: 16.5, fontWeight: 700, margin: "12px 0 5px" }}>{t.trust_priv}</div>
             <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.5 }}>{t.trust_priv_d}</div>
           </a>
         </div>
       </div>
 
       {/* Final CTA */}
-      <div style={{ ...section, textAlign: "center", padding: "20px 22px 64px" }}>
-        <h2 style={{ fontSize: "clamp(23px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 12px" }}>{t.final_title}</h2>
-        {!isAuthed && <p style={{ fontSize: 16, color: "var(--text-2)", margin: "0 0 24px" }}>{t.final_sub}</p>}
-        <a href={isAuthed ? "/" : loginHref} style={{ display: "inline-block", marginTop: isAuthed ? 12 : 0, padding: "15px 34px", borderRadius: 13, background: "var(--accent)", color: "#fff", fontSize: 16.5, fontWeight: 600, textDecoration: "none" }}>
-          {isAuthed ? t.back_to_app : t.cta_create}
-        </a>
+      <div style={{ ...section, padding: "10px 22px 72px" }}>
+        <div style={{ position: "relative", overflow: "hidden", borderRadius: 26, padding: "56px 40px", textAlign: "center", color: "#fff", background: "linear-gradient(135deg,#5b5bf5,#8b5cf6 55%,#a855f7)", boxShadow: "0 30px 70px -30px rgba(91,91,245,.7)" }}>
+          <div style={{ position: "absolute", top: -80, right: -40, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.22),transparent 70%)", pointerEvents: "none" }} />
+          <h2 style={{ position: "relative", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.025em", margin: "0 0 12px", textWrap: "balance" }}>{t.final_title}</h2>
+          {!isAuthed && <p style={{ position: "relative", fontSize: 16.5, color: "rgba(255,255,255,.9)", margin: "0 0 26px" }}>{t.final_sub}</p>}
+          <a href={isAuthed ? "/" : loginHref} className="lp-ghost" style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 9, marginTop: isAuthed ? 12 : 0, padding: "15px 34px", borderRadius: 14, background: "#fff", color: "#5b3ef5", border: "none", fontSize: 16.5, fontWeight: 700, boxShadow: "0 14px 30px -12px rgba(0,0,0,.35)" }}>
+            {isAuthed ? t.back_to_app : t.cta_create}
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+          </a>
+        </div>
       </div>
 
       {/* Footer */}
