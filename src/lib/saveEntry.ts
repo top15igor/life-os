@@ -138,16 +138,46 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
         f.currency = currency;
         return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
       });
+    // Дедуп извлечённых AI операций: НЕ плодим повторную запись, если такая же
+    // (день + тип + сумма + валюта + категория) уже есть в кошельке. Такое бывает, когда
+    // трату уже занесли вручную/через /spend/из прошлой записи, а пользователь упомянул её
+    // снова — в т.ч. в вопросе-претензии «а почему сегодняшнюю трату не учёл?!». Раньше бот
+    // молча задваивал одни и те же деньги. Ручной ввод (/spend, веб) идёт мимо этого пути,
+    // поэтому осознанные одинаковые траты им не мешаем.
+    const finKey = (r: { kind: string; amount: number | string; currency: string; category: string | null }) =>
+      `${r.kind}|${Number(r.amount)}|${r.currency}|${r.category ?? ""}`;
+    const existingKeys = new Set<string>();
     if (rows.length) {
-      let { error: finErr } = await db.from("finance_tx").insert(rows);
+      try {
+        const { data: sameDay } = await db
+          .from("finance_tx")
+          .select("kind,amount,currency,category")
+          .eq("user_id", owner)
+          .eq("day", txDay);
+        for (const t of sameDay || []) existingKeys.add(finKey(t as any));
+      } catch {
+        // не смогли прочитать существующие — вставим как есть (лучше дубль, чем потерять трату)
+      }
+    }
+    const seenKeys = new Set<string>();
+    const fresh = rows.filter((r) => {
+      const k = finKey(r);
+      if (existingKeys.has(k) || seenKeys.has(k)) return false; // уже учтено — пропускаем дубль
+      seenKeys.add(k);
+      return true;
+    });
+    if (fresh.length) {
+      let { error: finErr } = await db.from("finance_tx").insert(fresh);
       // Старая схема без колонки entry_id — повторяем вставку без неё.
       if (finErr && /entry_id|column|schema cache/i.test(finErr.message)) {
-        const bare = rows.map(({ entry_id, ...rest }) => rest);
+        const bare = fresh.map(({ entry_id, ...rest }) => rest);
         ({ error: finErr } = await db.from("finance_tx").insert(bare));
       }
       if (finErr) { financeError = finErr.message; console.error("finance insert failed", finErr); }
-      else financeSaved = rows.length;
+      else financeSaved = fresh.length;
     }
+    // Все операции оказались дублями уже записанных — деньги в кошельке корректны, это НЕ ошибка.
+    if (rows.length && !fresh.length && !financeError) financeSaved = rows.length;
   }
   return { financeSaved, financeError };
 }
