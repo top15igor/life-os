@@ -5,7 +5,7 @@ import { resolveRefToId } from "./users";
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
 export type AuthError = "invalid_email" | "weak_password" | "exists" | "no_user" | "bad_password" | "server";
-export type AuthResult = { ok: boolean; token?: string; error?: AuthError };
+export type AuthResult = { ok: boolean; token?: string; error?: AuthError; theme?: string };
 
 // ===== Пароли: соль + scrypt (сам пароль не храним) =====
 export function hashPassword(password: string): string {
@@ -89,7 +89,13 @@ export async function loginWithEmail(rawEmail: string, password: string): Promis
 
   if (!data) return { ok: false, error: "no_user" };
   if (!verifyPassword(password, (data as any).password_hash)) return { ok: false, error: "bad_password" };
-  return { ok: true, token: (data as any).token };
+  // Тему читаем отдельным best-effort запросом — если колонки ещё нет, вход не ломается.
+  let theme: string | undefined;
+  try {
+    const { data: t } = await db.from("users").select("theme").eq("email", email).maybeSingle();
+    theme = (t as any)?.theme || undefined;
+  } catch {}
+  return { ok: true, token: (data as any).token, theme };
 }
 
 // ===== Вход/регистрация через Google (почта уже проверена Google) =====

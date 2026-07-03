@@ -1,7 +1,11 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ProfileButtons } from "@/components/ProfileActions";
 import LangSwitcher from "@/components/LangSwitcher";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 import type { CurrentUser } from "@/lib/auth";
+
+const THEME_LABEL: Record<string, string> = { ru: "Тема", en: "Theme", uk: "Тема", fr: "Thème" };
 
 const STR: Record<string, any> = {
   ru: { title: "Профиль", privateT: "Это твой личный кабинет", privateS: "Дневник виден только тебе — по этой личной ссылке. Никто другой его не видит, и в публичном доступе его нет.", yourLink: "Твоя личная ссылка", linkHint: "Сохрани её — по ней ты входишь в свой дневник на любом устройстве.", backupT: "Запасной вход по ссылке", backupS: "У тебя уже есть вход через Google или почту. Эта личная ссылка — запасной ключ: по ней тоже можно войти на любом устройстве. Никому не пересылай — кто откроет, попадёт в твой дневник.", pinNote: "У тебя есть пароль или Google — этого достаточно для защиты входа. PIN можно не ставить (он нужен в основном для общего компьютера).", language: "Язык", privacy: "Подробнее о приватности", yourData: "Твои данные", exportBtn: "Скачать мои данные", exportHint: "Все твои записи в одном файле — забери в любой момент. А код LIFE OS открыт: можешь сам проверить, что мы делаем с данными.", openCode: "Открытый код на GitHub", obsidianBtn: "Скачать для Obsidian (Markdown)", obsidianHint: "Хочешь хранить всё у себя? Скачай дневник папкой Markdown-файлов и открой в Obsidian — данные станут полностью твоими, без зависимости от нас.", accent: "Акцент главной", security: "Безопасность", dataS: "Экспорт записей, Obsidian, открытый код.", secS: "Приватность и PIN-код.", danger: "Управление аккаунтом", plan: "Тариф", planSub: "Сейчас ты на «Старт». Больше живёшь в дневнике — больше он даёт.", planBtn: "Смотреть тарифы", refT: "Мои приглашённые", refS: "Кого ты привёл — и кого пригласили они. Деревом.", refBtn: "Открыть", accountT: "Аккаунт и вход", accountS: "Ссылка, @имя, способы входа.", notifT: "Пуш-уведомления", notifS: "Утро, вечер, время, тон и стиль сообщений.", secLead: "Твоя жизнь — закрыта и под защитой", sec: ["Только ты видишь свои записи — вход лишь по твоей личной ссылке. Других пользователей в дневник мы не пускаем.", "Люди их не читают: ни другие пользователи, ни наша команда. Для статистики мы видим только обезличенные цифры — без текста записей.", "Текст видит только AI — и лишь чтобы готовить твои же резюме, ответы и Книгу жизни. На обучение моделей он не идёт.", "Данные передаются и хранятся в зашифрованном виде; доступ — по секретным ключам, которых нет в открытом коде.", "Ты полный владелец: в любой момент можешь скачать всё или удалить аккаунт без следа.", "Код LIFE OS открыт — можешь сам проверить, что именно происходит с данными."] },
@@ -14,6 +18,8 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
   const s = STR[locale] || STR.ru;
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
   const showPushToggle = !!user.chat_id; // пуши приходят только тем, кто в Telegram
+  const tc = (await cookies()).get("theme")?.value;
+  const themePref = (tc === "light" || tc === "dark" || tc === "auto" ? tc : "auto") as "auto" | "light" | "dark";
 
   return (
     <div style={{ maxWidth: 560 }}>
@@ -101,6 +107,12 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
       <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <span style={{ fontSize: 14, fontWeight: 500 }}>{s.language}</span>
         <LangSwitcher current={locale as any} />
+      </div>
+
+      {/* Тема оформления */}
+      <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ fontSize: 14, fontWeight: 500 }}>{THEME_LABEL[locale] || THEME_LABEL.ru}</span>
+        <ThemeSwitcher current={themePref} locale={locale} />
       </div>
 
       {/* Управление */}

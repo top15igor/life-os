@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginWithEmail } from "@/lib/emailAuth";
-import { setSessionCookie } from "@/lib/authCookie";
+import { setSessionCookie, setThemeCookie } from "@/lib/authCookie";
 
 export const runtime = "nodejs";
 
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
   if (result.ok && result.token) {
     const res = NextResponse.json({ ok: true });
     setSessionCookie(res, result.token);
+    setThemeCookie(res, result.theme);
     return res;
   }
   return NextResponse.json({ ok: false, error: result.error || "server" }, { status: 400 });

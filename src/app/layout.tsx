@@ -26,9 +26,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const c = await cookies();
   const inApp = c.get("app")?.value === "1";
   const solo = inApp && c.get("solo")?.value !== "0";
+  // Тема: настройка пользователя в куке theme (auto|light|dark), по умолчанию light.
+  // Явные light/dark ставим сразу на сервере (без мигания); auto доводит инлайн-скрипт
+  // по системной теме ДО первой отрисовки.
+  const themePref = c.get("theme")?.value;
+  const serverTheme = themePref === "dark" ? "dark" : themePref === "light" ? "light" : undefined;
+  const themeScript = `(function(){try{var t=${JSON.stringify(themePref || "light")};var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(t==='auto'){matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){document.documentElement.dataset.theme=e.matches?'dark':'light';});}}catch(e){}})();`;
   return (
-    <html lang="ru" data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined}>
+    <html lang="ru" data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
           rel="preload"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { setThemeCookie } from "@/lib/authCookie";
 
 export const runtime = "nodejs";
 
@@ -67,5 +68,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     path: "/",
     maxAge: 60 * 60 * 24 * 180,
   });
+  // Тема аккаунта → кука (best-effort; если колонки нет, вход не ломается).
+  let theme: string | undefined;
+  try {
+    const { data: t } = await db.from("users").select("theme").eq("id", user.id).maybeSingle();
+    theme = (t as any)?.theme || undefined;
+  } catch {}
+  setThemeCookie(res, theme);
   return res;
 }

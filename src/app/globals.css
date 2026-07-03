@@ -15,11 +15,12 @@
   --energy: #d97706;
   --insight: #7c3aed;
   --positive: #059669;
+  color-scheme: light; /* явно: браузеры не авто-инвертируют светлую тему */
 }
-/* Тёмная тема ТОЛЬКО внутри нативного приложения (webview ставит html[data-app]).
-   Обычные веб-пользователи остаются на светлой. Так переход из тёмного нативного
-   ядра во вкладку «Ещё» становится незаметным — единый стиль. */
-html[data-app] {
+/* Тёмная тема управляется настройкой (Профиль → Тема): инлайн-скрипт в layout
+   ставит html[data-theme="dark"] (авто = по системе). Нативное приложение получает
+   theme=dark через /m — тот же механизм, единый стиль. Кука app больше НЕ красит тему. */
+html[data-theme="dark"] {
   --bg: #0f1115;
   --surface: #1a1d24;
   --surface-2: #232733;
@@ -34,7 +35,7 @@ html[data-app] {
   --accent-text: #a9c1ff;
   color-scheme: dark;
 }
-html[data-app], html[data-app] body { background: var(--bg); color: var(--text); }
+html[data-theme="dark"], html[data-theme="dark"] body { background: var(--bg); color: var(--text); }
 /* В приложении есть свой нативный AI-друг → плавающий веб-помощник лишний
    (тормозит в webview и наезжает на кнопки). Прячем только внутри приложения. */
 html[data-app] .asst-fab { display: none !important; }
