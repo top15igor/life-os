@@ -126,12 +126,20 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
         if (top) baseCur = top;
       }
     } catch {}
+    // Пользовательские категории (вариант А): их slug тоже валидны при сохранении.
+    const customExpense = new Set<string>();
+    const customIncome = new Set<string>();
+    try {
+      const { data: cc } = await db.from("finance_categories").select("slug, kind").eq("user_id", owner).limit(100);
+      for (const c of (cc as any[]) || []) if (c?.slug) (c.kind === "income" ? customIncome : customExpense).add(c.slug);
+    } catch {}
     const rows = a.finance
       .filter((f) => f && (f.kind === "income" || f.kind === "expense") && Number(f.amount) > 0)
       .map((f) => {
         const kind = f.kind;
         const allowed = kind === "income" ? INCOME_CAT_KEYS : EXPENSE_CAT_KEYS;
-        const category = f.category && allowed.includes(f.category) ? f.category : "other";
+        const custom = kind === "income" ? customIncome : customExpense;
+        const category = f.category && (allowed.includes(f.category) || custom.has(f.category)) ? f.category : "other";
         const currency = f.currency && FINANCE_CURRENCIES.includes(f.currency) ? f.currency : baseCur;
         // Возвращаем итоговую валюту в исходный объект: бот показывает подтверждение по
         // analysis.finance, и без этого символ в сообщении (напр. $) расходился с сохранённым (€).

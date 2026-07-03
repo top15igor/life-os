@@ -64,6 +64,13 @@ const CUR = [
 ];
 const symOf = (c: string) => CUR.find((x) => x.code === c)?.sym || c;
 
+const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string }> = {
+  ru: { title: "Мои категории", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
+  en: { title: "My categories", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
+  uk: { title: "Мої категорії", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
+  fr: { title: "Mes catégories", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
+};
+
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 function intlOf(l: string) { return l === "en" ? "en-GB" : l === "fr" ? "fr-FR" : l === "uk" ? "uk-UA" : "ru-RU"; }
@@ -106,11 +113,18 @@ function hashColor(s: string) {
 
 // Отображение категории: пресет по ключу, иначе исходное название (импорт из MoneyOK)
 // с угаданной иконкой и стабильным цветом. Возвращает { icon, color, label }.
+// Пользовательские категории (вариант А): реестр заполняет компонент из /api/finance/categories.
+// Ключ — `${kind}:${slug}`. catView сначала смотрит сюда, чтобы показать label/emoji, а не сырой slug.
+type CustomCat = { id: string; slug: string; label: string; emoji: string | null; kind: string };
+let CUSTOM_CAT_VIEW: Record<string, { label: string; emoji: string | null }> = {};
+
 function catView(kind: "income" | "expense", key: string | null, locale: string): { icon: string; color: string; label: string } {
   const list = kind === "income" ? INCOME_CATS : EXPENSE_CATS;
   const preset = key ? list.find((c) => c.key === key) : null;
   if (preset) return { icon: preset.icon, color: preset.color, label: (preset.l as any)[locale] || preset.l.ru };
   if (!key) { const o = list[list.length - 1]; return { icon: o.icon, color: o.color, label: (o.l as any)[locale] || o.l.ru }; }
+  const custom = CUSTOM_CAT_VIEW[`${kind}:${key}`];
+  if (custom) return { icon: custom.emoji || (kind === "income" ? "💰" : "🏷️"), color: hashColor(key), label: custom.label };
   // Произвольное название: иконка по ключевым словам, цвет — по имени.
   const guess = guessCatKey(key, kind);
   const hint = guess ? list.find((c) => c.key === guess) : null;
@@ -159,6 +173,24 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [eSubcategory, setESubcategory] = useState("");
   const [eNote, setENote] = useState("");
   const [eDay, setEDay] = useState(todayISO());
+
+  // Пользовательские категории (вариант А): грузим список и держим реестр для catView.
+  const [custom, setCustom] = useState<CustomCat[]>([]);
+  useEffect(() => { fetch("/api/finance/categories").then((r) => r.json()).then((j) => { if (j?.ok) setCustom(j.categories || []); }).catch(() => {}); }, []);
+  CUSTOM_CAT_VIEW = Object.fromEntries(custom.map((c) => [`${c.kind}:${c.slug}`, { label: c.label, emoji: c.emoji }]));
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatEmoji, setNewCatEmoji] = useState("");
+  const [newCatKind, setNewCatKind] = useState<"income" | "expense">("expense");
+  async function addCustomCat() {
+    const label = newCatLabel.trim();
+    if (!label) return;
+    const r = await fetch("/api/finance/categories", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label, emoji: newCatEmoji.trim() || null, kind: newCatKind }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok && r.category) { setCustom((cs) => [...cs, r.category]); setNewCatLabel(""); setNewCatEmoji(""); }
+  }
+  async function delCustomCat(id: string) {
+    await fetch(`/api/finance/categories?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+    setCustom((cs) => cs.filter((c) => c.id !== id));
+  }
 
   // Календарь-выбор месяца/года.
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -331,7 +363,16 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   });
 
   const isCur = month === todayISO().slice(0, 7);
-  const cats = kind === "income" ? INCOME_CATS : EXPENSE_CATS;
+  // Категории для пикера: встроенные + пользовательские (перед «Другое»).
+  function pickerCats(k: "income" | "expense") {
+    const builtin = (k === "income" ? INCOME_CATS : EXPENSE_CATS).map((c) => ({ key: c.key, icon: c.icon, color: c.color, label: (c.l as any)[locale] || c.l.ru }));
+    const cust = custom.filter((c) => c.kind === k).map((c) => ({ key: c.slug, icon: c.emoji || "🏷️", color: hashColor(c.slug), label: c.label }));
+    if (!cust.length) return builtin;
+    const i = builtin.findIndex((b) => b.key === "other");
+    if (i >= 0) builtin.splice(i, 0, ...cust); else builtin.push(...cust);
+    return builtin;
+  }
+  const cats = pickerCats(kind);
 
   function gotoMonth(d: number) { router.push(`/finance?m=${shift(month, d)}`); }
   function switchKind(k: "income" | "expense") { setKind(k); setCategory(k === "income" ? "salary" : "food"); }
@@ -729,6 +770,34 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               </div>
             )}
           </div>
+
+          {/* Мои категории (пользовательские статьи расходов/доходов) */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+              <i className="ti ti-tags" style={{ fontSize: 15, color: "var(--accent)" }} />{(CAT_MGR[locale] || CAT_MGR.ru).title}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).hint}</div>
+            {custom.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
+                {custom.map((c) => (
+                  <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "5px 10px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--surface)" }}>
+                    <span>{c.emoji || "🏷️"}</span>{c.label}
+                    <span style={{ fontSize: 10, color: "var(--text-3)" }}>{c.kind === "income" ? "▲" : "▼"}</span>
+                    <button onClick={() => delCustomCat(c.id)} aria-label="delete" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 15, lineHeight: 1, padding: 0 }}>×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <input value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center" }} />
+              <input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40} style={{ ...input, width: 190 }} />
+              <select value={newCatKind} onChange={(e) => setNewCatKind(e.target.value as any)} style={{ ...input, width: 120 }}>
+                <option value="expense">{(CAT_MGR[locale] || CAT_MGR.ru).expense}</option>
+                <option value="income">{(CAT_MGR[locale] || CAT_MGR.ru).income}</option>
+              </select>
+              <button onClick={addCustomCat} disabled={!newCatLabel.trim()} style={{ ...btnG, opacity: newCatLabel.trim() ? 1 : 0.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -790,7 +859,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                   background: category === c.key ? `${c.color}1f` : "var(--surface)",
                   color: category === c.key ? "var(--text)" : "var(--text-2)",
                   display: "inline-flex", alignItems: "center", gap: 5, fontWeight: category === c.key ? 600 : 400,
-                }}><span>{c.icon}</span>{(c.l as any)[locale] || c.l.ru}</button>
+                }}><span>{c.icon}</span>{c.label}</button>
               ))}
             </div>
             <input type="text" placeholder={s.subcategoryPh} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 6, boxSizing: "border-box" }} />

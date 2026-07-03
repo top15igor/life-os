@@ -188,6 +188,7 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
   // Подтягиваем существующие проекты пользователя, чтобы модель переиспользовала их
   // и не плодила дубли-синонимы (авто-дедуп на уровне разбора).
   let projectNames: string[] = [];
+  let customCats: { slug: string; label: string }[] = [];
   if (userId) {
     try {
       const { data } = await supabaseAdmin().from("projects").select("name").eq("user_id", userId).limit(80);
@@ -195,11 +196,26 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
     } catch {
       // нет таблицы/колонки — просто без подсказки
     }
+    try {
+      const { data } = await supabaseAdmin().from("finance_categories").select("slug, label").eq("user_id", userId).eq("kind", "expense").limit(50);
+      customCats = ((data as any[]) ?? []).filter((c) => c?.slug && c?.label);
+    } catch {
+      // нет таблицы — без пользовательских категорий
+    }
+  }
+  // Кастомные категории пользователя подмешиваем в enum + описание, чтобы модель
+  // раскладывала траты в них (напр. «штраф» → пользовательская «Штрафы»).
+  let tool: any = TOOL;
+  if (customCats.length) {
+    tool = JSON.parse(JSON.stringify(TOOL));
+    const catProp = tool.input_schema.properties.finance.items.properties.category;
+    catProp.enum = [...FINANCE_CATS, ...customCats.map((c) => c.slug)];
+    catProp.description += " Пользовательские категории расходов (используй их slug, если трата по смыслу к ним относится): " + customCats.map((c) => `${c.slug} (${c.label})`).join(", ") + ".";
   }
   const msg = await client().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
-    tools: [TOOL],
+    tools: [tool],
     tool_choice: { type: "tool", name: "save_analysis" },
     messages: [{ role: "user", content: prompt(text, projectNames) }],
   });
