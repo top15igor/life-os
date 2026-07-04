@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
@@ -137,6 +137,13 @@ const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB:
 
 // Подпись кнопки «открыть раздел» после действия бота.
 const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir" };
+// Подтверждение удаления записи.
+const DEL_BTN: Record<string, { yes: string; no: string; done: string; kept: string; gone: string }> = {
+  ru: { yes: "🗑 Да, удалить", no: "Отмена", done: "🗑 Запись удалена.", kept: "Ок, оставил запись.", gone: "Записи уже нет." },
+  en: { yes: "🗑 Yes, delete", no: "Cancel", done: "🗑 Entry deleted.", kept: "Ok, kept the entry.", gone: "The entry is already gone." },
+  uk: { yes: "🗑 Так, видалити", no: "Скасувати", done: "🗑 Запис видалено.", kept: "Ок, залишив запис.", gone: "Запису вже немає." },
+  fr: { yes: "🗑 Oui, supprimer", no: "Annuler", done: "🗑 Entrée supprimée.", kept: "Ok, entrée conservée.", gone: "L'entrée n'existe plus." },
+};
 
 const FIXED: Record<string, string> = {
   ru: "✏️ Поправил предыдущую запись:",
@@ -419,6 +426,30 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if ((data.startsWith("delok:") || data === "delno") && cqChat) {
+      // Подтверждение/отмена удаления последней записи.
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const dl = DEL_BTN[pickLang((u as any)?.lang)] || DEL_BTN.ru;
+        if (data === "delno") {
+          await answerCallback(cq.id, dl.kept);
+          if (mid) await editMessageText(cqChat, mid, dl.kept);
+        } else {
+          const entryId = data.slice(6);
+          let msgText = dl.gone;
+          if (u && /^[0-9a-f-]{16,}$/i.test(entryId)) {
+            const { data: ent } = await db.from("entries").select("id").eq("id", entryId).eq("user_id", (u as any).id).maybeSingle();
+            if (ent) {
+              await db.from("entries").delete().eq("id", entryId).eq("user_id", (u as any).id); // FK cascade убирает задачи/инсайты
+              msgText = dl.done;
+            }
+          }
+          await answerCallback(cq.id, msgText);
+          if (mid) await editMessageText(cqChat, mid, msgText);
+        }
+      } catch { await answerCallback(cq.id); }
     } else {
       await answerCallback(cq.id);
     }
@@ -989,9 +1020,17 @@ export async function POST(req: NextRequest) {
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
-        const extra = res.openNext
+        let extra: any = res.openNext
           ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/u/${user.token}?next=${encodeURIComponent(res.openNext)}` }]] } }
           : undefined;
+        // Удаление записи — с подтверждением (кнопки Да/Отмена), чтобы не потерять данные случайно.
+        if (res.confirmDelete) {
+          const D = DEL_BTN[lang] || DEL_BTN.ru;
+          extra = { reply_markup: { inline_keyboard: [[
+            { text: D.yes, callback_data: `delok:${res.confirmDelete.entryId}` },
+            { text: D.no, callback_data: "delno" },
+          ]] } };
+        }
         await sendMessage(chatId, res.text, extra);
         return NextResponse.json({ ok: true });
       }

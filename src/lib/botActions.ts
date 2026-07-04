@@ -127,7 +127,9 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Отметил мечту сбывшейся: «${t}»!`,
     dreamNone: "Не нашёл такую мечту. Скажи точнее?",
     deed: (t: string) => `💛 Записал доброе дело: «${t}».`,
+    delAsk: (t: string) => `🗑 Удалить последнюю запись${t ? `: «${t}»` : ""}? Это действие нельзя отменить.`,
     delLast: (t: string) => `🗑 Удалил последнюю запись${t ? `: «${t}»` : ""}.`,
+    delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
     open: "Открыть",
@@ -146,7 +148,9 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Marked dream as come true: “${t}”!`,
     dreamNone: "Couldn't find that dream. Be more specific?",
     deed: (t: string) => `💛 Logged a good deed: “${t}”.`,
+    delAsk: (t: string) => `🗑 Delete the last entry${t ? `: “${t}”` : ""}? This can't be undone.`,
     delLast: (t: string) => `🗑 Deleted the last entry${t ? `: “${t}”` : ""}.`,
+    delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
     open: "Open",
@@ -165,7 +169,9 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Позначив мрію здійсненою: «${t}»!`,
     dreamNone: "Не знайшов таку мрію. Скажи точніше?",
     deed: (t: string) => `💛 Записав добру справу: «${t}».`,
+    delAsk: (t: string) => `🗑 Видалити останній запис${t ? `: «${t}»` : ""}? Цю дію не можна скасувати.`,
     delLast: (t: string) => `🗑 Видалив останній запис${t ? `: «${t}»` : ""}.`,
+    delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
     open: "Відкрити",
@@ -184,7 +190,9 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Rêve marqué comme réalisé : « ${t} » !`,
     dreamNone: "Je n'ai pas trouvé ce rêve. Précise ?",
     deed: (t: string) => `💛 Bonne action enregistrée : « ${t} ».`,
+    delAsk: (t: string) => `🗑 Supprimer la dernière entrée${t ? ` : « ${t} »` : ""} ? Action irréversible.`,
     delLast: (t: string) => `🗑 Dernière entrée supprimée${t ? ` : « ${t} »` : ""}.`,
+    delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
     open: "Ouvrir",
@@ -203,7 +211,7 @@ const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: st
   fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" } },
 };
 
-export type ActionResult = { text: string; openNext?: string };
+export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string } };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
 export async function runAction(userId: string, name: string, input: any, lang: Lang, tzOffset?: number | null): Promise<ActionResult> {
@@ -292,12 +300,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       return { text: s.media(kindLabel, title, statusLabel), openNext: "/books" };
     }
     if (name === "delete_last_entry") {
+      // Не удаляем сразу — спрашиваем подтверждение (защита от случайной потери записи).
       const { data } = await db.from("entries").select("id, summary, raw_text").eq("user_id", userId).order("created_at", { ascending: false }).limit(1);
       const row = (data || [])[0] as any;
       if (!row) return { text: s.delNone };
-      await db.from("entries").delete().eq("id", row.id).eq("user_id", userId); // FK on delete cascade убирает задачи/инсайты/и т.д.
       const preview = String(row.summary || row.raw_text || "").slice(0, 80);
-      return { text: s.delLast(preview) };
+      return { text: s.delAsk(preview), confirmDelete: { entryId: row.id, preview } };
     }
   } catch (e) {
     console.error("runAction", name, e);
