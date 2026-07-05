@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { analyzeSaved, type SavedAnalysis } from "./ai";
+import { analyzeSaved } from "./ai";
 import type { ImportResult } from "./instagram";
+import { storeVideo } from "./videoStore";
+import { insertSavedItem } from "./savedItems";
 
 // Любая ссылка TikTok: полная (tiktok.com/@user/video/123), мобильная или короткая (vm./vt.).
 const TT_RE = /https?:\/\/(?:www\.|vm\.|vt\.|m\.)?tiktok\.com\/[^\s]+/i;
@@ -101,7 +103,30 @@ function extractTiktokJson(html: string): { caption: string | null; author: stri
   return { caption, author: author ? jsonUnescape(author) : null, image };
 }
 
-// Главная: ссылка TikTok -> подпись/автор/обложка -> AI-разбор -> запись в saved_items.
+// Прямая ссылка на mp4 (без watermark). Способ 1: публичный бесплатный сервис tikwm
+// (принимает и короткие vm./vt. ссылки — сам раскрывает редирект, ключ не нужен).
+// Способ 2 (запас): playAddr из встроенного JSON страницы TikTok.
+async function tiktokVideoUrl(url: string, html?: string): Promise<string | null> {
+  try {
+    const j: any = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`, {
+      headers: { "user-agent": UA, accept: "application/json" },
+    }).then((r) => r.json());
+    const play = j?.data?.play || j?.data?.hdplay || j?.data?.wmplay;
+    if (typeof play === "string" && play) return play.startsWith("http") ? play : `https://www.tikwm.com${play}`;
+  } catch (e) {
+    console.error("tikwm", e);
+  }
+  if (html) {
+    const m = /"playAddr":"((?:[^"\\]|\\.)+)"/.exec(html) || /"downloadAddr":"((?:[^"\\]|\\.)+)"/.exec(html);
+    if (m) {
+      const u = jsonUnescape(m[1]);
+      if (/^https?:\/\//.test(u)) return u;
+    }
+  }
+  return null;
+}
+
+// Главная: ссылка TikTok -> подпись/автор/обложка/видео -> AI-разбор -> запись в saved_items.
 export async function importTiktok(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
   let media: TtMedia;
   try {
@@ -130,40 +155,46 @@ export async function importTiktok(userId: string, url: string, locale = "ru"): 
     }
   }
 
-  let id: string | null = null;
-  let saved = false;
+  // Скачиваем сам файл видео (без watermark) в bucket 'saved' — ссылки TikTok-CDN протухают.
+  let video_url: string | null = null;
+  let video_size: number | null = null;
   try {
-    const { data, error } = await supabaseAdmin()
-      .from("saved_items")
-      .insert({
-        user_id: userId,
-        source: "tiktok",
-        url,
-        shortcode: media.shortcode,
-        author: media.author,
-        kind: "video",
-        title: analysis.title,
-        topic: analysis.topic,
-        summary: analysis.summary,
-        key_points: analysis.key_points,
-        tags: analysis.tags,
-        caption: caption || null,
-        transcript: null,
-        image_url,
-        status: "ok",
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
-    id = (data as any)?.id || null;
-    saved = !!id;
+    const vurl = await tiktokVideoUrl(url);
+    if (vurl) {
+      const stored = await storeVideo(userId, vurl, { "user-agent": UA, referer: "https://www.tiktok.com/" });
+      if (stored) {
+        video_url = stored.url;
+        video_size = stored.size;
+      }
+    }
   } catch (e) {
-    console.error("tt insert", e);
+    console.error("tt video", e);
   }
 
+  const id = await insertSavedItem({
+    user_id: userId,
+    source: "tiktok",
+    url,
+    shortcode: media.shortcode,
+    author: media.author,
+    kind: "video",
+    title: analysis.title,
+    topic: analysis.topic,
+    summary: analysis.summary,
+    key_points: analysis.key_points,
+    tags: analysis.tags,
+    caption: caption || null,
+    transcript: null,
+    image_url,
+    video_url,
+    video_size,
+    status: "ok",
+  });
+  const saved = !!id;
+
   const item = saved
-    ? { id, source: "tiktok", url, author: media.author, kind: "video", title: analysis.title, topic: analysis.topic, summary: analysis.summary, key_points: analysis.key_points, tags: analysis.tags, image_url, note: null, favorite: false, done: false, position: 0, created_at: new Date().toISOString() }
+    ? { id, source: "tiktok", url, author: media.author, kind: "video", title: analysis.title, topic: analysis.topic, summary: analysis.summary, key_points: analysis.key_points, tags: analysis.tags, image_url, video_url, note: null, favorite: false, done: false, position: 0, created_at: new Date().toISOString() }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false };
+  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false, videoUrl: video_url };
 }

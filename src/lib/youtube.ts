@@ -1,6 +1,7 @@
 import { analyzeSaved } from "./ai";
-import { supabaseAdmin } from "./supabaseAdmin";
 import type { ImportResult } from "./instagram";
+import { storeVideo } from "./videoStore";
+import { insertSavedItem } from "./savedItems";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -164,11 +165,28 @@ async function fetchTranscript(tracks: any[]): Promise<string> {
   return "";
 }
 
-export type YtMedia = { title: string; author: string | null; description: string; thumbnail: string | null; transcript: string; kind: "video" | "short" };
+export type YtMedia = { title: string; author: string | null; description: string; thumbnail: string | null; transcript: string; kind: "video" | "short"; videoUrl: string | null };
+
+// Выбрать прогрессивный mp4 (видео+звук в одном файле) с ПРЯМОЙ ссылкой из streamingData.
+// Берём наименьшее подходящее разрешение (≥360p) — файл легче и укладывается в лимиты.
+// Форматы с signatureCipher (без готового url) пропускаем: расшифровать подпись без
+// player-JS мы не можем — тогда видео просто не сохраняем.
+function pickProgressive(streamings: any[]): string | null {
+  for (const sd of streamings) {
+    const fmts = Array.isArray(sd?.formats) ? sd.formats : [];
+    const mp4 = fmts.filter((f: any) => typeof f?.url === "string" && f.url && /mp4/i.test(f?.mimeType || "") && (f?.audioQuality || f?.audioChannels));
+    if (!mp4.length) continue;
+    mp4.sort((a: any, b: any) => (a.height || 0) - (b.height || 0));
+    const pick = mp4.find((f: any) => (f.height || 0) >= 360) || mp4[0];
+    if (pick?.url) return pick.url as string;
+  }
+  return null;
+}
 
 export async function unpackYoutube(url: string, kind: "video" | "short"): Promise<YtMedia> {
   const videoId = (url.match(/[?&]v=([A-Za-z0-9_-]{11})/) || [])[1] || "";
   let title = "", author: string | null = null, description = "", thumbnail: string | null = null, transcript = "";
+  const streamings: any[] = [];
 
   // Применить player-response-подобный объект к полям; вернуть треки субтитров.
   const apply = (pr: any): any[] | null => {
@@ -178,6 +196,7 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     if (!description) description = vd.shortDescription || "";
     const th = vd.thumbnail?.thumbnails;
     if (!thumbnail && Array.isArray(th) && th.length) thumbnail = th[th.length - 1]?.url || null;
+    if (pr?.streamingData) streamings.push(pr.streamingData);
     const tr = pr?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
     return Array.isArray(tr) && tr.length ? tr : null;
   };
@@ -228,7 +247,15 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     transcript = await transcriptViaRapidApi(videoId, url);
   }
 
-  return { title, author, description, thumbnail, transcript, kind };
+  // Прямая ссылка на файл видео. WEB-клиент часто шифрует ссылки — тогда пробуем
+  // ANDROID-клиент, он обычно отдаёт прогрессивные форматы с готовым url.
+  let videoUrl = pickProgressive(streamings);
+  if (!videoUrl && videoId) {
+    const apr = await innertubePlayerAndroid(videoId);
+    if (apr?.streamingData) videoUrl = pickProgressive([apr.streamingData]);
+  }
+
+  return { title, author, description, thumbnail, transcript, kind, videoUrl };
 }
 
 // Ссылка YouTube → контент (описание + субтитры) → AI-разбор → запись в saved_items.
@@ -247,45 +274,48 @@ export async function importYoutube(userId: string, url: string, kind: "video" |
 
   const analysis = await analyzeSaved(text, userId, locale);
 
-  let id: string | null = null;
-  let saved = false;
-  try {
-    const { data, error } = await supabaseAdmin()
-      .from("saved_items")
-      .insert({
-        user_id: userId,
-        source: "youtube",
-        url,
-        author: media.author,
-        kind,
-        title: analysis.title,
-        topic: analysis.topic,
-        summary: analysis.summary,
-        key_points: analysis.key_points,
-        tags: analysis.tags,
-        caption: media.description || null,
-        transcript: media.transcript || null,
-        image_url: media.thumbnail,
-        status: content ? "ok" : "review",
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
-    id = (data as any)?.id || null;
-    saved = !!id;
-  } catch (e) {
-    console.error("yt insert", e);
+  // Скачиваем сам файл видео в bucket 'saved' (влезает — короткие ролики/shorts;
+  // длинные ролики отсекаются по размеру, карточка сохранится по описанию/субтитрам).
+  let video_url: string | null = null;
+  let video_size: number | null = null;
+  if (media.videoUrl) {
+    const stored = await storeVideo(userId, media.videoUrl, { "user-agent": UA });
+    if (stored) {
+      video_url = stored.url;
+      video_size = stored.size;
+    }
   }
+
+  const id = await insertSavedItem({
+    user_id: userId,
+    source: "youtube",
+    url,
+    author: media.author,
+    kind,
+    title: analysis.title,
+    topic: analysis.topic,
+    summary: analysis.summary,
+    key_points: analysis.key_points,
+    tags: analysis.tags,
+    caption: media.description || null,
+    transcript: media.transcript || null,
+    image_url: media.thumbnail,
+    video_url,
+    video_size,
+    status: content ? "ok" : "review",
+  });
+  const saved = !!id;
 
   const item = saved
     ? {
         id, source: "youtube", url, author: media.author, kind,
         title: analysis.title, topic: analysis.topic, summary: analysis.summary,
         key_points: analysis.key_points, tags: analysis.tags, image_url: media.thumbnail,
+        video_url,
         note: null, favorite: false, done: false, position: 0, created_at: new Date().toISOString(),
       }
     : null;
 
   // kind в ImportResult нужен только для IG-сообщения «звук не достал» — для YouTube не шлём.
-  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: !!media.transcript };
+  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: !!media.transcript, videoUrl: video_url };
 }

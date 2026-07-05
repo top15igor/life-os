@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
+import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { askKnowledge } from "@/lib/knowledge";
 import { canonicalFolder, analyzeSaved } from "@/lib/ai";
 import { getLocale } from "@/lib/locale";
@@ -25,9 +26,14 @@ export async function POST(req: NextRequest) {
     const raw = String(body?.url || "");
     const igUrl = extractInstagramUrl(raw);
     const yt = extractYoutubeUrl(raw);
-    if (!igUrl && !yt) return NextResponse.json({ ok: false, error: "bad_url" }, { status: 400 });
+    const ttUrl = extractTiktokUrl(raw);
+    if (!igUrl && !yt && !ttUrl) return NextResponse.json({ ok: false, error: "bad_url" }, { status: 400 });
     const loc = await getLocale();
-    const r = igUrl ? await importInstagram(user.id, igUrl, loc) : await importYoutube(user.id, yt!.url, yt!.kind, loc);
+    const r = igUrl
+      ? await importInstagram(user.id, igUrl, loc)
+      : ttUrl
+        ? await importTiktok(user.id, ttUrl, loc)
+        : await importYoutube(user.id, yt!.url, yt!.kind, loc);
     if (r.ok === false) return NextResponse.json({ ok: false, error: r.reason }, { status: 400 });
     if (!r.saved || !r.item) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
     // importInstagram уже вернул готовую карточку — без повторного чтения БД.

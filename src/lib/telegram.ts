@@ -44,6 +44,23 @@ export async function sendDocument(
   }
 }
 
+// Отправить видео пользователю. `video` — публичная ссылка (Telegram сам скачает файл)
+// или file_id. Возвращает true при успехе (по ссылке лимит ~20 МБ; крупнее — вернёт false,
+// тогда в чат уходит кнопка «Скачать видео» со ссылкой на файл в хранилище).
+export async function sendVideo(chatId: number, video: string, extra?: Record<string, any>): Promise<boolean> {
+  try {
+    const r = await fetch(`${API}/sendVideo`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, video, supports_streaming: true, ...(extra || {}) }),
+    });
+    return r.ok;
+  } catch (e) {
+    console.error("sendVideo", e);
+    return false;
+  }
+}
+
 // Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
 export async function answerCallback(callbackId: string, text?: string): Promise<void> {
   await fetch(`${API}/answerCallbackQuery`, {

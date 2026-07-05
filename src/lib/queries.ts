@@ -232,9 +232,9 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
   }
 }
 
-export type SavedItem = { id: string; source: string; url: string | null; author: string | null; kind: string; title: string; topic: string | null; summary: string | null; key_points: string[] | null; tags: string[] | null; image_url: string | null; note: string | null; favorite: boolean; done: boolean; position: number; created_at: string };
+export type SavedItem = { id: string; source: string; url: string | null; author: string | null; kind: string; title: string; topic: string | null; summary: string | null; key_points: string[] | null; tags: string[] | null; image_url: string | null; video_url: string | null; note: string | null; favorite: boolean; done: boolean; position: number; created_at: string };
 
-const SAVED_FULL = "id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, note, favorite, done, position, created_at";
+const SAVED_FULL = "id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, video_url, note, favorite, done, position, created_at";
 const SAVED_BASIC = "id, source, url, author, kind, title, topic, summary, key_points, tags, image_url, created_at";
 
 export async function getSavedItems(userId: string): Promise<SavedItem[]> {
@@ -248,7 +248,7 @@ export async function getSavedItems(userId: string): Promise<SavedItem[]> {
   } catch {
     try {
       const { data } = await db.from("saved_items").select(SAVED_BASIC).eq("user_id", userId).order("created_at", { ascending: false }).limit(500);
-      return ((data as any[]) || []).map((d) => ({ ...d, note: null, favorite: false, done: false, position: 0 }));
+      return ((data as any[]) || []).map((d) => ({ ...d, video_url: null, note: null, favorite: false, done: false, position: 0 }));
     } catch {
       return [];
     }
