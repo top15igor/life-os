@@ -66,18 +66,19 @@ function Balance({ spend, onSaved }: { spend?: Spend | null; onSaved: (s: Spend)
   const low = bal != null && bal <= 5;
   const save = async () => {
     const n = Number(val.replace(",", "."));
-    if (!isFinite(n) || n < 0) return;
+    if (!isFinite(n) || n < 0) { setErr("введи число, напр. 100"); return; }
     setSaving(true); setErr(null);
     try {
-      const r = await fetch("/api/admin/anthropic-limits", {
+      const resp = await fetch("/api/admin/anthropic-limits", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ balanceUsd: n }),
-      }).then((x) => x.json());
+      });
+      const r = await resp.json().catch(() => ({} as any));
       if (r?.spend) onSaved(r.spend);
-      if (r?.ok) setVal("");
-      else setErr(r?.error || "не удалось сохранить");
+      if (resp.ok && r?.ok) { setVal(""); setErr(null); }
+      else setErr(`HTTP ${resp.status} · ${r?.error || "не сохранилось"}`);
     } catch (e: any) {
-      setErr("сеть/сервер");
+      setErr("сеть: " + String(e?.message || e));
     } finally { setSaving(false); }
   };
   return (
