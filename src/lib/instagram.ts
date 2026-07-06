@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { transcribeFile } from "./transcribe";
 import { analyzeSaved, type SavedAnalysis } from "./ai";
+import { uploadVideo, MAX_VIDEO_BYTES } from "./videoStore";
+import { insertSavedItem } from "./savedItems";
 
 // Любая ссылка на пост/reels/видео Instagram.
 const IG_RE = /https?:\/\/(?:www\.)?instagram\.com\/[^\s]+/i;
@@ -223,7 +225,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
 
 export type ImportResult =
   | { ok: false; reason: "empty" | "blocked" | "limited" }
-  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean };
+  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
@@ -238,19 +240,24 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     return { ok: false, reason: "blocked" };
   }
 
-  // Расшифровка звука видео (reels), если ссылку на файл удалось получить.
+  // Скачиваем видео (reels): один буфер и для расшифровки звука, и для сохранения файла.
   let transcript = "";
+  let videoBuf: Buffer | null = null;
   if (media.videoUrl) {
     try {
       const vr = await fetch(media.videoUrl);
       const len = Number(vr.headers.get("content-length") || "0");
-      // Whisper не принимает файлы больше 25 МБ — слишком тяжёлое видео пропускаем.
-      if (vr.ok && len < 24 * 1024 * 1024) {
+      // До 50 МБ — качаем ради сохранения файла. Расшифровку делаем только на ≤24 МБ
+      // (Whisper не принимает файлы больше 25 МБ), но само видео сохраняем и крупнее.
+      if (vr.ok && (!len || len < MAX_VIDEO_BYTES)) {
         const buf = Buffer.from(await vr.arrayBuffer());
-        if (buf.length < 25 * 1024 * 1024) transcript = await transcribeFile(buf, "reel.mp4");
+        if (buf.length <= MAX_VIDEO_BYTES) {
+          videoBuf = buf;
+          if (buf.length < 24 * 1024 * 1024) transcript = await transcribeFile(buf, "reel.mp4");
+        }
       }
     } catch (e) {
-      console.error("ig transcribe", e);
+      console.error("ig video", e);
     }
   }
 
@@ -277,36 +284,37 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     }
   }
 
-  let id: string | null = null;
-  let saved = false;
-  try {
-    const { data, error } = await supabaseAdmin()
-      .from("saved_items")
-      .insert({
-        user_id: userId,
-        source: "instagram",
-        url,
-        shortcode: media.shortcode,
-        author: media.author,
-        kind: media.kind,
-        title: analysis.title,
-        topic: analysis.topic,
-        summary: analysis.summary,
-        key_points: analysis.key_points,
-        tags: analysis.tags,
-        caption: media.caption || null,
-        transcript: transcript || null,
-        image_url,
-        status: "ok",
-      })
-      .select("id")
-      .single();
-    if (error) throw error;
-    id = (data as any)?.id || null;
-    saved = !!id;
-  } catch (e) {
-    console.error("ig insert", e);
+  // Сохраняем сам файл видео в bucket 'saved' (ссылки Instagram-CDN протухают).
+  let video_url: string | null = null;
+  let video_size: number | null = null;
+  if (videoBuf) {
+    const stored = await uploadVideo(userId, videoBuf);
+    if (stored) {
+      video_url = stored.url;
+      video_size = stored.size;
+    }
   }
+
+  const id = await insertSavedItem({
+    user_id: userId,
+    source: "instagram",
+    url,
+    shortcode: media.shortcode,
+    author: media.author,
+    kind: media.kind,
+    title: analysis.title,
+    topic: analysis.topic,
+    summary: analysis.summary,
+    key_points: analysis.key_points,
+    tags: analysis.tags,
+    caption: media.caption || null,
+    transcript: transcript || null,
+    image_url,
+    video_url,
+    video_size,
+    status: "ok",
+  });
+  const saved = !!id;
 
   // Готовая карточка для UI — без повторного чтения БД (не зависит от наличия
   // колонок note/favorite/done/position, которые добавляет миграция).
@@ -323,6 +331,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
         key_points: analysis.key_points,
         tags: analysis.tags,
         image_url,
+        video_url,
         note: null,
         favorite: false,
         done: false,
@@ -331,5 +340,5 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
       }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript };
+  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript, videoUrl: video_url };
 }

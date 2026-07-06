@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, editMessageText } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
@@ -191,11 +191,11 @@ const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: 
   fr: { recognizing: "📸 Je lis la photo…", readingDoc: "📄 Je lis le document…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie.", unsupported: "Pour l'instant je comprends les photos et les PDF. Envoie un PDF ou une photo 🙂" },
 };
 
-const IG_MSG: Record<string, { working: string; saved: string; open: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
-  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из {src}. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор постов. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
-  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
-  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
-  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
+const IG_MSG: Record<string, { working: string; saved: string; open: string; video: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
+  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", video: "⬇️ Скачать видео", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из {src}. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор постов. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
+  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", video: "⬇️ Download video", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
+  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", video: "⬇️ Завантажити відео", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
+  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", video: "⬇️ Télécharger la vidéo", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
 };
 
 const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string; shareHint: string }> = {
@@ -937,6 +937,12 @@ export async function POST(req: NextRequest) {
         if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
         if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
+        // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
+        // (лимит Telegram ~20 МБ) — даём кнопку со ссылкой на файл в хранилище.
+        if (r.videoUrl) {
+          const sent = await sendVideo(chatId, r.videoUrl, { caption: (a.title || "").slice(0, 200) });
+          if (!sent) await sendMessage(chatId, `🎬 <a href="${r.videoUrl}">${L.video}</a>`);
+        }
       } catch (e) {
         console.error("import link", e);
         await sendMessage(chatId, failedMsg);
