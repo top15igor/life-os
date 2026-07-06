@@ -29,21 +29,33 @@ const c2u = (cents: number) => Math.round((cents / 100) * 100) / 100;
 export async function getAiSpend(): Promise<AiSpend> {
   const empty: AiSpend = { ok: false, hasSnapshot: false, snapshotUsd: null, snapshotAt: null, spentSinceUsd: 0, balanceUsd: null, spentTodayUsd: 0, spentMonthUsd: 0, openaiMonthUsd: 0 };
   try {
-    const { data, error } = await supabaseAdmin().from("usage").select("kind, cost_cents, created_at");
-    if (error) return { ...empty, error: error.message };
-    const rows = (data as any[]) || [];
-    const snaps = rows
-      .filter((r) => r.kind === SNAP_KIND)
-      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-    const snap = snaps[0] || null;
+    const db = supabaseAdmin();
+    // 1) Снимок баланса — ОТДЕЛЬНЫМ запросом с фильтром. Иначе select всей таблицы
+    //    usage упирается в лимит строк (~1000) и свежий снимок в выборку не попадает.
+    const { data: snapRows, error: snapErr } = await db
+      .from("usage")
+      .select("cost_cents, created_at")
+      .eq("kind", SNAP_KIND)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (snapErr) return { ...empty, error: snapErr.message };
+    const snap = (snapRows && snapRows[0]) || null;
     const snapshotCents = snap ? Number(snap.cost_cents) || 0 : null;
     const snapshotAt = snap ? String(snap.created_at) : null;
 
     const today = new Date().toISOString().slice(0, 10);
     const monthStart = today.slice(0, 7) + "-01";
+    // 2) Расход — ограничиваем по дате (с начала месяца или с момента снимка, что раньше),
+    //    чтобы не упереться в лимит строк на большой таблице.
+    const sinceDate = snapshotAt && snapshotAt.slice(0, 10) < monthStart ? snapshotAt.slice(0, 10) : monthStart;
+    const { data: spendRows } = await db
+      .from("usage")
+      .select("kind, cost_cents, created_at")
+      .neq("kind", SNAP_KIND)
+      .gte("created_at", sinceDate)
+      .limit(100000);
     let spentSince = 0, spentToday = 0, spentMonth = 0, openaiMonth = 0;
-    for (const r of rows) {
-      if (r.kind === SNAP_KIND) continue;            // снимки — не расход
+    for (const r of (spendRows as any[]) || []) {
       const cents = Number(r.cost_cents) || 0;
       const at = String(r.created_at || "");
       const isOpenAI = OPENAI_KINDS.has(r.kind);

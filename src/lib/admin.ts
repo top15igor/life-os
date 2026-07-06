@@ -244,7 +244,7 @@ export async function getAdminData() {
   let usage: { total: number; last7: number; perWriter: number; anthropic: number; openai: number; byKind: { kind: string; cents: number }[] } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [] };
   try {
     const since7 = dayStr(Date.now() - 7 * 86400000);
-    const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at");
+    const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at").order("created_at", { ascending: false }).limit(100000);
     const rows = ev || [];
     let total = 0, last7 = 0, anthropic = 0, openai = 0;
     const bk: Record<string, number> = {};
