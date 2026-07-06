@@ -114,6 +114,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
 
   const t0 = T0[locale] || T0.ru;
   const inBookWord = (({ ru: "в книге", uk: "у книзі", en: "in your book", fr: "dans ton livre" }) as Record<string, string>)[locale] || "в книге";
+  const dashWord = (({ ru: "Открыть дашборд", uk: "Відкрити дашборд", en: "Open dashboard", fr: "Ouvrir le tableau de bord" }) as Record<string, string>)[locale] || "Открыть дашборд";
   const bq = (({ ru: { label: "Вопрос для книги", cta: "Записать" }, en: { label: "A question for your book", cta: "Note" }, uk: { label: "Питання для книги", cta: "Записати" }, fr: { label: "Une question pour ton livre", cta: "Noter" } }) as Record<string, { label: string; cta: string }>)[locale] || { label: "Вопрос для книги", cta: "Записать" };
   const entriesWord = (n: number) => {
     if (locale === "en") return n === 1 ? "entry" : "entries";
@@ -220,27 +221,28 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
           )}
 
           {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
-            <Link href="/health" className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", flexWrap: "wrap", rowGap: 8, textDecoration: "none", color: "var(--text)" }}>
-              {data.habit && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 500 }}>
-                  <span style={{ fontSize: 17, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
-                  {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
-                </span>
-              )}
-              {data.book && data.book.entries > 0 && (
-                <>
-                  <span style={{ color: "var(--text-3)" }}>·</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 500 }}>
-                    <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
+            <div className="card" style={{ marginBottom: 16, padding: "16px", textAlign: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", rowGap: 6, marginBottom: 14 }}>
+                {data.habit && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14.5, fontWeight: 600 }}>
+                    <span style={{ fontSize: 18, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
+                    {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
                   </span>
-                </>
-              )}
-              <span style={{ flex: 1 }} />
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--accent)", fontWeight: 600 }}>
-                <i className="ti ti-chart-histogram" style={{ fontSize: 16 }} />Дашборд
-                <i className="ti ti-chevron-right" style={{ fontSize: 15 }} />
-              </span>
-            </Link>
+                )}
+                {data.book && data.book.entries > 0 && (
+                  <>
+                    <span style={{ color: "var(--text-3)" }}>·</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 600 }}>
+                      <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
+                    </span>
+                  </>
+                )}
+              </div>
+              <Link href="/health" className="dash-cta" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 30px", borderRadius: 14, background: "linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #7c3aed))", color: "#fff", fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 20px color-mix(in srgb, var(--accent) 42%, transparent)", letterSpacing: "-0.01em" }}>
+                <i className="ti ti-chart-histogram" style={{ fontSize: 19 }} />{dashWord}
+                <i className="ti ti-arrow-right" style={{ fontSize: 17 }} />
+              </Link>
+            </div>
           )}
 
           {curPreset !== "minimal" && vis("book") && data.book && <BookWidget book={data.book} locale={locale} />}

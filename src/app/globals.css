@@ -281,3 +281,8 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 details.about-caps > summary::-webkit-details-marker { display: none; }
 details.about-caps > summary:hover { background: var(--surface-2); }
 details.about-caps[open] > summary .about-caps-chevron { transform: rotate(180deg); }
+
+/* Кнопка «Открыть дашборд» на «Сегодня» — заметная, с лёгким hover */
+.dash-cta { transition: transform .12s ease, box-shadow .2s ease, filter .15s ease; }
+.dash-cta:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 9px 26px color-mix(in srgb, var(--accent) 50%, transparent); }
+.dash-cta:active { transform: translateY(0) scale(.98); }
