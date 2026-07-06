@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import AdminUsersTable from "@/components/AdminUsersTable";
+import AnthropicLimits from "@/components/AnthropicLimits";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -406,6 +407,9 @@ export default async function AdminPage() {
                   </div>
                   <div style={{ marginTop: 9, color: "var(--text-3)", fontSize: 12 }}>Совет: включи там авто-пополнение (auto-reload), чтобы AI не остановился при нуле баланса.</div>
                 </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <AnthropicLimits />
               </div>
             </>
           ) : (

@@ -212,17 +212,37 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
     catProp.enum = [...FINANCE_CATS, ...customCats.map((c) => c.slug)];
     catProp.description += " Пользовательские категории расходов (используй их slug, если трата по смыслу к ним относится): " + customCats.map((c) => `${c.slug} (${c.label})`).join(", ") + ".";
   }
-  const msg = await client().messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1500,
-    tools: [tool],
-    tool_choice: { type: "tool", name: "save_analysis" },
-    messages: [{ role: "user", content: prompt(text, projectNames) }],
-  });
-  logClaude(userId, "analyze", "sonnet", (msg as any).usage);
-  const block = msg.content.find((b) => b.type === "tool_use");
-  if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
-  return block.input as Analysis;
+  // Один проход разбора конкретной моделью.
+  const attempt = async (model: string): Promise<Analysis> => {
+    const msg = await client().messages.create({
+      model,
+      max_tokens: 1500,
+      tools: [tool],
+      tool_choice: { type: "tool", name: "save_analysis" },
+      messages: [{ role: "user", content: prompt(text, projectNames) }],
+    });
+    logClaude(userId, "analyze", model.includes("haiku") ? "haiku" : "sonnet", (msg as any).usage);
+    const block = msg.content.find((b) => b.type === "tool_use");
+    if (!block || block.type !== "tool_use") throw new Error("AI не вернул разбор");
+    return block.input as Analysis;
+  };
+  // Перегрузка/лимит провайдера (529/429/5xx) — временные, повторяем с бэкоффом.
+  const retryable = (e: any): boolean => {
+    const s = e?.status ?? e?.response?.status;
+    return s === 429 || s === 529 || (typeof s === "number" && s >= 500 && s < 600);
+  };
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  // 1) Основная модель sonnet с ретраями. 2) Если не вышло — запасная haiku (обычно
+  //    доступнее при перегрузке). 3) Всё упало — бросаем (вызывающий сохранит сырьё).
+  let lastErr: any;
+  for (let i = 0; i < 3; i++) {
+    try { return await attempt("claude-sonnet-4-6"); }
+    catch (e) { lastErr = e; if (!retryable(e) || i === 2) break; await sleep(500 * Math.pow(2, i)); }
+  }
+  try { return await attempt("claude-haiku-4-5-20251001"); }
+  catch (e) { lastErr = e; }
+  throw lastErr;
 }
 
 // === База знаний: разбор сохранённого контента (Instagram-пост/reels) ===
