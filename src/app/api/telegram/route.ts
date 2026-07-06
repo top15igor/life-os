@@ -27,6 +27,7 @@ import { morningMessage } from "@/lib/morningPush";
 import { markPushResponded } from "@/lib/pushLog";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
+import { getAiSpend, setAiBalance } from "@/lib/aiSpend";
 import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
 
 export const runtime = "nodejs";
@@ -562,6 +563,30 @@ export async function POST(req: NextRequest) {
     const res = await setVoiceTextPref(user.id, desired);
     const V = VOICETEXT[lang] || VOICETEXT.ru;
     await sendMessage(chatId, res === null ? V.na : desired ? V.on : V.off);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 💰 /balance [сумма] — владелец записывает текущий баланс Anthropic (контроль расходов).
+  //     Полностью серверная команда — работает независимо от веб-страницы.
+  if (typeof msg.text === "string" && /^\/balance\b/i.test(msg.text.trim())) {
+    if (user.id !== "00000000-0000-0000-0000-000000000000") {
+      await sendMessage(chatId, "Эта команда только для владельца.");
+      return NextResponse.json({ ok: true });
+    }
+    const arg = msg.text.trim().replace(/^\/balance\s*/i, "").replace(",", ".").replace(/[^0-9.]/g, "");
+    if (!arg) {
+      const s = await getAiSpend();
+      await sendMessage(chatId, s.hasSnapshot
+        ? `💰 Остаток Claude ≈ $${(s.balanceUsd ?? 0).toFixed(2)}\nПотрачено с пополнения $${s.spentSinceUsd.toFixed(2)} · за месяц $${s.spentMonthUsd.toFixed(2)}\n\nЗаписать новый баланс: /balance 100`
+        : "Баланс ещё не задан. Впиши текущий баланс из Console: /balance 100");
+      return NextResponse.json({ ok: true });
+    }
+    const bal = Number(arg);
+    if (!isFinite(bal) || bal < 0) { await sendMessage(chatId, "Формат: /balance 100"); return NextResponse.json({ ok: true }); }
+    const r = await setAiBalance(bal);
+    if (!r.ok) { await sendMessage(chatId, `❌ Не сохранилось: ${r.error || "ошибка"}`); return NextResponse.json({ ok: true }); }
+    const s = await getAiSpend();
+    await sendMessage(chatId, `✅ Баланс записан: $${bal.toFixed(2)}. Остаток ≈ $${(s.balanceUsd ?? bal).toFixed(2)} — дальше тикает вниз по расходу Claude. Смотри в /admin.`);
     return NextResponse.json({ ok: true });
   }
 
