@@ -248,6 +248,7 @@ export async function getAdminData() {
     let total = 0, last7 = 0;
     const bk: Record<string, number> = {};
     for (const r of rows) {
+      if (r.kind === "balance_set") continue; // служебные снимки баланса — не расход
       const c = Number(r.cost_cents) || 0;
       total += c;
       if ((r.created_at || "").slice(0, 10) >= since7) last7 += c;
