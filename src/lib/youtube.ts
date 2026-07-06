@@ -129,6 +129,41 @@ async function innertubePlayerAndroid(videoId: string): Promise<any | null> {
   }
 }
 
+// IOS-клиент InnerTube — сейчас надёжнее всех отдаёт прогрессивный mp4 с ПРЯМОЙ
+// (нешифрованной) ссылкой, в т.ч. для Shorts. Основной источник ссылки на файл.
+async function innertubePlayerIos(videoId: string): Promise<any | null> {
+  try {
+    const res = await fetch("https://www.youtube.com/youtubei/v1/player?key=AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)",
+        "accept-language": "en-US,en;q=0.9",
+      },
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: "IOS",
+            clientVersion: "19.29.1",
+            deviceMake: "Apple",
+            deviceModel: "iPhone16,2",
+            osName: "iPhone",
+            osVersion: "17.5.1.21F90",
+            hl: "en",
+            gl: "US",
+          },
+        },
+        videoId,
+      }),
+    });
+    if (!res.ok) { console.error("yt innertube ios", res.status); return null; }
+    return await res.json();
+  } catch (e) {
+    console.error("yt innertube ios", e);
+    return null;
+  }
+}
+
 async function ytFetch(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" },
@@ -247,9 +282,14 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     transcript = await transcriptViaRapidApi(videoId, url);
   }
 
-  // Прямая ссылка на файл видео. WEB-клиент часто шифрует ссылки — тогда пробуем
-  // ANDROID-клиент, он обычно отдаёт прогрессивные форматы с готовым url.
+  // Прямая ссылка на файл видео. WEB-клиент обычно шифрует ссылки, поэтому берём
+  // из мобильных клиентов: сперва IOS (самый надёжный, отдаёт прогрессивный mp4),
+  // затем ANDROID запасом.
   let videoUrl = pickProgressive(streamings);
+  if (!videoUrl && videoId) {
+    const ios = await innertubePlayerIos(videoId);
+    if (ios?.streamingData) videoUrl = pickProgressive([ios.streamingData]);
+  }
   if (!videoUrl && videoId) {
     const apr = await innertubePlayerAndroid(videoId);
     if (apr?.streamingData) videoUrl = pickProgressive([apr.streamingData]);
@@ -279,7 +319,8 @@ export async function importYoutube(userId: string, url: string, kind: "video" |
   let video_url: string | null = null;
   let video_size: number | null = null;
   if (media.videoUrl) {
-    const stored = await storeVideo(userId, media.videoUrl, { "user-agent": UA });
+    // Ссылку выдаёт IOS-клиент — качаем с тем же iOS-UA, иначе googlevideo может дать 403.
+    const stored = await storeVideo(userId, media.videoUrl, { "user-agent": "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)" });
     if (stored) {
       video_url = stored.url;
       video_size = stored.size;
