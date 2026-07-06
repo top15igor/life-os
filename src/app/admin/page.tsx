@@ -2,10 +2,12 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import AdminUsersTable from "@/components/AdminUsersTable";
 import AnthropicLimits from "@/components/AnthropicLimits";
+import BalanceSetter from "@/components/BalanceSetter";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { getAdminData } from "@/lib/admin";
+import { getAiSpend } from "@/lib/aiSpend";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -129,6 +131,7 @@ export default async function AdminPage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const d = await getAdminData();
+  const spend = await getAiSpend(); // остаток/расход Claude — рендерим на сервере (всегда виден)
   // Опции для ручного выбора «кто пригласил» (все пользователи).
   const refOptions = d.list.map((u: any) => ({ id: u.id, name: u.name }));
 
@@ -205,7 +208,7 @@ export default async function AdminPage() {
           <Stat label="Вернулись (≥2 дней)" value={d.returning} color="var(--insight)" />
         </div>
 
-        <Section title="📈 Рост и удержание" open>
+        <Section title="📈 Рост и удержание">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
             {/* Воронка активации */}
             <div className="card">
@@ -295,7 +298,7 @@ export default async function AdminPage() {
         </div>
         </Section>
 
-        <Section title="🧩 Использование и вовлечённость" open>
+        <Section title="🧩 Использование и вовлечённость">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
           {/* Что реально используют — adoption фич */}
           {(d as any).featureAdoption && (
@@ -373,10 +376,22 @@ export default async function AdminPage() {
           {d.usage && d.usage.byKind.length > 0 ? (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 10 }}>
-                <Stat label="Всего" value={`$${(d.usage.total / 100).toFixed(2)}`} color="var(--accent)" />
+                <Stat
+                  label="Остаток на счету (Claude)"
+                  value={spend.hasSnapshot ? `≈ $${(spend.balanceUsd ?? 0).toFixed(2)}` : "— задай"}
+                  color={spend.hasSnapshot && (spend.balanceUsd ?? 0) <= 5 ? "#e11d48" : "var(--accent)"}
+                />
+                <Stat label="Всего" value={`$${(d.usage.total / 100).toFixed(2)}`} />
                 <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
                 <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
               </div>
+              {spend.hasSnapshot && (
+                <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 8 }}>
+                  Claude с пополнения ${spend.spentSinceUsd.toFixed(2)} · сегодня ${spend.spentTodayUsd.toFixed(2)} · за месяц ${spend.spentMonthUsd.toFixed(2)}
+                  {(spend.balanceUsd ?? 99) <= 5 ? " · ⚠️ баланс на исходе — пополни в Console" : ""}
+                </div>
+              )}
+              <BalanceSetter />
               <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", fontSize: 12.5 }}>
                 <span style={{ padding: "5px 11px", borderRadius: 999, background: "var(--accent-bg)", border: "1px solid var(--accent)", color: "var(--text)" }}>
                   Claude (Anthropic): <b>${((d.usage.anthropic || 0) / 100).toFixed(2)}</b>
@@ -441,7 +456,7 @@ export default async function AdminPage() {
           </Section>
         )}
 
-        <Section title={`👥 Все пользователи (${d.totalUsers})`} open>
+        <Section title={`👥 Все пользователи (${d.totalUsers})`}>
           <AdminUsersTable users={d.list as any} refOptions={refOptions} />
         </Section>
       </main>

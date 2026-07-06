@@ -7,14 +7,6 @@ type Limits = {
   ok: boolean; error?: string; retryAfter?: string | null;
   requests?: Triple; inputTokens?: Triple; outputTokens?: Triple; tokens?: Triple; checkedModel?: string;
 };
-type Spend = {
-  ok: boolean; hasSnapshot: boolean;
-  snapshotUsd: number | null; snapshotAt: string | null;
-  spentSinceUsd: number; balanceUsd: number | null;
-  spentTodayUsd: number; spentMonthUsd: number; openaiMonthUsd: number;
-  error?: string;
-};
-
 const usd = (n: number | null | undefined): string =>
   n == null ? "—" : "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -58,63 +50,9 @@ function Row({ label, t }: { label: string; t?: Triple }) {
   );
 }
 
-function Balance({ spend, onSaved }: { spend?: Spend | null; onSaved: (s: Spend) => void }) {
-  const [val, setVal] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const bal = spend?.balanceUsd;
-  const low = bal != null && bal <= 5;
-  const save = async () => {
-    const n = Number(val.replace(",", "."));
-    if (!isFinite(n) || n < 0) { setErr("введи число, напр. 100"); return; }
-    setSaving(true); setErr(null);
-    try {
-      const resp = await fetch("/api/admin/anthropic-limits", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ balanceUsd: n }),
-      });
-      const r = await resp.json().catch(() => ({} as any));
-      if (r?.spend) onSaved(r.spend);
-      if (resp.ok && r?.ok) { setVal(""); setErr(null); }
-      else setErr(`HTTP ${resp.status} · ${r?.error || "не сохранилось"}`);
-    } catch (e: any) {
-      setErr("сеть: " + String(e?.message || e));
-    } finally { setSaving(false); }
-  };
-  return (
-    <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, background: low ? "#e11d4810" : "var(--accent-bg)", border: `1px solid ${low ? "#e11d4844" : "var(--accent)"}` }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 600 }}>
-          <i className="ti ti-wallet" style={{ fontSize: 17, color: low ? "#e11d48" : "var(--accent)" }} />Остаток на счету
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: low ? "#e11d48" : "var(--text)", fontVariantNumeric: "tabular-nums" }}>
-          {spend?.hasSnapshot ? `≈ ${usd(bal)}` : "—"}
-        </div>
-      </div>
-      {spend?.hasSnapshot && (
-        <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 4 }}>
-          Claude: с пополнения {usd(spend.spentSinceUsd)} · сегодня {usd(spend.spentTodayUsd)} · за месяц {usd(spend.spentMonthUsd)}
-          {spend.openaiMonthUsd > 0 ? ` · OpenAI/Whisper за месяц ${usd(spend.openaiMonthUsd)} (отдельный счёт)` : ""}
-        </div>
-      )}
-      {low && <div style={{ fontSize: 12, color: "#e11d48", marginTop: 5, fontWeight: 500 }}>Баланс на исходе — пополни в Console, иначе AI отключится.</div>}
-      {err && <div style={{ fontSize: 12, color: "#e11d48", marginTop: 5 }}>Ошибка: {err}</div>}
-      <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
-        <input value={val} onChange={(e) => setVal(e.target.value)} inputMode="decimal" placeholder="напр. 20"
-          style={{ width: 110, fontSize: 13.5, padding: "7px 10px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }} />
-        <button onClick={save} disabled={saving || !val}
-          style={{ fontSize: 12.5, fontWeight: 600, padding: "7px 13px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", cursor: "pointer", opacity: saving || !val ? 0.6 : 1 }}>
-          {saving ? "…" : "Записать баланс"}
-        </button>
-        <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>вписывай баланс из Console после пополнения — дальше он тикает вниз сам</span>
-      </div>
-    </div>
-  );
-}
 
 export default function AnthropicLimits() {
   const [data, setData] = useState<Limits | null>(null);
-  const [spend, setSpend] = useState<Spend | null>(null);
   const [realCost, setRealCost] = useState<{ ok: boolean; monthUsd?: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -123,7 +61,6 @@ export default function AnthropicLimits() {
     try {
       const r = await fetch("/api/admin/anthropic-limits", { cache: "no-store" }).then((x) => x.json());
       setData(r?.limits || { ok: false, error: "нет ответа" });
-      setSpend(r?.spend || null);
       setRealCost(r?.realCost || null);
     } catch {
       setData({ ok: false, error: "сеть" });
@@ -142,8 +79,6 @@ export default function AnthropicLimits() {
           <i className={`ti ${busy ? "ti-loader-2" : "ti-refresh"}`} style={{ fontSize: 14 }} />Обновить
         </button>
       </div>
-      <Balance spend={spend} onSaved={setSpend} />
-
       {realCost?.ok && (
         <div style={{ fontSize: 12.5, color: "var(--text-2)", margin: "-6px 0 12px", padding: "8px 12px", borderRadius: 10, background: "#10b98112", border: "1px solid #10b98133" }}>
           Реальный расход Claude за месяц (Anthropic Console): <b>{usd(realCost.monthUsd)}</b> — точная цифра из биллинга.
