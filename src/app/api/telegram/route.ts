@@ -1043,7 +1043,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const analysis = await analyze(text, user.id);
+    // Разбор AI. Если он упал (перегрузка/таймаут Anthropic) — НЕ теряем запись:
+    // сохраняем сырой текст с минимальным разбором, чтобы мысль пользователя не пропала.
+    let analysis: Analysis;
+    try {
+      analysis = await analyze(text, user.id);
+    } catch (e) {
+      console.error("analyze failed — saving raw", e);
+      analysis = {
+        summary: text.slice(0, 800),
+        categories: [], tags: [], people: [], places: [], projects: [],
+        tasks: [], insights: [], gratitude: [], good_deeds: [], promises: [], dreams: [],
+      };
+    }
     const entry = await saveEntry({
       userId: user.id,
       raw_text: text,
