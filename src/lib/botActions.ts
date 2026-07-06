@@ -94,7 +94,12 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
     const resp = await client().messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 220,
-      system: SYS + "\n" + nowLocalLine(tzOffset),
+      // SYS статичен → кэшируем (одна кэш-точка покрывает и tools). Время меняется
+      // каждую минуту — держим его отдельным НЕкэшируемым блоком после SYS.
+      system: [
+        { type: "text", text: SYS, cache_control: { type: "ephemeral" } },
+        { type: "text", text: nowLocalLine(tzOffset) },
+      ],
       messages: [{ role: "user", content: text }],
       tools: ACTION_TOOLS,
       tool_choice: { type: "any" },
