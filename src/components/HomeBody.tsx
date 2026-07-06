@@ -127,6 +127,8 @@ export default async function HomeBody() {
 
   const data = {
     greeting: `${greeting(locale)}${user.name ? ", " + user.name : ""}`,
+    greetWord: greeting(locale),
+    userName: user.name || "",
     bookPrompt,
     dateLine: dateLabel(locale, date || undefined),
     hint: h.today,
