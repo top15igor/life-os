@@ -109,6 +109,68 @@ async function transcriptViaRapidApi(videoId: string, url: string): Promise<stri
   }
 }
 
+// Рекурсивно найти в ответе YouTube-dl API прямую ссылку на mp4 со ЗВУКОМ (прогрессивный).
+// Разные API отдают разную форму, поэтому собираем кандидатов и оцениваем эвристикой:
+// берём mp4 с признаком звука, предпочитаем полегче (360–720p — влезает в лимит 50 МБ),
+// чисто аудио-дорожки (m4a / key содержит "audio") отбрасываем.
+function pickDownloadUrl(json: any): string | null {
+  const cands: { url: string; score: number }[] = [];
+  const walk = (n: any, ctxKey = "", depth = 0) => {
+    if (n == null || depth > 9) return;
+    if (typeof n === "string") {
+      if (/^https?:\/\//.test(n) && /(\.mp4|googlevideo\.com|videoplayback)/i.test(n)) {
+        const s = (ctxKey + " " + n).toLowerCase();
+        const audioOnly = (/audio/.test(s) && !/video/.test(s)) || /\.m4a(\?|$)/.test(s) || /mime=audio/.test(s);
+        if (audioOnly) return;
+        let score = 1;
+        if (/mp4/.test(s)) score += 2;
+        if (/muxed|progressive|audio.?and.?video|video.?with.?audio|hasaudio|withaudio/.test(s)) score += 4;
+        if (/\b(360|480)\b/.test(s)) score += 3;
+        else if (/\b720\b/.test(s)) score += 1;
+        else if (/\b(1080|1440|2160|4k)\b/.test(s)) score -= 2;
+        cands.push({ url: n, score });
+      }
+      return;
+    }
+    if (Array.isArray(n)) { for (const x of n) walk(x, ctxKey, depth + 1); return; }
+    if (typeof n === "object") { for (const [k, v] of Object.entries(n)) walk(v, k, depth + 1); }
+  };
+  walk(json);
+  if (!cands.length) return null;
+  cands.sort((a, b) => b.score - a.score);
+  return cands[0].url;
+}
+
+// Запасной способ достать ПРЯМУЮ ссылку на файл видео через RapidAPI (твой ключ).
+// Включается, если задан RAPIDAPI_YOUTUBE_DL_HOST. Нужен для облака: YouTube не отдаёт
+// форматы напрямую с серверного IP, а RapidAPI ходит со своих IP. Плейсхолдеры {id}/{url}.
+async function videoUrlViaRapidApi(videoId: string, url: string): Promise<string | null> {
+  const key = process.env.RAPIDAPI_KEY;
+  const host = process.env.RAPIDAPI_YOUTUBE_DL_HOST;
+  if (!key || !host) return null;
+  const pathTpl = process.env.RAPIDAPI_YOUTUBE_DL_PATH || "/dl?id={id}";
+  const bodyTpl = process.env.RAPIDAPI_YOUTUBE_DL_BODY || "";
+  const method = (process.env.RAPIDAPI_YOUTUBE_DL_METHOD || (bodyTpl ? "POST" : "GET")).toUpperCase();
+  const fill = (s: string) => s.replace(/\{id\}/g, encodeURIComponent(videoId)).replace(/\{url\}/g, encodeURIComponent(url));
+  try {
+    const init: RequestInit = {
+      method,
+      headers: {
+        "x-rapidapi-key": key, "x-rapidapi-host": host, accept: "application/json",
+        ...(method === "POST" ? { "content-type": "application/x-www-form-urlencoded" } : {}),
+      },
+    };
+    if (method === "POST") init.body = fill(bodyTpl || "id={id}");
+    const res = await fetch(`https://${host}${fill(pathTpl)}`, init);
+    if (!res.ok) { console.error("yt rapidapi dl", res.status); return null; }
+    const json = await res.json();
+    return pickDownloadUrl(json);
+  } catch (e) {
+    console.error("yt rapidapi dl", e);
+    return null;
+  }
+}
+
 // ANDROID-клиент InnerTube — часто отдаёт дорожки субтитров, когда WEB их прячет.
 async function innertubePlayerAndroid(videoId: string): Promise<any | null> {
   try {
@@ -294,6 +356,11 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     const apr = await innertubePlayerAndroid(videoId);
     if (apr?.streamingData) videoUrl = pickProgressive([apr.streamingData]);
   }
+  // Запас для облака: YouTube часто блокирует InnerTube с серверного IP — тогда берём
+  // прямую ссылку через RapidAPI (если настроен RAPIDAPI_YOUTUBE_DL_HOST).
+  if (!videoUrl && videoId) {
+    videoUrl = await videoUrlViaRapidApi(videoId, url);
+  }
 
   return { title, author, description, thumbnail, transcript, kind, videoUrl };
 }
@@ -319,8 +386,7 @@ export async function importYoutube(userId: string, url: string, kind: "video" |
   let video_url: string | null = null;
   let video_size: number | null = null;
   if (media.videoUrl) {
-    // Ссылку выдаёт IOS-клиент — качаем с тем же iOS-UA, иначе googlevideo может дать 403.
-    const stored = await storeVideo(userId, media.videoUrl, { "user-agent": "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)" });
+    const stored = await storeVideo(userId, media.videoUrl, { "user-agent": UA });
     if (stored) {
       video_url = stored.url;
       video_size = stored.size;
