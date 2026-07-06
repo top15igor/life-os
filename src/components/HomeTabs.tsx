@@ -21,6 +21,7 @@ const PRESET_VIS: Record<string, string[] | undefined> = {
 
 const DEFAULT_BLOCKS = ["book", "habit", "trace", "promises", "focus", "context", "gratitude"];
 const GEAR_LABEL: Record<string, string> = { ru: "Настроить", en: "Customize", uk: "Налаштувати", fr: "Personnaliser" };
+const PROFILE_LABEL: Record<string, string> = { ru: "Открыть профиль", en: "Open profile", uk: "Відкрити профіль", fr: "Ouvrir le profil" };
 
 const DAYPART_LINE: Record<string, { morning: string; day: string; evening: string; night: string }> = {
   ru: { morning: "Доброе начало. Сделай день сильным — для себя и для других.", day: "Держи фокус и не забывай о близких.", evening: "Заверши день: сохрани события, заметь добро, поблагодари.", night: "Поздний час. Если есть что сохранить за день — я рядом." },
@@ -164,7 +165,27 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
     <div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 19, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>{data.greeting}<Hint text={data.hint} /></div>
+          <div style={{ fontSize: 19, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+            {data.userName ? (
+              <span>
+                {data.greetWord}, <a
+                  href="/profile"
+                  title={PROFILE_LABEL[locale] || PROFILE_LABEL.ru}
+                  aria-label={PROFILE_LABEL[locale] || PROFILE_LABEL.ru}
+                  style={{ color: "inherit", textDecoration: "none", fontWeight: 600, borderBottom: "1px dashed var(--accent)", paddingBottom: 1 }}
+                >{data.userName}</a>
+                <a
+                  href="/profile"
+                  title={PROFILE_LABEL[locale] || PROFILE_LABEL.ru}
+                  aria-label={PROFILE_LABEL[locale] || PROFILE_LABEL.ru}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", marginLeft: 8, verticalAlign: "middle" }}
+                ><i className="ti ti-user-circle" style={{ fontSize: 17 }} /></a>
+              </span>
+            ) : (
+              <span>{data.greetWord}</span>
+            )}
+            <Hint text={data.hint} />
+          </div>
           <div style={{ fontSize: 13, color: "var(--text-2)" }}>{data.dateLine}</div>
         </div>
         {tab === 0 && (
