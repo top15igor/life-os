@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV, MOBILE_PRIMARY } from "@/lib/nav";
@@ -14,10 +15,14 @@ const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню
 export default function MobileNav({ navLabels, locale, isOwner, inviteLink, homeHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; homeHref?: string }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  // Портим в document.body, чтобы position:fixed низа меню не «ломался» из-за
+  // трансформированных/фильтрованных предков на некоторых страницах (меню скакало).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const primary = MOBILE_PRIMARY.map((k) => NAV.find((n) => n.key === k)).filter(Boolean) as typeof NAV;
   const hrefOf = (n: { key: string; href: string }) => (n.key === "today" && homeHref ? homeHref : n.href);
 
-  return (
+  const ui = (
     <>
       {open && (
         <div className="mobile-drawer-backdrop" onClick={() => setOpen(false)}>
@@ -69,4 +74,7 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink, home
       </nav>
     </>
   );
+
+  if (!mounted) return null;
+  return createPortal(ui, document.body);
 }

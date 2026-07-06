@@ -241,22 +241,31 @@ export async function getAdminData() {
 
   // Расход AI (если запущен usage.sql).
   const OPENAI_KINDS = new Set(["transcribe"]); // Whisper — OpenAI, остальное Claude
-  let usage: { total: number; last7: number; perWriter: number; anthropic: number; openai: number; byKind: { kind: string; cents: number }[] } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [] };
+  let usage: { total: number; last7: number; perWriter: number; anthropic: number; openai: number; byKind: { kind: string; cents: number }[]; byDay: { day: string; anthropic: number; openai: number }[] } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [], byDay: [] };
   try {
     const since7 = dayStr(Date.now() - 7 * 86400000);
     const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at").order("created_at", { ascending: false }).limit(100000);
     const rows = ev || [];
     let total = 0, last7 = 0, anthropic = 0, openai = 0;
     const bk: Record<string, number> = {};
+    const byDayMap: Record<string, { a: number; o: number }> = {};
     for (const r of rows) {
       if (r.kind === "balance_set") continue; // служебные снимки баланса — не расход
       const c = Number(r.cost_cents) || 0;
       total += c;
-      if (OPENAI_KINDS.has(r.kind)) openai += c; else anthropic += c;
-      if ((r.created_at || "").slice(0, 10) >= since7) last7 += c;
+      const isOpenai = OPENAI_KINDS.has(r.kind);
+      if (isOpenai) openai += c; else anthropic += c;
+      const day = (r.created_at || "").slice(0, 10);
+      if (day >= since7) last7 += c;
       bk[r.kind] = (bk[r.kind] || 0) + c;
+      if (day) {
+        const e = byDayMap[day] || { a: 0, o: 0 };
+        if (isOpenai) e.o += c; else e.a += c;
+        byDayMap[day] = e;
+      }
     }
-    usage = { total, last7, perWriter: writers ? total / writers : 0, anthropic, openai, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents) };
+    const byDay = Object.entries(byDayMap).map(([day, v]) => ({ day, anthropic: v.a, openai: v.o })).sort((x, y) => x.day.localeCompare(y.day));
+    usage = { total, last7, perWriter: writers ? total / writers : 0, anthropic, openai, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents), byDay };
   } catch {}
 
   // Обратная связь (если запущен feedback.sql).
