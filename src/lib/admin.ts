@@ -240,21 +240,23 @@ export async function getAdminData() {
   const tree = roots.map((u: any) => buildNode(u, 0, new Set<string>())).filter((n: any) => n.children.length > 0);
 
   // Расход AI (если запущен usage.sql).
-  let usage: { total: number; last7: number; perWriter: number; byKind: { kind: string; cents: number }[] } = { total: 0, last7: 0, perWriter: 0, byKind: [] };
+  const OPENAI_KINDS = new Set(["transcribe"]); // Whisper — OpenAI, остальное Claude
+  let usage: { total: number; last7: number; perWriter: number; anthropic: number; openai: number; byKind: { kind: string; cents: number }[] } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [] };
   try {
     const since7 = dayStr(Date.now() - 7 * 86400000);
     const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at");
     const rows = ev || [];
-    let total = 0, last7 = 0;
+    let total = 0, last7 = 0, anthropic = 0, openai = 0;
     const bk: Record<string, number> = {};
     for (const r of rows) {
       if (r.kind === "balance_set") continue; // служебные снимки баланса — не расход
       const c = Number(r.cost_cents) || 0;
       total += c;
+      if (OPENAI_KINDS.has(r.kind)) openai += c; else anthropic += c;
       if ((r.created_at || "").slice(0, 10) >= since7) last7 += c;
       bk[r.kind] = (bk[r.kind] || 0) + c;
     }
-    usage = { total, last7, perWriter: writers ? total / writers : 0, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents) };
+    usage = { total, last7, perWriter: writers ? total / writers : 0, anthropic, openai, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents) };
   } catch {}
 
   // Обратная связь (если запущен feedback.sql).

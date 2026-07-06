@@ -377,6 +377,15 @@ export default async function AdminPage() {
                 <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
                 <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
               </div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", fontSize: 12.5 }}>
+                <span style={{ padding: "5px 11px", borderRadius: 999, background: "var(--accent-bg)", border: "1px solid var(--accent)", color: "var(--text)" }}>
+                  Claude (Anthropic): <b>${((d.usage.anthropic || 0) / 100).toFixed(2)}</b>
+                </span>
+                <span style={{ padding: "5px 11px", borderRadius: 999, background: "var(--surface-2)", border: "1px solid var(--border)", color: "var(--text-2)" }}>
+                  OpenAI (Whisper/фото): <b>${((d.usage.openai || 0) / 100).toFixed(2)}</b>
+                </span>
+                <span style={{ alignSelf: "center", color: "var(--text-3)" }}>← сравнивай левое с Console → Billing</span>
+              </div>
               <div className="card" style={{ padding: "4px 14px" }}>
                 {d.usage.byKind.map((k: any, i: number) => {
                   const info = KIND_INFO[k.kind];

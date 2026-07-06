@@ -17,6 +17,37 @@ export type AnthropicLimits = {
 
 const num = (v: string | null): number | null => (v == null || v === "" ? null : Number(v));
 
+// Реальный расход Claude за текущий месяц из Admin API (точная цифра, как в Console).
+// Требует отдельный admin-ключ (sk-ant-admin...) в env ANTHROPIC_ADMIN_KEY.
+// Если ключа нет или запрос не удался — возвращаем ok:false, карточка это переживёт.
+export type RealCost = { ok: boolean; monthUsd?: number; error?: string };
+export async function getAnthropicRealCost(): Promise<RealCost> {
+  const key = process.env.ANTHROPIC_ADMIN_KEY;
+  if (!key) return { ok: false, error: "no_admin_key" };
+  try {
+    const monthStart = new Date().toISOString().slice(0, 7) + "-01T00:00:00Z";
+    const url = "https://api.anthropic.com/v1/organizations/cost_report?starting_at=" + encodeURIComponent(monthStart);
+    const r = await fetch(url, { headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, cache: "no-store" });
+    if (!r.ok) return { ok: false, error: `HTTP ${r.status}` };
+    const j: any = await r.json();
+    // Схема отчёта может отличаться — суммируем любые поля amount (USD) рекурсивно.
+    let cents = 0;
+    const walk = (o: any) => {
+      if (!o || typeof o !== "object") return;
+      if (Array.isArray(o)) { o.forEach(walk); return; }
+      for (const [k, v] of Object.entries(o)) {
+        if (k === "amount" && v != null && (!o.currency || String(o.currency).toUpperCase() === "USD")) {
+          const n = Number(v); if (isFinite(n)) cents += Math.round(n * 100);
+        } else walk(v);
+      }
+    };
+    walk(j?.data ?? j);
+    return { ok: true, monthUsd: Math.round(cents) / 100 };
+  } catch (e: any) {
+    return { ok: false, error: String(e?.message || e) };
+  }
+}
+
 export async function getAnthropicLimits(): Promise<AnthropicLimits> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return { ok: false, error: "Нет ключа ANTHROPIC_API_KEY в окружении." };
