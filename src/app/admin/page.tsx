@@ -3,6 +3,7 @@ import Sidebar from "@/components/Sidebar";
 import AdminUsersTable from "@/components/AdminUsersTable";
 import AnthropicLimits from "@/components/AnthropicLimits";
 import BalanceSetter from "@/components/BalanceSetter";
+import AdminSpendPeriod from "@/components/AdminSpendPeriod";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -385,6 +386,7 @@ export default async function AdminPage() {
                 <Stat label="За 7 дней" value={`$${(d.usage.last7 / 100).toFixed(2)}`} />
                 <Stat label="Ср. на автора" value={`$${(d.usage.perWriter / 100).toFixed(2)}`} />
               </div>
+              <AdminSpendPeriod byDay={d.usage.byDay || []} />
               {spend.hasSnapshot && (
                 <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 8 }}>
                   Claude с пополнения ${spend.spentSinceUsd.toFixed(2)} · сегодня ${spend.spentTodayUsd.toFixed(2)} · за месяц ${spend.spentMonthUsd.toFixed(2)}
