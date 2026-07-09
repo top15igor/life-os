@@ -285,6 +285,56 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
   };
 }
 
+// Диагностика (owner-only, команда /igdebug): показывает, ЧТО именно вернул RapidAPI
+// на пост — структуру ответа (ключи и длины массивов) и результат разбора карусели.
+// Нужна, чтобы понять, отдаёт ли конкретный API все кадры карусели и под каким ключом.
+function schemaOf(v: any, depth = 0, maxDepth = 4): string {
+  if (depth > maxDepth) return "…";
+  if (v === null || v === undefined) return "null";
+  if (Array.isArray(v)) return `[${v.length}]${v.length ? " of " + schemaOf(v[0], depth + 1, maxDepth) : ""}`;
+  if (typeof v === "object") {
+    const keys = Object.keys(v);
+    return "{" + keys.slice(0, 40).map((k) => `${k}:${schemaOf(v[k], depth + 1, maxDepth)}`).join(", ") + (keys.length > 40 ? ", …" : "") + "}";
+  }
+  if (typeof v === "string") return "str";
+  return typeof v;
+}
+
+export async function igDebug(url: string): Promise<string> {
+  const key = process.env.RAPIDAPI_KEY;
+  if (!key) return "RAPIDAPI_KEY не задан — используется только og-путь (одна обложка).";
+  const host = process.env.RAPIDAPI_INSTAGRAM_HOST || "instagram-scraper-api2.p.rapidapi.com";
+  const path = process.env.RAPIDAPI_INSTAGRAM_PATH || "/v1/post_info?code_or_id_or_url={url}";
+  const bodyTpl = process.env.RAPIDAPI_INSTAGRAM_BODY || "";
+  const method = (process.env.RAPIDAPI_INSTAGRAM_METHOD || (bodyTpl ? "POST" : "GET")).toUpperCase();
+  const cleanUrl = url.replace(/\?.*$/, "");
+  const enc = encodeURIComponent(cleanUrl);
+  const sc = shortcodeOf(url) || "";
+  const fill = (s: string) => s.replace(/\{url\}/g, enc).replace(/\{shortcode\}/g, sc);
+  const endpoint = `https://${host}${fill(path)}`;
+  const init: RequestInit = {
+    method,
+    headers: { "x-rapidapi-key": key, "x-rapidapi-host": host, accept: "application/json", ...(method === "POST" ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
+  };
+  if (method === "POST") init.body = fill(bodyTpl || "url={url}");
+  try {
+    const res = await fetch(endpoint, init);
+    if (!res.ok) return `HTTP ${res.status}\nendpoint: ${host}${fill(path)}\n${(await res.text()).slice(0, 400)}`;
+    const json = await res.json();
+    const car = collectCarousel(json);
+    const schema = schemaOf(json).slice(0, 3200);
+    return [
+      `HTTP 200 · host=${host}`,
+      `carousel: images=${car.images.length}, videos=${car.videos.length}`,
+      `top keys: ${Object.keys(json || {}).join(", ")}`,
+      `SCHEMA:`,
+      schema,
+    ].join("\n");
+  } catch (e) {
+    return `fetch error: ${String(e).slice(0, 300)}`;
+  }
+}
+
 export type ImportResult =
   | { ok: false; reason: "empty" | "blocked" | "limited" }
   | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null; imageUrls?: string[] };

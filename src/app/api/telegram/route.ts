@@ -6,7 +6,7 @@ import { analyze, type Analysis } from "@/lib/ai";
 import { routeMessage, runAction } from "@/lib/botActions";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
-import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
+import { extractInstagramUrl, importInstagram, igDebug } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
@@ -899,6 +899,27 @@ export async function POST(req: NextRequest) {
 
     if (!text || !text.trim()) {
       await sendMessage(chatId, "Пришли текст или голосовое сообщение 🙂");
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🛠 /igdebug <ссылка> — ТОЛЬКО владелец: показать сырой ответ RapidAPI по посту
+    // (структуру и результат разбора карусели), чтобы диагностировать «пришло 1 фото».
+    if (/^\/igdebug\b/i.test(text.trim())) {
+      if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+        return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
+      }
+      const dbgUrl = extractInstagramUrl(text);
+      if (!dbgUrl) {
+        await sendMessage(chatId, "Использование: /igdebug &lt;ссылка на пост Instagram&gt;");
+        return NextResponse.json({ ok: true });
+      }
+      await sendChatAction(chatId, "typing");
+      try {
+        const report = await igDebug(dbgUrl);
+        await sendMessage(chatId, `<pre>${esc(report.slice(0, 3800))}</pre>`);
+      } catch (e) {
+        await sendMessage(chatId, "igdebug error: " + esc(String(e).slice(0, 300)));
+      }
       return NextResponse.json({ ok: true });
     }
 
