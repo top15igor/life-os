@@ -953,6 +953,11 @@ export async function POST(req: NextRequest) {
         // Разбор удался, но запись в базу упала — честно предупреждаем, а не врём «сохранил».
         if (!r.saved) {
           await sendMessage(chatId, L.saveFail);
+          // Владельцу дополнительно показываем реальную ошибку БД — для диагностики.
+          const se = (r as any).saveError;
+          if (se && process.env.TELEGRAM_ALLOWED_CHAT_ID && String(chatId) === process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+            await sendMessage(chatId, `🛠 DB: <code>${esc(String(se).slice(0, 500))}</code>`);
+          }
           return NextResponse.json({ ok: true });
         }
         const a = r.analysis;

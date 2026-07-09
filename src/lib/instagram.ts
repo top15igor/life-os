@@ -337,7 +337,7 @@ export async function igDebug(url: string): Promise<string> {
 
 export type ImportResult =
   | { ok: false; reason: "empty" | "blocked" | "limited" }
-  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null; imageUrls?: string[] };
+  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null; imageUrls?: string[]; saveError?: string | null };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
@@ -415,6 +415,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     }
   }
 
+  let saveError: string | null = null;
   const id = await insertSavedItem({
     user_id: userId,
     source: "instagram",
@@ -434,7 +435,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     video_url,
     video_size,
     status: "ok",
-  });
+  }, (m) => { saveError = m; });
   const saved = !!id;
 
   // Готовая карточка для UI — без повторного чтения БД (не зависит от наличия
@@ -462,5 +463,5 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
       }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript, videoUrl: video_url, imageUrls: storedImages };
+  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript, videoUrl: video_url, imageUrls: storedImages, saveError };
 }
