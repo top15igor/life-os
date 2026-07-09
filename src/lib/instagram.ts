@@ -49,7 +49,7 @@ function shortcodeOf(url: string): string | null {
   return m ? m[1] : null;
 }
 
-type IgMedia = { caption: string; imageUrl: string | null; videoUrl: string | null; author: string | null; shortcode: string | null; kind: "post" | "reel" };
+type IgMedia = { caption: string; imageUrl: string | null; imageUrls: string[]; videoUrl: string | null; author: string | null; shortcode: string | null; kind: "post" | "reel" };
 
 const kindOf = (url: string): "post" | "reel" => (/\/reels?\//i.test(url) || /\/tv\//i.test(url) ? "reel" : "post");
 
@@ -75,6 +75,40 @@ function deepGet(obj: any, key: string, depth = 0): any {
     }
   }
   return undefined;
+}
+
+// Собрать все кадры карусельного поста (несколько фото/видео в одном посте).
+// Разные Instagram-API кладут элементы под разными ключами (carousel_media / edges),
+// а внутри — image_versions2.candidates / display_url и video_versions. Берём первый
+// (самый крупный) url каждого кадра.
+function collectCarousel(json: any): { images: string[]; videos: string[] } {
+  const images: string[] = [];
+  const videos: string[] = [];
+  let nodes: any = deepGet(json, "carousel_media");
+  if (nodes && !Array.isArray(nodes) && Array.isArray(nodes.edges)) nodes = nodes.edges.map((e: any) => e?.node).filter(Boolean);
+  if (!Array.isArray(nodes)) {
+    const edges = deepGet(json, "edge_sidecar_to_children")?.edges;
+    if (Array.isArray(edges)) nodes = edges.map((e: any) => e?.node).filter(Boolean);
+  }
+  if (!Array.isArray(nodes)) return { images, videos };
+  const pickImg = (n: any): string | null => {
+    const iv = n?.image_versions2 || n?.image_versions;
+    const cand = iv?.candidates || iv?.items;
+    if (Array.isArray(cand) && cand[0]?.url) return cand[0].url;
+    return n?.display_url || n?.thumbnail_url || n?.display_src || null;
+  };
+  const pickVid = (n: any): string | null => {
+    const vv = n?.video_versions;
+    if (Array.isArray(vv) && vv[0]?.url) return vv[0].url;
+    return n?.video_url || null;
+  };
+  for (const n of nodes) {
+    const v = pickVid(n);
+    if (v) videos.push(v);
+    const img = pickImg(n);
+    if (img) images.push(img);
+  }
+  return { images, videos };
 }
 
 type ApiResult = { media: IgMedia | null; rateLimited: boolean };
@@ -157,12 +191,19 @@ async function fetchViaRapidApi(url: string): Promise<ApiResult> {
     if (Array.isArray(cand) && cand[0]?.url) imageUrl = cand[0].url;
   }
 
+  // Карусель (несколько фото/видео в одном посте) — забираем ВСЕ кадры, чтобы, как
+  // Save As Bot, вернуть пользователю альбом целиком, а не одну обложку.
+  const carousel = collectCarousel(json);
+  let imageUrls = carousel.images;
+  if (!imageUrls.length && imageUrl) imageUrls = [imageUrl];
+  if (!videoUrl && carousel.videos[0]) videoUrl = carousel.videos[0];
+
   const uname = deepGet(json, "username") || deepGet(json, "owner_username");
   const author = uname ? "@" + String(uname).replace(/^@/, "") : null;
 
   // Нечего отдавать — пусть сработает запасной способ.
-  if (!caption && !videoUrl && !imageUrl) return { media: null, rateLimited: false };
-  return { media: { caption: (caption || "").trim(), imageUrl, videoUrl, author, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: false };
+  if (!caption && !videoUrl && !imageUrl && !imageUrls.length) return { media: null, rateLimited: false };
+  return { media: { caption: (caption || "").trim(), imageUrl: imageUrl || imageUrls[0] || null, imageUrls, videoUrl, author, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: false };
 }
 
 // Способ 2 (запасной): og-теги превью. Работает редко (Instagram чаще отдаёт логин-стену),
@@ -184,9 +225,11 @@ async function fetchViaOg(url: string): Promise<IgMedia> {
   const tQ = title.match(/["“](.+)["”]\s*$/s);
   if (tQ && tQ[1].length > caption.length) caption = tQ[1].trim();
   const author = (title.match(/^([^•|]+?)\s+(?:on Instagram|в Instagram|on\b)/i)?.[1] || "").trim() || null;
+  const ogImage = ogTag(html, "image");
   return {
     caption,
-    imageUrl: ogTag(html, "image"),
+    imageUrl: ogImage,
+    imageUrls: ogImage ? [ogImage] : [],  // og-теги отдают только обложку — один кадр
     videoUrl: ogTag(html, "video") || ogTag(html, "video:url") || ogTag(html, "video:secure_url"),
     author,
     shortcode: shortcodeOf(url),
@@ -205,7 +248,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
     viaOg = await fetchViaOg(url);
   } catch (e) {
     if (viaApi) return { media: viaApi, rateLimited: api.rateLimited }; // API хоть что-то дал (например, картинку)
-    if (api.rateLimited) return { media: { caption: "", imageUrl: null, videoUrl: null, author: null, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: true };
+    if (api.rateLimited) return { media: { caption: "", imageUrl: null, imageUrls: [], videoUrl: null, author: null, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: true };
     throw e;
   }
   if (!viaApi) return { media: viaOg, rateLimited: api.rateLimited };
@@ -214,6 +257,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
     media: {
       caption: viaApi.caption || viaOg.caption,
       imageUrl: viaApi.imageUrl || viaOg.imageUrl,
+      imageUrls: viaApi.imageUrls.length ? viaApi.imageUrls : viaOg.imageUrls,
       videoUrl: viaApi.videoUrl || viaOg.videoUrl,
       author: viaApi.author || viaOg.author,
       shortcode: viaApi.shortcode || viaOg.shortcode,
@@ -225,7 +269,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
 
 export type ImportResult =
   | { ok: false; reason: "empty" | "blocked" | "limited" }
-  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null };
+  | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null; imageUrls?: string[] };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
@@ -262,27 +306,35 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
   }
 
   const combined = [media.caption, transcript].filter(Boolean).join("\n\n").trim();
-  if (!combined) {
+  const hasMedia = media.imageUrls.length > 0 || !!media.imageUrl || !!media.videoUrl || !!videoBuf;
+  if (!combined && !hasMedia) {
     if (rateLimited) return { ok: false, reason: "limited" };
-    return { ok: false, reason: media.videoUrl || media.imageUrl ? "empty" : "blocked" };
+    return { ok: false, reason: "blocked" };
   }
 
-  const analysis = await analyzeSaved(combined, userId, locale);
+  // Если есть текст — раскладываем его AI. Если текста нет, но есть медиа — не бросаем
+  // пост, а сохраняем его как Save As Bot (по автору/типу), чтобы фото/видео не потерялись.
+  const analysis: SavedAnalysis = combined
+    ? await analyzeSaved(combined, userId, locale)
+    : { title: media.author ? `${media.kind === "reel" ? "Reel" : "Пост"} ${media.author}` : (media.kind === "reel" ? "Сохранённое видео" : "Сохранённый пост"), topic: "", summary: "", key_points: [], tags: [] };
 
-  // Сохраняем превью в bucket 'saved' (ссылки Instagram-CDN протухают).
-  let image_url: string | null = null;
-  if (media.imageUrl) {
+  // Сохраняем все кадры в bucket 'saved' (ссылки Instagram-CDN протухают).
+  // Первый кадр остаётся в image_url (обложка/совместимость), остальные — в image_urls.
+  const db = supabaseAdmin();
+  const storeImage = async (srcUrl: string): Promise<string> => {
     try {
-      const ibuf = Buffer.from(await (await fetch(media.imageUrl)).arrayBuffer());
+      const ibuf = Buffer.from(await (await fetch(srcUrl)).arrayBuffer());
       const path = `${userId}/${Date.now()}-${Math.round(Math.random() * 1e6)}.jpg`;
-      const db = supabaseAdmin();
       const { error } = await db.storage.from("saved").upload(path, ibuf, { contentType: "image/jpeg", upsert: true });
-      if (!error) image_url = db.storage.from("saved").getPublicUrl(path).data?.publicUrl || media.imageUrl;
-      else image_url = media.imageUrl;
-    } catch {
-      image_url = media.imageUrl;
-    }
-  }
+      if (!error) return db.storage.from("saved").getPublicUrl(path).data?.publicUrl || srcUrl;
+    } catch { /* оставляем исходную ссылку */ }
+    return srcUrl;
+  };
+  const srcImages = media.imageUrls.length ? media.imageUrls : (media.imageUrl ? [media.imageUrl] : []);
+  // Не тянем бесконечную карусель — Telegram-альбом всё равно не длиннее 10 кадров.
+  const storedImages: string[] = [];
+  for (const src of srcImages.slice(0, 10)) storedImages.push(await storeImage(src));
+  const image_url: string | null = storedImages[0] || null;
 
   // Сохраняем сам файл видео в bucket 'saved' (ссылки Instagram-CDN протухают).
   let video_url: string | null = null;
@@ -310,6 +362,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     caption: media.caption || null,
     transcript: transcript || null,
     image_url,
+    image_urls: storedImages.length ? storedImages : null,
     video_url,
     video_size,
     status: "ok",
@@ -331,6 +384,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
         key_points: analysis.key_points,
         tags: analysis.tags,
         image_url,
+        image_urls: storedImages.length ? storedImages : null,
         video_url,
         note: null,
         favorite: false,
@@ -340,5 +394,5 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
       }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript, videoUrl: video_url };
+  return { ok: true, id, saved, item, analysis, kind: media.kind, hadTranscript: !!transcript, videoUrl: video_url, imageUrls: storedImages };
 }
