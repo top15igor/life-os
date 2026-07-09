@@ -176,7 +176,10 @@ export default function KnowledgeManager({ initial, locale }: { initial: SavedIt
     </div>
   );
 
-  const chip = (active: boolean): React.CSSProperties => ({ fontSize: 12, padding: "4px 11px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (active ? "#6d5efc" : "var(--border)"), background: active ? "rgba(109,94,252,.12)" : "var(--surface)", color: active ? "#6d5efc" : "var(--text-2,var(--text-3))", whiteSpace: "nowrap" });
+  // Категории (папки) — крупные «плашки» с иконкой; активная заливается сплошным.
+  const catChip = (active: boolean): React.CSSProperties => ({ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, padding: "5px 12px", borderRadius: 9, cursor: "pointer", border: "1px solid " + (active ? "#6d5efc" : "var(--border)"), background: active ? "#6d5efc" : "var(--surface)", color: active ? "#fff" : "var(--text-2,var(--text-3))", whiteSpace: "nowrap" });
+  // Хештеги — мелкие мягкие «пилюли» в фиолетовом оттенке (вторичный уровень).
+  const tagChip = (active: boolean): React.CSSProperties => ({ fontSize: 11.5, padding: "3px 10px", borderRadius: 999, cursor: "pointer", border: "1px solid transparent", background: active ? "#6d5efc" : "rgba(109,94,252,.1)", color: active ? "#fff" : "#6d5efc", whiteSpace: "nowrap" });
   const iconBtn = (active?: boolean): React.CSSProperties => ({ width: 30, height: 30, borderRadius: 8, border: "none", background: active ? "rgba(109,94,252,.14)" : "rgba(0,0,0,.5)", color: active ? "#6d5efc" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15 });
 
   return (
@@ -224,19 +227,26 @@ export default function KnowledgeManager({ initial, locale }: { initial: SavedIt
           <i className="ti ti-search" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-3)", fontSize: 15 }} />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={s.searchPh} style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px 10px 34px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5 }} />
         </div>
+        {/* Категории (папки) — отдельный ряд с иконками-папками */}
         <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
-          <span onClick={() => setFavOnly((v) => !v)} style={chip(favOnly)}><i className="ti ti-star" style={{ fontSize: 12 }} /> {s.favOnly}</span>
+          <span onClick={() => setFavOnly((v) => !v)} style={catChip(favOnly)}><i className="ti ti-star" style={{ fontSize: 13 }} /> {s.favOnly}</span>
           {folders.map(([f, n]) => (
-            <span key={f} onClick={() => setFolderFilter(folderFilter === f ? null : f)} style={chip(folderFilter === f)}>{f} · {n}</span>
-          ))}
-          {tags.length ? <span style={{ width: 1, height: 18, background: "var(--border)", margin: "0 2px" }} /> : null}
-          {tags.map((t) => (
-            <span key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} style={chip(tagFilter === t)}>#{t.replace(/\s+/g, "_")}</span>
+            <span key={f} onClick={() => setFolderFilter(folderFilter === f ? null : f)} style={catChip(folderFilter === f)}>
+              <i className="ti ti-folder" style={{ fontSize: 13 }} /> {f} <span style={{ opacity: 0.55, fontWeight: 500 }}>{n}</span>
+            </span>
           ))}
           {(favOnly || folderFilter || tagFilter || query) ? (
-            <span onClick={() => { setFavOnly(false); setFolderFilter(null); setTagFilter(null); setQuery(""); }} style={{ ...chip(false), color: "#ef4444", borderColor: "var(--border)" }}><i className="ti ti-x" style={{ fontSize: 12 }} /> {s.clear}</span>
+            <span onClick={() => { setFavOnly(false); setFolderFilter(null); setTagFilter(null); setQuery(""); }} style={{ ...catChip(false), color: "#ef4444" }}><i className="ti ti-x" style={{ fontSize: 13 }} /> {s.clear}</span>
           ) : null}
         </div>
+        {/* Хештеги — отдельный ряд, мягкие пилюли */}
+        {tags.length ? (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 9 }}>
+            {tags.map((t) => (
+              <span key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} style={tagChip(tagFilter === t)}>#{t.replace(/\s+/g, "_")}</span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {filtered.length === 0 ? (
