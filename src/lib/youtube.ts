@@ -164,11 +164,16 @@ async function videoUrlViaRapidApi(videoId: string, url: string): Promise<string
     };
     if (method === "POST") init.body = fill(bodyTpl || "id={id}");
     const res = await fetch(`https://${host}${fill(pathTpl)}`, init);
-    if (!res.ok) { console.error("yt rapidapi dl", res.status); return null; }
+    if (!res.ok) { console.error("yt rapidapi dl status", res.status); return null; }
     const json = await res.json();
-    return pickDownloadUrl(json);
+    const picked = pickDownloadUrl(json);
+    // Диагностика: видно, вернул ли API ссылку и на какой она домен (googlevideo → IP-лок).
+    let pickedHost = "none";
+    try { if (picked) pickedHost = new URL(picked).host; } catch { pickedHost = "unpar?"; }
+    console.log("yt rapidapi dl picked host:", pickedHost);
+    return picked;
   } catch (e) {
-    console.error("yt rapidapi dl", e);
+    console.error("yt rapidapi dl err", e);
     return null;
   }
 }
@@ -390,6 +395,7 @@ export async function importYoutube(userId: string, url: string, kind: "video" |
   let video_size: number | null = null;
   if (media.videoUrl) {
     const stored = await storeVideo(userId, media.videoUrl, { "user-agent": UA });
+    console.log("yt store video:", stored ? `ok ${stored.size}b` : "failed (see 'video fetch' status above)");
     if (stored) {
       video_url = stored.url;
       video_size = stored.size;
