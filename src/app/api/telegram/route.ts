@@ -962,7 +962,8 @@ export async function POST(req: NextRequest) {
         // альбомом, ролик — видеофайлом. Для reel обложку отдельно не шлём (видео уже есть).
         const imgs: string[] = ((r as any).imageUrls || []).filter(Boolean);
         if (imgs.length && r.kind !== "reel") {
-          const ok = await sendMediaGroup(chatId, imgs.slice(0, 10).map((u) => ({ type: "photo", media: u })));
+          // sendMediaGroup сам режет на альбомы по 10 (лимит Telegram) — так уходит вся карусель.
+          const ok = await sendMediaGroup(chatId, imgs.slice(0, 20).map((u) => ({ type: "photo", media: u })));
           if (!ok) await sendMessage(chatId, imgs.map((u, i) => `🖼 <a href="${u}">${i + 1}</a>`).join("  "));
         }
         // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
