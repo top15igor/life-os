@@ -143,9 +143,12 @@ function pickDownloadUrl(json: any): string | null {
   return cands[0].url;
 }
 
-// Запасной способ достать ПРЯМУЮ ссылку на файл видео через RapidAPI (твой ключ).
-// Включается, если задан RAPIDAPI_YOUTUBE_DL_HOST. Нужен для облака: YouTube не отдаёт
-// форматы напрямую с серверного IP, а RapidAPI ходит со своих IP. Плейсхолдеры {id}/{url}.
+// «Спящий» запасной способ достать ссылку на файл видео через RapidAPI (твой ключ).
+// Включается, только если задан RAPIDAPI_YOUTUBE_DL_HOST. Плейсхолдеры {id}/{url}.
+// ВАЖНО (проверено на проде): обычные YouTube-API отдают ссылку на googlevideo.com,
+// а YouTube блокирует скачивание таких ссылок с IP датацентра (Vercel) — 403, хотя из
+// браузера они играют. Поэтому по умолчанию оставляем ВЫКЛ. Заработает только с API,
+// который сам ПРОКСИРУЕТ файл со своего домена (не отдаёт голую googlevideo-ссылку).
 async function videoUrlViaRapidApi(videoId: string, url: string): Promise<string | null> {
   const key = process.env.RAPIDAPI_KEY;
   const host = process.env.RAPIDAPI_YOUTUBE_DL_HOST;
@@ -166,12 +169,7 @@ async function videoUrlViaRapidApi(videoId: string, url: string): Promise<string
     const res = await fetch(`https://${host}${fill(pathTpl)}`, init);
     if (!res.ok) { console.error("yt rapidapi dl status", res.status); return null; }
     const json = await res.json();
-    const picked = pickDownloadUrl(json);
-    // Диагностика: видно, вернул ли API ссылку и на какой она домен (googlevideo → IP-лок).
-    let pickedHost = "none";
-    try { if (picked) pickedHost = new URL(picked).host; } catch { pickedHost = "unpar?"; }
-    console.log("yt rapidapi dl picked host:", pickedHost);
-    return picked;
+    return pickDownloadUrl(json);
   } catch (e) {
     console.error("yt rapidapi dl err", e);
     return null;
@@ -395,7 +393,6 @@ export async function importYoutube(userId: string, url: string, kind: "video" |
   let video_size: number | null = null;
   if (media.videoUrl) {
     const stored = await storeVideo(userId, media.videoUrl, { "user-agent": UA });
-    console.log("yt store video:", stored ? `ok ${stored.size}b` : "failed (see 'video fetch' status above)");
     if (stored) {
       video_url = stored.url;
       video_size = stored.size;
