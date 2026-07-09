@@ -359,8 +359,9 @@ export async function unpackYoutube(url: string, kind: "video" | "short"): Promi
     if (apr?.streamingData) videoUrl = pickProgressive([apr.streamingData]);
   }
   // Запас для облака: YouTube часто блокирует InnerTube с серверного IP — тогда берём
-  // прямую ссылку через RapidAPI (если настроен RAPIDAPI_YOUTUBE_DL_HOST).
-  if (!videoUrl && videoId) {
+  // прямую ссылку через RapidAPI (если настроен RAPIDAPI_YOUTUBE_DL_HOST). Вызываем
+  // ТОЛЬКО для Shorts — чтобы не жечь платный лимит на обычных (часто длинных) видео.
+  if (!videoUrl && videoId && kind === "short") {
     videoUrl = await videoUrlViaRapidApi(videoId, url);
   }
 
