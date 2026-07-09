@@ -84,23 +84,38 @@ function deepGet(obj: any, key: string, depth = 0): any {
 function collectCarousel(json: any): { images: string[]; videos: string[] } {
   const images: string[] = [];
   const videos: string[] = [];
-  let nodes: any = deepGet(json, "carousel_media");
-  if (nodes && !Array.isArray(nodes) && Array.isArray(nodes.edges)) nodes = nodes.edges.map((e: any) => e?.node).filter(Boolean);
+  // Разные Instagram-API называют массив кадров по-разному — пробуем известные ключи.
+  let nodes: any = null;
+  for (const key of ["carousel_media", "sidecar_children", "resources", "carousel", "medias"]) {
+    const found = deepGet(json, key);
+    if (Array.isArray(found) && found.length) { nodes = found; break; }
+    if (found && !Array.isArray(found) && Array.isArray(found.edges)) { nodes = found.edges.map((e: any) => e?.node).filter(Boolean); break; }
+  }
   if (!Array.isArray(nodes)) {
     const edges = deepGet(json, "edge_sidecar_to_children")?.edges;
     if (Array.isArray(edges)) nodes = edges.map((e: any) => e?.node).filter(Boolean);
   }
-  if (!Array.isArray(nodes)) return { images, videos };
+  if (!Array.isArray(nodes) || !nodes.length) return { images, videos };
   const pickImg = (n: any): string | null => {
-    const iv = n?.image_versions2 || n?.image_versions;
-    const cand = iv?.candidates || iv?.items;
+    const iv = n?.image_versions2 || n?.image_versions || n?.image;
+    const cand = iv?.candidates || iv?.items || (Array.isArray(iv) ? iv : null);
     if (Array.isArray(cand) && cand[0]?.url) return cand[0].url;
-    return n?.display_url || n?.thumbnail_url || n?.display_src || null;
+    if (typeof n?.display_url === "string") return n.display_url;
+    if (typeof n?.thumbnail_url === "string") return n.thumbnail_url;
+    if (typeof n?.display_src === "string") return n.display_src;
+    if (typeof n?.image_url === "string") return n.image_url;
+    // Крайняя мера — первый глубокий candidates[].url внутри узла (формат API может отличаться).
+    const deepCand = deepGet(n, "candidates");
+    if (Array.isArray(deepCand) && deepCand[0]?.url) return deepCand[0].url;
+    return null;
   };
   const pickVid = (n: any): string | null => {
     const vv = n?.video_versions;
     if (Array.isArray(vv) && vv[0]?.url) return vv[0].url;
-    return n?.video_url || null;
+    if (typeof n?.video_url === "string") return n.video_url;
+    const dv = deepGet(n, "video_versions");
+    if (Array.isArray(dv) && dv[0]?.url) return dv[0].url;
+    return null;
   };
   for (const n of nodes) {
     const v = pickVid(n);
@@ -125,7 +140,10 @@ async function fetchViaRapidApi(url: string): Promise<ApiResult> {
   const path = process.env.RAPIDAPI_INSTAGRAM_PATH || "/v1/post_info?code_or_id_or_url={url}";
   const bodyTpl = process.env.RAPIDAPI_INSTAGRAM_BODY || "";
   const method = (process.env.RAPIDAPI_INSTAGRAM_METHOD || (bodyTpl ? "POST" : "GET")).toUpperCase();
-  const enc = encodeURIComponent(url);
+  // Чистим ссылку от query (?img_index=2&igsh=…): некоторые API по img_index
+  // отдают ТОЛЬКО один кадр карусели вместо всего поста.
+  const cleanUrl = url.replace(/\?.*$/, "");
+  const enc = encodeURIComponent(cleanUrl);
   const sc = shortcodeOf(url) || "";
   const fill = (s: string) => s.replace(/\{url\}/g, enc).replace(/\{shortcode\}/g, sc);
   const endpoint = `https://${host}${fill(path)}`;
