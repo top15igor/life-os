@@ -322,11 +322,15 @@ export async function igDebug(url: string): Promise<string> {
     if (!res.ok) return `HTTP ${res.status}\nendpoint: ${host}${fill(path)}\n${(await res.text()).slice(0, 400)}`;
     const json = await res.json();
     const car = collectCarousel(json);
-    const schema = schemaOf(json).slice(0, 3200);
+    const schema = schemaOf(json).slice(0, 2200);
+    // Сырой ответ целиком (обрезанный) — чтобы видеть значения полей вроде detail/message
+    // (туда API кладёт текст ошибки), а не только их типы.
+    const raw = JSON.stringify(json).slice(0, 1200);
     return [
       `HTTP 200 · host=${host}`,
       `carousel: images=${car.images.length}, videos=${car.videos.length}`,
       `top keys: ${Object.keys(json || {}).join(", ")}`,
+      `RAW: ${raw}`,
       `SCHEMA:`,
       schema,
     ].join("\n");
