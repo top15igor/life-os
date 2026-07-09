@@ -31,6 +31,11 @@ import { getAiSpend, setAiBalance } from "@/lib/aiSpend";
 import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
 
 export const runtime = "nodejs";
+// Импорт Instagram-поста (скачивание видео + расшифровка + AI + загрузка всех фото
+// карусели + запись в базу) не укладывается в дефолтные 10с — иначе функцию убивает
+// на последнем шаге и появляется «не смог записать в Базу знаний». Даём 60с, как
+// остальным тяжёлым роутам проекта.
+export const maxDuration = 60;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
