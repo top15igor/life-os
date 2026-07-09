@@ -110,32 +110,34 @@ async function transcriptViaRapidApi(videoId: string, url: string): Promise<stri
 }
 
 // Рекурсивно найти в ответе YouTube-dl API прямую ссылку на mp4 со ЗВУКОМ (прогрессивный).
-// Разные API отдают разную форму, поэтому собираем кандидатов и оцениваем эвристикой:
-// берём mp4 с признаком звука, предпочитаем полегче (360–720p — влезает в лимит 50 МБ),
-// чисто аудио-дорожки (m4a / key содержит "audio") отбрасываем.
+// Форма ответа у разных API разная, поэтому оцениваем эвристикой на уровне ОБЪЕКТА-формата
+// (видно соседние поля hasAudio/quality/mimeType, а не только сам URL): берём mp4 со звуком,
+// предпочитаем полегче (360–720p — влезает в лимит 50 МБ); аудио-дорожки и видео-без-звука
+// (hasAudio:false, itag аудио, mime=audio, .m4a) отбрасываем.
 function pickDownloadUrl(json: any): string | null {
   const cands: { url: string; score: number }[] = [];
-  const walk = (n: any, ctxKey = "", depth = 0) => {
-    if (n == null || depth > 9) return;
+  const isVideoUrl = (s: string) => /^https?:\/\//i.test(s) && /(\.mp4|googlevideo\.com|videoplayback)/i.test(s);
+  const walk = (n: any, key: string, parent: any, depth: number) => {
+    if (n == null || depth > 10) return;
     if (typeof n === "string") {
-      if (/^https?:\/\//.test(n) && /(\.mp4|googlevideo\.com|videoplayback)/i.test(n)) {
-        const s = (ctxKey + " " + n).toLowerCase();
-        const audioOnly = (/audio/.test(s) && !/video/.test(s)) || /\.m4a(\?|$)/.test(s) || /mime=audio/.test(s);
-        if (audioOnly) return;
-        let score = 1;
-        if (/mp4/.test(s)) score += 2;
-        if (/muxed|progressive|audio.?and.?video|video.?with.?audio|hasaudio|withaudio/.test(s)) score += 4;
-        if (/\b(360|480)\b/.test(s)) score += 3;
-        else if (/\b720\b/.test(s)) score += 1;
-        else if (/\b(1080|1440|2160|4k)\b/.test(s)) score -= 2;
-        cands.push({ url: n, score });
-      }
+      if (!isVideoUrl(n)) return;
+      // meta — сам объект-формат (родитель ссылки) + ключ + URL: по нему судим о звуке/качестве.
+      const meta = (JSON.stringify(parent || {}) + " " + key + " " + n).toLowerCase();
+      if (/"has_?audio":false|"videoonly":true|"is_?audio_?video":false/.test(meta)) return;   // явно без звука
+      if (/\.m4a(\?|$)|mime=audio|"mimetype":"audio|"itag":\s*"?(139|140|141|171|249|250|251)\b/.test(meta)) return; // аудио-дорожка
+      if (/^audio/i.test(key) && !/video/.test(meta)) return;
+      let score = 1;
+      if (/"has_?audio":true|audioquality|audiochannels|progressive|muxed|withaudio|audio.?and.?video/.test(meta)) score += 5;
+      if (/"extension":"mp4"|"mimetype":"video\/mp4|\.mp4/.test(meta)) score += 2;
+      const q = Number((meta.match(/"(?:quality|qualitylabel|height|resolution)":\s*"?(\d{3,4})p?/) || [])[1] || 0);
+      if (q) { if (q <= 480) score += 3; else if (q <= 720) score += 1; else score -= 2; }
+      cands.push({ url: n, score });
       return;
     }
-    if (Array.isArray(n)) { for (const x of n) walk(x, ctxKey, depth + 1); return; }
-    if (typeof n === "object") { for (const [k, v] of Object.entries(n)) walk(v, k, depth + 1); }
+    if (Array.isArray(n)) { for (const x of n) walk(x, key, parent, depth + 1); return; }
+    if (typeof n === "object") { for (const [k, v] of Object.entries(n)) walk(v, k, n, depth + 1); }
   };
-  walk(json);
+  walk(json, "", null, 0);
   if (!cands.length) return null;
   cands.sort((a, b) => b.score - a.score);
   return cands[0].url;
