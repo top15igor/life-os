@@ -360,6 +360,20 @@ export default function KnowledgeManager({ initial, locale }: { initial: SavedIt
                       <video src={open.video_url} controls playsInline preload="metadata" poster={open.image_url || undefined} style={{ width: "100%", maxHeight: 440, borderRadius: 12, background: "#000", display: "block" }} />
                     </div>
                   ) : null}
+                  {/* Галерея всех кадров карусельного поста (если сохранено больше одного). */}
+                  {!open.video_url && open.image_urls && open.image_urls.length ? (
+                    open.image_urls.length === 1 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={open.image_urls[0]} alt="" style={{ width: "100%", maxHeight: 440, objectFit: "cover", borderRadius: 12, marginTop: 12, display: "block" }} />
+                    ) : (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 6, marginTop: 12 }}>
+                        {open.image_urls.map((u, i) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <a key={i} href={u} target="_blank" rel="noopener noreferrer"><img src={u} alt="" style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 10, display: "block" }} /></a>
+                        ))}
+                      </div>
+                    )
+                  ) : null}
                   {open.summary ? <div style={{ fontSize: 14, color: "var(--text-3)", lineHeight: 1.55, marginTop: 8 }}>{open.summary}</div> : null}
                   {open.key_points?.length ? (
                     <div style={{ marginTop: 14 }}>

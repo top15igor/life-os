@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendMediaGroup, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
@@ -937,6 +937,13 @@ export async function POST(req: NextRequest) {
         if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
         if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
+        // Сами фото/видео тоже отправляем в чат — как «Save As Bot»: карусель одним
+        // альбомом, ролик — видеофайлом. Для reel обложку отдельно не шлём (видео уже есть).
+        const imgs: string[] = ((r as any).imageUrls || []).filter(Boolean);
+        if (imgs.length && r.kind !== "reel") {
+          const ok = await sendMediaGroup(chatId, imgs.slice(0, 10).map((u) => ({ type: "photo", media: u })));
+          if (!ok) await sendMessage(chatId, imgs.map((u, i) => `🖼 <a href="${u}">${i + 1}</a>`).join("  "));
+        }
         // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
         // (лимит Telegram ~20 МБ) — даём кнопку со ссылкой на файл в хранилище.
         if (r.videoUrl) {

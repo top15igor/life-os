@@ -61,6 +61,52 @@ export async function sendVideo(chatId: number, video: string, extra?: Record<st
   }
 }
 
+// Отправить одно фото (по публичной ссылке или file_id).
+export async function sendPhoto(chatId: number, photo: string, extra?: Record<string, any>): Promise<boolean> {
+  try {
+    const r = await fetch(`${API}/sendPhoto`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, photo, ...(extra || {}) }),
+    });
+    return r.ok;
+  } catch (e) {
+    console.error("sendPhoto", e);
+    return false;
+  }
+}
+
+// Отправить альбом фото/видео одним сообщением (как «Save As Bot» присылает карусель).
+// Telegram допускает 2–10 элементов в группе — на входе режем на пачки по 10.
+// items: [{ type: 'photo'|'video', media: <url|file_id>, caption?, parse_mode? }].
+export async function sendMediaGroup(chatId: number, items: Array<Record<string, any>>): Promise<boolean> {
+  const clean = items.filter((it) => it && it.media);
+  if (!clean.length) return false;
+  // Один элемент группой не отправить — уходит обычным sendPhoto/sendVideo.
+  if (clean.length === 1) {
+    const it = clean[0];
+    return it.type === "video"
+      ? sendVideo(chatId, it.media, { caption: it.caption, parse_mode: it.parse_mode })
+      : sendPhoto(chatId, it.media, { caption: it.caption, parse_mode: it.parse_mode });
+  }
+  let allOk = true;
+  for (let i = 0; i < clean.length; i += 10) {
+    const media = clean.slice(i, i + 10).map((it) => ({ type: it.type || "photo", media: it.media, ...(it.caption ? { caption: it.caption } : {}), ...(it.parse_mode ? { parse_mode: it.parse_mode } : {}) }));
+    try {
+      const r = await fetch(`${API}/sendMediaGroup`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, media }),
+      });
+      if (!r.ok) { allOk = false; console.error("sendMediaGroup", r.status, (await r.text()).slice(0, 200)); }
+    } catch (e) {
+      allOk = false;
+      console.error("sendMediaGroup", e);
+    }
+  }
+  return allOk;
+}
+
 // Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
 export async function answerCallback(callbackId: string, text?: string): Promise<void> {
   await fetch(`${API}/answerCallbackQuery`, {
