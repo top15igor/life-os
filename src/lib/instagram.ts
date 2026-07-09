@@ -126,7 +126,7 @@ function collectCarousel(json: any): { images: string[]; videos: string[] } {
   return { images, videos };
 }
 
-type ApiResult = { media: IgMedia | null; rateLimited: boolean };
+type ApiResult = { media: IgMedia | null; rateLimited: boolean; notFound?: boolean };
 
 async function fetchViaRapidApi(url: string): Promise<ApiResult> {
   const key = process.env.RAPIDAPI_KEY;
@@ -219,8 +219,13 @@ async function fetchViaRapidApi(url: string): Promise<ApiResult> {
   const uname = deepGet(json, "username") || deepGet(json, "owner_username");
   const author = uname ? "@" + String(uname).replace(/^@/, "") : null;
 
+  // Некоторые API на удалённый/приватный/несуществующий пост отвечают 200 и телом-ошибкой
+  // вида {detail:"Not found"} — контента нет. Отмечаем это, чтобы показать понятное сообщение.
+  const detail = deepGet(json, "detail") ?? deepGet(json, "message") ?? deepGet(json, "error");
+  const hasErrorDetail = typeof detail === "string" && detail.length > 0;
+
   // Нечего отдавать — пусть сработает запасной способ.
-  if (!caption && !videoUrl && !imageUrl && !imageUrls.length) return { media: null, rateLimited: false };
+  if (!caption && !videoUrl && !imageUrl && !imageUrls.length) return { media: null, rateLimited: false, notFound: hasErrorDetail };
   return { media: { caption: (caption || "").trim(), imageUrl: imageUrl || imageUrls[0] || null, imageUrls, videoUrl, author, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: false };
 }
 
@@ -256,20 +261,22 @@ async function fetchViaOg(url: string): Promise<IgMedia> {
 }
 
 // Сначала пробуем API (если задан ключ), потом — og-теги. Поля API имеют приоритет.
-async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: boolean }> {
+async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: boolean; notFound: boolean }> {
   const api = await fetchViaRapidApi(url).catch(() => ({ media: null, rateLimited: false } as ApiResult));
   const viaApi = api.media;
-  if (viaApi && (viaApi.caption || viaApi.videoUrl)) return { media: viaApi, rateLimited: api.rateLimited };
+  const emptyMedia = (): IgMedia => ({ caption: "", imageUrl: null, imageUrls: [], videoUrl: null, author: null, shortcode: shortcodeOf(url), kind: kindOf(url) });
+  if (viaApi && (viaApi.caption || viaApi.videoUrl)) return { media: viaApi, rateLimited: api.rateLimited, notFound: false };
 
   let viaOg: IgMedia | null = null;
   try {
     viaOg = await fetchViaOg(url);
   } catch (e) {
-    if (viaApi) return { media: viaApi, rateLimited: api.rateLimited }; // API хоть что-то дал (например, картинку)
-    if (api.rateLimited) return { media: { caption: "", imageUrl: null, imageUrls: [], videoUrl: null, author: null, shortcode: shortcodeOf(url), kind: kindOf(url) }, rateLimited: true };
+    if (viaApi) return { media: viaApi, rateLimited: api.rateLimited, notFound: false }; // API хоть что-то дал (например, картинку)
+    if (api.rateLimited) return { media: emptyMedia(), rateLimited: true, notFound: false };
+    if (api.notFound) return { media: emptyMedia(), rateLimited: false, notFound: true }; // пост удалён/приватный
     throw e;
   }
-  if (!viaApi) return { media: viaOg, rateLimited: api.rateLimited };
+  if (!viaApi) return { media: viaOg, rateLimited: api.rateLimited, notFound: !!api.notFound && !viaOg.caption && !viaOg.videoUrl && !viaOg.imageUrl };
   // Объединяем: непустые поля API перекрывают og.
   return {
     media: {
@@ -282,6 +289,7 @@ async function fetchIg(url: string): Promise<{ media: IgMedia; rateLimited: bool
       kind: viaApi.kind,
     },
     rateLimited: api.rateLimited,
+    notFound: false,
   };
 }
 
@@ -340,17 +348,19 @@ export async function igDebug(url: string): Promise<string> {
 }
 
 export type ImportResult =
-  | { ok: false; reason: "empty" | "blocked" | "limited" }
+  | { ok: false; reason: "empty" | "blocked" | "limited" | "notfound" }
   | { ok: true; id: string | null; saved: boolean; item: any | null; analysis: SavedAnalysis; kind: "post" | "reel"; hadTranscript: boolean; videoUrl?: string | null; imageUrls?: string[]; saveError?: string | null };
 
 // Главная: ссылка Instagram -> контент -> (видео: расшифровка) -> AI-разбор -> запись в saved_items.
 export async function importInstagram(userId: string, url: string, locale = "ru"): Promise<ImportResult> {
   let media: IgMedia;
   let rateLimited = false;
+  let notFound = false;
   try {
     const r = await fetchIg(url);
     media = r.media;
     rateLimited = r.rateLimited;
+    notFound = r.notFound;
   } catch (e) {
     console.error("ig fetch", e);
     return { ok: false, reason: "blocked" };
@@ -381,6 +391,7 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
   const hasMedia = media.imageUrls.length > 0 || !!media.imageUrl || !!media.videoUrl || !!videoBuf;
   if (!combined && !hasMedia) {
     if (rateLimited) return { ok: false, reason: "limited" };
+    if (notFound) return { ok: false, reason: "notfound" };
     return { ok: false, reason: "blocked" };
   }
 
