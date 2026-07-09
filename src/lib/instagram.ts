@@ -399,9 +399,9 @@ export async function importInstagram(userId: string, url: string, locale = "ru"
     return srcUrl;
   };
   const srcImages = media.imageUrls.length ? media.imageUrls : (media.imageUrl ? [media.imageUrl] : []);
-  // Не тянем бесконечную карусель — Telegram-альбом всё равно не длиннее 10 кадров.
-  const storedImages: string[] = [];
-  for (const src of srcImages.slice(0, 10)) storedImages.push(await storeImage(src));
+  // Храним всю карусель (до 20 кадров — потолок Instagram), но грузим параллельно,
+  // чтобы не упереться в таймаут serverless-функции. Порядок кадров сохраняется.
+  const storedImages: string[] = await Promise.all(srcImages.slice(0, 20).map(storeImage));
   const image_url: string | null = storedImages[0] || null;
 
   // Сохраняем сам файл видео в bucket 'saved' (ссылки Instagram-CDN протухают).
