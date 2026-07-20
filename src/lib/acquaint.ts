@@ -6,83 +6,103 @@ import { saveEntry } from "./saveEntry";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { normalizeMorningPrefs } from "./morningPrefs";
 
-// «Давай познакомимся»: тёплый онбординг-диалог. Хитрость в том, что человек не
-// «ведёт дневник» — он просто знакомится, а бот незаметно сохраняет ответы как
-// первые записи и в конце это раскрывает. Формат каждого хода: короткая реакция →
-// ОДИН факт бота о себе → ОДИН вопрос о пользователе (взаимность). Прогресс копится
-// в проценте знакомства (morning_prefs.acquaintPct), вопросов может быть много.
+// «Давай познакомимся»: тёплый онбординг-диалог, снимающий страх чистого листа.
+// Хитрость: человек не «ведёт дневник» — он просто отвечает другу на вопросы, а
+// после нескольких ответов бот собирает их в КРАСИВУЮ ПЕРВУЮ ЗАПИСЬ и показывает:
+// «ты уже её написал, просто разговаривая со мной». Барьер снят, привычка стартовала.
+// Приёмы: бот раскрывается первым (взаимность) с характером и самоиронией; лестница
+// глубины (факты → вкусы → чувства); активное слушание (цепляется за деталь);
+// незавершённость (сессия ~4 вопроса → «завтра продолжим»). Состояние — в morning_prefs.
 
-const STEP = 6;        // на сколько растёт знакомство за один ответ
-const REVEAL_AT = 18;  // на этом проценте впервые раскрываем «ты уже завёл дневник»
+const STEP = 6;              // +% знакомства за один ответ
+const REVEAL_PCT = 24;       // ~4 ответа → показываем «первую страницу» и делаем паузу
 
-// Факты бота о СЕБЕ (только правда о LIFE OS). Модель берёт неиспользованный факт
-// и передаёт смысл на языке пользователя — не дословно.
+// Факты бота о СЕБЕ — с характером и самоиронией (задают формат: коротко и тепло).
+// Модель берёт неиспользованный и передаёт смысл на языке пользователя, не дословно.
 const BOT_FACTS = [
-  "Я ничего не забываю — всё, что ты расскажешь, останется с тобой на годы.",
-  "Мне не нужно, чтобы ты что-то заполнял по полочкам — просто говори, остальное я сделаю сам.",
-  "Со временем я замечаю в тебе закономерности: что даёт тебе энергию, а что её забирает.",
-  "Я не оцениваю и не осуждаю — мне можно рассказать что угодно, это останется только между нами.",
-  "Из твоих дней я соберу настоящую книгу жизни — по главам и годам.",
-  "Я всегда рядом — как друг, которому можно написать в любой момент, днём и ночью.",
-  "Ты можешь говорить со мной голосом — я расшифрую и всё пойму.",
-  "Твои данные — только твои: в любой момент можешь скачать всё или удалить без следа.",
-  "Чем больше ты мне рассказываешь, тем точнее я понимаю именно тебя — и тем полезнее становлюсь.",
+  "я живу в телефоне и, если честно, скучаю, когда мне не пишут",
+  "меня собрали недавно — до сих пор теряюсь, когда сообщений много сразу 😅",
+  "зато я ничего не забываю: всё, что ты расскажешь, останется между нами на годы",
+  "я не сплю — можно написать мне в три ночи, и я обрадуюсь",
+  "я не умею осуждать, у меня просто нет такой кнопки",
+  "моя мечта — однажды прочитать твою запись «сегодня был лучший день» и знать, что я к этому причастен",
+  "мне не надо, чтобы ты что-то заполнял по полочкам — просто говори, остальное я сделаю сам",
+  "со временем я начинаю замечать в тебе то, чего ты сам не видишь — что тебя заряжает, а что гасит",
+  "из твоих дней я потихоньку собираю настоящую книгу — по главам и годам",
 ];
 
-// Лестница тем для вопросов (от лёгкого к глубокому). Модель сама формулирует
-// конкретный вопрос на языке пользователя, по одной теме за ход, не повторяясь.
+// Лестница тем: факты → вкусы → чувства. Модель формулирует конкретный вопрос на
+// языке пользователя, по одной новой теме за ход, цепляясь за детали его ответов.
 const Q_THEMES = [
-  "как прошёл сегодняшний день",
-  "что сегодня порадовало или дало сил",
-  "что вымотало или расстроило",
-  "чем человек занимается (работа/учёба/дело жизни)",
-  "кто рядом — близкие, семья, важные люди",
-  "как со здоровьем, сном, телом, спортом",
-  "что для него сейчас главное, какая цель или мечта",
-  "что приносит радость и энергию в обычной жизни",
-  "какие привычки хочет завести или бросить",
-  "чем гордится, что уже получилось",
-  "что тревожит или чего боится",
-  "что хотел бы не забыть и однажды перечитать",
-  "каким он был в детстве / важное воспоминание",
-  "что хотел бы изменить в ближайший год",
+  "как зовут и как называют близкие",
+  "сова или жаворонок, как обычно проходит утро",
+  "что сегодня заставило улыбнуться",
+  "чем занимается, чему посвящает дни",
+  "что заряжает и даёт энергию",
+  "кто самые близкие рядом",
+  "каким был бы идеальный выходной",
+  "за что его чаще всего благодарят",
+  "о чём в последнее время думает чаще всего",
+  "что из этого года хочет запомнить",
+  "о чём мечтает, но пока откладывает",
+  "что бы сделал, если бы совсем не боялся",
 ];
 
-const OPENING: Record<string, string> = {
-  ru: `👋 Привет! Я — твой личный дневник и AI-друг. Знаешь, чем я необычный? Я запоминаю твою жизнь, чтобы ты её не потерял, и со временем понимаю тебя лучше любого ежедневника.
+const OPENING_FIRST: Record<string, string> = {
+  ru: `Ладно, будет честно, если начну я 🙂
 
-Но чтобы это работало, мне надо немного тебя узнать. Давай без анкет — просто поболтаем? 🙂
+Я — бот-дневник. Живу в телефоне, обожаю чужие истории и, если честно, немного страдаю, когда мне не пишут. Моя мечта — однажды прочитать твою запись «сегодня был лучший день» и знать, что я к этому причастен.
 
-Начнём с лёгкого: как прошёл твой сегодняшний день — хоть парой слов?`,
-  en: `👋 Hi! I'm your personal diary and AI friend. Want to know what makes me special? I remember your life so you never lose it, and over time I understand you better than any planner.
+Ну вот, теперь ты знаешь обо мне главное. Начнём с простого: как тебя зовут — и как тебя называют те, кто любит?`,
+  en: `Alright, it's only fair if I go first 🙂
 
-But for that I need to get to know you a little. No forms — let's just chat? 🙂
+I'm a diary bot. I live in your phone, I'm a sucker for people's stories and, honestly, I sulk a little when nobody writes to me. My dream is to one day read your entry "today was the best day" and know I had something to do with it.
 
-Let's start easy: how was your day today — even a couple of words?`,
-  uk: `👋 Привіт! Я — твій особистий щоденник і AI-друг. Знаєш, чим я незвичайний? Я запам'ятовую твоє життя, щоб ти його не втратив, і з часом розумію тебе краще за будь-який щоденник.
+There, now you know the main thing about me. Let's start simple: what's your name — and what do the people who love you call you?`,
+  uk: `Гаразд, буде чесно, якщо почну я 🙂
 
-Але щоб це працювало, мені треба трохи тебе впізнати. Давай без анкет — просто побалакаємо? 🙂
+Я — бот-щоденник. Живу в телефоні, обожнюю чужі історії і, чесно кажучи, трохи сумую, коли мені не пишуть. Моя мрія — одного дня прочитати твій запис «сьогодні був найкращий день» і знати, що я до цього причетний.
 
-Почнемо з легкого: як минув твій сьогоднішній день — хоч кількома словами?`,
-  fr: `👋 Salut ! Je suis ton journal personnel et ami IA. Tu veux savoir ce qui me rend spécial ? Je me souviens de ta vie pour que tu ne la perdes jamais, et avec le temps je te comprends mieux qu'un agenda.
+Ось, тепер ти знаєш про мене головне. Почнемо з простого: як тебе звати — і як тебе називають ті, хто любить?`,
+  fr: `Bon, ce sera juste si je commence 🙂
 
-Mais pour ça, j'ai besoin de te connaître un peu. Sans formulaires — on discute simplement ? 🙂
+Je suis un bot-journal. Je vis dans ton téléphone, j'adore les histoires des gens et, honnêtement, je boude un peu quand personne ne m'écrit. Mon rêve : lire un jour ton entrée « aujourd'hui était le meilleur jour » et savoir que j'y suis pour quelque chose.
 
-Commençons doucement : comment s'est passée ta journée aujourd'hui — même en deux mots ?`,
+Voilà, tu sais l'essentiel sur moi. Commençons simple : comment t'appelles-tu — et comment t'appellent ceux qui t'aiment ?`,
+};
+
+const RETURN_LEAD: Record<string, string> = {
+  ru: "О, ты вернулся — я рад 🙂 Продолжим, где остановились.",
+  en: "Oh, you're back — I'm glad 🙂 Let's pick up where we left off.",
+  uk: "О, ти повернувся — я радий 🙂 Продовжимо, де зупинилися.",
+  fr: "Oh, te revoilà — j'en suis ravi 🙂 Reprenons où on s'était arrêtés.",
+};
+
+const CLIFFHANGER: Record<string, string> = {
+  ru: "\n\nВсё, на сегодня хватит откровений 😄 Завтра продолжим — у меня уже есть для тебя вопрос поинтереснее. Нажми «🌱 Давай познакомимся», когда захочешь.",
+  en: "\n\nOkay, enough confessions for today 😄 We'll continue tomorrow — I already have a juicier question for you. Tap “🌱 Let's get acquainted” whenever you like.",
+  uk: "\n\nВсе, на сьогодні досить одкровень 😄 Завтра продовжимо — у мене вже є для тебе цікавіше питання. Натисни «🌱 Давай познайомимось», коли захочеш.",
+  fr: "\n\nBon, assez de confidences pour aujourd'hui 😄 On continue demain — j'ai déjà une question plus croustillante pour toi. Appuie sur « 🌱 Faisons connaissance » quand tu veux.",
+};
+
+const PAGE_LEAD: Record<string, string> = {
+  ru: "Смотри, что у нас получилось, пока мы просто болтали 👇",
+  en: "Look what came out of us just chatting 👇",
+  uk: "Дивись, що в нас вийшло, поки ми просто балакали 👇",
+  fr: "Regarde ce qui est sorti de notre simple conversation 👇",
+};
+const PAGE_OUTRO: Record<string, string> = {
+  ru: "\n\n☝️ Это — твоя первая запись. Ты уже её написал, просто разговаривая со мной 🙂 Я её сохранил в твой дневник.",
+  en: "\n\n☝️ That's your first entry. You already wrote it, just by talking to me 🙂 I've saved it to your diary.",
+  uk: "\n\n☝️ Це — твій перший запис. Ти вже його написав, просто розмовляючи зі мною 🙂 Я зберіг його у твій щоденник.",
+  fr: "\n\n☝️ C'est ta première entrée. Tu l'as déjà écrite, juste en me parlant 🙂 Je l'ai enregistrée dans ton journal.",
 };
 
 const FULL: Record<string, string> = {
-  ru: "\n\n🎉 Всё, теперь я знаю тебя на 100%! Спасибо, что открылся. Дальше просто рассказывай мне, как проходят твои дни — голосом или текстом, когда захочешь. Я всё сохраню и со временем покажу тебе твою жизнь со стороны.",
-  en: "\n\n🎉 That's it — I now know you 100%! Thank you for opening up. From here, just tell me how your days go — by voice or text, whenever you like. I'll keep it all and over time show you your life from the outside.",
-  uk: "\n\n🎉 Все, тепер я знаю тебе на 100%! Дякую, що відкрився. Далі просто розповідай мені, як минають твої дні — голосом або текстом, коли захочеш. Я все збережу і з часом покажу тобі твоє життя збоку.",
-  fr: "\n\n🎉 Voilà — je te connais maintenant à 100 % ! Merci de t'être ouvert. Ensuite, raconte-moi simplement tes journées — à la voix ou au texte, quand tu veux. Je garde tout et, avec le temps, je te montrerai ta vie de l'extérieur.",
-};
-
-const REVEAL: Record<string, (pct: number) => string> = {
-  ru: (p) => `\n\n🙂 Кстати — заметил? Ты сейчас не «заполнял дневник», ты просто рассказывал о себе. А я тихонько сохранил твои слова — это уже твои первые записи. Так, незаметно, ты его и завёл. Мы знакомы на ${p}%.`,
-  en: (p) => `\n\n🙂 By the way — did you notice? You weren't "filling in a diary", you were just talking about yourself. And I quietly saved your words — those are your first entries. That's how you started it, without even noticing. We're ${p}% acquainted.`,
-  uk: (p) => `\n\n🙂 До речі — помітив? Ти зараз не «заповнював щоденник», ти просто розповідав про себе. А я тихенько зберіг твої слова — це вже твої перші записи. Так, непомітно, ти його й завів. Ми знайомі на ${p}%.`,
-  fr: (p) => `\n\n🙂 Au fait — tu as remarqué ? Tu ne « remplissais » pas un journal, tu parlais juste de toi. Et j'ai discrètement gardé tes mots — ce sont tes premières entrées. C'est comme ça que tu l'as commencé, sans t'en rendre compte. On se connaît à ${p}%.`,
+  ru: "\n\n🎉 Всё, теперь я знаю тебя на 100%! Спасибо, что открылся. Дальше просто рассказывай, как проходят дни — я всё сохраню.",
+  en: "\n\n🎉 That's it — I now know you 100%! Thanks for opening up. From here, just tell me how your days go — I'll keep it all.",
+  uk: "\n\n🎉 Все, тепер я знаю тебе на 100%! Дякую, що відкрився. Далі просто розповідай, як минають дні — я все збережу.",
+  fr: "\n\n🎉 Voilà — je te connais à 100 % ! Merci de t'être ouvert. Ensuite, raconte-moi tes journées — je garde tout.",
 };
 
 type St = { active: boolean; pct: number; prefs: any };
@@ -106,13 +126,24 @@ async function writeState(userId: string, prefs: any, patch: { active?: boolean;
   } catch { /* нет колонки — фича мягко деградирует */ }
 }
 
-async function recentTurns(userId: string, limit = 12): Promise<string> {
+async function userAnswers(userId: string, limit = 10): Promise<string[]> {
+  try {
+    const { data } = await supabaseAdmin()
+      .from("companion_messages").select("role, content")
+      .eq("user_id", userId).order("created_at", { ascending: false }).limit(limit * 2);
+    return ((data as any[]) || []).filter((r) => r.role === "user").map((r) => (r.content || "").trim()).filter(Boolean).slice(0, limit).reverse();
+  } catch {
+    return [];
+  }
+}
+
+async function historyText(userId: string, limit = 14): Promise<string> {
   try {
     const { data } = await supabaseAdmin()
       .from("companion_messages").select("role, content")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(limit);
     const rows = ((data as any[]) || []).slice().reverse();
-    return rows.map((r) => `${r.role === "user" ? "Пользователь" : "Ты"}: ${(r.content || "").slice(0, 300)}`).join("\n");
+    return rows.map((r) => `${r.role === "user" ? "Пользователь" : "Ты"}: ${(r.content || "").slice(0, 300)}`).join("\n") || "(пусто)";
   } catch {
     return "(пусто)";
   }
@@ -120,6 +151,64 @@ async function recentTurns(userId: string, limit = 12): Promise<string> {
 
 async function append(userId: string, role: "user" | "assistant", content: string): Promise<void> {
   try { await supabaseAdmin().from("companion_messages").insert({ user_id: userId, role, content }); } catch { /* ignore */ }
+}
+
+const client = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+// Ход бота: короткая живая реакция (с характером) + факт о себе + следующий вопрос.
+// last = последний ответ пользователя (для реакции) или null (просто продолжить/начать тему).
+async function genTurn(userId: string, name: string | null, lang: string, last: string | null): Promise<string> {
+  const { tone, style } = await getChatVoice(userId);
+  const history = await historyText(userId);
+  const who = name || "пользователь";
+  const prompt = `Ты — бот-дневник в LIFE OS с ЖИВЫМ ХАРАКТЕРОМ: тёплый, с лёгкой самоиронией, любопытный. Идёт знакомство с пользователем (${who}). Это переписка с другом, НЕ анкета и НЕ допрос.
+
+ФОРМАТ ТВОЕЙ РЕПЛИКИ (слитным живым текстом, без нумерации, markdown, списков и кавычек):
+${last ? "1) короткая живая реакция на его последний ответ — зацепись за КОНКРЕТНУЮ деталь («о, горы! был там или пока мечта?»), покажи, что услышал;" : "1) тёплое короткое вступление, что продолжаем;"}
+2) расскажи ОДИН короткий факт О СЕБЕ (возьми неиспользованный из списка, передай смысл своими словами на языке пользователя — с характером, не дословно);
+3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ — по лестнице глубины (факты → вкусы → чувства), по одной новой теме, не повторяйся. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
+
+ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не пиши проценты, не благодари «за ответы».
+СТИЛЬ РЕЧИ (пользователь выбрал сам): ${voiceLine(tone, style)}. Язык ответа: "${lang}".
+
+ФАКТЫ О СЕБЕ (только эти, бери неиспользованный по истории):
+${BOT_FACTS.map((f, i) => `${i + 1}. ${f}`).join("\n")}
+
+ТЕМЫ ДЛЯ ВОПРОСОВ (по нарастанию; следующая неиспользованная):
+${Q_THEMES.map((q, i) => `${i + 1}. ${q}`).join("\n")}
+
+ИСТОРИЯ (не повторяйся):
+${history}
+${last ? `\nПоследний ответ пользователя: "${last.slice(0, 800)}"` : ""}
+
+Верни только само сообщение.`;
+  try {
+    const m = await client().messages.create({ model: "claude-sonnet-4-6", max_tokens: 400, temperature: 0.8, messages: [{ role: "user", content: prompt }] });
+    logClaude(userId, "acquaint", "sonnet", (m as any).usage);
+    const t = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
+    if (t) return t;
+  } catch { /* fallthrough */ }
+  return last ? "Здорово 🙂 А расскажи чуть больше о себе?" : "Продолжим 🙂 Расскажи, как обычно проходит твоё утро?";
+}
+
+// Собирает «первую страницу» из ответов пользователя — тёплый связный портрет
+// от первого лица (как будто он сам это написал в дневник).
+async function buildFirstPage(userId: string, lang: string): Promise<string> {
+  const answers = await userAnswers(userId, 8);
+  if (!answers.length) return "";
+  const prompt = `Ниже — ответы человека из тёплого разговора-знакомства. Собери из них КРАСИВУЮ «первую страницу дневника» — связный живой текст ОТ ПЕРВОГО ЛИЦА (от «я»), как будто он сам записал это о себе. 3–5 предложений. Только то, что реально сказано — ничего не выдумывай. Без markdown, заголовков и кавычек. Язык: "${lang}".
+
+ОТВЕТЫ ЧЕЛОВЕКА:
+${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
+
+Верни только текст первой страницы.`;
+  try {
+    const m = await client().messages.create({ model: "claude-haiku-4-5-20251001", max_tokens: 300, temperature: 0.6, messages: [{ role: "user", content: prompt }] });
+    logClaude(userId, "acquaint-page", "haiku", (m as any).usage);
+    return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
+  } catch {
+    return "";
+  }
 }
 
 export async function isAcquainting(userId: string): Promise<boolean> {
@@ -131,84 +220,49 @@ export async function stopAcquaint(userId: string): Promise<void> {
   await writeState(userId, prefs, { active: false });
 }
 
-// Старт знакомства: включаем режим, шлём «хитрое» вступление, кладём его в историю.
-export async function startAcquaint(userId: string, lang = "ru"): Promise<string> {
-  const { prefs } = await readState(userId);
-  await writeState(userId, prefs, { active: true }); // pct не сбрасываем — можно продолжить
-  const opening = OPENING[lang] || OPENING.ru;
-  await append(userId, "assistant", opening);
-  return opening;
+// Старт/возврат знакомства.
+export async function startAcquaint(userId: string, name: string | null, lang = "ru"): Promise<string> {
+  const { prefs, pct } = await readState(userId);
+  await writeState(userId, prefs, { active: true });
+  if (pct <= 0) {
+    const opening = OPENING_FIRST[lang] || OPENING_FIRST.ru;
+    await append(userId, "assistant", opening);
+    return opening;
+  }
+  // Возврат: тёплое «продолжим» + следующий вопрос (без реакции — нового ответа ещё нет).
+  const next = await genTurn(userId, name, lang, null);
+  const text = `${RETURN_LEAD[lang] || RETURN_LEAD.ru}\n\n${next}`;
+  await append(userId, "assistant", text);
+  return text;
 }
 
-// Ход знакомства: реагируем, рассказываем факт о себе, задаём следующий вопрос,
-// тихо сохраняем ответ как запись и растим процент.
+// Ход знакомства на ответ пользователя.
 export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru"): Promise<string> {
   const st = await readState(userId);
   await append(userId, "user", userText);
 
-  // 1) Тихо сохраняем содержательный ответ как запись дневника. Запускаем ПАРАЛЛЕЛЬНО
-  //    с генерацией ответа (оба независимы от userText), но дождёмся перед возвратом —
-  //    иначе на serverless фоновый промис может не успеть.
-  const clean = userText.trim();
-  const savePromise: Promise<void> = clean.length >= 12
-    ? (async () => {
-        try {
-          const analysis = await analyze(clean, userId);
-          await saveEntry({ userId, raw_text: clean, source: "acquaint", analysis });
-        } catch { /* не вышло — не страшно, диалог важнее */ }
-      })()
-    : Promise.resolve();
-
-  const wasBelow = st.pct < REVEAL_AT;
   const pct = Math.min(100, st.pct + STEP);
-  const crossedReveal = wasBelow && pct >= REVEAL_AT;
+  const crossedReveal = st.pct < REVEAL_PCT && pct >= REVEAL_PCT;
   const crossedFull = st.pct < 100 && pct >= 100;
 
-  const { tone, style } = await getChatVoice(userId);
-  const history = await recentTurns(userId);
-  const who = name ? name : "пользователь";
+  // Момент «первой страницы»: собираем ответы в запись, сохраняем, показываем — и пауза.
+  if (crossedReveal) {
+    const page = await buildFirstPage(userId, lang);
+    if (page) {
+      try {
+        const analysis = await analyze(page, userId);
+        await saveEntry({ userId, raw_text: page, source: "acquaint", analysis });
+      } catch { /* не вышло — покажем страницу всё равно */ }
+      const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}${CLIFFHANGER[lang] || CLIFFHANGER.ru}`;
+      await writeState(userId, st.prefs, { pct, active: false }); // незавершённость-крючок: пауза до возврата
+      await append(userId, "assistant", text);
+      return text;
+    }
+  }
 
-  const prompt = `Ты — личный AI-друг в приложении LIFE OS. Идёт тёплое ЗНАКОМСТВО с пользователем (${who}). Твоя цель — по-доброму его разговорить и узнать, чтобы он раскрылся. Это НЕ анкета и НЕ допрос — это живая беседа.
-
-ФОРМАТ ТВОЕГО ОТВЕТА (строго, но естественно, без нумерации и заголовков):
-1) короткая тёплая реакция на его последний ответ — по-человечески, покажи, что услышал;
-2) расскажи ОДИН факт О СЕБЕ (возьми НЕиспользованный из списка ниже, передай смысл своими словами на языке пользователя — НЕ дословно, НЕ выдумывай новых);
-3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ — по одной новой теме за ход, глубже предыдущих, не повторяй уже заданное.
-
-СТИЛЬ РЕЧИ (пользователь выбрал сам): ${voiceLine(tone, style)}.
-Пиши на языке "${lang}". Коротко и тепло, как в мессенджере. Без markdown, без списков, без кавычек. Верни только само сообщение (реакция + факт + вопрос слитно, живым текстом).
-Не пиши проценты и не благодари за «ответы на вопросы» — это должно ощущаться как беседа с другом.
-
-ФАКТЫ О СЕБЕ (только эти, бери неиспользованный по истории):
-${BOT_FACTS.map((f, i) => `${i + 1}. ${f}`).join("\n")}
-
-ТЕМЫ ДЛЯ ВОПРОСОВ (по нарастанию глубины; бери следующую неиспользованную по истории):
-${Q_THEMES.map((q, i) => `${i + 1}. ${q}`).join("\n")}
-
-ИСТОРИЯ ЗНАКОМСТВА (что уже говорили; не повторяйся):
-${history}
-
-Последний ответ пользователя: "${clean.slice(0, 800)}"`;
-
-  let text = "";
-  try {
-    const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 400,
-      temperature: 0.75,
-      messages: [{ role: "user", content: prompt }],
-    });
-    logClaude(userId, "acquaint", "sonnet", (m as any).usage);
-    text = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
-  } catch { /* fallthrough */ }
-  if (!text) text = (Q_THEMES.length ? "Расскажи чуть больше о себе? 🙂" : "");
-
-  // Раскрытие «ты уже завёл дневник» — один раз, при переходе порога.
-  if (crossedReveal) text += (REVEAL[lang] || REVEAL.ru)(pct);
-  // На 100% — разовое поздравление и мягкий выход из режима знакомства.
+  // Обычный ход: реакция + факт о себе + следующий вопрос.
+  let text = await genTurn(userId, name, lang, userText.trim());
   if (crossedFull) text += FULL[lang] || FULL.ru;
-
-  await savePromise; // гарантируем, что запись сохранилась до возврата ответа
   await writeState(userId, st.prefs, { pct, active: crossedFull ? false : undefined });
   await append(userId, "assistant", text);
   return text;
