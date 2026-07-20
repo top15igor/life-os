@@ -150,7 +150,7 @@ const SCRIPTED: Scripted[] = [
   },
 ];
 
-export type AcqTurn = { text: string; chips?: Chip[] };
+export type AcqTurn = { text: string; chips?: Chip[]; pct: number; active: boolean };
 
 type St = { active: boolean; pct: number; prefs: any };
 
@@ -281,6 +281,27 @@ export async function stopAcquaint(userId: string): Promise<void> {
   await writeState(userId, prefs, { active: false });
 }
 
+// Текущий процент знакомства (для подписи на кнопке).
+export async function acquaintPct(userId: string): Promise<number> {
+  return (await readState(userId)).pct;
+}
+
+// Пользователь нажал «На сегодня хватит»: ставим на паузу, прогресс СОХРАНЯЕМ,
+// тепло прощаемся и зовём вернуться. Возврат — через ту же кнопку (startAcquaint).
+const PAUSE_MSG: Record<string, string> = {
+  ru: "Хорошо, на сегодня остановимся 🙂 Я всё запомнил — в любой момент жми «🌱 Давай познакомимся», и продолжим ровно с того места. У меня уже припасён для тебя вопрос поинтереснее.",
+  en: "Alright, let's stop here for today 🙂 I've remembered everything — whenever you like, tap “🌱 Let's get acquainted” and we'll pick up right where we left off. I've already got a juicier question saved for you.",
+  uk: "Добре, на сьогодні зупинимось 🙂 Я все запам'ятав — будь-коли тисни «🌱 Давай познайомимось», і продовжимо саме з того місця. У мене вже припасене для тебе цікавіше питання.",
+  fr: "D'accord, on s'arrête là pour aujourd'hui 🙂 J'ai tout retenu — quand tu veux, appuie sur « 🌱 Faisons connaissance » et on reprend exactement où on s'est arrêtés. J'ai déjà une question plus croustillante en réserve pour toi.",
+};
+export async function pauseAcquaint(userId: string, lang = "ru"): Promise<{ text: string; pct: number }> {
+  const { prefs, pct } = await readState(userId);
+  await writeState(userId, prefs, { active: false });
+  const text = PAUSE_MSG[lang] || PAUSE_MSG.ru;
+  await append(userId, "assistant", text);
+  return { text, pct };
+}
+
 // Старт/возврат знакомства.
 export async function startAcquaint(userId: string, name: string | null, lang = "ru"): Promise<string> {
   const { prefs, pct } = await readState(userId);
@@ -317,7 +338,7 @@ export async function acquaintReply(userId: string, name: string | null, userTex
       const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}${CLIFFHANGER[lang] || CLIFFHANGER.ru}`;
       await writeState(userId, st.prefs, { pct, active: false }); // незавершённость-крючок: пауза до возврата
       await append(userId, "assistant", text);
-      return { text };
+      return { text, pct, active: false };
     }
   }
 
@@ -328,13 +349,13 @@ export async function acquaintReply(userId: string, name: string | null, userTex
     const text = sc.q[lang] || sc.q.ru;
     await writeState(userId, st.prefs, { pct });
     await append(userId, "assistant", text);
-    return { text, chips: sc.opts[lang] || sc.opts.ru };
+    return { text, chips: sc.opts[lang] || sc.opts.ru, pct, active: true };
   }
 
-  // Обычный ход: реакция + факт о себе + следующий вопрос.
+  // Обычный ход: реакция + польза/фишка + следующий вопрос.
   let text = await genTurn(userId, name, lang, userText.trim());
   if (crossedFull) text += FULL[lang] || FULL.ru;
   await writeState(userId, st.prefs, { pct, active: crossedFull ? false : undefined });
   await append(userId, "assistant", text);
-  return { text };
+  return { text, pct, active: !crossedFull };
 }
