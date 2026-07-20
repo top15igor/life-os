@@ -244,10 +244,15 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
 const SKIP_BTN: Record<string, string> = { ru: "Пропустить →", en: "Skip →", uk: "Пропустити →", fr: "Passer →" };
-// Inline-кнопка «Пропустить» под вопросами знакомства (постоянная клавиатура остаётся).
-function acqInline(lang: string) {
-  return { reply_markup: { inline_keyboard: [[{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }]] } };
+// Клавиатура под вопросом знакомства: быстрые чипы-ответы (если есть) + «Пропустить».
+// Постоянная нижняя клавиатура при этом остаётся.
+function acqMarkup(lang: string, chips?: { label: string; value: string }[]) {
+  const rows: any[] = [];
+  for (const c of chips || []) rows.push([{ text: c.label, callback_data: `acq:opt:${c.value}` }]);
+  rows.push([{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }]);
+  return { reply_markup: { inline_keyboard: rows } };
 }
+const acqInline = (lang: string) => acqMarkup(lang);
 
 const ACQUAINT_NUDGE: Record<string, string> = {
   ru: "👉 Самый лёгкий способ начать — просто нажми «🌱 Давай познакомимся» внизу. Я задам пару вопросов, а ты отвечай как другу — и незаметно заведёшь свой дневник 🙂",
@@ -450,6 +455,20 @@ export async function POST(req: NextRequest) {
           await sendChatAction(cqChat, "typing");
           const next = await acquaintSkip((u as any).id, (u as any).name ?? null, lng);
           await sendMessage(cqChat, mdToTelegram(next) || "…", acqInline(lng));
+        }
+      } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("acq:opt:") && cqChat) {
+      // Быстрый чип-ответ в знакомстве: value уходит как обычный ответ пользователя.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, name, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u && await isAcquainting((u as any).id)) {
+          const lng = pickLang((u as any).lang);
+          await sendChatAction(cqChat, "typing");
+          const reply = await acquaintReply((u as any).id, (u as any).name ?? null, data.slice(8), lng);
+          const stillOn = await isAcquainting((u as any).id);
+          await sendMessage(cqChat, mdToTelegram(reply.text) || "…", stillOn ? acqMarkup(lng, reply.chips) : { reply_markup: mainKeyboard(lng) });
         }
       } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lang:") && cqChat) {
@@ -1087,12 +1106,12 @@ export async function POST(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
-        // Пока знакомство активно — кнопка «Пропустить»; на «первой странице»/финале — обычная клавиатура.
+        // Пока знакомство активно — чипы/кнопка «Пропустить»; на «первой странице»/финале — обычная клавиатура.
         const stillOn = await isAcquainting(user.id);
-        await sendMessage(chatId, mdToTelegram(reply) || "…", stillOn ? acqInline(langOf(user, msg)) : { reply_markup: mainKeyboard(langOf(user, msg)) });
-        if (isVoice && reply) {
+        await sendMessage(chatId, mdToTelegram(reply.text) || "…", stillOn ? acqMarkup(langOf(user, msg), reply.chips) : { reply_markup: mainKeyboard(langOf(user, msg)) });
+        if (isVoice && reply.text) {
           await sendChatAction(chatId, "record_voice");
-          const audio = await speak(mdToPlain(reply));
+          const audio = await speak(mdToPlain(reply.text));
           if (audio) await sendVoice(chatId, audio);
         }
       } catch (e) {

@@ -113,6 +113,43 @@ const FULL: Record<string, string> = {
   fr: "\n\n🎉 Voilà — je te connais à 100 % ! Merci de t'être ouvert. Ensuite, raconte-moi tes journées — je garde tout.",
 };
 
+// Первые 2 вопроса — сценарные, с быстрыми кнопками-ответами (порог входа = один тап).
+// Дальше диалог ведёт LLM. value уходит как ответ пользователя (сохраняется в историю).
+type Chip = { label: string; value: string };
+type Scripted = { q: Record<string, string>; opts: Record<string, Chip[]> };
+const SCRIPTED: Scripted[] = [
+  {
+    q: {
+      ru: "Кстати, я живу по режиму уведомлений — то ещё расписание 😅 А ты по жизни кто — сова или жаворонок?",
+      en: "By the way, I live on a notifications schedule — quite the routine 😅 And you — a night owl or an early bird?",
+      uk: "До речі, я живу за режимом сповіщень — те ще розкладення 😅 А ти по життю хто — сова чи жайворонок?",
+      fr: "Au fait, je vis au rythme des notifications — quel programme 😅 Et toi — plutôt couche-tard ou lève-tôt ?",
+    },
+    opts: {
+      ru: [{ label: "🌅 Жаворонок", value: "я жаворонок" }, { label: "🌙 Сова", value: "я сова" }, { label: "🧟 Как получится", value: "как получится" }],
+      en: [{ label: "🌅 Early bird", value: "I'm an early bird" }, { label: "🌙 Night owl", value: "I'm a night owl" }, { label: "🧟 It varies", value: "my schedule varies" }],
+      uk: [{ label: "🌅 Жайворонок", value: "я жайворонок" }, { label: "🌙 Сова", value: "я сова" }, { label: "🧟 Як вийде", value: "режим плаває, як вийде" }],
+      fr: [{ label: "🌅 Lève-tôt", value: "je suis lève-tôt" }, { label: "🌙 Couche-tard", value: "je suis couche-tard" }, { label: "🧟 Ça dépend", value: "mon rythme varie" }],
+    },
+  },
+  {
+    q: {
+      ru: "У меня вместо кофе — новые сообщения, бодрят не хуже ☕ А тебя что скорее будит по утрам?",
+      en: "Instead of coffee, I run on new messages — just as energizing ☕ And what wakes you up in the mornings?",
+      uk: "У мене замість кави — нові повідомлення, бадьорять не гірше ☕ А тебе що скоріше будить зранку?",
+      fr: "Moi, au lieu du café, je carbure aux nouveaux messages ☕ Et toi, qu'est-ce qui te réveille le matin ?",
+    },
+    opts: {
+      ru: [{ label: "☕ Кофе", value: "кофе по утрам" }, { label: "🍵 Чай", value: "чай по утрам" }, { label: "🚫 Ни то ни другое", value: "ни кофе, ни чай" }],
+      en: [{ label: "☕ Coffee", value: "coffee in the mornings" }, { label: "🍵 Tea", value: "tea in the mornings" }, { label: "🚫 Neither", value: "neither coffee nor tea" }],
+      uk: [{ label: "☕ Кава", value: "кава зранку" }, { label: "🍵 Чай", value: "чай зранку" }, { label: "🚫 Ні те ні те", value: "ні кава, ні чай" }],
+      fr: [{ label: "☕ Café", value: "le café le matin" }, { label: "🍵 Thé", value: "le thé le matin" }, { label: "🚫 Ni l'un ni l'autre", value: "ni café ni thé" }],
+    },
+  },
+];
+
+export type AcqTurn = { text: string; chips?: Chip[] };
+
 type St = { active: boolean; pct: number; prefs: any };
 
 async function readState(userId: string): Promise<St> {
@@ -259,7 +296,7 @@ export async function startAcquaint(userId: string, name: string | null, lang = 
 }
 
 // Ход знакомства на ответ пользователя.
-export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru"): Promise<string> {
+export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru"): Promise<AcqTurn> {
   const st = await readState(userId);
   await append(userId, "user", userText);
 
@@ -278,8 +315,18 @@ export async function acquaintReply(userId: string, name: string | null, userTex
       const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}${CLIFFHANGER[lang] || CLIFFHANGER.ru}`;
       await writeState(userId, st.prefs, { pct, active: false }); // незавершённость-крючок: пауза до возврата
       await append(userId, "assistant", text);
-      return text;
+      return { text };
     }
+  }
+
+  // Ранние сценарные вопросы с быстрыми кнопками (порог входа = один тап).
+  const sIdx = st.pct / STEP;
+  if (Number.isInteger(sIdx) && sIdx < SCRIPTED.length) {
+    const sc = SCRIPTED[sIdx];
+    const text = sc.q[lang] || sc.q.ru;
+    await writeState(userId, st.prefs, { pct });
+    await append(userId, "assistant", text);
+    return { text, chips: sc.opts[lang] || sc.opts.ru };
   }
 
   // Обычный ход: реакция + факт о себе + следующий вопрос.
@@ -287,5 +334,5 @@ export async function acquaintReply(userId: string, name: string | null, userTex
   if (crossedFull) text += FULL[lang] || FULL.ru;
   await writeState(userId, st.prefs, { pct, active: crossedFull ? false : undefined });
   await append(userId, "assistant", text);
-  return text;
+  return { text };
 }
