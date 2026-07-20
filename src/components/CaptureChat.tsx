@@ -70,7 +70,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [recSrc, setRecSrc] = useState<null | "bar" | "reply">(null);
-  const [saved, setSaved] = useState<{ id?: string; msg?: string; href?: string } | null>(null);
+  const [saved, setSaved] = useState<{ id?: string; msg?: string; href?: string; reaction?: string } | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -169,7 +169,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       const d = await r.json().catch(() => null);
       if (r.ok && d?.ok) {
         setText("");
-        setSaved({ id: d.id });
+        setSaved({ id: d.id, reaction: d.reaction });
         router.refresh();
         if (savedTimer.current) clearTimeout(savedTimer.current);
         savedTimer.current = setTimeout(() => setSaved(null), 10000);
@@ -392,12 +392,20 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
       )}
 
       {saved && !chatOpen && (
-        <div style={{ marginTop: 8, fontSize: 13, color: "var(--positive)", display: "inline-flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-          <i className="ti ti-circle-check" style={{ fontSize: 16 }} />
-          {saved.msg ? saved.msg : s.saved}
-          {saved.msg
-            ? <Link href={saved.href || "/reminders"} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.openRem}</Link>
-            : saved.id && <Link href={`/entry/${saved.id}`} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.open}</Link>}
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 13, color: "var(--positive)", display: "inline-flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            <i className="ti ti-circle-check" style={{ fontSize: 16 }} />
+            {saved.msg ? saved.msg : s.saved}
+            {saved.msg
+              ? <Link href={saved.href || "/reminders"} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.openRem}</Link>
+              : saved.id && <Link href={`/entry/${saved.id}`} style={{ color: "var(--accent)", fontWeight: 500 }}>{s.open}</Link>}
+          </div>
+          {saved.reaction && (
+            <div style={{ marginTop: 6, fontSize: 13, color: "var(--text-2)", lineHeight: 1.5, display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <i className="ti ti-message-chatbot" style={{ fontSize: 15, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontStyle: "italic" }}>{saved.reaction}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

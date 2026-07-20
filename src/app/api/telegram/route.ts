@@ -3,6 +3,7 @@ import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answe
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
+import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction } from "@/lib/botActions";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
@@ -1094,6 +1095,8 @@ export async function POST(req: NextRequest) {
       analysis,
     });
     const lang = langOf(user, msg);
+    // «Реакция друга» генерим параллельно с остальным — почти без доп. задержки.
+    const reactionP = friendReaction(user.id, text, lang);
     const streak = await getStreak(user.id);
     const count = await getEntryCount(user.id);
     const L = CONFIRM[lang] || CONFIRM.ru;
@@ -1105,6 +1108,9 @@ export async function POST(req: NextRequest) {
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
+    // Тёплый отклик друга под разбором (в выбранном тоне) — отдельной строкой, факты не трогает.
+    const reaction = await reactionP;
+    if (reaction) body += `\n\n💬 ${esc(reaction)}`;
     const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
