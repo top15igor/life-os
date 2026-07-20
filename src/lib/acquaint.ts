@@ -53,20 +53,28 @@ const OPENING_FIRST: Record<string, string> = {
 
 Я — бот-дневник. Живу в телефоне, обожаю чужие истории и, если честно, немного страдаю, когда мне не пишут. Моя мечта — однажды прочитать твою запись «сегодня был лучший день» и знать, что я к этому причастен.
 
+И сразу самое важное, чтобы тебе было спокойно: всё, что ты мне расскажешь, останется только между нами. Твой дневник видишь лишь ты — его не читают ни другие люди, ни моя команда, а для статистики видны только обезличенные цифры, без текста. Данные хранятся зашифрованно, и ты в любой момент можешь всё скачать или удалить без следа. Здесь можно быть собой — без масок и без осуждения.
+
 Ну вот, теперь ты знаешь обо мне главное. Начнём с простого: как тебя зовут — и как тебя называют те, кто любит?`,
   en: `Alright, it's only fair if I go first 🙂
 
 I'm a diary bot. I live in your phone, I'm a sucker for people's stories and, honestly, I sulk a little when nobody writes to me. My dream is to one day read your entry "today was the best day" and know I had something to do with it.
+
+And the most important thing right away, so you feel at ease: everything you tell me stays between us. Only you can see your diary — not other people, not my team; for statistics we only see anonymized numbers, no text. Data is stored encrypted, and you can download or delete everything anytime, without a trace. Here you can be yourself — no masks, no judgment.
 
 There, now you know the main thing about me. Let's start simple: what's your name — and what do the people who love you call you?`,
   uk: `Гаразд, буде чесно, якщо почну я 🙂
 
 Я — бот-щоденник. Живу в телефоні, обожнюю чужі історії і, чесно кажучи, трохи сумую, коли мені не пишуть. Моя мрія — одного дня прочитати твій запис «сьогодні був найкращий день» і знати, що я до цього причетний.
 
+І одразу найважливіше, щоб тобі було спокійно: усе, що ти мені розкажеш, залишиться тільки між нами. Твій щоденник бачиш лише ти — його не читають ні інші люди, ні моя команда, а для статистики видно лише знеособлені цифри, без тексту. Дані зберігаються зашифровано, і ти будь-коли можеш усе завантажити або видалити без сліду. Тут можна бути собою — без масок і без осуду.
+
 Ось, тепер ти знаєш про мене головне. Почнемо з простого: як тебе звати — і як тебе називають ті, хто любить?`,
   fr: `Bon, ce sera juste si je commence 🙂
 
 Je suis un bot-journal. Je vis dans ton téléphone, j'adore les histoires des gens et, honnêtement, je boude un peu quand personne ne m'écrit. Mon rêve : lire un jour ton entrée « aujourd'hui était le meilleur jour » et savoir que j'y suis pour quelque chose.
+
+Et tout de suite l'essentiel, pour que tu sois à l'aise : tout ce que tu me confies reste entre nous. Toi seul vois ton journal — ni les autres, ni mon équipe ; pour les stats, on ne voit que des chiffres anonymes, sans le texte. Les données sont chiffrées, et tu peux tout télécharger ou supprimer à tout moment, sans laisser de trace. Ici, tu peux être toi-même — sans masque et sans jugement.
 
 Voilà, tu sais l'essentiel sur moi. Commençons simple : comment t'appelles-tu — et comment t'appellent ceux qui t'aiment ?`,
 };
@@ -169,6 +177,8 @@ ${last ? "1) короткая живая реакция на его послед
 3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ — по лестнице глубины (факты → вкусы → чувства), по одной новой теме, не повторяйся. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
 
 ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не пиши проценты, не благодари «за ответы».
+ПАМЯТЬ: если в истории есть что-то, что человек рассказывал раньше (в т.ч. в прошлые дни), иногда по-доброму сошлись на это («ты говорил, что мечтаешь о горах — был шаг в ту сторону?»). Это показывает, что ты слушал и помнишь — именно это цепляет сильнее всего.
+ДОВЕРИЕ: если человек осторожничает, отвечает односложно или неохотно — мягко, без нажима напомни, что всё останется только между вами, тут никто не читает и не осуждает; и что можно ответить сколько хочется или пропустить.
 СТИЛЬ РЕЧИ (пользователь выбрал сам): ${voiceLine(tone, style)}. Язык ответа: "${lang}".
 
 ФАКТЫ О СЕБЕ (только эти, бери неиспользованный по истории):
@@ -213,6 +223,18 @@ ${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
 
 export async function isAcquainting(userId: string): Promise<boolean> {
   return (await readState(userId)).active;
+}
+
+// Пользователь нажал «Пропустить →»: не давим, просто задаём следующий вопрос
+// (без реакции и без сохранения). Прогресс слегка растёт — движение вперёд.
+const SKIP_LEAD: Record<string, string> = {
+  ru: "Окей, пропустим 🙂", en: "Okay, let's skip that 🙂", uk: "Гаразд, пропустимо 🙂", fr: "D'accord, on saute ça 🙂",
+};
+export async function acquaintSkip(userId: string, name: string | null, lang = "ru"): Promise<string> {
+  const next = await genTurn(userId, name, lang, null);
+  const text = `${SKIP_LEAD[lang] || SKIP_LEAD.ru} ${next}`;
+  await append(userId, "assistant", text);
+  return text;
 }
 
 export async function stopAcquaint(userId: string): Promise<void> {

@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, isAcquainting, stopAcquaint } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
@@ -243,6 +243,12 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
+const SKIP_BTN: Record<string, string> = { ru: "Пропустить →", en: "Skip →", uk: "Пропустити →", fr: "Passer →" };
+// Inline-кнопка «Пропустить» под вопросами знакомства (постоянная клавиатура остаётся).
+function acqInline(lang: string) {
+  return { reply_markup: { inline_keyboard: [[{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }]] } };
+}
+
 const ACQUAINT_NUDGE: Record<string, string> = {
   ru: "👉 Самый лёгкий способ начать — просто нажми «🌱 Давай познакомимся» внизу. Я задам пару вопросов, а ты отвечай как другу — и незаметно заведёшь свой дневник 🙂",
   en: "👉 The easiest way to start — just tap “🌱 Let's get acquainted” below. I'll ask a few questions, you answer like to a friend — and you'll start your diary without even noticing 🙂",
@@ -433,6 +439,19 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if (data === "acq:skip" && cqChat) {
+      // «Пропустить →» в знакомстве: задаём следующий вопрос без давления.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, name, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u && await isAcquainting((u as any).id)) {
+          const lng = pickLang((u as any).lang);
+          await sendChatAction(cqChat, "typing");
+          const next = await acquaintSkip((u as any).id, (u as any).name ?? null, lng);
+          await sendMessage(cqChat, mdToTelegram(next) || "…", acqInline(lng));
+        }
+      } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lang:") && cqChat) {
       const lng = data.slice(5);
       if (["ru", "en", "uk", "fr"].includes(lng)) {
@@ -792,7 +811,7 @@ export async function POST(req: NextRequest) {
     if (ba === "acquaint") {
       await sendChatAction(chatId, "typing");
       const opening = await startAcquaint(user.id, user.name ?? null, lang);
-      await sendMessage(chatId, opening, { reply_markup: mainKeyboard(lang) });
+      await sendMessage(chatId, opening, acqInline(lang));
       return NextResponse.json({ ok: true });
     }
     // Любая другая кнопка — выходим из режима знакомства, если он был.
@@ -1061,7 +1080,9 @@ export async function POST(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
-        await sendMessage(chatId, mdToTelegram(reply) || "…", { reply_markup: mainKeyboard(langOf(user, msg)) });
+        // Пока знакомство активно — кнопка «Пропустить»; на «первой странице»/финале — обычная клавиатура.
+        const stillOn = await isAcquainting(user.id);
+        await sendMessage(chatId, mdToTelegram(reply) || "…", stillOn ? acqInline(langOf(user, msg)) : { reply_markup: mainKeyboard(langOf(user, msg)) });
         if (isVoice && reply) {
           await sendChatAction(chatId, "record_voice");
           const audio = await speak(mdToPlain(reply));
