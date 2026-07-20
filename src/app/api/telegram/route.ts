@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
@@ -1081,6 +1081,18 @@ export async function POST(req: NextRequest) {
     if (await isAcquainting(user.id)) {
       await sendChatAction(chatId, "typing");
       try {
+        // «Что ты обо мне знаешь?» — показываем портрет из ответов, не двигая прогресс.
+        if (isPortraitAsk(text)) {
+          const lng = langOf(user, msg);
+          const portrait = await acquaintPortrait(user.id, lng);
+          await sendMessage(chatId, mdToTelegram(portrait) || "…", acqMarkup(lng));
+          if (isVoice && portrait) {
+            await sendChatAction(chatId, "record_voice");
+            const audio = await speak(mdToPlain(portrait));
+            if (audio) await sendVoice(chatId, audio);
+          }
+          return NextResponse.json({ ok: true });
+        }
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
         // Пока знакомство активно — чипы + «Пропустить»/«Пауза»; на «первой странице»/финале —
         // обычная клавиатура с обновлённым процентом знакомства на кнопке.

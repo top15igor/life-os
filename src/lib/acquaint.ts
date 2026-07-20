@@ -213,7 +213,9 @@ async function genTurn(userId: string, name: string | null, lang: string, last: 
 ФОРМАТ ТВОЕЙ РЕПЛИКИ (слитным живым текстом, без нумерации, markdown, списков и кавычек):
 ${last ? "1) короткая живая реакция на его последний ответ — зацепись за КОНКРЕТНУЮ деталь («о, горы! был там или пока мечта?»), покажи, что услышал;" : "1) тёплое короткое вступление, что продолжаем;"}
 2) вплети ОДНУ пользу/фишку LIFE OS (возьми неиспользованную из списка) — покажи КОНКРЕТНУЮ ВЫГОДУ для человека, зачем ему это, живым языком, не рекламно и не дословно;
-3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ — по лестнице глубины (факты → вкусы → чувства), по одной новой теме, не повторяйся. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
+3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
+
+АДАПТИВНОСТЬ ВОПРОСА (главное): не иди тупо по списку тем. Если в последнем ответе человек ОТКРЫЛ конкретную ниточку — упомянул детей, партнёра, работу/дело, город, спорт, увлечение, мечту, — задай следующий вопрос ИМЕННО ПРО ЭТО, углубись на шаг («а как зовут?», «давно этим занимаешься?», «что в этом самое любимое?»). Ветвись за человеком, а не за анкетой. И только если ниточки нет — бери следующую неиспользованную тему из списка ниже (по лестнице глубины: факты → вкусы → чувства). Не повторяйся.
 
 ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не рассказывай о себе как о персонаже («живу в телефоне», «скучаю») — говори о том, что ТЫ ДАЁШЬ пользователю. Не пиши проценты, не благодари «за ответы».
 ПАМЯТЬ: если в истории есть что-то, что человек рассказывал раньше (в т.ч. в прошлые дни), иногда по-доброму сошлись на это («ты говорил, что мечтаешь о горах — был шаг в ту сторону?»). Это показывает, что ты слушал и помнишь — именно это цепляет сильнее всего.
@@ -264,6 +266,58 @@ export async function isAcquainting(userId: string): Promise<boolean> {
   return (await readState(userId)).active;
 }
 
+// «Что ты уже обо мне знаешь» — бот собирает тёплый портрет из ответов (2-е лицo,
+// от «ты»). Активное слушание в чистом виде: показать, что услышал и запомнил.
+const PORTRAIT_LEAD: Record<string, string> = {
+  ru: "Вот что я уже успел про тебя понять 👇",
+  en: "Here's what I've already gathered about you 👇",
+  uk: "Ось що я вже встиг про тебе зрозуміти 👇",
+  fr: "Voici ce que j'ai déjà compris de toi 👇",
+};
+const PORTRAIT_EMPTY: Record<string, string> = {
+  ru: "Мы только начали 🙂 Расскажи ещё чуть-чуть о себе — и я соберу твой портрет.",
+  en: "We've only just started 🙂 Tell me a bit more about yourself — and I'll put together your portrait.",
+  uk: "Ми тільки почали 🙂 Розкажи ще трохи про себе — і я зберу твій портрет.",
+  fr: "On vient juste de commencer 🙂 Parle-moi encore un peu de toi — et je dresserai ton portrait.",
+};
+const PORTRAIT_OUTRO: Record<string, string> = {
+  ru: "\n\nЧем больше расскажешь — тем точнее я тебя узнаю 🙂",
+  en: "\n\nThe more you share — the better I'll know you 🙂",
+  uk: "\n\nЧим більше розкажеш — тим точніше я тебе впізнаю 🙂",
+  fr: "\n\nPlus tu m'en dis — mieux je te connaîtrai 🙂",
+};
+
+// Ловим просьбу «что ты обо мне знаешь» в свободном тексте (во время знакомства).
+export function isPortraitAsk(text: string): boolean {
+  const t = (text || "").toLowerCase();
+  return (
+    /что\s+ты\s+.*(обо\s+мне|про\s+меня)|что\s+.*(обо\s+мне|про\s+меня)\s+знаешь|что\s+ты\s+знаешь|мой\s+портрет|что\s+запомнил/.test(t) ||
+    /what.*(you|u).*(know|remember).*about\s+me|my\s+portrait/.test(t) ||
+    /що\s+ти\s+.*про\s+мене|мій\s+портрет/.test(t) ||
+    /(sais|sait).*(de|sur)\s+moi|mon\s+portrait/.test(t)
+  );
+}
+
+export async function acquaintPortrait(userId: string, lang = "ru"): Promise<string> {
+  const answers = await userAnswers(userId, 10);
+  if (!answers.length) return PORTRAIT_EMPTY[lang] || PORTRAIT_EMPTY.ru;
+  const prompt = `Ниже — ответы человека из разговора-знакомства. Тепло и по-доброму собери короткий ПОРТРЕТ этого человека ОТ ВТОРОГО ЛИЦА (обращайся на «ты»), как будто рассказываешь ему, что ты о нём уже понял. 3–5 предложений. Только то, что реально сказано — ничего не выдумывай, не додумывай. Без markdown, заголовков и кавычек. Язык: "${lang}".
+
+ОТВЕТЫ ЧЕЛОВЕКА:
+${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
+
+Верни только текст портрета.`;
+  try {
+    const m = await client().messages.create({ model: "claude-haiku-4-5-20251001", max_tokens: 320, temperature: 0.6, messages: [{ role: "user", content: prompt }] });
+    logClaude(userId, "acquaint-portrait", "haiku", (m as any).usage);
+    const body = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
+    if (!body) return PORTRAIT_EMPTY[lang] || PORTRAIT_EMPTY.ru;
+    return `${PORTRAIT_LEAD[lang] || PORTRAIT_LEAD.ru}\n\n${body}${PORTRAIT_OUTRO[lang] || PORTRAIT_OUTRO.ru}`;
+  } catch {
+    return PORTRAIT_EMPTY[lang] || PORTRAIT_EMPTY.ru;
+  }
+}
+
 // Пользователь нажал «Пропустить →»: не давим, просто задаём следующий вопрос
 // (без реакции и без сохранения). Прогресс слегка растёт — движение вперёд.
 const SKIP_LEAD: Record<string, string> = {
@@ -289,10 +343,10 @@ export async function acquaintPct(userId: string): Promise<number> {
 // Пользователь нажал «На сегодня хватит»: ставим на паузу, прогресс СОХРАНЯЕМ,
 // тепло прощаемся и зовём вернуться. Возврат — через ту же кнопку (startAcquaint).
 const PAUSE_MSG: Record<string, string> = {
-  ru: "Хорошо, на сегодня остановимся 🙂 Я всё запомнил — в любой момент жми «🌱 Давай познакомимся», и продолжим ровно с того места. У меня уже припасён для тебя вопрос поинтереснее.",
-  en: "Alright, let's stop here for today 🙂 I've remembered everything — whenever you like, tap “🌱 Let's get acquainted” and we'll pick up right where we left off. I've already got a juicier question saved for you.",
-  uk: "Добре, на сьогодні зупинимось 🙂 Я все запам'ятав — будь-коли тисни «🌱 Давай познайомимось», і продовжимо саме з того місця. У мене вже припасене для тебе цікавіше питання.",
-  fr: "D'accord, on s'arrête là pour aujourd'hui 🙂 J'ai tout retenu — quand tu veux, appuie sur « 🌱 Faisons connaissance » et on reprend exactement où on s'est arrêtés. J'ai déjà une question plus croustillante en réserve pour toi.",
+  ru: "Хорошо, на сегодня остановимся 🙂 Я всё запомнил — в любой момент жми «🌱 Давай познакомимся», и продолжим ровно с того места. У меня уже припасён для тебя вопрос поинтереснее.\n\nА захочешь — просто спроси «что ты обо мне знаешь», и я соберу твой портрет из того, что уже понял.",
+  en: "Alright, let's stop here for today 🙂 I've remembered everything — whenever you like, tap “🌱 Let's get acquainted” and we'll pick up right where we left off. I've already got a juicier question saved for you.\n\nAnd if you feel like it — just ask “what do you know about me,” and I'll put together your portrait from what I've gathered.",
+  uk: "Добре, на сьогодні зупинимось 🙂 Я все запам'ятав — будь-коли тисни «🌱 Давай познайомимось», і продовжимо саме з того місця. У мене вже припасене для тебе цікавіше питання.\n\nА захочеш — просто спитай «що ти про мене знаєш», і я зберу твій портрет із того, що вже зрозумів.",
+  fr: "D'accord, on s'arrête là pour aujourd'hui 🙂 J'ai tout retenu — quand tu veux, appuie sur « 🌱 Faisons connaissance » et on reprend exactement où on s'est arrêtés. J'ai déjà une question plus croustillante en réserve pour toi.\n\nEt si tu veux — demande simplement « que sais-tu de moi », et je dresserai ton portrait à partir de ce que j'ai compris.",
 };
 export async function pauseAcquaint(userId: string, lang = "ru"): Promise<{ text: string; pct: number }> {
   const { prefs, pct } = await readState(userId);
