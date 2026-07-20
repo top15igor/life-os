@@ -791,7 +791,7 @@ export async function POST(req: NextRequest) {
     const lang = langOf(user, msg);
     if (ba === "acquaint") {
       await sendChatAction(chatId, "typing");
-      const opening = await startAcquaint(user.id, lang);
+      const opening = await startAcquaint(user.id, user.name ?? null, lang);
       await sendMessage(chatId, opening, { reply_markup: mainKeyboard(lang) });
       return NextResponse.json({ ok: true });
     }
