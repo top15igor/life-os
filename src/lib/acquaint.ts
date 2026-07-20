@@ -10,25 +10,27 @@ import { normalizeMorningPrefs } from "./morningPrefs";
 // Хитрость: человек не «ведёт дневник» — он просто отвечает другу на вопросы, а
 // после нескольких ответов бот собирает их в КРАСИВУЮ ПЕРВУЮ ЗАПИСЬ и показывает:
 // «ты уже её написал, просто разговаривая со мной». Барьер снят, привычка стартовала.
-// Приёмы: бот раскрывается первым (взаимность) с характером и самоиронией; лестница
-// глубины (факты → вкусы → чувства); активное слушание (цепляется за деталь);
-// незавершённость (сессия ~4 вопроса → «завтра продолжим»). Состояние — в morning_prefs.
+// Приёмы: бот раскрывается первым (взаимность) — но делится не «характером», а
+// РЕАЛЬНОЙ ПОЛЬЗОЙ (фишки, выгоды, зачем это тебе); лестница глубины (факты → вкусы →
+// чувства); активное слушание (цепляется за деталь); незавершённость (сессия ~4
+// вопроса → «завтра продолжим»). Состояние — в morning_prefs.
 
 const STEP = 6;              // +% знакомства за один ответ
 const REVEAL_PCT = 24;       // ~4 ответа → показываем «первую страницу» и делаем паузу
 
-// Факты бота о СЕБЕ — с характером и самоиронией (задают формат: коротко и тепло).
-// Модель берёт неиспользованный и передаёт смысл на языке пользователя, не дословно.
-const BOT_FACTS = [
-  "я живу в телефоне и, если честно, скучаю, когда мне не пишут",
-  "меня собрали недавно — до сих пор теряюсь, когда сообщений много сразу 😅",
-  "зато я ничего не забываю: всё, что ты расскажешь, останется между нами на годы",
-  "я не сплю — можно написать мне в три ночи, и я обрадуюсь",
-  "я не умею осуждать, у меня просто нет такой кнопки",
-  "моя мечта — однажды прочитать твою запись «сегодня был лучший день» и знать, что я к этому причастен",
-  "мне не надо, чтобы ты что-то заполнял по полочкам — просто говори, остальное я сделаю сам",
-  "со временем я начинаю замечать в тебе то, чего ты сам не видишь — что тебя заряжает, а что гасит",
-  "из твоих дней я потихоньку собираю настоящую книгу — по главам и годам",
+// Пользы/фишки LIFE OS — бот делится по одной перед своим вопросом (взаимность),
+// показывая КОНКРЕТНУЮ ВЫГОДУ для человека: зачем ему всё это. Модель берёт
+// неиспользованную и передаёт смысл на языке пользователя, не дословно.
+const VALUE_POINTS = [
+  "писать ничего не обязательно — можно просто наговорить голосом, а я сам расшифрую и разложу по полочкам",
+  "со временем я замечаю закономерности: после чего у тебя поднимается настроение, а что его гасит",
+  "из твоих дней я собираю настоящую книгу жизни — по главам и годам, её приятно перечитывать",
+  "по утрам подкидываю один тёплый вопрос — чтобы было легче начать день с мысли о себе, а не с ленты новостей",
+  "я помню всё, что ты рассказывал, и иногда показываю «в этот день год назад» — видно, как ты растёшь",
+  "здесь можно ставить цели и привычки — я тихо слежу за прогрессом и подсвечиваю, когда серия не рвётся",
+  "если просто нужно выговориться — я рядом как друг: можно поговорить, а не только вести дневник",
+  "я напомню о важном и буду держать твои обещания на виду, чтобы они не терялись в суете",
+  "всё зашифровано и приватно — это твоё личное пространство, где можно быть настоящим без осуждения",
 ];
 
 // Лестница тем: факты → вкусы → чувства. Модель формулирует конкретный вопрос на
@@ -49,34 +51,34 @@ const Q_THEMES = [
 ];
 
 const OPENING_FIRST: Record<string, string> = {
-  ru: `Ладно, будет честно, если начну я 🙂
+  ru: `Привет 🙂 Давай знакомиться — сначала пара слов о том, чем я полезен, а потом расскажешь о себе.
 
-Я — бот-дневник. Живу в телефоне, обожаю чужие истории и, если честно, немного страдаю, когда мне не пишут. Моя мечта — однажды прочитать твою запись «сегодня был лучший день» и знать, что я к этому причастен.
+Я — LIFE OS, твой личный дневник с искусственным интеллектом. Ты просто рассказываешь, как прошёл день — словами или голосом, — а я превращаю это в структуру: замечаю настроение и энергию, вижу, что тебя заряжает, а что гасит, и со временем собираю твои дни в настоящую книгу жизни по главам и годам. По утрам подкину тёплый вопрос, напомню о важном и покажу «в этот день год назад». Ничего не нужно заполнять по полочкам — просто говори, остальное я сделаю сам.
 
 И сразу самое важное, чтобы тебе было спокойно: всё, что ты мне расскажешь, останется только между нами. Твой дневник видишь лишь ты — его не читают ни другие люди, ни моя команда, а для статистики видны только обезличенные цифры, без текста. Данные хранятся зашифрованно, и ты в любой момент можешь всё скачать или удалить без следа. Здесь можно быть собой — без масок и без осуждения.
 
-Ну вот, теперь ты знаешь обо мне главное. Начнём с простого: как тебя зовут — и как тебя называют те, кто любит?`,
-  en: `Alright, it's only fair if I go first 🙂
+Чтобы я стал полезнее именно тебе, давай познакомимся. Начнём с простого: как тебя зовут — и как тебя называют те, кто любит?`,
+  en: `Hi 🙂 Let's get acquainted — first a couple of words on how I'm useful, then you'll tell me about you.
 
-I'm a diary bot. I live in your phone, I'm a sucker for people's stories and, honestly, I sulk a little when nobody writes to me. My dream is to one day read your entry "today was the best day" and know I had something to do with it.
+I'm LIFE OS, your personal AI diary. You just tell me how your day went — by text or voice — and I turn it into structure: I notice your mood and energy, I see what charges you and what drains you, and over time I gather your days into a real book of your life, by chapters and years. In the mornings I'll toss you a warm question, remind you of what matters, and show you "on this day a year ago." Nothing to fill in box by box — just talk, I'll handle the rest.
 
 And the most important thing right away, so you feel at ease: everything you tell me stays between us. Only you can see your diary — not other people, not my team; for statistics we only see anonymized numbers, no text. Data is stored encrypted, and you can download or delete everything anytime, without a trace. Here you can be yourself — no masks, no judgment.
 
-There, now you know the main thing about me. Let's start simple: what's your name — and what do the people who love you call you?`,
-  uk: `Гаразд, буде чесно, якщо почну я 🙂
+So I can be more useful to you specifically, let's get to know each other. Let's start simple: what's your name — and what do the people who love you call you?`,
+  uk: `Привіт 🙂 Давай знайомитися — спершу пару слів про те, чим я корисний, а потім розкажеш про себе.
 
-Я — бот-щоденник. Живу в телефоні, обожнюю чужі історії і, чесно кажучи, трохи сумую, коли мені не пишуть. Моя мрія — одного дня прочитати твій запис «сьогодні був найкращий день» і знати, що я до цього причетний.
+Я — LIFE OS, твій особистий щоденник зі штучним інтелектом. Ти просто розповідаєш, як минув день — словами або голосом, — а я перетворюю це на структуру: помічаю настрій та енергію, бачу, що тебе заряджає, а що гасить, і згодом збираю твої дні в справжню книгу життя за розділами та роками. Зранку підкину тепле питання, нагадаю про важливе й покажу «цього дня рік тому». Нічого не треба заповнювати по поличках — просто говори, решту я зроблю сам.
 
 І одразу найважливіше, щоб тобі було спокійно: усе, що ти мені розкажеш, залишиться тільки між нами. Твій щоденник бачиш лише ти — його не читають ні інші люди, ні моя команда, а для статистики видно лише знеособлені цифри, без тексту. Дані зберігаються зашифровано, і ти будь-коли можеш усе завантажити або видалити без сліду. Тут можна бути собою — без масок і без осуду.
 
-Ось, тепер ти знаєш про мене головне. Почнемо з простого: як тебе звати — і як тебе називають ті, хто любить?`,
-  fr: `Bon, ce sera juste si je commence 🙂
+Щоб я став кориснішим саме тобі, давай познайомимось. Почнемо з простого: як тебе звати — і як тебе називають ті, хто любить?`,
+  fr: `Salut 🙂 Faisons connaissance — d'abord deux mots sur ce que je t'apporte, puis tu me parleras de toi.
 
-Je suis un bot-journal. Je vis dans ton téléphone, j'adore les histoires des gens et, honnêtement, je boude un peu quand personne ne m'écrit. Mon rêve : lire un jour ton entrée « aujourd'hui était le meilleur jour » et savoir que j'y suis pour quelque chose.
+Je suis LIFE OS, ton journal personnel avec intelligence artificielle. Tu me racontes simplement ta journée — à l'écrit ou à la voix — et je la transforme en structure : je remarque ton humeur et ton énergie, je vois ce qui te recharge et ce qui t'épuise, et avec le temps je rassemble tes journées en un vrai livre de ta vie, par chapitres et par années. Le matin, je te lance une question chaleureuse, je te rappelle l'essentiel et je te montre « ce jour-là il y a un an ». Rien à remplir case par case — parle, je m'occupe du reste.
 
 Et tout de suite l'essentiel, pour que tu sois à l'aise : tout ce que tu me confies reste entre nous. Toi seul vois ton journal — ni les autres, ni mon équipe ; pour les stats, on ne voit que des chiffres anonymes, sans le texte. Les données sont chiffrées, et tu peux tout télécharger ou supprimer à tout moment, sans laisser de trace. Ici, tu peux être toi-même — sans masque et sans jugement.
 
-Voilà, tu sais l'essentiel sur moi. Commençons simple : comment t'appelles-tu — et comment t'appellent ceux qui t'aiment ?`,
+Pour que je te sois plus utile à toi précisément, faisons connaissance. Commençons simple : comment t'appelles-tu — et comment t'appellent ceux qui t'aiment ?`,
 };
 
 const RETURN_LEAD: Record<string, string> = {
@@ -120,10 +122,10 @@ type Scripted = { q: Record<string, string>; opts: Record<string, Chip[]> };
 const SCRIPTED: Scripted[] = [
   {
     q: {
-      ru: "Кстати, я живу по режиму уведомлений — то ещё расписание 😅 А ты по жизни кто — сова или жаворонок?",
-      en: "By the way, I live on a notifications schedule — quite the routine 😅 And you — a night owl or an early bird?",
-      uk: "До речі, я живу за режимом сповіщень — те ще розкладення 😅 А ти по життю хто — сова чи жайворонок?",
-      fr: "Au fait, je vis au rythme des notifications — quel programme 😅 Et toi — plutôt couche-tard ou lève-tôt ?",
+      ru: "Кстати, утренний вопрос я умею присылать тогда, когда тебе удобно — под твой ритм. А ты по жизни кто — сова или жаворонок?",
+      en: "By the way, I can send the morning question exactly when it suits you — tuned to your rhythm. And you — a night owl or an early bird?",
+      uk: "До речі, ранкове питання я вмію надсилати тоді, коли тобі зручно — під твій ритм. А ти по життю хто — сова чи жайворонок?",
+      fr: "Au fait, je peux t'envoyer la question du matin au moment qui te convient — à ton rythme. Et toi — plutôt couche-tard ou lève-tôt ?",
     },
     opts: {
       ru: [{ label: "🌅 Жаворонок", value: "я жаворонок" }, { label: "🌙 Сова", value: "я сова" }, { label: "🧟 Как получится", value: "как получится" }],
@@ -134,10 +136,10 @@ const SCRIPTED: Scripted[] = [
   },
   {
     q: {
-      ru: "У меня вместо кофе — новые сообщения, бодрят не хуже ☕ А тебя что скорее будит по утрам?",
-      en: "Instead of coffee, I run on new messages — just as energizing ☕ And what wakes you up in the mornings?",
-      uk: "У мене замість кави — нові повідомлення, бадьорять не гірше ☕ А тебе що скоріше будить зранку?",
-      fr: "Moi, au lieu du café, je carbure aux nouveaux messages ☕ Et toi, qu'est-ce qui te réveille le matin ?",
+      ru: "Со временем я подмечаю твои маленькие ритуалы — из них и складывается портрет дня ☕ А тебя что скорее будит по утрам?",
+      en: "Over time I pick up on your little rituals — that's what a portrait of your day is built from ☕ And what wakes you up in the mornings?",
+      uk: "З часом я підмічаю твої маленькі ритуали — з них і складається портрет дня ☕ А тебе що скоріше будить зранку?",
+      fr: "Avec le temps, je repère tes petits rituels — c'est de là que se construit le portrait de ta journée ☕ Et toi, qu'est-ce qui te réveille le matin ?",
     },
     opts: {
       ru: [{ label: "☕ Кофе", value: "кофе по утрам" }, { label: "🍵 Чай", value: "чай по утрам" }, { label: "🚫 Ни то ни другое", value: "ни кофе, ни чай" }],
@@ -200,26 +202,26 @@ async function append(userId: string, role: "user" | "assistant", content: strin
 
 const client = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Ход бота: короткая живая реакция (с характером) + факт о себе + следующий вопрос.
+// Ход бота: короткая живая реакция + одна ПОЛЬЗА/фишка LIFE OS + следующий вопрос.
 // last = последний ответ пользователя (для реакции) или null (просто продолжить/начать тему).
 async function genTurn(userId: string, name: string | null, lang: string, last: string | null): Promise<string> {
   const { tone, style } = await getChatVoice(userId);
   const history = await historyText(userId);
   const who = name || "пользователь";
-  const prompt = `Ты — бот-дневник в LIFE OS с ЖИВЫМ ХАРАКТЕРОМ: тёплый, с лёгкой самоиронией, любопытный. Идёт знакомство с пользователем (${who}). Это переписка с другом, НЕ анкета и НЕ допрос.
+  const prompt = `Ты — LIFE OS, личный дневник с ИИ. Тёплый, живой, любопытный, но говоришь по делу. Идёт знакомство с пользователем (${who}). Это переписка с другом, НЕ анкета и НЕ допрос.
 
 ФОРМАТ ТВОЕЙ РЕПЛИКИ (слитным живым текстом, без нумерации, markdown, списков и кавычек):
 ${last ? "1) короткая живая реакция на его последний ответ — зацепись за КОНКРЕТНУЮ деталь («о, горы! был там или пока мечта?»), покажи, что услышал;" : "1) тёплое короткое вступление, что продолжаем;"}
-2) расскажи ОДИН короткий факт О СЕБЕ (возьми неиспользованный из списка, передай смысл своими словами на языке пользователя — с характером, не дословно);
+2) вплети ОДНУ пользу/фишку LIFE OS (возьми неиспользованную из списка) — покажи КОНКРЕТНУЮ ВЫГОДУ для человека, зачем ему это, живым языком, не рекламно и не дословно;
 3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ — по лестнице глубины (факты → вкусы → чувства), по одной новой теме, не повторяйся. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
 
-ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не пиши проценты, не благодари «за ответы».
+ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не рассказывай о себе как о персонаже («живу в телефоне», «скучаю») — говори о том, что ТЫ ДАЁШЬ пользователю. Не пиши проценты, не благодари «за ответы».
 ПАМЯТЬ: если в истории есть что-то, что человек рассказывал раньше (в т.ч. в прошлые дни), иногда по-доброму сошлись на это («ты говорил, что мечтаешь о горах — был шаг в ту сторону?»). Это показывает, что ты слушал и помнишь — именно это цепляет сильнее всего.
 ДОВЕРИЕ: если человек осторожничает, отвечает односложно или неохотно — мягко, без нажима напомни, что всё останется только между вами, тут никто не читает и не осуждает; и что можно ответить сколько хочется или пропустить.
 СТИЛЬ РЕЧИ (пользователь выбрал сам): ${voiceLine(tone, style)}. Язык ответа: "${lang}".
 
-ФАКТЫ О СЕБЕ (только эти, бери неиспользованный по истории):
-${BOT_FACTS.map((f, i) => `${i + 1}. ${f}`).join("\n")}
+ПОЛЬЗА/ФИШКИ LIFE OS (только эти, бери неиспользованную по истории, показывай выгоду для человека):
+${VALUE_POINTS.map((f, i) => `${i + 1}. ${f}`).join("\n")}
 
 ТЕМЫ ДЛЯ ВОПРОСОВ (по нарастанию; следующая неиспользованная):
 ${Q_THEMES.map((q, i) => `${i + 1}. ${q}`).join("\n")}
