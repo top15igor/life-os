@@ -19,6 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
+import { startAcquaint, acquaintReply, isAcquainting, stopAcquaint } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
@@ -242,10 +243,18 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
-function buttonAction(text?: string): "diary" | "tasks" | "motiv" | "invite" | null {
+const ACQUAINT_NUDGE: Record<string, string> = {
+  ru: "👉 Самый лёгкий способ начать — просто нажми «🌱 Давай познакомимся» внизу. Я задам пару вопросов, а ты отвечай как другу — и незаметно заведёшь свой дневник 🙂",
+  en: "👉 The easiest way to start — just tap “🌱 Let's get acquainted” below. I'll ask a few questions, you answer like to a friend — and you'll start your diary without even noticing 🙂",
+  uk: "👉 Найлегший спосіб почати — просто натисни «🌱 Давай познайомимось» внизу. Я поставлю кілька запитань, а ти відповідай як другу — і непомітно заведеш свій щоденник 🙂",
+  fr: "👉 Le plus simple pour commencer — appuie sur « 🌱 Faisons connaissance » en bas. Je pose quelques questions, tu réponds comme à un ami — et tu commences ton journal sans t'en rendre compte 🙂",
+};
+
+function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
   if (!text) return null;
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
+    if (text === k.acquaint) return "acquaint";
     if (text === k.diary) return "diary";
     if (text === k.tasks) return "tasks";
     if (text === k.motiv) return "motiv";
@@ -521,6 +530,9 @@ export async function POST(req: NextRequest) {
         await sleep(i === 0 ? 400 : 1300);
         await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
       }
+      // Нудж новичку: самый лёгкий вход — знакомство.
+      await sleep(1200);
+      await sendMessage(chatId, ACQUAINT_NUDGE[lang] || ACQUAINT_NUDGE.ru, { reply_markup: mainKeyboard(lang) });
     } else {
       await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
     }
@@ -777,6 +789,14 @@ export async function POST(req: NextRequest) {
   const ba = buttonAction(msg.text);
   if (ba) {
     const lang = langOf(user, msg);
+    if (ba === "acquaint") {
+      await sendChatAction(chatId, "typing");
+      const opening = await startAcquaint(user.id, lang);
+      await sendMessage(chatId, opening, { reply_markup: mainKeyboard(lang) });
+      return NextResponse.json({ ok: true });
+    }
+    // Любая другая кнопка — выходим из режима знакомства, если он был.
+    await stopAcquaint(user.id).catch(() => {});
     if (ba === "tasks") {
       const tasks = await getOpenTasks(user.id, 100);
       const T = TASKS_MSG[lang] || TASKS_MSG.ru;
@@ -1033,6 +1053,25 @@ export async function POST(req: NextRequest) {
     {
       const rp = await relayFromPhrase({ id: user.id, name: user.name ?? null }, text, langOf(user, msg));
       if (rp.handled) { await sendMessage(chatId, rp.reply!); return NextResponse.json({ ok: true }); }
+    }
+
+    // 🌱 Режим знакомства: ведём тёплый диалог (факт о себе ↔ вопрос о тебе),
+    //    ответы тихо сохраняются как записи. Приоритетнее обычного чата.
+    if (await isAcquainting(user.id)) {
+      await sendChatAction(chatId, "typing");
+      try {
+        const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
+        await sendMessage(chatId, mdToTelegram(reply) || "…", { reply_markup: mainKeyboard(langOf(user, msg)) });
+        if (isVoice && reply) {
+          await sendChatAction(chatId, "record_voice");
+          const audio = await speak(mdToPlain(reply));
+          if (audio) await sendVoice(chatId, audio);
+        }
+      } catch (e) {
+        console.error("acquaint", e);
+        await sendMessage(chatId, "…");
+      }
+      return NextResponse.json({ ok: true });
     }
 
     // 💬 Режим беседы: пока он включён, текст/голос идут к AI-другу (с памятью
