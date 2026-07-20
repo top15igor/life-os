@@ -261,7 +261,7 @@ const ROADMAP = [
 ];
 
 const STORAGE = [
-  ["Код программы", "Компьютер + GitHub + Vercel", "Три синхронные копии ОДНОГО кода: на компе — папка ~/life-os, на GitHub — копия в облаке, на Vercel — работающий сайт mylifebookai.vercel.app. Это не разные файлы, а копии одного."],
+  ["Код программы", "Компьютер + GitHub + Vercel", "Три синхронные копии ОДНОГО кода: на компе — папка ~/life-os, на GitHub — копия в облаке, на Vercel — работающий сайт life-os.today. Это не разные файлы, а копии одного."],
   ["Твои записи", "Supabase (облако)", "Всё, что ты надиктовал боту голосом и текстом. На компьютере их нет — они всегда в облаке."],
 ];
 
@@ -479,7 +479,7 @@ export default async function ArchitecturePage() {
         </Sec>
 
         <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 20 }}>
-          Домен: mylifebookai.vercel.app · Обновляется вместе с проектом.
+          Домен: life-os.today · Обновляется вместе с проектом.
         </div>
       </main>
     </div>

@@ -22,7 +22,7 @@ export default async function ReferralsPage() {
   ]);
 
   const hdrs = await headers();
-  const host = hdrs.get("host") || "mylifebookai.vercel.app";
+  const host = hdrs.get("host") || "life-os.today";
   const proto = hdrs.get("x-forwarded-proto") || "https";
   const inviteLink = `${proto}://${host}/i/${handle}`;
 

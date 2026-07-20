@@ -74,7 +74,7 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
   const userPaths = await getPaths(user.id);
   const handle = await getHandle(user.id, user.name);
   const hdrs = await headers();
-  const baseUrl = `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || "mylifebookai.vercel.app"}`;
+  const baseUrl = `${hdrs.get("x-forwarded-proto") || "https"}://${hdrs.get("host") || "life-os.today"}`;
 
   return (
     <div className="shell">

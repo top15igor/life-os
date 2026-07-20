@@ -47,7 +47,7 @@ export default async function SharePage() {
   const thoughts = all.map((e: any) => e.summary).filter(Boolean).slice(0, 12);
 
   const hdrs = await headers();
-  const host = hdrs.get("host") || "mylifebookai.vercel.app";
+  const host = hdrs.get("host") || "life-os.today";
   const proto = hdrs.get("x-forwarded-proto") || "https";
   const refLink = `${proto}://${host}/i/${await getHandle(user.id, user.name)}`;
 

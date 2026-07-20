@@ -29,7 +29,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const notice = sp.linked ? "linked" : sp.e === "emailtaken" ? "emailtaken" : undefined;
 
   const hdrs = await headers();
-  const host = hdrs.get("host") || "mylifebookai.vercel.app";
+  const host = hdrs.get("host") || "life-os.today";
   const proto = hdrs.get("x-forwarded-proto") || "https";
   const baseUrl = `${proto}://${host}`;
   const handle = await getHandle(user.id, user.name);
