@@ -46,6 +46,8 @@ export interface MorningPrefs {
 // валидными для совместимости, но в списке не показываются.
 export const MORNING_TONES: MorningTone[] = ["auto", "friend", "direct", "calm", "business", "energetic"];
 const ALL_TONES: MorningTone[] = ["auto", "friend", "direct", "calm", "business", "energetic", "coach", "mentor", "funny"];
+// Для тона ОБЩЕНИЯ с ботом показываем весь набор, включая фирменные (коуч/наставник/юмор).
+export const CHAT_TONES: MorningTone[] = [...ALL_TONES];
 export const MORNING_TOPICS: MorningTopic[] = ["motivation", "goals", "tasks", "diary", "insight", "gratitude", "movement"];
 export const MORNING_LENGTHS: MorningLength[] = ["short", "normal", "long"];
 export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]; // 0=Вс … 6=Сб
