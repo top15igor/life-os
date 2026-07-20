@@ -160,7 +160,7 @@ export async function createCalendarEvent(userId: string, ev: CalEvent, calendar
       useDefault: false,
       overrides: mins.map((m) => ({ method: "popup", minutes: Math.max(0, m) })),
     },
-    source: { title: "LIFE OS", url: "https://mylifebookai.vercel.app" },
+    source: { title: "LIFE OS", url: "https://life-os.today" },
   };
   if (ev.recurrence && RRULE[ev.recurrence]) body.recurrence = [RRULE[ev.recurrence]];
 

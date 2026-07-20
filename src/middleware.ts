@@ -8,7 +8,7 @@ export function middleware(req: NextRequest) {
 
   const url = req.nextUrl.clone();
   // Гость на корне — показываем презентацию (контент /about), но АДРЕС остаётся "/".
-  // Так сайт открывается по чистому mylifebookai.vercel.app, без /about в строке.
+  // Так сайт открывается по чистому life-os.today, без /about в строке.
   // Query (?ref=...) сохраняется, чтобы реферал не терялся.
   if (url.pathname === "/") {
     url.pathname = "/about";

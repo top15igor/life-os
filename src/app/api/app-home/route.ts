@@ -26,6 +26,6 @@ export async function GET() {
     streak,
     total: countRes.count || 0,
     isOwner: user.id === OWNER,
-    inviteLink: handle ? `https://mylifebookai.vercel.app/i/${handle}` : null,
+    inviteLink: handle ? `https://life-os.today/i/${handle}` : null,
   });
 }

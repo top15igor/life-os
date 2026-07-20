@@ -5,7 +5,7 @@ import { resolveRefToId } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-// Умная ссылка-имя: mylifebookai.vercel.app/i/<username>
+// Умная ссылка-имя: life-os.today/i/<username>
 //  - владелец (вошёл в свой аккаунт)  -> его домашняя лента «Сегодня» (как @имя в Instagram);
 //  - кто угодно другой / гость         -> реальная презентация сайта /about (с сохранением реферала).
 

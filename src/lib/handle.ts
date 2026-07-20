@@ -2,8 +2,8 @@ import { supabaseAdmin } from "./supabaseAdmin";
 
 // ===== Единый @username (имя-ссылка) пользователя =====
 // Хранится в public_profile.slug и работает сразу для двух вещей:
-//   - реф-ссылка   mylifebookai.vercel.app/i/<username>
-//   - публичная стр. mylifebookai.vercel.app/p/<username> (если включена)
+//   - реф-ссылка   life-os.today/i/<username>
+//   - публичная стр. life-os.today/p/<username> (если включена)
 // Генерится автоматически из имени (транслитерация), уникален, редактируемый.
 // Старый случайный ref_code и legacy ?ref=<UUID> продолжают работать (см. users.ts).
 

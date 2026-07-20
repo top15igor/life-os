@@ -22,7 +22,7 @@ export default async function PathsPage() {
   const locale = await getLocale();
   const t = getDict(locale);
   const paths = await getPaths(user.id);
-  const host = (await headers()).get("host") || "mylifebookai.vercel.app";
+  const host = (await headers()).get("host") || "life-os.today";
 
   return (
     <div className="shell">
