@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
@@ -239,12 +239,14 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
 const SKIP_BTN: Record<string, string> = { ru: "Пропустить →", en: "Skip →", uk: "Пропустити →", fr: "Passer →" };
-// Клавиатура под вопросом знакомства: быстрые чипы-ответы (если есть) + «Пропустить».
+// «На сегодня хватит» — мягкая пауза с сохранением прогресса (не «стоп»).
+const PAUSE_BTN: Record<string, string> = { ru: "😴 На сегодня хватит", en: "😴 Enough for today", uk: "😴 На сьогодні досить", fr: "😴 Assez pour aujourd'hui" };
+// Клавиатура под вопросом знакомства: быстрые чипы-ответы (если есть) + «Пропустить» + «Пауза».
 // Постоянная нижняя клавиатура при этом остаётся.
 function acqMarkup(lang: string, chips?: { label: string; value: string }[]) {
   const rows: any[] = [];
   for (const c of chips || []) rows.push([{ text: c.label, callback_data: `acq:opt:${c.value}` }]);
-  rows.push([{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }]);
+  rows.push([{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }, { text: PAUSE_BTN[lang] || PAUSE_BTN.ru, callback_data: "acq:pause" }]);
   return { reply_markup: { inline_keyboard: rows } };
 }
 const acqInline = (lang: string) => acqMarkup(lang);
@@ -258,9 +260,11 @@ const ACQUAINT_NUDGE: Record<string, string> = {
 
 function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
   if (!text) return null;
+  // Кнопка знакомства может нести суффикс прогресса («… · 24%») — отбрасываем его.
+  const base = text.split(" · ")[0];
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (text === k.acquaint) return "acquaint";
+    if (base === k.acquaint) return "acquaint";
     if (text === k.diary) return "diary";
     if (text === k.tasks) return "tasks";
     if (text === k.motiv) return "motiv";
@@ -462,8 +466,20 @@ export async function POST(req: NextRequest) {
           const lng = pickLang((u as any).lang);
           await sendChatAction(cqChat, "typing");
           const reply = await acquaintReply((u as any).id, (u as any).name ?? null, data.slice(8), lng);
-          const stillOn = await isAcquainting((u as any).id);
-          await sendMessage(cqChat, mdToTelegram(reply.text) || "…", stillOn ? acqMarkup(lng, reply.chips) : { reply_markup: mainKeyboard(lng) });
+          await sendMessage(cqChat, mdToTelegram(reply.text) || "…", reply.active ? acqMarkup(lng, reply.chips) : { reply_markup: mainKeyboard(lng, reply.pct) });
+        }
+      } catch { await answerCallback(cq.id); }
+    } else if (data === "acq:pause" && cqChat) {
+      // «На сегодня хватит» — мягкая пауза: прогресс сохраняем, зовём вернуться,
+      // и обновляем подпись кнопки на текущий процент знакомства.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u && await isAcquainting((u as any).id)) {
+          const lng = pickLang((u as any).lang);
+          const { text, pct } = await pauseAcquaint((u as any).id, lng);
+          await sendMessage(cqChat, mdToTelegram(text) || "…", { reply_markup: mainKeyboard(lng, pct) });
         }
       } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lang:") && cqChat) {
@@ -1066,9 +1082,9 @@ export async function POST(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
-        // Пока знакомство активно — чипы/кнопка «Пропустить»; на «первой странице»/финале — обычная клавиатура.
-        const stillOn = await isAcquainting(user.id);
-        await sendMessage(chatId, mdToTelegram(reply.text) || "…", stillOn ? acqMarkup(langOf(user, msg), reply.chips) : { reply_markup: mainKeyboard(langOf(user, msg)) });
+        // Пока знакомство активно — чипы + «Пропустить»/«Пауза»; на «первой странице»/финале —
+        // обычная клавиатура с обновлённым процентом знакомства на кнопке.
+        await sendMessage(chatId, mdToTelegram(reply.text) || "…", reply.active ? acqMarkup(langOf(user, msg), reply.chips) : { reply_markup: mainKeyboard(langOf(user, msg), reply.pct) });
         if (isVoice && reply.text) {
           await sendChatAction(chatId, "record_voice");
           const audio = await speak(mdToPlain(reply.text));

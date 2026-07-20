@@ -11,11 +11,19 @@ export const KB: Record<string, { acquaint: string; diary: string; tasks: string
   fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "✅ Mes tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
 };
 
-export function mainKeyboard(lang: string) {
+// Подпись кнопки знакомства с прогрессом: «🌱 Давай познакомимся · 24%».
+// Процент показываем только в процессе (1..99); в 0% и 100% — базовая подпись.
+export function acquaintLabel(lang: string, pct?: number) {
+  const base = (KB[lang] || KB.ru).acquaint;
+  const p = typeof pct === "number" ? Math.max(0, Math.min(100, Math.floor(pct))) : 0;
+  return p > 0 && p < 100 ? `${base} · ${p}%` : base;
+}
+
+export function mainKeyboard(lang: string, acquaintPct?: number) {
   const k = KB[lang] || KB.ru;
   return {
     keyboard: [
-      [{ text: k.acquaint }],
+      [{ text: acquaintLabel(lang, acquaintPct) }],
       [{ text: k.diary }, { text: k.tasks }],
       [{ text: k.motiv }, { text: k.invite }],
     ],
