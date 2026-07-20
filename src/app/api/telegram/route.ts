@@ -537,6 +537,13 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
     const lang = langOf(user, msg);
+    // Deep-link из приложения (карточка на «Сегодня»): /start acquaint → сразу знакомство.
+    if (typeof msg.text === "string" && msg.text.slice(7).trim() === "acquaint") {
+      await sendChatAction(chatId, "typing");
+      const opening = await startAcquaint(user.id, user.name ?? null, lang);
+      await sendMessage(chatId, opening, acqInline(lang));
+      return NextResponse.json({ ok: true });
+    }
     if (user.isNew) {
       const seq = WELCOME[lang] || WELCOME.ru;
       for (let i = 0; i < seq.length; i++) {

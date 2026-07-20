@@ -22,6 +22,12 @@ const PRESET_VIS: Record<string, string[] | undefined> = {
 const DEFAULT_BLOCKS = ["book", "habit", "trace", "promises", "focus", "context", "gratitude"];
 const GEAR_LABEL: Record<string, string> = { ru: "Настроить", en: "Customize", uk: "Налаштувати", fr: "Personnaliser" };
 const PROFILE_LABEL: Record<string, string> = { ru: "Открыть профиль", en: "Open profile", uk: "Відкрити профіль", fr: "Ouvrir le profil" };
+const ACQ: Record<string, { startT: string; startS: string; startCta: string; contT: string; contCta: string }> = {
+  ru: { startT: "Давай познакомимся", startS: "Ответь на пару тёплых вопросов в боте — и твоя первая запись соберётся сама.", startCta: "Начать", contT: "Знакомство с ботом", contCta: "Продолжить" },
+  en: { startT: "Let's get acquainted", startS: "Answer a couple of warm questions in the bot — and your first entry writes itself.", startCta: "Start", contT: "Getting to know you", contCta: "Continue" },
+  uk: { startT: "Давай познайомимось", startS: "Дай відповідь на кілька теплих запитань у боті — і твій перший запис збереться сам.", startCta: "Почати", contT: "Знайомство з ботом", contCta: "Продовжити" },
+  fr: { startT: "Faisons connaissance", startS: "Réponds à quelques questions dans le bot — et ta première entrée s'écrit toute seule.", startCta: "Commencer", contT: "On fait connaissance", contCta: "Continuer" },
+};
 
 const DAYPART_LINE: Record<string, { morning: string; day: string; evening: string; night: string }> = {
   ru: { morning: "Доброе начало. Сделай день сильным — для себя и для других.", day: "Держи фокус и не забывай о близких.", evening: "Заверши день: сохрани события, заметь добро, поблагодари.", night: "Поздний час. Если есть что сохранить за день — я рядом." },
@@ -208,6 +214,32 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
       {tab === 0 && (
         <div className="fade-up">
           <CaptureChat qa={qa} locale={locale} />
+
+          {/* Знакомство: приглашение (0%) или прогресс (1–99%). На 100% — скрыто. */}
+          {data.acquaintLink && data.acquaintPct < 100 && (() => {
+            const a = ACQ[locale] || ACQ.ru;
+            const started = data.acquaintPct > 0;
+            return (
+              <a href={data.acquaintLink} target="_blank" rel="noreferrer"
+                style={{ display: "block", marginBottom: 12, padding: "12px 14px", borderRadius: 14, border: "1px solid var(--accent)", background: "var(--accent-bg)", textDecoration: "none", color: "var(--text)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 18 }}>🌱</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 600, flex: 1 }}>{started ? a.contT : a.startT}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--accent-text)", fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 3 }}>{started ? a.contCta : a.startCta}<i className="ti ti-arrow-right" style={{ fontSize: 13 }} /></span>
+                </div>
+                {started ? (
+                  <div style={{ marginTop: 9 }}>
+                    <div style={{ height: 7, borderRadius: 99, background: "var(--surface-2)", overflow: "hidden" }}>
+                      <div style={{ width: `${data.acquaintPct}%`, height: "100%", borderRadius: 99, background: "var(--accent)" }} />
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--accent-text)", fontWeight: 600, marginTop: 4 }}>{data.acquaintPct}%</div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 4 }}>{a.startS}</div>
+                )}
+              </a>
+            );
+          })()}
 
           {data.bookPrompt && (
             <button

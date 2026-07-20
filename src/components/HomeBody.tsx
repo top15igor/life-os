@@ -13,6 +13,8 @@ import { hints } from "@/lib/hints";
 import { getBookPrompt } from "@/lib/bookPrompts";
 import { requireUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { normalizeMorningPrefs } from "@/lib/morningPrefs";
+import { getBotLink } from "@/lib/botLink";
 import PinPrompt from "@/components/PinPrompt";
 import BindEmailPrompt from "@/components/BindEmailPrompt";
 import EnterInBrowser from "@/components/EnterInBrowser";
@@ -125,7 +127,17 @@ export default async function HomeBody() {
 
   const bookPrompt = await getBookPrompt(user.id, locale, dayOfYear).catch(() => null);
 
+  // Прогресс знакомства (для карточки на «Сегодня») + deep-link в бота, который его запускает.
+  let acquaintPct = 0;
+  try {
+    const { data: mp } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+    acquaintPct = normalizeMorningPrefs((mp as any)?.morning_prefs).acquaintPct;
+  } catch { /* нет колонки — 0 */ }
+  const acquaintLink = await getBotLink("acquaint").catch(() => "https://t.me");
+
   const data = {
+    acquaintPct,
+    acquaintLink,
     greeting: `${greeting(locale)}${user.name ? ", " + user.name : ""}`,
     greetWord: greeting(locale),
     userName: user.name || "",
