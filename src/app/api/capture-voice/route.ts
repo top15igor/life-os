@@ -4,6 +4,8 @@ import { analyze } from "@/lib/ai";
 import { saveEntry } from "@/lib/saveEntry";
 import { transcribeFile } from "@/lib/transcribe";
 import { logUsage } from "@/lib/usage";
+import { friendReaction } from "@/lib/entryReaction";
+import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,9 +26,12 @@ export async function POST(req: NextRequest) {
     logUsage(user.id, "transcribe", 0, 0, 0.5);
     if (!text || !text.trim()) return NextResponse.json({ ok: false, error: "empty" });
 
+    const locale = await getLocale().catch(() => "ru");
+    const reactionP = friendReaction(user.id, text, locale);
     const analysis = await analyze(text, user.id);
     const entry = await saveEntry({ userId: user.id, raw_text: text, source: "web_voice", analysis });
-    return NextResponse.json({ ok: true, text, id: entry.id });
+    const reaction = await reactionP;
+    return NextResponse.json({ ok: true, text, id: entry.id, reaction });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ ok: false }, { status: 500 });
