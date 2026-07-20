@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { ProfileButtons } from "@/components/ProfileActions";
 import LangSwitcher from "@/components/LangSwitcher";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import ChatToneSettings from "@/components/ChatToneSettings";
+import { normalizeMorningPrefs } from "@/lib/morningPrefs";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CurrentUser } from "@/lib/auth";
 
 const THEME_LABEL: Record<string, string> = { ru: "Тема", en: "Theme", uk: "Тема", fr: "Thème" };
@@ -20,6 +23,13 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
   const showPushToggle = !!user.chat_id; // пуши приходят только тем, кто в Telegram
   const tc = (await cookies()).get("theme")?.value;
   const themePref = (tc === "light" || tc === "dark" || tc === "auto" ? tc : "auto") as "auto" | "light" | "dark";
+
+  // Тон общения с ботом (AI-друг) — хранится в morning_prefs, читаем мягко.
+  let chatPrefs = normalizeMorningPrefs(null);
+  try {
+    const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+    chatPrefs = normalizeMorningPrefs((data as any)?.morning_prefs);
+  } catch { /* нет колонки — дефолты */ }
 
   return (
     <div style={{ maxWidth: 560 }}>
@@ -62,6 +72,9 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
           <span style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 500, whiteSpace: "nowrap" }}>{s.refBtn} →</span>
         </Link>
       )}
+
+      {/* Тон общения с ботом (AI-друг: чат + голос) — здесь же, не в пушах */}
+      <ChatToneSettings locale={locale} initial={chatPrefs} />
 
       {/* Твои данные → отдельная страница */}
       <Link href="/profile/data" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>
