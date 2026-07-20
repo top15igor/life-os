@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendMediaGroup, editMessageText } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
@@ -7,7 +7,7 @@ import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction } from "@/lib/botActions";
 import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
-import { extractInstagramUrl, importInstagram, igDebug } from "@/lib/instagram";
+import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard } from "@/lib/botKeyboard";
@@ -33,11 +33,6 @@ import { getAiSpend, setAiBalance } from "@/lib/aiSpend";
 import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
 
 export const runtime = "nodejs";
-// Импорт Instagram-поста (скачивание видео + расшифровка + AI + загрузка всех фото
-// карусели + запись в базу) не укладывается в дефолтные 10с — иначе функцию убивает
-// на последнем шаге и появляется «не смог записать в Базу знаний». Даём 60с, как
-// остальным тяжёлым роутам проекта.
-export const maxDuration = 60;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -198,11 +193,11 @@ const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: 
   fr: { recognizing: "📸 Je lis la photo…", readingDoc: "📄 Je lis le document…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie.", unsupported: "Pour l'instant je comprends les photos et les PDF. Envoie un PDF ou une photo 🙂" },
 };
 
-const IG_MSG: Record<string, { working: string; saved: string; open: string; video: string; noAudio: string; failed: string; limited: string; saveFail: string; notFound: string }> = {
-  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", video: "⬇️ Скачать видео", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из {src}. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор постов. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже.", notFound: "🔒 Этот пост недоступен — возможно, он удалён, приватный или ссылка неверная. Открой его в Instagram и проверь, а если он приватный — пришли скриншот/видео." },
-  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", video: "⬇️ Download video", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later.", notFound: "🔒 This post isn't available — it may be deleted, private, or the link is wrong. Open it on Instagram to check; if it's private, send a screenshot/video." },
-  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", video: "⬇️ Завантажити відео", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше.", notFound: "🔒 Цей пост недоступний — можливо, його видалено, він приватний або посилання хибне. Відкрий його в Instagram і перевір, а якщо він приватний — надішли скріншот/відео." },
-  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", video: "⬇️ Télécharger la vidéo", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard.", notFound: "🔒 Ce post n'est pas disponible — il est peut-être supprimé, privé ou le lien est incorrect. Ouvre-le sur Instagram pour vérifier ; s'il est privé, envoie une capture/vidéo." },
+const IG_MSG: Record<string, { working: string; saved: string; open: string; video: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
+  ru: { working: "🔖 Сохраняю в Базу знаний…", saved: "Сохранил в Базу знаний:", open: "📚 Открыть Базу знаний", video: "⬇️ Скачать видео", noAudio: "ℹ️ Звук видео достать не удалось — сохранил по подписи.", failed: "Не получилось забрать этот пост из {src}. Попробуй другую ссылку или пришли скриншот/видео.", limited: "📉 Закончился месячный лимит на разбор постов. Он обновится в начале следующего месяца — или можно поднять тариф.", saveFail: "⚠️ Разобрал пост, но не смог записать его в Базу знаний. Попробуй ещё раз чуть позже." },
+  en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", video: "⬇️ Download video", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
+  uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", video: "⬇️ Завантажити відео", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
+  fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", video: "⬇️ Télécharger la vidéo", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
 };
 
 const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string; shareHint: string }> = {
@@ -989,27 +984,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 🛠 /igdebug <ссылка> — ТОЛЬКО владелец: показать сырой ответ RapidAPI по посту
-    // (структуру и результат разбора карусели), чтобы диагностировать «пришло 1 фото».
-    if (/^\/igdebug\b/i.test(text.trim())) {
-      if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
-        return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
-      }
-      const dbgUrl = extractInstagramUrl(text);
-      if (!dbgUrl) {
-        await sendMessage(chatId, "Использование: /igdebug &lt;ссылка на пост Instagram&gt;");
-        return NextResponse.json({ ok: true });
-      }
-      await sendChatAction(chatId, "typing");
-      try {
-        const report = await igDebug(dbgUrl);
-        await sendMessage(chatId, `<pre>${esc(report.slice(0, 3800))}</pre>`);
-      } catch (e) {
-        await sendMessage(chatId, "igdebug error: " + esc(String(e).slice(0, 300)));
-      }
-      return NextResponse.json({ ok: true });
-    }
-
     // 🔖 Ссылка Instagram / YouTube → сохраняем в личную Базу знаний (НЕ в дневник).
     // ВАЖНО: ловим ДО режима беседы — иначе в /chat ссылка уходит компаньону
     // («Instagram мне недоступен…») вместо импорта. Как и фото, ссылки в обход чата.
@@ -1029,18 +1003,12 @@ export async function POST(req: NextRequest) {
             ? await importTiktok(user.id, ttUrl, lang)
             : await importYoutube(user.id, yt!.url, yt!.kind, lang);
         if (r.ok === false) {
-          const reasonMsg = r.reason === "limited" ? L.limited : (r.reason as string) === "notfound" ? L.notFound : failedMsg;
-          await sendMessage(chatId, reasonMsg);
+          await sendMessage(chatId, r.reason === "limited" ? L.limited : failedMsg);
           return NextResponse.json({ ok: true });
         }
         // Разбор удался, но запись в базу упала — честно предупреждаем, а не врём «сохранил».
         if (!r.saved) {
           await sendMessage(chatId, L.saveFail);
-          // Владельцу дополнительно показываем реальную ошибку БД — для диагностики.
-          const se = (r as any).saveError;
-          if (se && process.env.TELEGRAM_ALLOWED_CHAT_ID && String(chatId) === process.env.TELEGRAM_ALLOWED_CHAT_ID) {
-            await sendMessage(chatId, `🛠 DB: <code>${esc(String(se).slice(0, 500))}</code>`);
-          }
           return NextResponse.json({ ok: true });
         }
         const a = r.analysis;
@@ -1051,14 +1019,6 @@ export async function POST(req: NextRequest) {
         if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
         if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
-        // Сами фото/видео тоже отправляем в чат — как «Save As Bot»: карусель одним
-        // альбомом, ролик — видеофайлом. Для reel обложку отдельно не шлём (видео уже есть).
-        const imgs: string[] = ((r as any).imageUrls || []).filter(Boolean);
-        if (imgs.length && r.kind !== "reel") {
-          // sendMediaGroup сам режет на альбомы по 10 (лимит Telegram) — так уходит вся карусель.
-          const ok = await sendMediaGroup(chatId, imgs.slice(0, 20).map((u) => ({ type: "photo", media: u })));
-          if (!ok) await sendMessage(chatId, imgs.map((u, i) => `🖼 <a href="${u}">${i + 1}</a>`).join("  "));
-        }
         // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
         // (лимит Telegram ~20 МБ) — даём кнопку со ссылкой на файл в хранилище.
         if (r.videoUrl) {
@@ -1121,6 +1081,18 @@ export async function POST(req: NextRequest) {
     if (await isAcquainting(user.id)) {
       await sendChatAction(chatId, "typing");
       try {
+        // «Что ты обо мне знаешь?» — показываем портрет из ответов, не двигая прогресс.
+        if (isPortraitAsk(text)) {
+          const lng = langOf(user, msg);
+          const portrait = await acquaintPortrait(user.id, lng);
+          await sendMessage(chatId, mdToTelegram(portrait) || "…", acqMarkup(lng));
+          if (isVoice && portrait) {
+            await sendChatAction(chatId, "record_voice");
+            const audio = await speak(mdToPlain(portrait));
+            if (audio) await sendVoice(chatId, audio);
+          }
+          return NextResponse.json({ ok: true });
+        }
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
         // Пока знакомство активно — чипы + «Пропустить»/«Пауза»; на «первой странице»/финале —
         // обычная клавиатура с обновлённым процентом знакомства на кнопке.
