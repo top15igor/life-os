@@ -76,10 +76,18 @@ const STR: Record<string, any> = {
     intentLabel: "Посыл книги", intentPh: "Что хочешь передать этой книгой? Напр.: «показать детям, что жизнь стоит проживать смело».",
     applyRebuild: "Сохранить и пересобрать книгу", rebuildingAll: "Пересобираю книгу…", rebuildOne: "Пересобрать",
     designTitle: "Оформление", designHint: "Применяется сразу — пересобирать не нужно.",
-    coverLabel: "Обложка", covers: { classic: "Классическая", midnight: "Тёмная премиум", gold: "Золотая" },
+    presetsLabel: "Готовые темы", presetNames: ["Классика", "Роскошь", "Тёплый подарок", "Изумруд", "Бордо"],
+    coverLabel: "Обложка", covers: { classic: "Классическая", midnight: "Тёмная премиум", gold: "Золотая", emerald: "Изумруд", burgundy: "Бордо" },
     fontLabel: "Шрифт", fonts: { classic: "Классический", literary: "Литературный", modern: "Современный" },
     paperLabel: "Бумага страниц", papers: { cream: "Кремовая", warm: "Тёплая", sage: "Шалфей", rose: "Розовая" },
     sizeLabel: "Размер текста", sizes: { compact: "Компактный", normal: "Обычный", large: "Крупный" },
+    persoTitle: "Персонализация и подарок",
+    coverPhotoLabel: "Фото на обложке", coverPhotoAdd: "Выбрать фото", coverPhotoRemove: "Убрать",
+    giftToLabel: "Кому книга (имя)", giftToPh: "Например: Моей Жене", giftFromLabel: "От кого", giftFromPh: "Например: Игорь",
+    giftPageLead: "Эта книга — для тебя", giftFromWord: "С любовью,",
+    epigraphLabel: "Эпиграф (цитата в начале)", epigraphPh: "Например: «Случайности не случайны…»",
+    dropcapLabel: "Буквица", dropcapHint: "Крупная первая буква в главах — как в дорогих изданиях.",
+    backCoverLine: "Книга жизни", backCoverBrand: "собрано в LIFE OS",
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
@@ -153,10 +161,18 @@ const STR: Record<string, any> = {
     intentLabel: "The book's message", intentPh: "What should this book convey? E.g. “show my kids that life is worth living boldly.”",
     applyRebuild: "Save and rebuild the book", rebuildingAll: "Rebuilding the book…", rebuildOne: "Rebuild",
     designTitle: "Appearance", designHint: "Applies instantly — no rebuild needed.",
-    coverLabel: "Cover", covers: { classic: "Classic", midnight: "Dark premium", gold: "Gold" },
+    presetsLabel: "Ready themes", presetNames: ["Classic", "Luxe", "Warm gift", "Emerald", "Burgundy"],
+    coverLabel: "Cover", covers: { classic: "Classic", midnight: "Dark premium", gold: "Gold", emerald: "Emerald", burgundy: "Burgundy" },
     fontLabel: "Font", fonts: { classic: "Classic", literary: "Literary", modern: "Modern" },
     paperLabel: "Page paper", papers: { cream: "Cream", warm: "Warm", sage: "Sage", rose: "Rose" },
     sizeLabel: "Text size", sizes: { compact: "Compact", normal: "Normal", large: "Large" },
+    persoTitle: "Personalization & gift",
+    coverPhotoLabel: "Cover photo", coverPhotoAdd: "Choose photo", coverPhotoRemove: "Remove",
+    giftToLabel: "To (name)", giftToPh: "e.g. To my wife", giftFromLabel: "From", giftFromPh: "e.g. Igor",
+    giftPageLead: "This book is for you", giftFromWord: "With love,",
+    epigraphLabel: "Epigraph (opening quote)", epigraphPh: "e.g. “Nothing happens by chance…”",
+    dropcapLabel: "Drop cap", dropcapHint: "A large first letter in chapters — like in fine editions.",
+    backCoverLine: "Book of Life", backCoverBrand: "made with LIFE OS",
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
@@ -715,7 +731,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           book={book} meta={m} year={year} locale={locale} userName={userName} s={s} isLife={isLife}
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
           loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh} photos={photos}
-          edits={edits} setEdits={setEdits}
+          edits={edits} setEdits={setEdits} memories={memories}
           onClose={() => setReader(false)}
         />, document.body)}
 
@@ -727,7 +743,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, edits = {}, setEdits, onClose }: any) {
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, edits = {}, setEdits, memories = [], onClose }: any) {
   const [busy, setBusy] = useState(false);
   const [showTune, setShowTune] = useState(false);
   const [busyAll, setBusyAll] = useState(false);
@@ -740,13 +756,32 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   });
   const [design, setDesign] = useState(() => {
     const d = meta.sections?.__design || {};
-    return { font: BOOK_FONTS[d.font] ? d.font : "classic", paper: BOOK_PAPERS[d.paper] ? d.paper : "cream", size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal", cover: ["classic", "midnight", "gold"].includes(d.cover) ? d.cover : "classic" };
+    return {
+      font: BOOK_FONTS[d.font] ? d.font : "classic",
+      paper: BOOK_PAPERS[d.paper] ? d.paper : "cream",
+      size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal",
+      cover: ["classic", "midnight", "gold", "emerald", "burgundy"].includes(d.cover) ? d.cover : "classic",
+      coverPhoto: typeof d.coverPhoto === "string" && /^https?:\/\//.test(d.coverPhoto) ? d.coverPhoto : "",
+      giftTo: typeof d.giftTo === "string" ? d.giftTo : "",
+      giftFrom: typeof d.giftFrom === "string" ? d.giftFrom : "",
+      epigraph: typeof d.epigraph === "string" ? d.epigraph : "",
+      dropcap: d.dropcap === true,
+    };
   });
+  const [photoPick, setPhotoPick] = useState(false);
   function applyDesign(patch: any) {
     const next = { ...design, ...patch };
     setDesign(next);
     fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveDesign", year, design: next }) }).catch(() => {});
   }
+  // Готовые премиум-темы — один тап меняет обложку/бумагу/шрифт/размер.
+  const PRESETS = [
+    { cover: "classic", paper: "cream", font: "classic", size: "normal" },
+    { cover: "midnight", paper: "cream", font: "literary", size: "large" },
+    { cover: "gold", paper: "warm", font: "literary", size: "normal" },
+    { cover: "emerald", paper: "sage", font: "literary", size: "normal" },
+    { cover: "burgundy", paper: "warm", font: "literary", size: "normal" },
+  ];
   const theme = BOOK_PAPERS[design.paper] || BOOK_PAPERS.cream;
   const sizeClass = design.size === "compact" ? "book-sm" : design.size === "large" ? "book-lg" : "book-md";
 
@@ -829,11 +864,19 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
     classic: { bg: theme.paper, fg: "var(--text)", sub: "var(--text-2)", muted: "var(--text-3)", brand: theme.accent, ornament: false, frame: false },
     midnight: { bg: "#14181f", fg: "#f4efe3", sub: "#cfc8b7", muted: "#8f887a", brand: "#d4af37", ornament: true, frame: true },
     gold: { bg: theme.paper, fg: "#3a2f1a", sub: "#6f5f3c", muted: "#9a8a63", brand: "#b8912e", ornament: true, frame: true },
+    emerald: { bg: "#0f2a22", fg: "#eef4ee", sub: "#c3d3c6", muted: "#8aa091", brand: "#d4af37", ornament: true, frame: true },
+    burgundy: { bg: "#2a1116", fg: "#f4eaeb", sub: "#d8bdc1", muted: "#a98890", brand: "#d4af37", ornament: true, frame: true },
   };
   const cv = COVERS[design.cover] || COVERS.classic;
+  const ornate = cv.ornament; // премиум-обложки → орнаменты и в главах
   const cover = (
     <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative" } as any}>
       {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.55, borderRadius: 4, pointerEvents: "none" }} />}
+      {design.coverPhoto && (
+        <div style={{ width: "100%", maxWidth: 340, aspectRatio: "3 / 2", borderRadius: 8, overflow: "hidden", marginBottom: 22, border: cv.frame ? `1px solid ${cv.brand}` : "1px solid rgba(0,0,0,0.1)", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
+          <img src={design.coverPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        </div>
+      )}
       <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: cv.brand, marginBottom: 16 }}>LIFE OS</div>
       {cv.ornament && <div className="serif" style={{ color: cv.brand, fontSize: 22, marginBottom: 16, letterSpacing: 8 }}>❦</div>}
       {isLife ? (
@@ -847,6 +890,24 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
       <div style={{ fontSize: 13, color: cv.muted, marginTop: cv.ornament ? 16 : 40 }}>{s.by}: {userName || "—"}</div>
     </div>
   );
+
+  // Подарочная страница (посвящение) — если заполнено «кому/от кого».
+  const giftPage = (design.giftTo || design.giftFrom) ? (
+    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative", minHeight: 320 } as any}>
+      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.45, borderRadius: 4, pointerEvents: "none" }} />}
+      <div className="serif" style={{ color: cv.brand, fontSize: 26, letterSpacing: 6, marginBottom: 20 }}>❦</div>
+      {design.giftTo && <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: cv.fg, lineHeight: 1.3 }}>{design.giftTo}</div>}
+      <div className="serif" style={{ fontSize: 17, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.giftPageLead}</div>
+      {design.giftFrom && <div className="serif" style={{ fontSize: 15, color: cv.muted, marginTop: 30, lineHeight: 1.6 }}>{s.giftFromWord} {design.giftFrom}</div>}
+    </div>
+  ) : null;
+
+  // Эпиграф — цитата на отдельной странице.
+  const epigraphPage = design.epigraph ? (
+    <div className="book-page" style={{ minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+      <div className="serif" style={{ fontSize: 19, fontStyle: "italic", color: "var(--text-2)", lineHeight: 1.7, maxWidth: 460 }}>«{design.epigraph}»</div>
+    </div>
+  ) : null;
 
   // Оглавление — только те главы, что реально попадут в книгу (совпадает с рендером ниже).
   const toc: { key: string; title: string }[] = [];
@@ -872,7 +933,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         </div>
       </div>
 
-      <div className={sizeClass} style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
+      <div className={`${sizeClass}${design.dropcap ? " book-drop" : ""}`} style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
         {/* НАСТРОЙКА АВТОРСКОГО ГОЛОСА — прямо в книге */}
         {showTune && (
           <div className="no-print" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border)", padding: "20px 20px", marginBottom: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.10)" }}>
@@ -915,10 +976,23 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             <div style={{ fontSize: 15.5, fontWeight: 700 }}>{s.designTitle}</div>
             <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 3, marginBottom: 14 }}>{s.designHint}</div>
 
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.presetsLabel}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+              {PRESETS.map((p, i) => {
+                const active = design.cover === p.cover && design.paper === p.paper && design.font === p.font && design.size === p.size;
+                const sw = ({ classic: theme.paper, midnight: "#14181f", gold: "#f6edd6", emerald: "#0f2a22", burgundy: "#2a1116" } as any)[p.cover];
+                return (
+                  <button key={i} onClick={() => applyDesign(p)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 13px 6px 7px", borderRadius: 99, cursor: "pointer", fontSize: 12.5, fontWeight: active ? 600 : 400, color: active ? "var(--accent-text)" : "var(--text-2)", background: active ? "var(--accent-bg)" : "var(--surface)", border: active ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
+                    <span style={{ width: 16, height: 16, borderRadius: 4, background: sw, border: "1.5px solid #d4af37", flexShrink: 0 }} />{(s.presetNames || [])[i]}
+                  </button>
+                );
+              })}
+            </div>
+
             <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.coverLabel}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
               {Object.keys(s.covers).map((k) => {
-                const c = ({ classic: { bg: theme.paper, br: theme.accent }, midnight: { bg: "#14181f", br: "#d4af37" }, gold: { bg: theme.paper, br: "#b8912e" } } as any)[k];
+                const c = ({ classic: { bg: theme.paper, br: theme.accent }, midnight: { bg: "#14181f", br: "#d4af37" }, gold: { bg: theme.paper, br: "#b8912e" }, emerald: { bg: "#0f2a22", br: "#d4af37" }, burgundy: { bg: "#2a1116", br: "#d4af37" } } as any)[k];
                 return (
                   <button key={k} onClick={() => applyDesign({ cover: k })} title={s.covers[k]}
                     style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px 6px 7px", borderRadius: 99, cursor: "pointer", fontSize: 12.5, color: "var(--text-2)", background: "var(--surface)", border: design.cover === k ? `2px solid ${c.br}` : "1px solid var(--border)" }}>
@@ -949,15 +1023,68 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             </div>
 
             <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.sizeLabel}</div>
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 4 }}>
               {Object.keys(s.sizes).map((k) => (
                 <button key={k} onClick={() => applyDesign({ size: k })} style={chip(design.size === k)}>{s.sizes[k]}</button>
               ))}
             </div>
+
+            {/* ПЕРСОНАЛИЗАЦИЯ И ПОДАРОК */}
+            <div style={{ borderTop: "1px solid var(--border)", margin: "20px 0 16px" }} />
+            <div style={{ fontSize: 15.5, fontWeight: 700, marginBottom: 14 }}>{s.persoTitle}</div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.coverPhotoLabel}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              {design.coverPhoto
+                ? <img src={design.coverPhoto} alt="" style={{ width: 64, height: 48, objectFit: "cover", borderRadius: 6, border: "1px solid var(--border)" }} />
+                : <div style={{ width: 64, height: 48, borderRadius: 6, border: "1px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-3)" }}><i className="ti ti-photo" style={{ fontSize: 18 }} /></div>}
+              <button onClick={() => setPhotoPick((v) => !v)} style={ghostBtn}><i className="ti ti-photo-plus" style={{ fontSize: 14 }} />{s.coverPhotoAdd}</button>
+              {design.coverPhoto && <button onClick={() => applyDesign({ coverPhoto: "" })} style={{ ...ghostBtn, color: "var(--text-2)" }}>{s.coverPhotoRemove}</button>}
+            </div>
+            {photoPick && (
+              memories.length === 0
+                ? <div style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 16 }}>{s.noPhotos}</div>
+                : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, marginBottom: 16, maxHeight: 220, overflowY: "auto" }}>
+                    {memories.map((m: any) => (
+                      <button key={m.id} onClick={() => { applyDesign({ coverPhoto: m.url }); setPhotoPick(false); }} style={{ padding: 0, border: design.coverPhoto === m.url ? "2px solid var(--accent)" : "1px solid var(--border)", borderRadius: 6, overflow: "hidden", cursor: "pointer", aspectRatio: "1", background: "none" }}>
+                        <img src={m.url} alt={m.title || ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </button>
+                    ))}
+                  </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+              <div style={{ flex: "1 1 160px" }}>
+                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 6 }}>{s.giftToLabel}</div>
+                <input defaultValue={design.giftTo} onBlur={(e) => e.target.value !== design.giftTo && applyDesign({ giftTo: e.target.value })} placeholder={s.giftToPh}
+                  style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14 }} />
+              </div>
+              <div style={{ flex: "1 1 160px" }}>
+                <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 6 }}>{s.giftFromLabel}</div>
+                <input defaultValue={design.giftFrom} onBlur={(e) => e.target.value !== design.giftFrom && applyDesign({ giftFrom: e.target.value })} placeholder={s.giftFromPh}
+                  style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14 }} />
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 6 }}>{s.epigraphLabel}</div>
+            <textarea defaultValue={design.epigraph} onBlur={(e) => e.target.value !== design.epigraph && applyDesign({ epigraph: e.target.value })} placeholder={s.epigraphPh}
+              style={{ width: "100%", boxSizing: "border-box", minHeight: 56, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, lineHeight: 1.6, resize: "vertical", marginBottom: 16, fontFamily: "inherit" }} />
+
+            <button onClick={() => applyDesign({ dropcap: !design.dropcap })} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>
+              <span style={{ width: 40, height: 23, borderRadius: 99, background: design.dropcap ? "var(--accent)" : "var(--border)", position: "relative", flexShrink: 0, transition: "background .15s" }}>
+                <span style={{ position: "absolute", top: 2, left: design.dropcap ? 19 : 2, width: 19, height: 19, borderRadius: "50%", background: "#fff", transition: "left .15s" }} />
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>{s.dropcapLabel}</span>
+                <span style={{ display: "block", fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.4 }}>{s.dropcapHint}</span>
+              </span>
+            </button>
           </div>
         )}
 
         {cover}
+        {giftPage}
+        {epigraphPage}
 
         {/* ОГЛАВЛЕНИЕ / навигация */}
         {toc.length > 1 && (
@@ -977,7 +1104,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         )}
 
         {/* Год в одном взгляде */}
-        {!hidden.includes("overview") && <Page id="ch-overview" title={titleOf("overview")} onEdit={() => startEditR("overview")} editLabel={s.editChapter} onRebuild={ai.overview && eKey !== "overview" ? () => loadAi("overview", true) : null} rebuildLabel={s.rebuildOne}>
+        {!hidden.includes("overview") && <Page id="ch-overview" title={titleOf("overview")} ornate={ornate} onEdit={() => startEditR("overview")} editLabel={s.editChapter} onRebuild={ai.overview && eKey !== "overview" ? () => loadAi("overview", true) : null} rebuildLabel={s.rebuildOne}>
           <div className="book-strip">
             <span><b>{book.stats.entries}</b> {s.overviewStrip.entries}</span>
             <span><b>{book.stats.days}</b> {s.overviewStrip.days}</span>
@@ -990,7 +1117,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
 
         {/* 12 месяцев */}
         {!hidden.includes("months") && book.months.length > 0 && (
-          <Page id="ch-months" title={titleOf("months")}>
+          <Page id="ch-months" title={titleOf("months")} ornate={ornate}>
             {book.months.map((mm: any) => {
               const mc = months[mm.month];
               return (
@@ -1013,20 +1140,28 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
           const node = dataChapter(k);
           const ph = photos[k] || [];
           if (!node && !ph.length && edits[k] == null && eKey !== k) return null;
-          return <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={() => startEditR(k)} editLabel={s.editChapter}>{bodyFor(k, node)}<PhotoStrip urls={ph} /></Page>;
+          return <Page key={k} id={`ch-${k}`} title={titleOf(k)} ornate={ornate} onEdit={() => startEditR(k)} editLabel={s.editChapter}>{bodyFor(k, node)}<PhotoStrip urls={ph} /></Page>;
         })}
 
         {/* AI-разделы */}
         {["self", "people", "lessons"].filter((k) => !hidden.includes(k)).map((k) => (
-          <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={() => startEditR(k)} editLabel={s.editChapter} onRebuild={ai[k] && eKey !== k ? () => loadAi(k, true) : null} rebuildLabel={s.rebuildOne}>
+          <Page key={k} id={`ch-${k}`} title={titleOf(k)} ornate={ornate} onEdit={() => startEditR(k)} editLabel={s.editChapter} onRebuild={ai[k] && eKey !== k ? () => loadAi(k, true) : null} rebuildLabel={s.rebuildOne}>
             {bodyFor(k, ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />)}
             <PhotoStrip urls={photos[k] || []} />
           </Page>
         ))}
 
         {/* письма */}
-        {meta.letter_self && <Page id="ch-letter_self" title={s.letterSelf}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_self}</div></Page>}
-        {meta.letter_close && <Page id="ch-letter_close" title={s.letterClose}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_close}</div></Page>}
+        {meta.letter_self && <Page id="ch-letter_self" title={s.letterSelf} ornate={ornate}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_self}</div></Page>}
+        {meta.letter_close && <Page id="ch-letter_close" title={s.letterClose} ornate={ornate}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_close}</div></Page>}
+
+        {/* ЗАДНЯЯ ОБЛОЖКА */}
+        <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative", minHeight: 260, justifyContent: "center" } as any}>
+          {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.45, borderRadius: 4, pointerEvents: "none" }} />}
+          <div className="serif" style={{ color: cv.brand, fontSize: 22, letterSpacing: 8, marginBottom: 14 }}>❦</div>
+          <div className="serif" style={{ fontSize: 20, fontWeight: 600, color: cv.fg }}>{s.backCoverLine}{isLife ? "" : `, ${year}`}</div>
+          <div style={{ fontSize: 12, color: cv.muted, marginTop: 10, letterSpacing: 1 }}>{userName ? `${userName} · ` : ""}{s.backCoverBrand}</div>
+        </div>
       </div>
     </div>
   );
@@ -1202,11 +1337,11 @@ const BOOK_PAPERS: Record<string, { paper: string; root: string; accent: string 
   rose: { paper: "#fdf2f6", root: "#efe4e9", accent: "#9d174d" },
 };
 
-function Page({ title, children, id, onEdit, editLabel, onRebuild, rebuildLabel }: any) {
+function Page({ title, children, id, onEdit, editLabel, onRebuild, rebuildLabel, ornate }: any) {
   const btn = { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 11px", color: "var(--accent)", fontSize: 12.5, cursor: "pointer" } as any;
   return (
     <div className="book-page" id={id}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: ornate ? 10 : 16 }}>
         <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: "var(--text)" }}>{title}</div>
         {(onEdit || onRebuild) && (
           <div className="no-print" style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -1215,6 +1350,7 @@ function Page({ title, children, id, onEdit, editLabel, onRebuild, rebuildLabel 
           </div>
         )}
       </div>
+      {ornate && <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}><span style={{ width: 30, height: 1, background: "var(--accent)", opacity: 0.55 }} /><span className="serif" style={{ color: "var(--accent)", fontSize: 13, opacity: 0.8 }}>❧</span></div>}
       {children}
     </div>
   );
