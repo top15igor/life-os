@@ -7,8 +7,6 @@ import { NAV } from "@/lib/nav";
 import { getDict, isLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import { assistantStrings, pageGuide, searchDestinations } from "@/lib/assistant";
 
-// Публичные роуты, где помощник не нужен (гость, без логина).
-const PUBLIC = /^\/(welcome|login|privacy|lock|u|p|path|i)(\/|$)/;
 
 function readLocale(): Locale {
   if (typeof document === "undefined") return DEFAULT_LOCALE;
@@ -165,7 +163,10 @@ export default function Assistant() {
     }
   }
 
-  if (!mounted || (PUBLIC.test(path) && !inApp)) return null;
+  // Показываем помощник ТОЛЬКО внутри приложения (есть оболочка .shell).
+  // Так он не вылезает на публичных страницах — лендинге (/), /about, /login и т.п.,
+  // где подсказки про «Сегодня» бессмысленны для незалогиненного посетителя.
+  if (!mounted || !inApp) return null;
 
   const node = (
     <>
