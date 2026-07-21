@@ -75,6 +75,10 @@ const STR: Record<string, any> = {
     toneLabel: "Тон повествования", tonePresets: ["Тёплый", "Искренний", "Сдержанный", "С юмором", "Литературный", "Кинематографичный"], toneFreePh: "Или опиши тон своими словами…",
     intentLabel: "Посыл книги", intentPh: "Что хочешь передать этой книгой? Напр.: «показать детям, что жизнь стоит проживать смело».",
     applyRebuild: "Сохранить и пересобрать книгу", rebuildingAll: "Пересобираю книгу…", rebuildOne: "Пересобрать",
+    designTitle: "Оформление", designHint: "Применяется сразу — пересобирать не нужно.",
+    fontLabel: "Шрифт", fonts: { classic: "Классический", literary: "Литературный", modern: "Современный" },
+    paperLabel: "Обложка и бумага", papers: { cream: "Кремовая", warm: "Тёплая", sage: "Шалфей", rose: "Розовая" },
+    sizeLabel: "Размер текста", sizes: { compact: "Компактный", normal: "Обычный", large: "Крупный" },
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
@@ -147,6 +151,10 @@ const STR: Record<string, any> = {
     toneLabel: "Narrative tone", tonePresets: ["Warm", "Sincere", "Restrained", "Humorous", "Literary", "Cinematic"], toneFreePh: "Or describe the tone in your words…",
     intentLabel: "The book's message", intentPh: "What should this book convey? E.g. “show my kids that life is worth living boldly.”",
     applyRebuild: "Save and rebuild the book", rebuildingAll: "Rebuilding the book…", rebuildOne: "Rebuild",
+    designTitle: "Appearance", designHint: "Applies instantly — no rebuild needed.",
+    fontLabel: "Font", fonts: { classic: "Classic", literary: "Literary", modern: "Modern" },
+    paperLabel: "Cover & paper", papers: { cream: "Cream", warm: "Warm", sage: "Sage", rose: "Rose" },
+    sizeLabel: "Text size", sizes: { compact: "Compact", normal: "Normal", large: "Large" },
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
@@ -430,7 +438,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
             {lines.map((l, i) => <div key={i} style={{ fontSize: 14.5, lineHeight: 1.6, display: "flex", gap: 8 }}><span style={{ color: "var(--accent)" }}>—</span>{l.replace(/^[—\-•]\s*/, "")}</div>)}
           </div>
         ) : (
-          <div style={{ fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{bodyText}</div>
+          <div className="book-text" style={{ whiteSpace: "pre-wrap" }}>{bodyText}</div>
         )}
       </div>
     );
@@ -728,6 +736,17 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
     const g = meta.sections?.__gen || {};
     return { perspective: g.perspective === "third" ? "third" : "first", audience: g.audience || meta.recipient || "self", tone: g.tone || "", intent: g.intent || "" };
   });
+  const [design, setDesign] = useState(() => {
+    const d = meta.sections?.__design || {};
+    return { font: BOOK_FONTS[d.font] ? d.font : "classic", paper: BOOK_PAPERS[d.paper] ? d.paper : "cream", size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal" };
+  });
+  function applyDesign(patch: any) {
+    const next = { ...design, ...patch };
+    setDesign(next);
+    fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveDesign", year, design: next }) }).catch(() => {});
+  }
+  const theme = BOOK_PAPERS[design.paper] || BOOK_PAPERS.cream;
+  const sizeClass = design.size === "compact" ? "book-sm" : design.size === "large" ? "book-lg" : "book-md";
 
   function startEditR(key: string) { setEDraft(edits[key] != null ? edits[key] : (ai[key]?.body || "")); setEKey(key); }
   async function persistEdit(key: string, bodyText: string) {
@@ -830,7 +849,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   if (meta.letter_close) toc.push({ key: "letter_close", title: s.letterClose });
 
   return (
-    <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#efece4", overflowY: "auto" }}>
+    <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: theme.root, overflowY: "auto", "--font-serif": BOOK_FONTS[design.font], "--book-paper": theme.paper, "--accent": theme.accent } as any}>
       {/* панель управления (не печатается) */}
       <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={onClose} style={ghostBtn}><i className="ti ti-arrow-left" style={{ fontSize: 15 }} />{s.closeReader}</button>
@@ -841,7 +860,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         </div>
       </div>
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
+      <div className={sizeClass} style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
         {/* НАСТРОЙКА АВТОРСКОГО ГОЛОСА — прямо в книге */}
         {showTune && (
           <div className="no-print" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border)", padding: "20px 20px", marginBottom: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.10)" }}>
@@ -878,6 +897,38 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             <button onClick={saveTuneAndRebuild} disabled={busyAll} style={{ ...btnPrimary, width: "100%", justifyContent: "center", opacity: busyAll ? 0.7 : 1 }}>
               <i className={`ti ${busyAll ? "ti-loader-2" : "ti-sparkles"}`} style={{ fontSize: 16 }} />{busyAll ? s.rebuildingAll : s.applyRebuild}
             </button>
+
+            {/* ОФОРМЛЕНИЕ — мгновенно, без пересборки */}
+            <div style={{ borderTop: "1px solid var(--border)", margin: "20px 0 16px" }} />
+            <div style={{ fontSize: 15.5, fontWeight: 700 }}>{s.designTitle}</div>
+            <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 3, marginBottom: 14 }}>{s.designHint}</div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.fontLabel}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+              {Object.keys(s.fonts).map((k) => (
+                <button key={k} onClick={() => applyDesign({ font: k })} style={{ ...chip(design.font === k), fontFamily: BOOK_FONTS[k] }}>{s.fonts[k]}</button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.paperLabel}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {Object.keys(s.papers).map((k) => {
+                const th = BOOK_PAPERS[k];
+                return (
+                  <button key={k} onClick={() => applyDesign({ paper: k })} title={s.papers[k]}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px 6px 7px", borderRadius: 99, cursor: "pointer", fontSize: 12.5, color: "var(--text-2)", background: "var(--surface)", border: design.paper === k ? `2px solid ${th.accent}` : "1px solid var(--border)" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: "50%", background: th.paper, border: `2px solid ${th.accent}`, flexShrink: 0 }} />{s.papers[k]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.sizeLabel}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {Object.keys(s.sizes).map((k) => (
+                <button key={k} onClick={() => applyDesign({ size: k })} style={chip(design.size === k)}>{s.sizes[k]}</button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1113,6 +1164,19 @@ const Num = ({ n, label }: any) => <div><div style={{ fontSize: 22, fontWeight: 
 const Loading = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-loader-2" style={{ fontSize: 15 }} />{text}</div>;
 const Muted = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)" }}>{text}</div>;
 const BuildBtn = ({ onClick, s }: any) => <button onClick={onClick} style={ghostBtn}><i className="ti ti-sparkles" style={{ fontSize: 14 }} />{s.build}</button>;
+// Оформление книги — шрифты и «обложки/бумага» (применяются мгновенно, без пересборки).
+const BOOK_FONTS: Record<string, string> = {
+  classic: "Georgia, 'Times New Roman', serif",
+  literary: "'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif",
+  modern: "'Helvetica Neue', Arial, system-ui, sans-serif",
+};
+const BOOK_PAPERS: Record<string, { paper: string; root: string; accent: string }> = {
+  cream: { paper: "#fffdf8", root: "#efece4", accent: "#4f46e5" },
+  warm: { paper: "#fdf6ec", root: "#efe6da", accent: "#b45309" },
+  sage: { paper: "#f6faf3", root: "#e7ece3", accent: "#3f6212" },
+  rose: { paper: "#fdf2f6", root: "#efe4e9", accent: "#9d174d" },
+};
+
 function Page({ title, children, id, onEdit, editLabel, onRebuild, rebuildLabel }: any) {
   const btn = { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 11px", color: "var(--accent)", fontSize: 12.5, cursor: "pointer" } as any;
   return (
