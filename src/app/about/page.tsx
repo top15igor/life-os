@@ -53,11 +53,11 @@ const C = {
       "Однажды я поймал себя на простой и немного страшной мысли: я почти не помню собственную жизнь. Отпуска, разговоры, важные решения, идеи, от которых когда-то горели глаза, — всё это постепенно стирается. Фотографии остаются, но мы уже не помним, что было за кадром и почему этот день был для нас важен.",
       "А ещё я понял: всё, что я узнал за свою жизнь — мои ошибки, открытия и моменты, ради которых стоило жить, — однажды может уйти вместе со мной. Мои дети и внуки увидят фотографии, но не узнают меня настоящего. Мы сохраняем изображения своей жизни, но почти не сохраняем себя.",
       "Я хотел инструмент, который не требует дисциплины. Где достаточно просто говорить — как близкому человеку, — а технология сама понимает, что произошло, находит важное и превращает это в историю жизни. Такого не было. Поэтому я начал создавать его сам — для себя и своей семьи.",
-      "LIFE OS — это мой личный дневник, память и будущая книга жизни. А теперь я открываю его для каждого, кто тоже не хочет, чтобы его опыт и самые важные моменты однажды исчезли.",
+      "LIFE OS — это мой личный дневник, архив всех данных и будущая книга жизни. А теперь я открываю его для каждого, кто тоже не хочет, чтобы его опыт и самые важные моменты однажды исчезли.",
     ],
     founder_quote:
-      "Я не программист и не хочу подстраивать свою жизнь под сложные системы. Я хочу просто говорить — а технология пусть делает остальное. LIFE OS создаётся не для технических специалистов, а для обычных людей.",
-    founder_sign: "Игорь, основатель LIFE OS",
+      "Я не хочу подстраивать свою жизнь под сложные системы. Достаточно просто говорить — а технология пусть делает остальное. LIFE OS создаётся не для технических специалистов, а для обычных людей.",
+    founder_sign: "Игорь Холодинский, основатель LIFE OS",
 
     testi_kicker: "Отзывы",
     testi_title: "Люди в восторге от LIFE OS",
@@ -79,7 +79,7 @@ const C = {
     final_title: "Начни первую страницу своей книги жизни",
     final_sub: "Бесплатно. Через Google или почту.",
 
-    foot_priv: "Приватность",
+    foot_priv: "Безопасно и приватно",
     foot_code: "Код на GitHub",
     foot_tester: "Тестировщикам",
     design_a: "Классика",
@@ -130,11 +130,11 @@ const C = {
       "One day a simple, slightly frightening thought caught me: I barely remember my own life. Vacations, conversations, important decisions, ideas that once lit me up — all of it slowly fades. The photos remain, but we no longer recall what happened off-camera or why that day mattered.",
       "And I realized something else: everything I've learned in my life — my mistakes, discoveries and the moments worth living for — could one day leave with me. My children and grandchildren will see photos, but won't know the real me. We save the images of our lives, but we hardly save ourselves.",
       "I wanted a tool that needs no discipline. Where it's enough to just speak — like to someone close — and technology understands what happened, finds what matters and turns it into a life story. It didn't exist. So I started building it myself — for me and my family.",
-      "LIFE OS is my personal diary, my memory and my future book of life. And now I'm opening it to everyone who also doesn't want their experience and most important moments to one day disappear.",
+      "LIFE OS is my personal diary, the archive of all my data and my future book of life. And now I'm opening it to everyone who also doesn't want their experience and most important moments to one day disappear.",
     ],
     founder_quote:
-      "I'm not a programmer, and I don't want to bend my life around complex systems. I just want to speak — and let technology do the rest. LIFE OS isn't built for tech specialists; it's built for ordinary people.",
-    founder_sign: "Igor, founder of LIFE OS",
+      "I don't want to bend my life around complex systems. It should be enough to just speak — and let technology do the rest. LIFE OS isn't built for tech specialists; it's built for ordinary people.",
+    founder_sign: "Igor Kholodinsky, founder of LIFE OS",
 
     testi_kicker: "Testimonials",
     testi_title: "People love LIFE OS",
@@ -156,7 +156,7 @@ const C = {
     final_title: "Start the first page of your book of life",
     final_sub: "Free. With Google or email.",
 
-    foot_priv: "Privacy",
+    foot_priv: "Safe and private",
     foot_code: "Code on GitHub",
     foot_tester: "For testers",
     design_a: "Classic",
@@ -207,11 +207,11 @@ const C = {
       "Одного разу я впіймав себе на простій і трохи страшній думці: я майже не пам'ятаю власне життя. Відпустки, розмови, важливі рішення, ідеї, від яких колись горіли очі, — усе це поступово стирається. Фотографії залишаються, але ми вже не пам'ятаємо, що було за кадром і чому цей день був для нас важливим.",
       "А ще я зрозумів: усе, що я дізнався за своє життя — мої помилки, відкриття й моменти, заради яких варто було жити, — одного дня може піти разом зі мною. Мої діти й онуки побачать фотографії, але не впізнають мене справжнього. Ми зберігаємо зображення свого життя, але майже не зберігаємо себе.",
       "Я хотів інструмент, який не вимагає дисципліни. Де достатньо просто говорити — як близькій людині, — а технологія сама розуміє, що сталося, знаходить важливе і перетворює це на історію життя. Такого не було. Тому я почав створювати його сам — для себе і своєї родини.",
-      "LIFE OS — це мій особистий щоденник, пам'ять і майбутня книга життя. А тепер я відкриваю його для кожного, хто теж не хоче, щоб його досвід і найважливіші моменти одного дня зникли.",
+      "LIFE OS — це мій особистий щоденник, архів усіх даних і майбутня книга життя. А тепер я відкриваю його для кожного, хто теж не хоче, щоб його досвід і найважливіші моменти одного дня зникли.",
     ],
     founder_quote:
-      "Я не програміст і не хочу підлаштовувати своє життя під складні системи. Я хочу просто говорити — а технологія нехай робить решту. LIFE OS створюється не для технічних фахівців, а для звичайних людей.",
-    founder_sign: "Ігор, засновник LIFE OS",
+      "Я не хочу підлаштовувати своє життя під складні системи. Достатньо просто говорити — а технологія нехай робить решту. LIFE OS створюється не для технічних фахівців, а для звичайних людей.",
+    founder_sign: "Ігор Холодінський, засновник LIFE OS",
 
     testi_kicker: "Відгуки",
     testi_title: "Люди в захваті від LIFE OS",
@@ -232,7 +232,7 @@ const C = {
     final_title: "Почни першу сторінку своєї книги життя",
     final_sub: "Безкоштовно. Через Google або пошту.",
 
-    foot_priv: "Приватність",
+    foot_priv: "Безпечно і приватно",
     foot_code: "Код на GitHub",
     foot_tester: "Тестувальникам",
     design_a: "Класика",
@@ -283,11 +283,11 @@ const C = {
       "Un jour, une pensée simple et un peu effrayante m'a saisi : je ne me souviens presque pas de ma propre vie. Vacances, conversations, décisions importantes, idées qui me faisaient autrefois briller les yeux — tout cela s'efface peu à peu. Les photos restent, mais on ne se rappelle plus ce qui se passait hors champ ni pourquoi ce jour comptait.",
       "Et j'ai compris autre chose : tout ce que j'ai appris dans ma vie — mes erreurs, mes découvertes et les moments pour lesquels il valait la peine de vivre — pourrait un jour partir avec moi. Mes enfants et petits-enfants verront des photos, mais ne connaîtront pas le vrai moi. On sauvegarde les images de notre vie, mais on ne se sauvegarde presque pas soi-même.",
       "Je voulais un outil qui n'exige aucune discipline. Où il suffit de parler — comme à un proche — et où la technologie comprend ce qui s'est passé, repère l'essentiel et en fait une histoire de vie. Ça n'existait pas. Alors je l'ai créé moi-même — pour moi et ma famille.",
-      "LIFE OS, c'est mon journal personnel, ma mémoire et mon futur livre de vie. Et maintenant je l'ouvre à tous ceux qui, eux aussi, ne veulent pas que leur expérience et leurs moments les plus précieux disparaissent un jour.",
+      "LIFE OS, c'est mon journal personnel, l'archive de toutes mes données et mon futur livre de vie. Et maintenant je l'ouvre à tous ceux qui, eux aussi, ne veulent pas que leur expérience et leurs moments les plus précieux disparaissent un jour.",
     ],
     founder_quote:
-      "Je ne suis pas programmeur et je ne veux pas plier ma vie à des systèmes complexes. Je veux simplement parler — et que la technologie fasse le reste. LIFE OS n'est pas conçu pour les spécialistes techniques, mais pour les gens ordinaires.",
-    founder_sign: "Igor, fondateur de LIFE OS",
+      "Je ne veux pas plier ma vie à des systèmes complexes. Il suffit de parler — et que la technologie fasse le reste. LIFE OS n'est pas conçu pour les spécialistes techniques, mais pour les gens ordinaires.",
+    founder_sign: "Igor Kholodinsky, fondateur de LIFE OS",
 
     testi_kicker: "Témoignages",
     testi_title: "Les gens adorent LIFE OS",
@@ -308,7 +308,7 @@ const C = {
     final_title: "Commence la première page de ton livre de vie",
     final_sub: "Gratuit. Avec Google ou e-mail.",
 
-    foot_priv: "Confidentialité",
+    foot_priv: "Sécurisé et privé",
     foot_code: "Code sur GitHub",
     foot_tester: "Pour les testeurs",
     design_a: "Classique",
@@ -623,8 +623,20 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             <i className="ti ti-flower" style={{ fontSize: 16, color: "var(--accent)" }} />
             LIFE OS
           </div>
-          <div style={{ display: "flex", gap: 18 }}>
-            <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_priv}</a>
+          <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
+            {/* Приватность — выделена кнопкой: это главный вопрос доверия к дневнику. */}
+            <a
+              href="/privacy"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 7,
+                padding: "9px 16px", borderRadius: 10,
+                border: "1px solid var(--accent)", background: "var(--accent-bg)",
+                color: "var(--accent-text)", fontSize: 13.5, fontWeight: 600, textDecoration: "none",
+              }}
+            >
+              <i className="ti ti-shield-lock" style={{ fontSize: 16, color: "var(--accent)" }} />
+              {t.foot_priv}
+            </a>
             <a href={ref ? `/tester.html?ref=${encodeURIComponent(ref)}` : "/tester.html"} style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
             <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
           </div>
