@@ -230,24 +230,26 @@ export function normDesign(raw: any): BookDesign {
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
 export type BookLayout = { hidden: string[]; order: string[] };
-export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout; photos: Record<string, string[]> };
+export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout; photos: Record<string, string[]>; dataEdits: Record<string, { name: string; count: number }[]> };
 
 export async function getBookMeta(userId: string, year: number): Promise<BookMeta> {
-  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {}, layout: { hidden: [], order: [] }, photos: {} };
+  const empty: BookMeta = { dedication: "", letter_self: "", letter_close: "", recipient: "self", book_type: "year", sections: {}, edits: {}, layout: { hidden: [], order: [] }, photos: {}, dataEdits: {} };
   const norm = (l: any): BookLayout => ({ hidden: Array.isArray(l?.hidden) ? l.hidden : [], order: Array.isArray(l?.order) ? l.order : [] });
   try {
     const { data } = await supabaseAdmin().from("book_meta").select("dedication, letter_self, letter_close, recipient, book_type, sections, edits, layout, photos").eq("user_id", userId).eq("year", year).maybeSingle();
     if (!data) return empty;
+    const sections = data.sections || {};
     return {
       dedication: data.dedication || "",
       letter_self: data.letter_self || "",
       letter_close: data.letter_close || "",
       recipient: data.recipient || "self",
       book_type: data.book_type || "year",
-      sections: data.sections || {},
+      sections,
       edits: data.edits || {},
       layout: norm(data.layout),
       photos: (data.photos && typeof data.photos === "object") ? data.photos : {},
+      dataEdits: (sections.__dataEdits && typeof sections.__dataEdits === "object") ? sections.__dataEdits : {},
     };
   } catch {
     // Если колонки layout/edits ещё нет — пробуем без них (graceful).
@@ -281,6 +283,28 @@ export async function saveChapterPhotos(userId: string, year: number, key: strin
     const clean = (Array.isArray(urls) ? urls : []).filter((u) => typeof u === "string" && u).slice(0, 12);
     if (clean.length) photos[key] = clean; else delete photos[key];
     await supabaseAdmin().from("book_meta").upsert({ user_id: userId, year, photos, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Ручная правка списка-данных главы (люди/проекты/места). Пустой массив = вернуть авто-список.
+export async function saveChapterData(userId: string, year: number, key: string, list: { name: string; count: number }[] | null): Promise<boolean> {
+  try {
+    const cur = await getBookMeta(userId, year);
+    const sections: Record<string, any> = { ...(cur.sections || {}) };
+    const dataEdits: Record<string, any> = { ...(sections.__dataEdits || {}) };
+    if (Array.isArray(list) && list.length) {
+      dataEdits[key] = list
+        .filter((it) => it && typeof it.name === "string" && it.name.trim())
+        .map((it) => ({ name: String(it.name).trim().slice(0, 80), count: Math.max(0, Math.round(Number(it.count) || 0)) }))
+        .slice(0, 60);
+    } else {
+      delete dataEdits[key];
+    }
+    sections.__dataEdits = dataEdits;
+    await supabaseAdmin().from("book_meta").upsert({ user_id: userId, year, sections, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
     return true;
   } catch {
     return false;
