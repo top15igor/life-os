@@ -171,6 +171,8 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
   --text-3: #9ca3af;
   --border: rgba(0,0,0,0.08);
   --surface: #ffffff;
+  --surface-2: #efece3;
+  --bg: #faf8f2;
   --accent: #4f46e5;
   --accent-bg: #eef2ff;
   --accent-text: #3730a3;
@@ -191,7 +193,7 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
   font-size: 3.1em; line-height: 0.78; padding: 4px 8px 0 0; color: var(--accent);
 }
 .book-cover { text-align: center; padding: 72px 44px; display: flex; flex-direction: column; align-items: center; }
-.book-text { font-family: var(--font-serif, Georgia, serif); font-size: 16px; line-height: 1.8; color: #2a2a28; white-space: pre-wrap; }
+.book-text { font-family: var(--font-serif, Georgia, serif); font-size: 16px; line-height: 1.8; color: var(--text); white-space: pre-wrap; }
 .book-strip { display: flex; flex-wrap: wrap; gap: 18px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 13px; color: var(--text-2); }
 .book-strip b { font-size: 18px; color: var(--text); margin-right: 4px; }
 
