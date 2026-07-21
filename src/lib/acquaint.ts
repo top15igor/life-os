@@ -15,8 +15,20 @@ import { normalizeMorningPrefs } from "./morningPrefs";
 // чувства); активное слушание (цепляется за деталь); незавершённость (сессия ~4
 // вопроса → «завтра продолжим»). Состояние — в morning_prefs.
 
-const STEP = 6;              // +% знакомства за один ответ
+const STEP = 6;              // ранний шаг (пока pct < REVEAL_PCT): чипы завязаны на эту сетку
 const REVEAL_PCT = 24;       // ~4 ответа → показываем «первую страницу» и делаем паузу
+const ACQ_CAP = 99;          // потолок: знакомство НЕ заканчивается, 100% не бывает
+const DEEP_PCT = 90;         // тёплая «глубокая» отметка (однократно), но без финала
+
+// Замедляющийся прирост: чем дальше, тем медленнее (диминишинг). Ранний участок —
+// ровно +6 (сетка чипов и «первой страницы»), дальше всё меньше. Асимптота — 99%.
+function incFor(pct: number): number {
+  if (pct < REVEAL_PCT) return STEP; // 0,6,12,18 → 24 (первая страница на 4-м ответе)
+  if (pct < 60) return 4;
+  if (pct < 80) return 3;
+  if (pct < 90) return 2;
+  return 1; // 90..99 — совсем медленно, дальше стоим на 99 и просто продолжаем общаться
+}
 
 // Пользы/фишки LIFE OS — бот делится по одной перед своим вопросом (взаимность),
 // показывая КОНКРЕТНУЮ ВЫГОДУ для человека: зачем ему всё это. Модель берёт
@@ -108,11 +120,13 @@ const PAGE_OUTRO: Record<string, string> = {
   fr: "\n\n☝️ C'est ta première entrée. Tu l'as déjà écrite, juste en me parlant 🙂 Je l'ai enregistrée dans ton journal.",
 };
 
-const FULL: Record<string, string> = {
-  ru: "\n\n🎉 Всё, теперь я знаю тебя на 100%! Спасибо, что открылся. Дальше просто рассказывай, как проходят дни — я всё сохраню.",
-  en: "\n\n🎉 That's it — I now know you 100%! Thanks for opening up. From here, just tell me how your days go — I'll keep it all.",
-  uk: "\n\n🎉 Все, тепер я знаю тебе на 100%! Дякую, що відкрився. Далі просто розповідай, як минають дні — я все збережу.",
-  fr: "\n\n🎉 Voilà — je te connais à 100 % ! Merci de t'être ouvert. Ensuite, raconte-moi tes journées — je garde tout.",
+// Тёплая «глубокая» отметка (однократно ~90%). Не финал: человека знать до конца
+// нельзя, и это здорово — поэтому продолжаем открывать друг друга дальше.
+const DEEP: Record<string, string> = {
+  ru: "\n\n💛 Знаешь, мы здорово узнали друг друга. Я чувствую тебя уже куда лучше — и всё равно продолжаю открывать новое, ведь человека до конца не узнать, и это прекрасно. Так что рассказывай дальше — я никуда не тороплюсь.",
+  en: "\n\n💛 You know, we've really gotten to know each other. I feel you much better now — and I keep discovering more, because a person can never be fully known, and that's beautiful. So keep telling me — I'm in no hurry.",
+  uk: "\n\n💛 Знаєш, ми добре впізнали одне одного. Я відчуваю тебе вже куди краще — і все одно продовжую відкривати нове, адже людину до кінця не пізнати, і це прекрасно. Тож розповідай далі — я нікуди не поспішаю.",
+  fr: "\n\n💛 Tu sais, on a vraiment appris à se connaître. Je te ressens bien mieux maintenant — et je continue à découvrir, car on ne connaît jamais tout à fait quelqu'un, et c'est beau. Alors continue à me raconter — je ne suis pas pressé.",
 };
 
 // Первые 2 вопроса — сценарные, с быстрыми кнопками-ответами (порог входа = один тап).
@@ -377,9 +391,9 @@ export async function acquaintReply(userId: string, name: string | null, userTex
   const st = await readState(userId);
   await append(userId, "user", userText);
 
-  const pct = Math.min(100, st.pct + STEP);
+  const pct = Math.min(ACQ_CAP, st.pct + incFor(st.pct));
   const crossedReveal = st.pct < REVEAL_PCT && pct >= REVEAL_PCT;
-  const crossedFull = st.pct < 100 && pct >= 100;
+  const crossedDeep = st.pct < DEEP_PCT && pct >= DEEP_PCT; // однократная тёплая отметка, НЕ финал
 
   // Момент «первой страницы»: собираем ответы в запись, сохраняем, показываем — и пауза.
   if (crossedReveal) {
@@ -406,10 +420,11 @@ export async function acquaintReply(userId: string, name: string | null, userTex
     return { text, chips: sc.opts[lang] || sc.opts.ru, pct, active: true };
   }
 
-  // Обычный ход: реакция + польза/фишка + следующий вопрос.
+  // Обычный ход: реакция + польза/фишка + следующий вопрос. Знакомство НЕ заканчивается —
+  // прогресс замедляется и упирается в 99%, а разговор продолжается сколько угодно.
   let text = await genTurn(userId, name, lang, userText.trim());
-  if (crossedFull) text += FULL[lang] || FULL.ru;
-  await writeState(userId, st.prefs, { pct, active: crossedFull ? false : undefined });
+  if (crossedDeep) text += DEEP[lang] || DEEP.ru;
+  await writeState(userId, st.prefs, { pct });
   await append(userId, "assistant", text);
-  return { text, pct, active: !crossedFull };
+  return { text, pct, active: true };
 }
