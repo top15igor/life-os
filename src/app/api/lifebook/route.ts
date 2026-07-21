@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getBookMeta, bookVoicePreamble } from "@/lib/book";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -41,8 +42,13 @@ export async function GET(req: NextRequest) {
 
   if (!data?.length) return NextResponse.json({ ok: true, chapter: null });
 
+  // Авторский голос книги (perspective/для кого/tone/посыл) — из настроек года.
+  const metaYear = Number(req.nextUrl.searchParams.get("year")) || my;
+  let voice = "";
+  try { voice = bookVoicePreamble((await getBookMeta(user.id, metaYear)).sections?.__gen); } catch {}
+
   const list = data.map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n");
-  const prompt = `Ты — AI-биограф LIFE OS. Напиши главу Книги жизни за месяц по записям ниже. Пиши на языке записей, тепло и по-человечески, строго по фактам (не выдумывай). Вызови инструмент chapter.\n\nЗАПИСИ:\n${list}`;
+  const prompt = `Ты — AI-биограф LIFE OS. Напиши главу Книги жизни за месяц по записям ниже. Пиши на языке записей, тепло и по-человечески, строго по фактам (не выдумывай).\n${voice}\n\nВызови инструмент chapter.\n\nЗАПИСИ:\n${list}`;
 
   try {
     const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({

@@ -70,6 +70,11 @@ const STR: Record<string, any> = {
     },
     readTitle: "Моя жизнь", by: "Автор", print: "Скачать / Печать (PDF)", closeReader: "Закрыть",
     buildAll: "Собрать все главы", reading: "Читать книгу", tocTitle: "Оглавление",
+    tune: "Настроить", tuneTitle: "Авторский голос книги", tuneSub: "Как AI пишет твою книгу. Поменяешь — нажми «Пересобрать», чтобы применить ко всем главам.",
+    perspLabel: "Ракурс", perspFirst: "От первого лица", perspThird: "О себе со стороны",
+    toneLabel: "Тон повествования", tonePresets: ["Тёплый", "Искренний", "Сдержанный", "С юмором", "Литературный", "Кинематографичный"], toneFreePh: "Или опиши тон своими словами…",
+    intentLabel: "Посыл книги", intentPh: "Что хочешь передать этой книгой? Напр.: «показать детям, что жизнь стоит проживать смело».",
+    applyRebuild: "Сохранить и пересобрать книгу", rebuildingAll: "Пересобираю книгу…", rebuildOne: "Пересобрать",
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
@@ -137,6 +142,11 @@ const STR: Record<string, any> = {
     },
     readTitle: "My life", by: "By", print: "Download / Print (PDF)", closeReader: "Close",
     buildAll: "Build all chapters", reading: "Read the book", tocTitle: "Contents",
+    tune: "Tune", tuneTitle: "The book's author voice", tuneSub: "How AI writes your book. Change it, then hit “Rebuild” to apply to all chapters.",
+    perspLabel: "Point of view", perspFirst: "First person", perspThird: "Third person",
+    toneLabel: "Narrative tone", tonePresets: ["Warm", "Sincere", "Restrained", "Humorous", "Literary", "Cinematic"], toneFreePh: "Or describe the tone in your words…",
+    intentLabel: "The book's message", intentPh: "What should this book convey? E.g. “show my kids that life is worth living boldly.”",
+    applyRebuild: "Save and rebuild the book", rebuildingAll: "Rebuilding the book…", rebuildOne: "Rebuild",
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
@@ -345,10 +355,10 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
     setAiLoading(null);
     return r?.section || null;
   }
-  async function loadMonth(month: string) {
-    if (months[month] !== undefined) return;
+  async function loadMonth(month: string, force = false) {
+    if (!force && months[month] !== undefined) return;
     setMonthLoading(month);
-    const r = await fetch(`/api/lifebook?month=${month}`).then((x) => x.json()).catch(() => null);
+    const r = await fetch(`/api/lifebook?month=${month}&year=${year}`).then((x) => x.json()).catch(() => null);
     setMonths((c) => ({ ...c, [month]: r?.ok ? r.chapter : null }));
     setMonthLoading(null);
   }
@@ -695,8 +705,8 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           book={book} meta={m} year={year} locale={locale} userName={userName} s={s} isLife={isLife}
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
           loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh} photos={photos}
+          edits={edits} setEdits={setEdits}
           onClose={() => setReader(false)}
-          onEdit={(key: string) => { setReader(false); setOpenKey(key); setEditKey(key); setTimeout(() => document.getElementById(`main-ch-${key}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 90); }}
         />, document.body)}
 
       {pickerKey && mounted && createPortal(
@@ -707,8 +717,53 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, onClose, onEdit }: any) {
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, edits = {}, setEdits, onClose }: any) {
   const [busy, setBusy] = useState(false);
+  const [showTune, setShowTune] = useState(false);
+  const [busyAll, setBusyAll] = useState(false);
+  const [eKey, setEKey] = useState<string | null>(null);
+  const [eDraft, setEDraft] = useState("");
+  const [eBusy, setEBusy] = useState(false);
+  const [gen, setGen] = useState(() => {
+    const g = meta.sections?.__gen || {};
+    return { perspective: g.perspective === "third" ? "third" : "first", audience: g.audience || meta.recipient || "self", tone: g.tone || "", intent: g.intent || "" };
+  });
+
+  function startEditR(key: string) { setEDraft(edits[key] != null ? edits[key] : (ai[key]?.body || "")); setEKey(key); }
+  async function persistEdit(key: string, bodyText: string) {
+    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, editKey: key, editBody: bodyText }) }).catch(() => {});
+    setEdits((c: any) => { const n = { ...c }; if (bodyText.trim()) n[key] = bodyText; else delete n[key]; return n; });
+  }
+  async function saveEditR(key: string) { setEBusy(true); await persistEdit(key, eDraft); setEBusy(false); setEKey(null); }
+  async function revertR(key: string) { setEBusy(true); await persistEdit(key, ""); setEBusy(false); setEKey(null); }
+
+  async function saveTuneAndRebuild() {
+    setBusyAll(true);
+    await fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveSettings", year, settings: gen }) }).catch(() => {});
+    await Promise.all([
+      loadAi("overview", true), loadAi("self", true), loadAi("lessons", true), loadAi("people", true),
+      ...(Array.isArray(book.months) ? book.months.map((mm: any) => loadMonth(mm.month, true)) : []),
+    ]);
+    setBusyAll(false);
+    setShowTune(false);
+  }
+
+  // Тело главы: режим правки (textarea) → правка пользователя → обычный контент.
+  function bodyFor(key: string, node: any) {
+    if (eKey === key) return (
+      <div className="no-print">
+        <textarea value={eDraft} onChange={(e) => setEDraft(e.target.value)} autoFocus
+          style={{ width: "100%", boxSizing: "border-box", minHeight: 200, padding: "13px 15px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", color: "var(--text)", fontSize: 15.5, lineHeight: 1.7, fontFamily: "var(--font-serif, Georgia, serif)", resize: "vertical" }} placeholder={s.editPh} />
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <button onClick={() => setEKey(null)} style={ghostBtn}>{s.cancelEdit}</button>
+          {edits[key] != null && <button onClick={() => revertR(key)} style={ghostBtn}><i className="ti ti-arrow-back-up" style={{ fontSize: 13 }} />{s.resetAi}</button>}
+          <button onClick={() => saveEditR(key)} disabled={eBusy} style={{ ...btnPrimary, opacity: eBusy ? 0.6 : 1 }}><i className="ti ti-check" style={{ fontSize: 15 }} />{s.saveEdit}</button>
+        </div>
+      </div>
+    );
+    if (edits[key] != null) return <div className="book-text" style={{ whiteSpace: "pre-wrap" }}>{edits[key]}</div>;
+    return node;
+  }
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -780,12 +835,52 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
       <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={onClose} style={ghostBtn}><i className="ti ti-arrow-left" style={{ fontSize: 15 }} />{s.closeReader}</button>
         <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowTune((v) => !v)} style={{ ...ghostBtn, ...(showTune ? { borderColor: "var(--accent)", color: "var(--accent)" } : {}) }}><i className="ti ti-adjustments" style={{ fontSize: 15 }} />{s.tune}</button>
           <button onClick={buildAll} disabled={busy} style={ghostBtn}><i className={`ti ${busy ? "ti-loader-2" : "ti-sparkles"}`} style={{ fontSize: 15 }} />{s.buildAll}</button>
           <button onClick={doPrint} style={btnPrimary}><i className="ti ti-download" style={{ fontSize: 16 }} />{s.print}</button>
         </div>
       </div>
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
+        {/* НАСТРОЙКА АВТОРСКОГО ГОЛОСА — прямо в книге */}
+        {showTune && (
+          <div className="no-print" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border)", padding: "20px 20px", marginBottom: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.10)" }}>
+            <div style={{ fontSize: 17, fontWeight: 700 }}>{s.tuneTitle}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4, marginBottom: 16, lineHeight: 1.5 }}>{s.tuneSub}</div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.perspLabel}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+              {[["first", s.perspFirst], ["third", s.perspThird]].map(([k, l]) => (
+                <button key={k} onClick={() => setGen((g: any) => ({ ...g, perspective: k }))} style={chip(gen.perspective === k)}>{l}</button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.recipient}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
+              {Object.keys(s.recipients).map((k) => (
+                <button key={k} onClick={() => setGen((g: any) => ({ ...g, audience: k }))} style={chip(gen.audience === k)}>{s.recipients[k]}</button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.toneLabel}</div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 9 }}>
+              {(s.tonePresets || []).map((t: string) => (
+                <button key={t} onClick={() => setGen((g: any) => ({ ...g, tone: g.tone === t ? "" : t }))} style={chip(gen.tone === t)}>{t}</button>
+              ))}
+            </div>
+            <input value={gen.tone} onChange={(e) => setGen((g: any) => ({ ...g, tone: e.target.value }))} placeholder={s.toneFreePh}
+              style={{ width: "100%", boxSizing: "border-box", padding: "10px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, marginBottom: 16 }} />
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.intentLabel}</div>
+            <textarea value={gen.intent} onChange={(e) => setGen((g: any) => ({ ...g, intent: e.target.value }))} placeholder={s.intentPh}
+              style={{ width: "100%", boxSizing: "border-box", minHeight: 70, padding: "11px 13px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, lineHeight: 1.6, resize: "vertical", marginBottom: 16, fontFamily: "inherit" }} />
+
+            <button onClick={saveTuneAndRebuild} disabled={busyAll} style={{ ...btnPrimary, width: "100%", justifyContent: "center", opacity: busyAll ? 0.7 : 1 }}>
+              <i className={`ti ${busyAll ? "ti-loader-2" : "ti-sparkles"}`} style={{ fontSize: 16 }} />{busyAll ? s.rebuildingAll : s.applyRebuild}
+            </button>
+          </div>
+        )}
+
         {cover}
 
         {/* ОГЛАВЛЕНИЕ / навигация */}
@@ -806,14 +901,14 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         )}
 
         {/* Год в одном взгляде */}
-        {!hidden.includes("overview") && <Page id="ch-overview" title={titleOf("overview")} onEdit={onEdit ? () => onEdit("overview") : null} editLabel={s.editChapter}>
+        {!hidden.includes("overview") && <Page id="ch-overview" title={titleOf("overview")} onEdit={() => startEditR("overview")} editLabel={s.editChapter} onRebuild={ai.overview && eKey !== "overview" ? () => loadAi("overview", true) : null} rebuildLabel={s.rebuildOne}>
           <div className="book-strip">
             <span><b>{book.stats.entries}</b> {s.overviewStrip.entries}</span>
             <span><b>{book.stats.days}</b> {s.overviewStrip.days}</span>
             <span><b>{book.stats.people}</b> {s.overviewStrip.people}</span>
             <span><b>{book.stats.places}</b> {s.overviewStrip.places}</span>
           </div>
-          {ai.overview ? aiBody("overview") : aiLoading === "overview" ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi("overview")} s={s} />}
+          {bodyFor("overview", ai.overview ? aiBody("overview") : aiLoading === "overview" ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi("overview")} s={s} />)}
           <PhotoStrip urls={photos.overview || []} />
         </Page>}
 
@@ -824,7 +919,10 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
               const mc = months[mm.month];
               return (
                 <div key={mm.month} style={{ marginBottom: 22 }}>
-                  <div className="serif" style={{ fontSize: 20, fontWeight: 600, textTransform: "capitalize", marginBottom: 8 }}>{monthLabel(mm.month)}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+                    <div className="serif" style={{ fontSize: 20, fontWeight: 600, textTransform: "capitalize", marginBottom: 8 }}>{monthLabel(mm.month)}</div>
+                    {mc && <button className="no-print" onClick={() => loadMonth(mm.month, true)} style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "3px 9px", color: "var(--accent)", fontSize: 12, cursor: "pointer" }}><i className="ti ti-refresh" style={{ fontSize: 12 }} />{s.rebuildOne}</button>}
+                  </div>
                   {mc ? <div className="book-text">{mc.title ? <b>{mc.title}. </b> : null}{mc.narrative}</div>
                     : monthLoading === mm.month ? <Loading text={s.building} />
                     : <BuildBtn onClick={() => loadMonth(mm.month)} s={s} />}
@@ -838,14 +936,14 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
         {[["family", "ti-users"], ["health", "ti-heartbeat"], ["work", "ti-briefcase"], ["travel", "ti-plane"], ["trace", "ti-heart-handshake"]].filter(([k]) => !hidden.includes(k)).map(([k]) => {
           const node = dataChapter(k);
           const ph = photos[k] || [];
-          if (!node && !ph.length) return null;
-          return <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={onEdit ? () => onEdit(k) : null} editLabel={s.editChapter}>{node}<PhotoStrip urls={ph} /></Page>;
+          if (!node && !ph.length && edits[k] == null && eKey !== k) return null;
+          return <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={() => startEditR(k)} editLabel={s.editChapter}>{bodyFor(k, node)}<PhotoStrip urls={ph} /></Page>;
         })}
 
         {/* AI-разделы */}
         {["self", "people", "lessons"].filter((k) => !hidden.includes(k)).map((k) => (
-          <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={onEdit ? () => onEdit(k) : null} editLabel={s.editChapter}>
-            {ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />}
+          <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={() => startEditR(k)} editLabel={s.editChapter} onRebuild={ai[k] && eKey !== k ? () => loadAi(k, true) : null} rebuildLabel={s.rebuildOne}>
+            {bodyFor(k, ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />)}
             <PhotoStrip urls={photos[k] || []} />
           </Page>
         ))}
@@ -1015,15 +1113,17 @@ const Num = ({ n, label }: any) => <div><div style={{ fontSize: 22, fontWeight: 
 const Loading = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-loader-2" style={{ fontSize: 15 }} />{text}</div>;
 const Muted = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)" }}>{text}</div>;
 const BuildBtn = ({ onClick, s }: any) => <button onClick={onClick} style={ghostBtn}><i className="ti ti-sparkles" style={{ fontSize: 14 }} />{s.build}</button>;
-function Page({ title, children, id, onEdit, editLabel }: any) {
+function Page({ title, children, id, onEdit, editLabel, onRebuild, rebuildLabel }: any) {
+  const btn = { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 11px", color: "var(--accent)", fontSize: 12.5, cursor: "pointer" } as any;
   return (
     <div className="book-page" id={id}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: "var(--text)" }}>{title}</div>
-        {onEdit && (
-          <button className="no-print" onClick={onEdit} style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 11px", color: "var(--accent)", fontSize: 12.5, cursor: "pointer" }}>
-            <i className="ti ti-pencil" style={{ fontSize: 13 }} />{editLabel}
-          </button>
+        {(onEdit || onRebuild) && (
+          <div className="no-print" style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+            {onRebuild && <button onClick={onRebuild} style={btn}><i className="ti ti-refresh" style={{ fontSize: 13 }} />{rebuildLabel}</button>}
+            {onEdit && <button onClick={onEdit} style={btn}><i className="ti ti-pencil" style={{ fontSize: 13 }} />{editLabel}</button>}
+          </div>
         )}
       </div>
       {children}

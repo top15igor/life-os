@@ -179,6 +179,41 @@ export async function getBookSummary(userId: string, year: number): Promise<{ ye
   return { year, entries, readiness, people };
 }
 
+// ===== Настройки авторского голоса книги (perspective/для кого/tone/посыл) =====
+// Хранятся внутри sections.__gen (jsonb, без миграции). Влияют на генерацию всех глав.
+export type BookGen = { perspective: "first" | "third"; audience: string; tone: string; intent: string };
+export const DEFAULT_GEN: BookGen = { perspective: "first", audience: "self", tone: "", intent: "" };
+
+export function normGen(raw: any): BookGen {
+  const g = raw && typeof raw === "object" ? raw : {};
+  return {
+    perspective: g.perspective === "third" ? "third" : "first",
+    audience: typeof g.audience === "string" ? g.audience.slice(0, 40) : "self",
+    tone: typeof g.tone === "string" ? g.tone.slice(0, 300).trim() : "",
+    intent: typeof g.intent === "string" ? g.intent.slice(0, 600).trim() : "",
+  };
+}
+
+// Инструкция для AI-биографа по авторскому голосу — вставляется во все промпты глав.
+export function bookVoicePreamble(raw: any): string {
+  const g = normGen(raw);
+  const parts: string[] = [];
+  parts.push(g.perspective === "third"
+    ? "РАКУРС: пиши О ЧЕЛОВЕКЕ В ТРЕТЬЕМ ЛИЦЕ (по имени, «он»/«она»)."
+    : "РАКУРС: пиши ОТ ПЕРВОГО ЛИЦА (от «я»), как будто человек сам пишет о своей жизни.");
+  const aud: Record<string, string> = {
+    self: "для себя — перечитывать, помнить и видеть свой путь со стороны",
+    parents: "в подарок родителям — показать, как он живёт и что для него важно",
+    children: "для своих детей — чтобы однажды они узнали его настоящим, его голосом",
+    partner: "любимому человеку — общие моменты, чувства и благодарность",
+    family: "для всей семьи — общая память и истории на годы",
+  };
+  if (aud[g.audience]) parts.push(`АДРЕСАТ книги: ${aud[g.audience]}. Держи в уме, к кому обращён текст.`);
+  if (g.tone) parts.push(`ТОН повествования: ${g.tone}.`);
+  if (g.intent) parts.push(`ГЛАВНЫЙ ПОСЫЛ, который нужно бережно проносить через весь текст: «${g.intent}».`);
+  return parts.join("\n");
+}
+
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
 export type BookLayout = { hidden: string[]; order: string[] };
 export type BookMeta = { dedication: string; letter_self: string; letter_close: string; recipient: string; book_type: string; sections: Record<string, any>; edits: Record<string, string>; layout: BookLayout; photos: Record<string, string[]> };
