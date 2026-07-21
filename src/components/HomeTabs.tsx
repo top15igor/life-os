@@ -202,12 +202,33 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
         )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", rowGap: 10, marginBottom: 18 }}>
         <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", borderRadius: 12, padding: 4 }}>
           {s.tabs.map((label: string, i: number) => (
             <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
           ))}
         </div>
+        {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 6 }}>
+            {data.habit && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 500 }}>
+                <span style={{ fontSize: 15, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
+                {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
+              </span>
+            )}
+            {data.book && data.book.entries > 0 && (
+              <>
+                <span style={{ color: "var(--text-3)" }}>·</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 500 }}>
+                  <i className="ti ti-book-2" style={{ fontSize: 15, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
+                </span>
+              </>
+            )}
+            <Link href="/health" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--accent-text)", fontWeight: 600, textDecoration: "none", padding: "6px 12px", borderRadius: 9, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+              <i className="ti ti-chart-histogram" style={{ fontSize: 15 }} />{dashWord}<i className="ti ti-chevron-right" style={{ fontSize: 14 }} />
+            </Link>
+          </div>
+        )}
       </div>
 
       {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
@@ -270,31 +291,6 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
               <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, maxWidth: 520, letterSpacing: "-0.01em" }}>{heroLine}</div>
               <div style={{ fontSize: 13.5, color: "var(--accent-text)", marginTop: 9, fontWeight: 500, lineHeight: 1.45, maxWidth: 520 }}>{dpLine}</div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 12, color: "var(--accent)", fontWeight: 600 }}><i className="ti ti-sparkles" />LIFE OS</div>
-            </div>
-          )}
-
-          {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
-            <div className="card" style={{ marginBottom: 16, padding: "16px", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", rowGap: 6, marginBottom: 14 }}>
-                {data.habit && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14.5, fontWeight: 600 }}>
-                    <span style={{ fontSize: 18, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
-                    {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
-                  </span>
-                )}
-                {data.book && data.book.entries > 0 && (
-                  <>
-                    <span style={{ color: "var(--text-3)" }}>·</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 600 }}>
-                      <i className="ti ti-book-2" style={{ fontSize: 16, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
-                    </span>
-                  </>
-                )}
-              </div>
-              <Link href="/health" className="dash-cta" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, padding: "13px 30px", borderRadius: 14, background: "linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #7c3aed))", color: "#fff", fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 20px color-mix(in srgb, var(--accent) 42%, transparent)", letterSpacing: "-0.01em" }}>
-                <i className="ti ti-chart-histogram" style={{ fontSize: 19 }} />{dashWord}
-                <i className="ti ti-arrow-right" style={{ fontSize: 17 }} />
-              </Link>
             </div>
           )}
 
