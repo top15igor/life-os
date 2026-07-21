@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { mapsLink } from "@/lib/geocode";
 
-type Item = { id?: number; name: string; hidden: boolean; meta: string; entries: { id: string; text: string }[] };
+type Item = { id?: number; name: string; hidden: boolean; meta: string; entries: { id: string; text: string }[]; lat?: number | null; lng?: number | null };
 
 const STR: Record<string, any> = {
-  ru: { manage: "Изменить", rename: "Переименовать", merge: "Объединить", hide: "Скрыть", unhide: "Вернуть", save: "Сохранить", cancel: "Отмена", mergeInto: "Объединить с:", mergeNote: "Все упоминания перейдут к выбранному, дубль исчезнет.", noOthers: "Нет других для объединения", hiddenSec: "Скрытые", needSql: "Чтобы скрывать — запусти SQL (entities_hidden.sql).", renamePh: "Имя" },
-  en: { manage: "Edit", rename: "Rename", merge: "Merge", hide: "Hide", unhide: "Restore", save: "Save", cancel: "Cancel", mergeInto: "Merge into:", mergeNote: "All mentions move to the chosen one, the duplicate disappears.", noOthers: "Nothing else to merge with", hiddenSec: "Hidden", needSql: "To hide — run the SQL (entities_hidden.sql).", renamePh: "Name" },
-  uk: { manage: "Змінити", rename: "Перейменувати", merge: "Об'єднати", hide: "Сховати", unhide: "Повернути", save: "Зберегти", cancel: "Скасувати", mergeInto: "Об'єднати з:", mergeNote: "Усі згадки перейдуть до обраного, дубль зникне.", noOthers: "Немає інших для об'єднання", hiddenSec: "Сховані", needSql: "Щоб ховати — запусти SQL (entities_hidden.sql).", renamePh: "Ім'я" },
-  fr: { manage: "Modifier", rename: "Renommer", merge: "Fusionner", hide: "Masquer", unhide: "Restaurer", save: "Enregistrer", cancel: "Annuler", mergeInto: "Fusionner dans :", mergeNote: "Toutes les mentions vont vers l'élément choisi, le doublon disparaît.", noOthers: "Rien d'autre à fusionner", hiddenSec: "Masqués", needSql: "Pour masquer — lance le SQL (entities_hidden.sql).", renamePh: "Nom" },
+  ru: { manage: "Изменить", rename: "Переименовать", merge: "Объединить", hide: "Скрыть", unhide: "Вернуть", save: "Сохранить", cancel: "Отмена", mergeInto: "Объединить с:", mergeNote: "Все упоминания перейдут к выбранному, дубль исчезнет.", noOthers: "Нет других для объединения", hiddenSec: "Скрытые", needSql: "Чтобы скрывать — запусти SQL (entities_hidden.sql).", renamePh: "Имя", onMap: "На карте" },
+  en: { manage: "Edit", rename: "Rename", merge: "Merge", hide: "Hide", unhide: "Restore", save: "Save", cancel: "Cancel", mergeInto: "Merge into:", mergeNote: "All mentions move to the chosen one, the duplicate disappears.", noOthers: "Nothing else to merge with", hiddenSec: "Hidden", needSql: "To hide — run the SQL (entities_hidden.sql).", renamePh: "Name", onMap: "On map" },
+  uk: { manage: "Змінити", rename: "Перейменувати", merge: "Об'єднати", hide: "Сховати", unhide: "Повернути", save: "Зберегти", cancel: "Скасувати", mergeInto: "Об'єднати з:", mergeNote: "Усі згадки перейдуть до обраного, дубль зникне.", noOthers: "Немає інших для об'єднання", hiddenSec: "Сховані", needSql: "Щоб ховати — запусти SQL (entities_hidden.sql).", renamePh: "Ім'я", onMap: "На карті" },
+  fr: { manage: "Modifier", rename: "Renommer", merge: "Fusionner", hide: "Masquer", unhide: "Restaurer", save: "Enregistrer", cancel: "Annuler", mergeInto: "Fusionner dans :", mergeNote: "Toutes les mentions vont vers l'élément choisi, le doublon disparaît.", noOthers: "Rien d'autre à fusionner", hiddenSec: "Masqués", needSql: "Pour masquer — lance le SQL (entities_hidden.sql).", renamePh: "Nom", onMap: "Sur la carte" },
 };
 
 const COLORS = ["#4f46e5", "#ec4899", "#10b981", "#f59e0b", "#0ea5e9", "#8b5cf6"];
@@ -80,6 +81,11 @@ export default function EntityManager({ kind, locale, items }: { kind: "people" 
             <button onClick={() => { setEditId(p.id!); setDraft(p.name); setMenuId(null); }} style={chip}><i className="ti ti-pencil" style={{ fontSize: 13 }} />{s.rename}</button>
             <button onClick={() => { setMergeId(p.id!); setMenuId(null); }} style={chip}><i className="ti ti-arrows-join-2" style={{ fontSize: 13 }} />{s.merge}</button>
             <button onClick={() => call("hide", p)} style={chip}><i className="ti ti-eye-off" style={{ fontSize: 13 }} />{s.hide}</button>
+            {kind === "places" && (
+              <a href={mapsLink(p.name, p.lat, p.lng)} target="_blank" rel="noreferrer" style={{ ...chip, textDecoration: "none" }}>
+                <i className="ti ti-map-2" style={{ fontSize: 13 }} />{s.onMap}
+              </a>
+            )}
           </div>
         )}
 

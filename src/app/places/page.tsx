@@ -71,6 +71,8 @@ export default async function PlacesPage() {
     hidden: metas[p.name]?.hidden || false,
     meta: `${p.count} ${s.mentions} · ${s.last} ${dateLabel(locale, p.lastDate)}`,
     entries: p.entries.map((e: any) => ({ id: e.id, text: e.summary || e.raw_text || "" })),
+    lat: metas[p.name]?.lat ?? null,
+    lng: metas[p.name]?.lng ?? null,
   }));
 
   return (

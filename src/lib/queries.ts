@@ -257,8 +257,19 @@ export async function getSavedItems(userId: string): Promise<SavedItem[]> {
 
 // Мета сущностей (люди/места) по имени: id + hidden. Для управления (rename/merge/hide).
 // Грациозно деградирует, если колонки hidden ещё нет (вернёт hidden:false).
-export async function getEntityMeta(userId: string, kind: "people" | "places"): Promise<Record<string, { id: number; hidden: boolean }>> {
-  const out: Record<string, { id: number; hidden: boolean }> = {};
+export async function getEntityMeta(userId: string, kind: "people" | "places"): Promise<Record<string, { id: number; hidden: boolean; lat?: number | null; lng?: number | null }>> {
+  const out: Record<string, { id: number; hidden: boolean; lat?: number | null; lng?: number | null }> = {};
+  // У мест есть координаты (places_geo.sql) — тянем их, если колонки существуют.
+  if (kind === "places") {
+    try {
+      const { data, error } = await supabaseAdmin().from(kind).select("id, name, hidden, lat, lng").eq("user_id", userId);
+      if (error) throw error;
+      for (const r of data || []) out[r.name] = { id: r.id, hidden: !!(r as any).hidden, lat: (r as any).lat ?? null, lng: (r as any).lng ?? null };
+      return out;
+    } catch {
+      // нет колонок lat/lng — падаем в общий путь ниже
+    }
+  }
   try {
     const { data, error } = await supabaseAdmin().from(kind).select("id, name, hidden").eq("user_id", userId);
     if (error) throw error;
