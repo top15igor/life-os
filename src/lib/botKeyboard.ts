@@ -17,25 +17,25 @@ export const KB: Record<string, { acquaint: string; diary: string; tasks: string
 // Вайб «микс»: тепло + искорка юмора ближе к вершине.
 const ACQ_LADDER: Record<string, { min: number; label: string }[]> = {
   ru: [
-    { min: 0, label: KB.ru.acquaint }, { min: 10, label: "🤫 Пошушукаемся" }, { min: 20, label: "🤝 Притираемся" },
+    { min: 0, label: KB.ru.acquaint }, { min: 5, label: "🌿 Продолжаем знакомиться" }, { min: 10, label: "🤫 Пошушукаемся" }, { min: 20, label: "🤝 Притираемся" },
     { min: 30, label: "😌 Уже доверяю" }, { min: 40, label: "🫂 Больше, чем друзья" }, { min: 50, label: "👊 Братья" },
     { min: 60, label: "🎭 Уже можно и матом" }, { min: 70, label: "🏡 Семья" }, { min: 80, label: "🔥 Куда ещё ближе?" },
     { min: 90, label: "😎 Я в тебе не сомневался" },
   ],
   en: [
-    { min: 0, label: KB.en.acquaint }, { min: 10, label: "🤫 Let's whisper" }, { min: 20, label: "🤝 Breaking the ice" },
+    { min: 0, label: KB.en.acquaint }, { min: 5, label: "🌿 Getting to know you" }, { min: 10, label: "🤫 Let's whisper" }, { min: 20, label: "🤝 Breaking the ice" },
     { min: 30, label: "😌 Starting to trust you" }, { min: 40, label: "🫂 More than friends" }, { min: 50, label: "👊 Brothers" },
     { min: 60, label: "🎭 We can swear now" }, { min: 70, label: "🏡 Family" }, { min: 80, label: "🔥 Can we get closer?" },
     { min: 90, label: "😎 Never doubted you" },
   ],
   uk: [
-    { min: 0, label: KB.uk.acquaint }, { min: 10, label: "🤫 Пошепочемось" }, { min: 20, label: "🤝 Притираємось" },
+    { min: 0, label: KB.uk.acquaint }, { min: 5, label: "🌿 Продовжуємо знайомитись" }, { min: 10, label: "🤫 Пошепочемось" }, { min: 20, label: "🤝 Притираємось" },
     { min: 30, label: "😌 Уже довіряю" }, { min: 40, label: "🫂 Більше, ніж друзі" }, { min: 50, label: "👊 Брати" },
     { min: 60, label: "🎭 Уже можна й матом" }, { min: 70, label: "🏡 Сім'я" }, { min: 80, label: "🔥 Куди ще ближче?" },
     { min: 90, label: "😎 Я в тобі не сумнівався" },
   ],
   fr: [
-    { min: 0, label: KB.fr.acquaint }, { min: 10, label: "🤫 Chuchotons" }, { min: 20, label: "🤝 On s'apprivoise" },
+    { min: 0, label: KB.fr.acquaint }, { min: 5, label: "🌿 On fait connaissance" }, { min: 10, label: "🤫 Chuchotons" }, { min: 20, label: "🤝 On s'apprivoise" },
     { min: 30, label: "😌 Je te fais confiance" }, { min: 40, label: "🫂 Plus que des amis" }, { min: 50, label: "👊 Frères" },
     { min: 60, label: "🎭 On peut jurer" }, { min: 70, label: "🏡 Famille" }, { min: 80, label: "🔥 Encore plus proches ?" },
     { min: 90, label: "😎 Je n'ai jamais douté de toi" },
