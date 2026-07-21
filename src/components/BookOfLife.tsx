@@ -9,6 +9,10 @@ import { intlOf } from "@/lib/i18n";
 
 const STR: Record<string, any> = {
   ru: {
+    stepsTitle: "Как рождается твоя книга",
+    steps3: [["ti-pencil", "Живёшь и пишешь записи", "словами или голосом — по одной в день"], ["ti-sparkles", "AI собирает их в главы", "месяцы, люди, места, уроки года"], ["ti-book-2", "Читаешь, печатаешь, даришь", "готовая книга твоей жизни"]],
+    livingTitle: "Твоя история уже пишется",
+    livingSub: "Моменты, которые уже вплетены в книгу — она растёт с каждой записью.",
     almost: "Твоя книга за", growing: "растёт", pastReady: "готова к сборке", filledLabel: "наполнено",
     yearProgressLine: (p: number) => `Год прожит на ${p}% — книга наполняется вместе с тобой и будет дополняться до конца года.`,
     lifeCaption: "пишется всю жизнь",
@@ -69,6 +73,10 @@ const STR: Record<string, any> = {
     dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты" },
   },
   en: {
+    stepsTitle: "How your book is born",
+    steps3: [["ti-pencil", "You live and jot notes", "by text or voice — one a day"], ["ti-sparkles", "AI weaves them into chapters", "months, people, places, lessons"], ["ti-book-2", "Read, print, gift it", "a finished book of your life"]],
+    livingTitle: "Your story is already being written",
+    livingSub: "Moments already woven into your book — it grows with every entry.",
     almost: "Your book of", growing: "is growing", pastReady: "is ready to assemble", filledLabel: "filled",
     yearProgressLine: (p: number) => `The year is ${p}% lived — the book grows with you and keeps filling until December.`,
     lifeCaption: "written for a lifetime",
@@ -343,6 +351,13 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
     return new Intl.DateTimeFormat(intlOf(locale as any), { month: "long", year: "numeric" }).format(new Date(month + "-01T12:00:00"));
   }
 
+  // Короткое превью содержимого главы (для списка на главной): показывает, что глава
+  // уже пишется, а не пустая. Берёт правку пользователя или собранный AI-текст.
+  function previewOf(key: string): string {
+    const raw = edits[key] != null ? edits[key] : (ai[key]?.body || "");
+    return String(raw).replace(/^[—\-•]\s*/gm, "").replace(/\s*\n+\s*/g, " ").trim();
+  }
+
   const st = book.stats;
   const titleOf = (k: string) => (isLife && s.chapTitlesLife?.[k]) || s.chapTitles[k] || k;
 
@@ -457,6 +472,40 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
         </div>
       </div>
 
+      {/* КАК РОЖДАЕТСЯ КНИГА — наглядно 1-2-3 */}
+      {Array.isArray(s.steps3) && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 11 }}>{s.stepsTitle}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+            {s.steps3.map((st3: any, i: number) => (
+              <div key={i} style={{ flex: "1 1 210px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, background: "var(--accent-bg)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>{i + 1}</span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.25 }}>{st3[1]}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.4, marginTop: 2 }}>{st3[2]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ЖИВАЯ ЛЕНТА — «история уже пишется» (реальные моменты из записей) */}
+      {Array.isArray(book.highlights) && book.highlights.length > 0 && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <i className="ti ti-writing" style={{ fontSize: 17, color: "var(--accent)" }} />
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{s.livingTitle}</div>
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 13 }}>{s.livingSub}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {book.highlights.slice(0, 4).map((h: any, i: number) => (
+              <div key={i} className="serif" style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--text)", paddingLeft: 13, borderLeft: "2px solid var(--accent)" }}>{h.text}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* тип книги + получатель */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 18 }}>
         <div className="card">
@@ -533,6 +582,9 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
                     <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0, width: 32, textAlign: "right" }}>{ch.readiness}%</span>
                   </div>
                 )}
+                {!open && (() => { const pv = previewOf(ch.key); return pv ? (
+                  <div className="serif" style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 7, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as any}>«{pv}»</div>
+                ) : null; })()}
               </div>
               {configMode ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
@@ -630,6 +682,16 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", onEsc); document.body.style.overflow = prev; };
   }, [onClose]);
+
+  // Автосборка при открытии: сразу собираем «Год в одном взгляде» и последний месяц,
+  // чтобы человек увидел свою историю прозой, а не пустые кнопки «Собрать».
+  useEffect(() => {
+    if (ai.overview === undefined && book.stats?.entries > 0) loadAi("overview");
+    const last = Array.isArray(book.months) && book.months.length ? book.months[book.months.length - 1] : null;
+    if (last && months[last.month] === undefined) loadMonth(last.month);
+    // один раз при открытии ридера
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function buildAll() {
     setBusy(true);
