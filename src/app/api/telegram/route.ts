@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard, isAcquaintLabel } from "@/lib/botKeyboard";
@@ -737,6 +737,18 @@ export async function POST(req: NextRequest) {
       chatId,
       lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  // Выставить процент знакомства вручную — ТОЛЬКО владелец: /acqpct [N] (по умолчанию 5).
+  if (typeof msg.text === "string" && /^\/acqpct\b/i.test(msg.text.trim())) {
+    if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+      return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
+    }
+    const mm = msg.text.trim().match(/-?\d+/);
+    const n = mm ? parseInt(mm[0], 10) : 5;
+    const p = await setAcquaintPct(user.id, n);
+    await sendMessage(chatId, `Готово — прогресс знакомства: ${p}%.`, { reply_markup: mainKeyboard(langOf(user, msg), p) });
     return NextResponse.json({ ok: true });
   }
 

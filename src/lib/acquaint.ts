@@ -389,6 +389,14 @@ export async function acquaintPct(userId: string): Promise<number> {
   return (await readState(userId)).pct;
 }
 
+// Выставить процент знакомства вручную (owner-команда /acqpct N). Клампится к 0..99.
+export async function setAcquaintPct(userId: string, pct: number): Promise<number> {
+  const { prefs } = await readState(userId);
+  const p = Math.max(0, Math.min(ACQ_CAP, Math.floor(pct)));
+  await writeState(userId, prefs, { pct: p });
+  return p;
+}
+
 // Пользователь нажал «На сегодня хватит»: ставим на паузу, прогресс СОХРАНЯЕМ,
 // тепло прощаемся и зовём вернуться. Возврат — через ту же кнопку (startAcquaint).
 const PAUSE_MSG: Record<string, string> = {
