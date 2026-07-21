@@ -142,14 +142,14 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
         ) : (
           /* ===== ПО БЛОКАМ (по умолчанию) ===== */
           <div>
-            {NAV_GROUPS.map((g) => {
+            {NAV_GROUPS.map((g, gi) => {
               const keys = g.keys.filter((k) => !hidden.includes(k));
               if (!keys.length) return null;
               const isCol = collapsed.includes(g.id);
               return (
-                <div key={g.id} style={{ marginBottom: 4 }}>
-                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 6px 4px", color: "var(--nav-fg)" }}>
-                    <span style={{ fontSize: 11.5, textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
+                <div key={g.id} style={{ marginBottom: 6, paddingTop: gi > 0 ? 10 : 0, marginTop: gi > 0 ? 4 : 0, borderTop: gi > 0 ? "1px solid var(--border)" : "none" }}>
+                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "4px 6px 6px", color: "var(--text-3)" }}>
+                    <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
                     <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 14, marginLeft: "auto", color: "var(--text-3)" }} />
                   </button>
                   {!isCol && keys.map((k) => NavLink(k))}

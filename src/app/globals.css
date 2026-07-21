@@ -6,6 +6,7 @@
   --text-2: #6b7280;
   --text-3: #9ca3af;
   --border: rgba(0,0,0,0.08);
+  --card-border: rgba(0,0,0,0.10);
   --shadow: 0 1px 2px rgba(28,28,30,0.04), 0 5px 16px -4px rgba(28,28,30,0.08);
   --shadow-hover: 0 2px 6px rgba(28,28,30,0.06), 0 14px 34px -8px rgba(28,28,30,0.16);
   --accent: #4f46e5;
@@ -29,6 +30,7 @@ html[data-theme="dark"] {
   --text-2: #b6bcc7;
   --text-3: #9aa0aa;
   --border: rgba(255,255,255,0.10);
+  --card-border: rgba(255,255,255,0.16);
   --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 5px 16px -4px rgba(0,0,0,0.5);
   --shadow-hover: 0 2px 6px rgba(0,0,0,0.45), 0 14px 34px -8px rgba(0,0,0,0.65);
   --accent: #5b8cff;
@@ -108,7 +110,8 @@ details.adm[open] > summary .adm-chev { transform: rotate(180deg); }
 .brand { display: flex; align-items: center; gap: 9px; padding: 4px 9px 14px; font-size: 15px; font-weight: 500; }
 .navlink { display: flex; align-items: center; gap: 11px; padding: 8px 11px; border-radius: 9px; color: var(--nav-fg); font-size: 14px; font-weight: 450; cursor: pointer; }
 .navlink:hover { background: var(--surface-2); }
-.navlink.active { background: var(--surface-2); color: var(--text); font-weight: 500; }
+.navlink.active { background: var(--accent-bg); color: var(--accent-text); font-weight: 600; }
+.navlink.active i { color: var(--accent); }
 .navlink.soon { opacity: 0.45; cursor: default; }
 .navlink i { font-size: 18px; }
 .main { flex: 1; min-width: 0; padding: 24px 28px; max-width: 1200px; }
@@ -116,7 +119,7 @@ details.adm[open] > summary .adm-chev { transform: rotate(180deg); }
 .main.wide { max-width: 1400px; }
 /* Узкий режим для чтения (Книга жизни, Биограф): комфортная длина строки. */
 .main.narrow { max-width: 820px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 15px 17px; box-shadow: var(--shadow); transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
+.card { background: var(--surface); border: 1px solid var(--card-border); border-radius: 14px; padding: 15px 17px; box-shadow: var(--shadow); transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease; }
 /* Hover-подъём только у кликабельных карточек (ссылки/кнопки) — как у Apple: статичные блоки не дёргаются. */
 a.card:hover, button.card:hover, .card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: rgba(0,0,0,0.12); }
 a.card:active, button.card:active, .card-hover:active { transform: translateY(0); box-shadow: var(--shadow); }
