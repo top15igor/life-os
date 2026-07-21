@@ -189,6 +189,8 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
   .print-root { position: static !important; background: #fff !important; overflow: visible !important; }
   .print-root .no-print { display: none !important; }
   .book-page { box-shadow: none !important; border: none !important; page-break-after: always; padding: 0 0 24px; background: #fff !important; }
+  /* Премиум-обложка (тёмная/золотая) должна печататься со своим фоном */
+  .print-root .book-cover { background: var(--cover-bg, #fff) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 0; }
   @page { margin: 18mm; }
 }
 

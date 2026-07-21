@@ -76,8 +76,9 @@ const STR: Record<string, any> = {
     intentLabel: "Посыл книги", intentPh: "Что хочешь передать этой книгой? Напр.: «показать детям, что жизнь стоит проживать смело».",
     applyRebuild: "Сохранить и пересобрать книгу", rebuildingAll: "Пересобираю книгу…", rebuildOne: "Пересобрать",
     designTitle: "Оформление", designHint: "Применяется сразу — пересобирать не нужно.",
+    coverLabel: "Обложка", covers: { classic: "Классическая", midnight: "Тёмная премиум", gold: "Золотая" },
     fontLabel: "Шрифт", fonts: { classic: "Классический", literary: "Литературный", modern: "Современный" },
-    paperLabel: "Обложка и бумага", papers: { cream: "Кремовая", warm: "Тёплая", sage: "Шалфей", rose: "Розовая" },
+    paperLabel: "Бумага страниц", papers: { cream: "Кремовая", warm: "Тёплая", sage: "Шалфей", rose: "Розовая" },
     sizeLabel: "Размер текста", sizes: { compact: "Компактный", normal: "Обычный", large: "Крупный" },
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
@@ -152,8 +153,9 @@ const STR: Record<string, any> = {
     intentLabel: "The book's message", intentPh: "What should this book convey? E.g. “show my kids that life is worth living boldly.”",
     applyRebuild: "Save and rebuild the book", rebuildingAll: "Rebuilding the book…", rebuildOne: "Rebuild",
     designTitle: "Appearance", designHint: "Applies instantly — no rebuild needed.",
+    coverLabel: "Cover", covers: { classic: "Classic", midnight: "Dark premium", gold: "Gold" },
     fontLabel: "Font", fonts: { classic: "Classic", literary: "Literary", modern: "Modern" },
-    paperLabel: "Cover & paper", papers: { cream: "Cream", warm: "Warm", sage: "Sage", rose: "Rose" },
+    paperLabel: "Page paper", papers: { cream: "Cream", warm: "Warm", sage: "Sage", rose: "Rose" },
     sizeLabel: "Text size", sizes: { compact: "Compact", normal: "Normal", large: "Large" },
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
@@ -738,7 +740,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   });
   const [design, setDesign] = useState(() => {
     const d = meta.sections?.__design || {};
-    return { font: BOOK_FONTS[d.font] ? d.font : "classic", paper: BOOK_PAPERS[d.paper] ? d.paper : "cream", size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal" };
+    return { font: BOOK_FONTS[d.font] ? d.font : "classic", paper: BOOK_PAPERS[d.paper] ? d.paper : "cream", size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal", cover: ["classic", "midnight", "gold"].includes(d.cover) ? d.cover : "classic" };
   });
   function applyDesign(patch: any) {
     const next = { ...design, ...patch };
@@ -822,17 +824,27 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   }
 
   const L = s.dataLabels;
+  // Премиум-стили обложки (титульная страница). Внутренние страницы остаются светлыми.
+  const COVERS: Record<string, any> = {
+    classic: { bg: theme.paper, fg: "var(--text)", sub: "var(--text-2)", muted: "var(--text-3)", brand: theme.accent, ornament: false, frame: false },
+    midnight: { bg: "#14181f", fg: "#f4efe3", sub: "#cfc8b7", muted: "#8f887a", brand: "#d4af37", ornament: true, frame: true },
+    gold: { bg: theme.paper, fg: "#3a2f1a", sub: "#6f5f3c", muted: "#9a8a63", brand: "#b8912e", ornament: true, frame: true },
+  };
+  const cv = COVERS[design.cover] || COVERS.classic;
   const cover = (
-    <div className="book-page book-cover">
-      <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: "var(--accent)", marginBottom: 18 }}>LIFE OS</div>
+    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative" } as any}>
+      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.55, borderRadius: 4, pointerEvents: "none" }} />}
+      <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: cv.brand, marginBottom: 16 }}>LIFE OS</div>
+      {cv.ornament && <div className="serif" style={{ color: cv.brand, fontSize: 22, marginBottom: 16, letterSpacing: 8 }}>❦</div>}
       {isLife ? (
-        <div className="serif" style={{ fontSize: 38, fontWeight: 600, lineHeight: 1.15, maxWidth: 460 }}>{s.lifeBook}</div>
+        <div className="serif" style={{ fontSize: 38, fontWeight: 600, lineHeight: 1.15, maxWidth: 460, color: cv.fg }}>{s.lifeBook}</div>
       ) : (
-        <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15 }}>{s.readTitle},<br />{year}</div>
+        <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15, color: cv.fg }}>{s.readTitle},<br />{year}</div>
       )}
-      {isLife && <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: "var(--text-2)", marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.lifeSubtitle}</div>}
-      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: "var(--text-2)", marginTop: 28, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
-      <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 40 }}>{s.by}: {userName || "—"}</div>
+      {isLife && <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.lifeSubtitle}</div>}
+      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: cv.sub, marginTop: 28, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
+      {cv.ornament && <div style={{ width: 44, height: 1, background: cv.brand, opacity: 0.6, margin: "30px 0 0" }} />}
+      <div style={{ fontSize: 13, color: cv.muted, marginTop: cv.ornament ? 16 : 40 }}>{s.by}: {userName || "—"}</div>
     </div>
   );
 
@@ -902,6 +914,19 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
             <div style={{ borderTop: "1px solid var(--border)", margin: "20px 0 16px" }} />
             <div style={{ fontSize: 15.5, fontWeight: 700 }}>{s.designTitle}</div>
             <div style={{ fontSize: 12, color: "var(--text-3)", marginTop: 3, marginBottom: 14 }}>{s.designHint}</div>
+
+            <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.coverLabel}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {Object.keys(s.covers).map((k) => {
+                const c = ({ classic: { bg: theme.paper, br: theme.accent }, midnight: { bg: "#14181f", br: "#d4af37" }, gold: { bg: theme.paper, br: "#b8912e" } } as any)[k];
+                return (
+                  <button key={k} onClick={() => applyDesign({ cover: k })} title={s.covers[k]}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px 6px 7px", borderRadius: 99, cursor: "pointer", fontSize: 12.5, color: "var(--text-2)", background: "var(--surface)", border: design.cover === k ? `2px solid ${c.br}` : "1px solid var(--border)" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 4, background: c.bg, border: `2px solid ${c.br}`, flexShrink: 0 }} />{s.covers[k]}
+                  </button>
+                );
+              })}
+            </div>
 
             <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 7 }}>{s.fontLabel}</div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
