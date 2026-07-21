@@ -86,14 +86,14 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
   }
   function reset() { saveOrder(DEFAULT_ORDER); saveHidden([]); }
 
-  const NavLink = (key: string) => {
+  const NavLink = (key: string, color?: string) => {
     const n = NAV_BY[key]; if (!n) return null;
     // «Сегодня» живёт по красивому адресу /i/<username> (как @имя в Instagram); корень / редиректит туда же.
     const href = key === "today" && refCode ? `/i/${refCode}` : n.href;
     const active = href === path || (key === "today" && path === "/");
     return (
       <Link key={key} href={href} className={`navlink${active ? " active" : ""}`}>
-        <i className={`ti ${n.icon}`} />
+        <i className={`ti ${n.icon}`} style={!active && color ? { color } : undefined} />
         <span className="navlabel">{navLabels[key] || key}</span>
       </Link>
     );
@@ -156,7 +156,7 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
                     <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
                     <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 14, marginLeft: "auto", color: "var(--text-3)" }} />
                   </button>
-                  {!isCol && keys.map((k) => NavLink(k))}
+                  {!isCol && keys.map((k) => NavLink(k, GROUP_COLORS[g.id]))}
                 </div>
               );
             })}

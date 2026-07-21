@@ -560,7 +560,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 
       {/* СЧЁТЧИК «сколько уже написано» — хук, чтобы не останавливаться */}
       {bookWords > 0 && (
-        <div className="card" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div className="card" style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <i className="ti ti-feather" style={{ fontSize: 26, color: "var(--accent)", flexShrink: 0 }} />
           <div style={{ flex: "1 1 220px", minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{s.writtenTitle}</div>
