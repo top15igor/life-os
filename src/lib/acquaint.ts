@@ -15,20 +15,11 @@ import { normalizeMorningPrefs } from "./morningPrefs";
 // чувства); активное слушание (цепляется за деталь); незавершённость (сессия ~4
 // вопроса → «завтра продолжим»). Состояние — в morning_prefs.
 
-const STEP = 6;              // ранний шаг (пока pct < REVEAL_PCT): чипы завязаны на эту сетку
-const REVEAL_PCT = 24;       // ~4 ответа → показываем «первую страницу» и делаем паузу
-const ACQ_CAP = 99;          // потолок: знакомство НЕ заканчивается, 100% не бывает
+const STEP = 1;              // 1 ответ = +1% (по просьбе: «1 вопрос — 1 процент»)
+const REVEAL_PCT = 5;        // после ~5 ответов один раз показываем «первую страницу» (без паузы)
+const ACQ_CAP = 99;          // потолок: знакомство НЕ заканчивается, 100% не бывает — всегда есть куда расти
 const DEEP_PCT = 90;         // тёплая «глубокая» отметка (однократно), но без финала
-
-// Замедляющийся прирост: чем дальше, тем медленнее (диминишинг). Ранний участок —
-// ровно +6 (сетка чипов и «первой страницы»), дальше всё меньше. Асимптота — 99%.
-function incFor(pct: number): number {
-  if (pct < REVEAL_PCT) return STEP; // 0,6,12,18 → 24 (первая страница на 4-м ответе)
-  if (pct < 60) return 4;
-  if (pct < 80) return 3;
-  if (pct < 90) return 2;
-  return 1; // 90..99 — совсем медленно, дальше стоим на 99 и просто продолжаем общаться
-}
+const SAVE_MIN = 15;         // ответ короче — не заводим отдельную запись (чипы «сова»/«кофе» и т.п.)
 
 // Пользы/фишки LIFE OS — бот делится по одной перед своим вопросом (взаимность),
 // показывая КОНКРЕТНУЮ ВЫГОДУ для человека: зачем ему всё это. Модель берёт
@@ -100,13 +91,6 @@ const RETURN_LEAD: Record<string, string> = {
   fr: "Oh, te revoilà — j'en suis ravi 🙂 Reprenons où on s'était arrêtés.",
 };
 
-const CLIFFHANGER: Record<string, string> = {
-  ru: "\n\nВсё, на сегодня хватит откровений 😄 Завтра продолжим — у меня уже есть для тебя вопрос поинтереснее. Нажми «🌱 Давай познакомимся», когда захочешь.",
-  en: "\n\nOkay, enough confessions for today 😄 We'll continue tomorrow — I already have a juicier question for you. Tap “🌱 Let's get acquainted” whenever you like.",
-  uk: "\n\nВсе, на сьогодні досить одкровень 😄 Завтра продовжимо — у мене вже є для тебе цікавіше питання. Натисни «🌱 Давай познайомимось», коли захочеш.",
-  fr: "\n\nBon, assez de confidences pour aujourd'hui 😄 On continue demain — j'ai déjà une question plus croustillante pour toi. Appuie sur « 🌱 Faisons connaissance » quand tu veux.",
-};
-
 const PAGE_LEAD: Record<string, string> = {
   ru: "Смотри, что у нас получилось, пока мы просто болтали 👇",
   en: "Look what came out of us just chatting 👇",
@@ -114,10 +98,10 @@ const PAGE_LEAD: Record<string, string> = {
   fr: "Regarde ce qui est sorti de notre simple conversation 👇",
 };
 const PAGE_OUTRO: Record<string, string> = {
-  ru: "\n\n☝️ Это — твоя первая запись. Ты уже её написал, просто разговаривая со мной 🙂 Я её сохранил в твой дневник.",
-  en: "\n\n☝️ That's your first entry. You already wrote it, just by talking to me 🙂 I've saved it to your diary.",
-  uk: "\n\n☝️ Це — твій перший запис. Ти вже його написав, просто розмовляючи зі мною 🙂 Я зберіг його у твій щоденник.",
-  fr: "\n\n☝️ C'est ta première entrée. Tu l'as déjà écrite, juste en me parlant 🙂 Je l'ai enregistrée dans ton journal.",
+  ru: "\n\n☝️ Так начинается твоя книга. Каждый твой ответ я тихо сохраняю отдельной записью в дневник — она наполняется сама, просто пока мы разговариваем 🙂 Загляни в «📖 Дневник», когда захочешь.",
+  en: "\n\n☝️ This is how your book begins. Every answer of yours I quietly save as its own diary entry — it fills up on its own, just as we talk 🙂 Peek into “📖 Diary” whenever you like.",
+  uk: "\n\n☝️ Так починається твоя книга. Кожну твою відповідь я тихо зберігаю окремим записом у щоденник — вона наповнюється сама, просто поки ми розмовляємо 🙂 Зазирни в «📖 Щоденник», коли захочеш.",
+  fr: "\n\n☝️ C'est ainsi que commence ton livre. Chaque réponse, je l'enregistre discrètement comme une entrée à part dans ton journal — il se remplit tout seul, juste en discutant 🙂 Jette un œil au « 📖 Journal » quand tu veux.",
 };
 
 // Тёплая «глубокая» отметка (однократно ~90%). Не финал: человека знать до конца
@@ -389,24 +373,34 @@ export async function startAcquaint(userId: string, name: string | null, lang = 
 // Ход знакомства на ответ пользователя.
 export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru"): Promise<AcqTurn> {
   const st = await readState(userId);
-  await append(userId, "user", userText);
+  const answer = userText.trim();
+  await append(userId, "user", answer);
 
-  const pct = Math.min(ACQ_CAP, st.pct + incFor(st.pct));
+  // Книга наполняется прямо из разговора: каждый содержательный ответ становится
+  // ОТДЕЛЬНОЙ записью дневника (source "acquaint"). Короткие чипы («сова»/«кофе»)
+  // не заводим — они попадут в «первую страницу». Сохраняем параллельно с ответом бота.
+  const savePromise: Promise<unknown> = answer.length >= SAVE_MIN
+    ? analyze(answer, userId)
+        .then((analysis) => saveEntry({ userId, raw_text: answer, source: "acquaint", analysis }))
+        .catch(() => { /* не вышло сохранить — не роняем диалог */ })
+    : Promise.resolve();
+
+  const pct = Math.min(ACQ_CAP, st.pct + STEP);
   const crossedReveal = st.pct < REVEAL_PCT && pct >= REVEAL_PCT;
   const crossedDeep = st.pct < DEEP_PCT && pct >= DEEP_PCT; // однократная тёплая отметка, НЕ финал
 
-  // Момент «первой страницы»: собираем ответы в запись, сохраняем, показываем — и пауза.
+  // «Первая страница» — разовый тёплый момент «смотри, ты уже ведёшь дневник».
+  // Это ПОКАЗ (recap): сами ответы уже сохранены по одному, поэтому дубликат не пишем.
+  // Паузы больше нет — сразу продолжаем следующим вопросом.
   if (crossedReveal) {
     const page = await buildFirstPage(userId, lang);
     if (page) {
-      try {
-        const analysis = await analyze(page, userId);
-        await saveEntry({ userId, raw_text: page, source: "acquaint", analysis });
-      } catch { /* не вышло — покажем страницу всё равно */ }
-      const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}${CLIFFHANGER[lang] || CLIFFHANGER.ru}`;
-      await writeState(userId, st.prefs, { pct, active: false }); // незавершённость-крючок: пауза до возврата
+      const next = await genTurn(userId, name, lang, null);
+      const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}\n\n${next}`;
+      await writeState(userId, st.prefs, { pct });
       await append(userId, "assistant", text);
-      return { text, pct, active: false };
+      await savePromise;
+      return { text, pct, active: true };
     }
   }
 
@@ -417,14 +411,16 @@ export async function acquaintReply(userId: string, name: string | null, userTex
     const text = sc.q[lang] || sc.q.ru;
     await writeState(userId, st.prefs, { pct });
     await append(userId, "assistant", text);
+    await savePromise;
     return { text, chips: sc.opts[lang] || sc.opts.ru, pct, active: true };
   }
 
   // Обычный ход: реакция + польза/фишка + следующий вопрос. Знакомство НЕ заканчивается —
-  // прогресс замедляется и упирается в 99%, а разговор продолжается сколько угодно.
-  let text = await genTurn(userId, name, lang, userText.trim());
+  // прогресс упирается в 99%, а разговор (и наполнение книги) продолжается сколько угодно.
+  let text = await genTurn(userId, name, lang, answer);
   if (crossedDeep) text += DEEP[lang] || DEEP.ru;
   await writeState(userId, st.prefs, { pct });
   await append(userId, "assistant", text);
+  await savePromise;
   return { text, pct, active: true };
 }
