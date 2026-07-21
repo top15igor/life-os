@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { getBookMeta, cacheSection, bookVoicePreamble, normGen } from "@/lib/book";
+import { getBookMeta, cacheSection, bookVoicePreamble, normGen, normDesign } from "@/lib/book";
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "@/lib/usage";
 
@@ -38,6 +38,12 @@ export async function POST(req: NextRequest) {
   // Сохранение настроек авторского голоса книги (perspective/для кого/tone/посыл).
   if (body.action === "saveSettings") {
     await cacheSection(user.id, year, "__gen", normGen(body.settings));
+    return NextResponse.json({ ok: true });
+  }
+
+  // Сохранение оформления книги (шрифт/обложка/размер) — без пересборки.
+  if (body.action === "saveDesign") {
+    await cacheSection(user.id, year, "__design", normDesign(body.design));
     return NextResponse.json({ ok: true });
   }
 
