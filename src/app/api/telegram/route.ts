@@ -19,10 +19,10 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
-import { KB, mainKeyboard } from "@/lib/botKeyboard";
+import { KB, mainKeyboard, isAcquaintLabel } from "@/lib/botKeyboard";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
 import { personalMorning } from "@/lib/morningPersonal";
 import { morningMessage } from "@/lib/morningPush";
@@ -260,11 +260,11 @@ const ACQUAINT_NUDGE: Record<string, string> = {
 
 function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
   if (!text) return null;
-  // Кнопка знакомства может нести суффикс прогресса («… · 24%») — отбрасываем его.
-  const base = text.split(" · ")[0];
+  // Кнопка знакомства меняет подпись по «лестнице близости» и несёт суффикс «· 24%» —
+  // распознаём её по всему набору ступеней, а не по одной фразе.
+  if (isAcquaintLabel(text)) return "acquaint";
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (base === k.acquaint) return "acquaint";
     if (text === k.diary) return "diary";
     if (text === k.tasks) return "tasks";
     if (text === k.motiv) return "motiv";
@@ -737,6 +737,22 @@ export async function POST(req: NextRequest) {
       chatId,
       lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
     );
+    return NextResponse.json({ ok: true });
+  }
+
+  // Разовое восстановление прошлых ответов знакомства в записи дневника — ТОЛЬКО владелец: /backfill.
+  if (typeof msg.text === "string" && /^\/backfill\b/i.test(msg.text.trim())) {
+    if (!process.env.TELEGRAM_ALLOWED_CHAT_ID || String(chatId) !== process.env.TELEGRAM_ALLOWED_CHAT_ID) {
+      return NextResponse.json({ ok: true }); // не владелец — тихо игнорируем
+    }
+    await sendMessage(chatId, "Собираю прошлые ответы знакомства в дневник… ⏳");
+    try {
+      const res = await backfillAcquaintEntries(user.id);
+      await sendMessage(chatId, `✅ Готово.\nДобавлено записей: ${res.added}\nПросмотрено сообщений: ${res.scanned}\nПропущено (коротких/дублей): ${res.skipped}`, { reply_markup: mainKeyboard(langOf(user, msg)) });
+    } catch (e) {
+      console.error("backfill", e);
+      await sendMessage(chatId, "Не получилось собрать. Загляни в логи 🙂");
+    }
     return NextResponse.json({ ok: true });
   }
 
