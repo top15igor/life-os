@@ -91,7 +91,7 @@ const STR: Record<string, any> = {
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
-    dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты" },
+    dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты", curate: "Править", addName: "Добавить", namePh: "Имя…", doneEdit: "Готово", resetAuto: "Вернуть авто", editedTag: "правлено вручную" },
   },
   en: {
     stepsTitle: "How your book is born",
@@ -176,7 +176,7 @@ const STR: Record<string, any> = {
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
-    dataLabels: { peopleYear: "People of this period", placesYear: "Places", projects: "Projects & work", deeds: "Good deeds", promises: "Promises kept", gratitude: "Gratitudes", mood: "Mood", energy: "Energy", health: "Health", avg: "on average", highlights: "Bright moments" },
+    dataLabels: { peopleYear: "People of this period", placesYear: "Places", projects: "Projects & work", deeds: "Good deeds", promises: "Promises kept", gratitude: "Gratitudes", mood: "Mood", energy: "Energy", health: "Health", avg: "on average", highlights: "Bright moments", curate: "Edit", addName: "Add", namePh: "Name…", doneEdit: "Done", resetAuto: "Reset to auto", editedTag: "edited manually" },
   },
 };
 STR.uk = STR.ru;
@@ -290,6 +290,16 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
   const [editKey, setEditKey] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [editBusy, setEditBusy] = useState(false);
+
+  // ручные правки списков-данных (люди/проекты/места) — пользователь курирует чипы прямо в главе
+  const [dataEdits, setDataEdits] = useState<Record<string, { name: string; count: number }[]>>(meta.dataEdits || {});
+  function resolveList(key: string, auto: { name: string; count: number }[]): { name: string; count: number }[] {
+    return dataEdits[key] != null ? dataEdits[key] : (auto || []);
+  }
+  async function saveDataList(key: string, list: { name: string; count: number }[] | null) {
+    setDataEdits((c) => { const n = { ...c }; if (list) n[key] = list; else delete n[key]; return n; });
+    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, dataKey: key, dataList: list || [] }) }).catch(() => {});
+  }
 
   // состав книги: скрытые главы + порядок
   const allKeys: string[] = book.chapters.map((c: any) => c.key);
@@ -443,11 +453,16 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
   const word = (n: number, key: string, fallback: string) => (ru && RUFORMS[key] ? plRu(n, RUFORMS[key]) : fallback);
 
   // ===== деривативный (детерминированный) контент для data-глав =====
-  function dataChapter(key: string) {
+  function dataChapter(key: string, editable = false) {
     const L = s.dataLabels;
-    if (key === "family") return <NameList items={book.people} label={L.peopleYear} icon="ti-user-heart" color="#ec4899" />;
-    if (key === "travel") return <NameList items={book.places} label={L.placesYear} icon="ti-map-pin" color="#06b6d4" />;
-    if (key === "work") return <NameList items={book.projects} label={L.projects} icon="ti-briefcase" color="#3b82f6" />;
+    const listProps = (auto: any[], chKey: string) => ({
+      items: resolveList(chKey, auto), custom: dataEdits[chKey] != null,
+      onSave: editable ? (list: any) => saveDataList(chKey, list) : undefined,
+      onReset: editable ? () => saveDataList(chKey, null) : undefined, s,
+    });
+    if (key === "family") return <NameList {...listProps(book.people, "family")} label={L.peopleYear} icon="ti-user-heart" color="#ec4899" />;
+    if (key === "travel") return <NameList {...listProps(book.places, "travel")} label={L.placesYear} icon="ti-map-pin" color="#06b6d4" />;
+    if (key === "work") return <NameList {...listProps(book.projects, "work")} label={L.projects} icon="ti-briefcase" color="#3b82f6" />;
     if (key === "health") return (
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
         {[["mood", st.mood], ["energy", st.energy], ["health", st.health]].filter(([, v]) => v != null).map(([k, v]: any) => (
@@ -742,7 +757,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
                     </div>
                   )
                 ) : (
-                  ch.readiness < 8 && edits[ch.key] == null && editKey !== ch.key ? <Muted text={s.addMore} /> : <>{ch.readiness >= 8 && dataChapter(ch.key)}{chapterEditor(ch.key, "data")}</>
+                  ch.readiness < 8 && edits[ch.key] == null && editKey !== ch.key ? <Muted text={s.addMore} /> : <>{ch.readiness >= 8 && dataChapter(ch.key, true)}{chapterEditor(ch.key, "data")}</>
                 )}
                 {/* фото главы */}
                 {editKey !== ch.key && (
@@ -1307,18 +1322,68 @@ function Field({ label, value, ph, onSave, saved, saving, s, icon, big }: any) {
   );
 }
 
-function NameList({ items, label, icon, color }: any) {
-  if (!items?.length) return null;
+function NameList({ items, label, icon, color, custom, onSave, onReset, s }: any) {
+  const L = s?.dataLabels || {};
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<{ name: string; count: number }[]>([]);
+  const [newName, setNewName] = useState("");
+
+  if (!editing && !items?.length && !onSave) return null;
+
+  const start = () => { setDraft((items || []).map((it: any) => ({ name: it.name, count: it.count || 0 }))); setNewName(""); setEditing(true); };
+  const commit = () => { const clean = draft.map((d) => ({ ...d, name: d.name.trim() })).filter((d) => d.name); onSave?.(clean.length ? clean : []); setEditing(false); };
+  const reset = () => { onReset?.(); setEditing(false); };
+  const addNew = () => { const n = newName.trim(); if (!n) return; setDraft((d) => [...d, { name: n, count: 1 }]); setNewName(""); };
+
+  if (editing) {
+    return (
+      <div>
+        <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 8 }}>{label}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+          {draft.map((d, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-2)", borderRadius: 10, padding: "5px 6px 5px 11px" }}>
+              <i className={`ti ${icon}`} style={{ fontSize: 15, color, flexShrink: 0 }} />
+              <input value={d.name} onChange={(e) => setDraft((c) => c.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 13.5, padding: "2px 0" }} />
+              <button onClick={() => setDraft((c) => c.filter((_, j) => j !== i))} title="✕"
+                style={{ flexShrink: 0, width: 24, height: 24, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--text-3)", cursor: "pointer", borderRadius: 6 }}>
+                <i className="ti ti-x" style={{ fontSize: 15 }} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNew(); } }} placeholder={L.namePh}
+            style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5 }} />
+          <button onClick={addNew} style={ghostBtn}><i className="ti ti-plus" style={{ fontSize: 14 }} />{L.addName}</button>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={commit} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 16px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+            <i className="ti ti-check" style={{ fontSize: 14 }} />{L.doneEdit}
+          </button>
+          {custom && <button onClick={reset} style={ghostBtn}><i className="ti ti-arrow-back-up" style={{ fontSize: 13 }} />{L.resetAuto}</button>}
+          <button onClick={() => setEditing(false)} style={{ background: "none", border: "none", color: "var(--text-2)", fontSize: 13, cursor: "pointer", padding: "7px 10px" }}>{s.cancelEdit}</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 8 }}>{label}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {items.map((it: any) => (
-          <span key={it.name} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "5px 11px", borderRadius: 99, background: "var(--surface-2)" }}>
-            <i className={`ti ${icon}`} style={{ fontSize: 14, color }} />{it.name}{it.count > 1 ? <span style={{ color: "var(--text-3)", fontSize: 11 }}>×{it.count}</span> : null}
-          </span>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: "var(--text-2)" }}>{label}</span>
+        {custom && onSave && <span style={{ fontSize: 10.5, color: "var(--accent-text)", background: "var(--accent-bg)", padding: "1px 7px", borderRadius: 99 }}>{L.editedTag}</span>}
+        {onSave && <button onClick={start} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", color: "var(--accent)", fontSize: 12, cursor: "pointer", padding: "2px 4px" }}><i className="ti ti-pencil" style={{ fontSize: 13 }} />{L.curate}</button>}
       </div>
+      {items?.length ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {items.map((it: any) => (
+            <span key={it.name} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "5px 11px", borderRadius: 99, background: "var(--surface-2)" }}>
+              <i className={`ti ${icon}`} style={{ fontSize: 14, color }} />{it.name}{it.count > 1 ? <span style={{ color: "var(--text-3)", fontSize: 11 }}>×{it.count}</span> : null}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
