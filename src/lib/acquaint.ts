@@ -264,6 +264,34 @@ export async function isAcquainting(userId: string): Promise<boolean> {
   return (await readState(userId)).active;
 }
 
+// Бэкофилл: разовое восстановление прошлых ответов знакомства в записи дневника.
+// Раньше сохранялась только «первая страница», а ответы жили лишь в истории диалога —
+// эта функция заводит по записи на каждый содержательный ответ, которого ещё нет
+// в дневнике. Быстро (без AI-анализа): в ленте запись показывает свой текст.
+// Идемпотентно: дубли отсекаются по совпадению текста с существующими записями.
+export async function backfillAcquaintEntries(userId: string): Promise<{ added: number; scanned: number; skipped: number }> {
+  const db = supabaseAdmin();
+  const { data: ents } = await db.from("entries").select("raw_text").eq("user_id", userId).order("entry_date", { ascending: false }).limit(600);
+  const existing = new Set(((ents as any[]) || []).map((e) => (e.raw_text || "").trim()).filter(Boolean));
+  const { data: msgs } = await db.from("companion_messages").select("content, created_at").eq("user_id", userId).eq("role", "user").order("created_at", { ascending: true }).limit(400);
+  let added = 0, scanned = 0, skipped = 0;
+  for (const mrow of ((msgs as any[]) || [])) {
+    const answer = ((mrow as any).content || "").trim();
+    scanned++;
+    if (answer.length < SAVE_MIN || existing.has(answer)) { skipped++; continue; }
+    if (added >= 150) break; // предохранитель
+    const created = (mrow as any).created_at ? new Date((mrow as any).created_at) : null;
+    const entry_date = created ? created.toISOString().slice(0, 10) : undefined;
+    const entry_time = created ? created.toISOString().slice(11, 19) : undefined;
+    try {
+      await saveEntry({ userId, raw_text: answer, source: "acquaint", analysis: {} as any, entry_date, entry_time });
+      existing.add(answer);
+      added++;
+    } catch { skipped++; }
+  }
+  return { added, scanned, skipped };
+}
+
 // «Что ты уже обо мне знаешь» — бот собирает тёплый портрет из ответов (2-е лицo,
 // от «ты»). Активное слушание в чистом виде: показать, что услышал и запомнил.
 const PORTRAIT_LEAD: Record<string, string> = {
