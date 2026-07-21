@@ -215,14 +215,15 @@ export function bookVoicePreamble(raw: any): string {
 }
 
 // ===== Оформление книги (шрифт/обложка/размер). Хранится в sections.__design. =====
-export type BookDesign = { font: string; paper: string; size: string };
-export const DEFAULT_DESIGN: BookDesign = { font: "classic", paper: "cream", size: "normal" };
+export type BookDesign = { font: string; paper: string; size: string; cover: string };
+export const DEFAULT_DESIGN: BookDesign = { font: "classic", paper: "cream", size: "normal", cover: "classic" };
 export function normDesign(raw: any): BookDesign {
   const d = raw && typeof raw === "object" ? raw : {};
   const font = ["classic", "literary", "modern"].includes(d.font) ? d.font : "classic";
   const paper = ["cream", "warm", "sage", "rose"].includes(d.paper) ? d.paper : "cream";
   const size = ["compact", "normal", "large"].includes(d.size) ? d.size : "normal";
-  return { font, paper, size };
+  const cover = ["classic", "midnight", "gold"].includes(d.cover) ? d.cover : "classic";
+  return { font, paper, size, cover };
 }
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
