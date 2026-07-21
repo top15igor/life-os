@@ -13,6 +13,9 @@ const STR: Record<string, any> = {
     steps3: [["ti-pencil", "Живёшь и пишешь записи", "словами или голосом — по одной в день"], ["ti-sparkles", "AI собирает их в главы", "месяцы, люди, места, уроки года"], ["ti-book-2", "Читаешь, печатаешь, даришь", "готовая книга твоей жизни"]],
     livingTitle: "Твоя история уже пишется",
     livingSub: "Моменты, которые уже вплетены в книгу — она растёт с каждой записью.",
+    writtenTitle: "Сколько уже написано",
+    writtenSub: "С каждой записью книга становится толще — не останавливайся ✍️",
+    wordsLabel: "слов", pagesLabel: "страниц", chaptersBuiltLabel: "глав собрано",
     almost: "Твоя книга за", growing: "растёт", pastReady: "готова к сборке", filledLabel: "наполнено",
     yearProgressLine: (p: number) => `Год прожит на ${p}% — книга наполняется вместе с тобой и будет дополняться до конца года.`,
     lifeCaption: "пишется всю жизнь",
@@ -66,7 +69,7 @@ const STR: Record<string, any> = {
       activeOf: (a: number, p: number) => `Активных друзей: ${a} из ${p}`,
     },
     readTitle: "Моя жизнь", by: "Автор", print: "Скачать / Печать (PDF)", closeReader: "Закрыть",
-    buildAll: "Собрать все главы", reading: "Читать книгу",
+    buildAll: "Собрать все главы", reading: "Читать книгу", tocTitle: "Оглавление",
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
@@ -77,6 +80,9 @@ const STR: Record<string, any> = {
     steps3: [["ti-pencil", "You live and jot notes", "by text or voice — one a day"], ["ti-sparkles", "AI weaves them into chapters", "months, people, places, lessons"], ["ti-book-2", "Read, print, gift it", "a finished book of your life"]],
     livingTitle: "Your story is already being written",
     livingSub: "Moments already woven into your book — it grows with every entry.",
+    writtenTitle: "How much is written already",
+    writtenSub: "Every entry makes the book thicker — keep going ✍️",
+    wordsLabel: "words", pagesLabel: "pages", chaptersBuiltLabel: "chapters assembled",
     almost: "Your book of", growing: "is growing", pastReady: "is ready to assemble", filledLabel: "filled",
     yearProgressLine: (p: number) => `The year is ${p}% lived — the book grows with you and keeps filling until December.`,
     lifeCaption: "written for a lifetime",
@@ -130,7 +136,7 @@ const STR: Record<string, any> = {
       activeOf: (a: number, p: number) => `Active friends: ${a} of ${p}`,
     },
     readTitle: "My life", by: "By", print: "Download / Print (PDF)", closeReader: "Close",
-    buildAll: "Build all chapters", reading: "Read the book",
+    buildAll: "Build all chapters", reading: "Read the book", tocTitle: "Contents",
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
@@ -424,6 +430,15 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
     return <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>;
   }
 
+  // Счётчик «сколько уже написано» — мотивирующий хук.
+  const bookWords: number = book.stats?.words || 0;
+  const bookPages: number = bookWords > 0 ? Math.max(1, Math.round(bookWords / 300)) : 0;
+  const builtCount: number = orderedChapters.reduce((n: number, ch: any) => {
+    if (ch.kind === "months") return n + (Array.isArray(book.months) && book.months.some((mm: any) => months[mm.month]) ? 1 : 0);
+    return n + (previewOf(ch.key) ? 1 : 0);
+  }, 0);
+  const fmtNum = (n: number) => n.toLocaleString(intlOf(locale as any));
+
   return (
     <div>
       {/* выбор года / «вся жизнь» */}
@@ -471,6 +486,25 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           </button>
         </div>
       </div>
+
+      {/* СЧЁТЧИК «сколько уже написано» — хук, чтобы не останавливаться */}
+      {bookWords > 0 && (
+        <div className="card" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <i className="ti ti-feather" style={{ fontSize: 26, color: "var(--accent)", flexShrink: 0 }} />
+          <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{s.writtenTitle}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 3, lineHeight: 1.45 }}>{s.writtenSub}</div>
+          </div>
+          <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
+            {[[fmtNum(bookWords), s.wordsLabel], [fmtNum(bookPages), s.pagesLabel], [String(builtCount), s.chaptersBuiltLabel]].map(([v, l]: any, i: number) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 23, fontWeight: 700, color: "var(--accent)", lineHeight: 1 }}>{v}</div>
+                <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* КАК РОЖДАЕТСЯ КНИГА — наглядно 1-2-3 */}
       {Array.isArray(s.steps3) && (
@@ -562,7 +596,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
         const open = openKey === ch.key && !configMode;
         const isHidden = hiddenCh.includes(ch.key);
         return (
-          <div key={ch.key} className="card" style={{ marginBottom: 10, opacity: configMode && isHidden ? 0.5 : 1 }}>
+          <div key={ch.key} id={`main-ch-${ch.key}`} className="card" style={{ marginBottom: 10, opacity: configMode && isHidden ? 0.5 : 1 }}>
             <div onClick={() => {
               if (configMode) return;
               const willOpen = !open; setOpenKey(willOpen ? ch.key : null);
@@ -662,6 +696,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
           loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh} photos={photos}
           onClose={() => setReader(false)}
+          onEdit={(key: string) => { setReader(false); setOpenKey(key); setEditKey(key); setTimeout(() => document.getElementById(`main-ch-${key}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 90); }}
         />, document.body)}
 
       {pickerKey && mounted && createPortal(
@@ -672,7 +707,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, onClose }: any) {
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, onClose, onEdit }: any) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -727,6 +762,18 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
     </div>
   );
 
+  // Оглавление — только те главы, что реально попадут в книгу (совпадает с рендером ниже).
+  const toc: { key: string; title: string }[] = [];
+  if (!hidden.includes("overview")) toc.push({ key: "overview", title: titleOf("overview") });
+  if (!hidden.includes("months") && book.months.length > 0) toc.push({ key: "months", title: titleOf("months") });
+  for (const k of ["family", "health", "work", "travel", "trace"]) {
+    if (hidden.includes(k)) continue;
+    if (dataChapter(k) || (photos[k] || []).length) toc.push({ key: k, title: titleOf(k) });
+  }
+  for (const k of ["self", "people", "lessons"]) if (!hidden.includes(k)) toc.push({ key: k, title: titleOf(k) });
+  if (meta.letter_self) toc.push({ key: "letter_self", title: s.letterSelf });
+  if (meta.letter_close) toc.push({ key: "letter_close", title: s.letterClose });
+
   return (
     <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#efece4", overflowY: "auto" }}>
       {/* панель управления (не печатается) */}
@@ -741,8 +788,25 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
         {cover}
 
+        {/* ОГЛАВЛЕНИЕ / навигация */}
+        {toc.length > 1 && (
+          <div className="book-page" id="ch-toc">
+            <div className="serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 14, color: "var(--text)" }}>{s.tocTitle}</div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {toc.map((it: any, i: number) => (
+                <button key={it.key} onClick={() => document.getElementById(`ch-${it.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  style={{ display: "flex", alignItems: "baseline", gap: 12, background: "none", border: "none", borderBottom: i < toc.length - 1 ? "1px solid rgba(0,0,0,0.06)" : "none", padding: "12px 2px", cursor: "pointer", textAlign: "left", width: "100%", color: "var(--text)" }}>
+                  <span className="serif" style={{ fontSize: 15, color: "var(--accent)", fontWeight: 700, minWidth: 22 }}>{i + 1}</span>
+                  <span className="serif" style={{ fontSize: 16.5, flex: 1 }}>{it.title}</span>
+                  <i className="ti ti-chevron-right no-print" style={{ fontSize: 15, color: "var(--text-3)" }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Год в одном взгляде */}
-        {!hidden.includes("overview") && <Page title={titleOf("overview")}>
+        {!hidden.includes("overview") && <Page id="ch-overview" title={titleOf("overview")} onEdit={onEdit ? () => onEdit("overview") : null} editLabel={s.editChapter}>
           <div className="book-strip">
             <span><b>{book.stats.entries}</b> {s.overviewStrip.entries}</span>
             <span><b>{book.stats.days}</b> {s.overviewStrip.days}</span>
@@ -755,7 +819,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
 
         {/* 12 месяцев */}
         {!hidden.includes("months") && book.months.length > 0 && (
-          <Page title={titleOf("months")}>
+          <Page id="ch-months" title={titleOf("months")}>
             {book.months.map((mm: any) => {
               const mc = months[mm.month];
               return (
@@ -775,20 +839,20 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
           const node = dataChapter(k);
           const ph = photos[k] || [];
           if (!node && !ph.length) return null;
-          return <Page key={k} title={titleOf(k)}>{node}<PhotoStrip urls={ph} /></Page>;
+          return <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={onEdit ? () => onEdit(k) : null} editLabel={s.editChapter}>{node}<PhotoStrip urls={ph} /></Page>;
         })}
 
         {/* AI-разделы */}
         {["self", "people", "lessons"].filter((k) => !hidden.includes(k)).map((k) => (
-          <Page key={k} title={titleOf(k)}>
+          <Page key={k} id={`ch-${k}`} title={titleOf(k)} onEdit={onEdit ? () => onEdit(k) : null} editLabel={s.editChapter}>
             {ai[k] ? aiBody(k) : aiLoading === k ? <Loading text={s.building} /> : <BuildBtn onClick={() => loadAi(k)} s={s} />}
             <PhotoStrip urls={photos[k] || []} />
           </Page>
         ))}
 
         {/* письма */}
-        {meta.letter_self && <Page title={s.letterSelf}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_self}</div></Page>}
-        {meta.letter_close && <Page title={s.letterClose}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_close}</div></Page>}
+        {meta.letter_self && <Page id="ch-letter_self" title={s.letterSelf}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_self}</div></Page>}
+        {meta.letter_close && <Page id="ch-letter_close" title={s.letterClose}><div className="book-text serif" style={{ fontStyle: "italic" }}>{meta.letter_close}</div></Page>}
       </div>
     </div>
   );
@@ -951,10 +1015,17 @@ const Num = ({ n, label }: any) => <div><div style={{ fontSize: 22, fontWeight: 
 const Loading = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)", display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-loader-2" style={{ fontSize: 15 }} />{text}</div>;
 const Muted = ({ text }: any) => <div style={{ fontSize: 13, color: "var(--text-3)" }}>{text}</div>;
 const BuildBtn = ({ onClick, s }: any) => <button onClick={onClick} style={ghostBtn}><i className="ti ti-sparkles" style={{ fontSize: 14 }} />{s.build}</button>;
-function Page({ title, children }: any) {
+function Page({ title, children, id, onEdit, editLabel }: any) {
   return (
-    <div className="book-page">
-      <div className="serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 16, color: "var(--text)" }}>{title}</div>
+    <div className="book-page" id={id}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+        <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: "var(--text)" }}>{title}</div>
+        {onEdit && (
+          <button className="no-print" onClick={onEdit} style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "5px 11px", color: "var(--accent)", fontSize: 12.5, cursor: "pointer" }}>
+            <i className="ti ti-pencil" style={{ fontSize: 13 }} />{editLabel}
+          </button>
+        )}
+      </div>
       {children}
     </div>
   );

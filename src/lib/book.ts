@@ -96,8 +96,12 @@ export async function getBookData(userId: string, year: number) {
     safeCount(db.from("goals").select("*", { count: "exact", head: true }).eq("user_id", userId)),
   ]);
 
+  // Сколько слов «жизни» уже записано — мотивирующий счётчик для книги.
+  const wc = (t: any) => (String(t || "").trim().match(/\S+/g) || []).length;
+  const words = rows.reduce((n: number, e: any) => n + wc(e.raw_text || e.summary), 0);
+
   const stats = {
-    entries: rows.length, days, voice,
+    entries: rows.length, days, voice, words,
     months: months.length,
     people: people.length, places: places.length, projects: projects.length,
     deeds, promisesDone, gratitude, insights: insightsCount, dreamsTrue, goals: goalsCount,
