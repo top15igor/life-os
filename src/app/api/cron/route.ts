@@ -13,6 +13,7 @@ import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { eveningQuestion } from "@/lib/dailyQuestions";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
+import { mainKeyboard } from "@/lib/botKeyboard";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -84,6 +85,17 @@ const MSG: Record<Lang, {
 
 const dayMs = 86400000;
 const isoOf = (t: number) => new Date(t).toISOString().slice(0, 10);
+
+// Мягкое напоминание вернуться к «Давай познакомимся», если человек поставил его
+// на паузу и притих. Гейтится жёстко (кап числа пингов + кулдаун), чтобы не надоедать.
+const ACQ_BACK: Record<Lang, (p: number) => string> = {
+  ru: (p) => `🌱 Мы остановились на знакомстве на ${p}% 🙂\nПродолжим? Дальше у меня для тебя вопрос поинтереснее — жми «🌱 Давай познакомимся».`,
+  en: (p) => `🌱 We paused our little intro at ${p}% 🙂\nShall we continue? I've got a juicier question waiting — tap “🌱 Let's get acquainted”.`,
+  uk: (p) => `🌱 Ми зупинилися на знайомстві на ${p}% 🙂\nПродовжимо? Далі в мене для тебе цікавіше питання — тисни «🌱 Давай познайомимось».`,
+  fr: (p) => `🌱 On a mis notre présentation en pause à ${p}% 🙂\nOn continue ? J'ai une question plus croustillante pour toi — appuie sur « 🌱 Faisons connaissance ».`,
+};
+const ACQ_NUDGE_CAP = 3;    // не больше 3 пингов-возвратов за всё время
+const ACQ_NUDGE_COOLDOWN = 4; // и не чаще раза в 4 дня
 
 // Ежемесячная авто-выгрузка дневника в Obsidian (.zip) — «твои данные всегда у тебя».
 const BACKUP_CAPTION: Record<Lang, string> = {
@@ -309,6 +321,25 @@ export async function GET(req: NextRequest) {
           await sendMessage(u.chat_id, digest);
           logPush(u.id, "weekly").catch(() => {});
           stats.digests++;
+        }
+      }
+
+      // 🌱 Возврат к знакомству: человек поставил «Давай познакомимся» на паузу
+      // (active=false) на 1..99% и притих. Пингуем мягко — не чаще раза в 4 дня и
+      // не больше 3 раз всего; уважаем «напоминания записать». Имеет приоритет над
+      // обычным вечерним напоминанием (это тёплее и релевантнее для новичка).
+      if (!isWeeklyDay && !prefs.acquaintActive && prefs.acquaintPct >= 1 && prefs.acquaintPct <= 99
+          && prefs.remindersEnabled !== false && (prefs.acquaintNudges || 0) < ACQ_NUDGE_CAP) {
+        const lastT = prefs.acquaintNudgedOn ? new Date(prefs.acquaintNudgedOn + "T00:00:00Z").getTime() : 0;
+        const daysSince = lastT ? Math.round((todayT - lastT) / dayMs) : 999;
+        if (daysSince >= ACQ_NUDGE_COOLDOWN) {
+          try {
+            await sendMessage(u.chat_id, ACQ_BACK[lang](prefs.acquaintPct), { reply_markup: mainKeyboard(lang, prefs.acquaintPct) });
+            await db.from("users").update({ morning_prefs: { ...prefs, acquaintNudgedOn: today, acquaintNudges: (prefs.acquaintNudges || 0) + 1 } }).eq("id", u.id);
+            logPush(u.id, "acquaint").catch(() => {});
+            (stats as any).acquaintNudges = ((stats as any).acquaintNudges || 0) + 1;
+          } catch (e) { console.error("acquaint nudge", u.id, e); }
+          continue; // в этот вечер больше ничего не шлём
         }
       }
 
