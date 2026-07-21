@@ -14,7 +14,7 @@ export default function BookWidget({ book, locale }: { book: { year: number; ent
   if (!book || book.entries === 0) return null;
   const R = 22.5, C = 2 * Math.PI * R;
   return (
-    <Link href="/lifebook" className="card" style={{ display: "block", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fff7ed)", border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
+    <Link href="/lifebook" className="card soft-hero" style={{ display: "block", marginBottom: 16, border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <svg width={56} height={56} viewBox="0 0 56 56" style={{ flexShrink: 0 }}>
           <circle cx={28} cy={28} r={R} fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth={5} />

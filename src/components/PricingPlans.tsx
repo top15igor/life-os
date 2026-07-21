@@ -93,7 +93,7 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
       </div>
 
       {/* Печатная книга — разовый заказ, отдельно от подписки */}
-      <Link href="/lifebook" className="card" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, textDecoration: "none", color: "var(--text)", background: "linear-gradient(135deg, var(--accent-bg), #fff7ed)", border: "1px solid var(--border)" }}>
+      <Link href="/lifebook" className="card soft-hero" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, textDecoration: "none", color: "var(--text)", border: "1px solid var(--border)" }}>
         <span style={{ width: 44, height: 44, borderRadius: 11, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />
         </span>

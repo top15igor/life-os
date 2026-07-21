@@ -40,7 +40,7 @@ export default function LabPitch({ locale }: { locale: string }) {
 
   return (
     <div>
-      <div className="card" style={{ background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 60%, #fff7ed)", border: "1px solid var(--border)", marginBottom: 16 }}>
+      <div className="card soft-hero" style={{ border: "1px solid var(--border)", marginBottom: 16 }}>
         <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em", maxWidth: 560 }}>{p.lead}</div>
         <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.6, marginTop: 10, maxWidth: 620 }}>{p.what}</div>
       </div>

@@ -108,7 +108,7 @@ export default function AwarenessCard({ locale, totalDays }: { locale: string; t
   const ex = s.examples[i];
 
   return (
-    <div style={{ borderRadius: 18, padding: "22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+    <div className="soft-hero" style={{ borderRadius: 18, padding: "22px", marginBottom: 16, border: "1px solid var(--border)" }}>
       <div style={{ fontSize: 19, fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.01em", maxWidth: 560 }}>{s.title}</div>
       <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 7, maxWidth: 540 }}>{s.sub}</div>
 

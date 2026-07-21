@@ -260,7 +260,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
       <input ref={cardFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f && cardTargetRef.current) uploadImage(cardTargetRef.current, f); e.target.value = ""; }} />
 
       {/* БАННЕР */}
-      <div style={{ borderRadius: 20, padding: "22px 22px", marginBottom: 16, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+      <div className="soft-hero" style={{ borderRadius: 20, padding: "22px 22px", marginBottom: 16, border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>{s.title} ✨</div>
@@ -269,7 +269,7 @@ export default function DreamsBoard({ initial, locale }: { initial: Dream[]; loc
               <i className="ti ti-plus" style={{ fontSize: 17 }} />{s.add}
             </button>
           </div>
-          <div style={{ display: "flex", gap: 18, background: "rgba(255,255,255,0.55)", borderRadius: 14, padding: "12px 18px" }}>
+          <div style={{ display: "flex", gap: 18, background: "var(--hero-inset)", borderRadius: 14, padding: "12px 18px" }}>
             {[[dreams.length, s.statAll], [used.length, s.statSpheres], [inProgress, s.statProgress]].map(([n, l]: any, i) => (
               <div key={i} style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "var(--accent)" }}>{n}</div>

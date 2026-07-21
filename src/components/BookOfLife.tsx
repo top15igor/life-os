@@ -560,7 +560,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 
       {/* СЧЁТЧИК «сколько уже написано» — хук, чтобы не останавливаться */}
       {bookWords > 0 && (
-        <div className="card" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div className="card" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <i className="ti ti-feather" style={{ fontSize: 26, color: "var(--accent)", flexShrink: 0 }} />
           <div style={{ flex: "1 1 220px", minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{s.writtenTitle}</div>
@@ -577,8 +577,8 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
         </div>
       )}
 
-      {/* КАК РОЖДАЕТСЯ КНИГА — наглядно 1-2-3 */}
-      {Array.isArray(s.steps3) && (
+      {/* КАК РОЖДАЕТСЯ КНИГА — наглядно 1-2-3 (только для новичков, дальше не мешаем) */}
+      {Array.isArray(s.steps3) && (book.stats?.entries || 0) < 12 && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 11 }}>{s.stepsTitle}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
