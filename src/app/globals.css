@@ -152,6 +152,20 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 }
 
 /* ===== Книга жизни: ридер и печать ===== */
+/* Пятна светлого фона (книга-ридер, «бумажные» карточки) фиксируют СВЕТЛУЮ палитру,
+   чтобы тёмная тема не делала текст невидимым (светлый по светлому). Бумага всегда светлая. */
+.on-light {
+  --text: #1f2933;
+  --text-2: #6b7280;
+  --text-3: #9ca3af;
+  --border: rgba(0,0,0,0.08);
+  --surface: #ffffff;
+  --accent: #4f46e5;
+  --accent-bg: #eef2ff;
+  --accent-text: #3730a3;
+  color: var(--text);
+}
+
 .serif { font-family: var(--font-serif, Georgia, "Times New Roman", serif); }
 .book-page {
   background: #fffdf8; border: 1px solid rgba(0,0,0,0.08); border-radius: 6px;

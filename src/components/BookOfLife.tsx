@@ -420,7 +420,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
       </div>
 
       {/* ГЕРОЙ */}
-      <div style={{ borderRadius: 20, padding: "24px 22px", marginBottom: 18, background: "linear-gradient(135deg, var(--accent-bg), #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+      <div className="on-light" style={{ borderRadius: 20, padding: "24px 22px", marginBottom: 18, background: "linear-gradient(135deg, #eef2ff, #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
@@ -666,7 +666,7 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
   );
 
   return (
-    <div className="print-root" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#efece4", overflowY: "auto" }}>
+    <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#efece4", overflowY: "auto" }}>
       {/* панель управления (не печатается) */}
       <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
         <button onClick={onClose} style={ghostBtn}><i className="ti ti-arrow-left" style={{ fontSize: 15 }} />{s.closeReader}</button>
