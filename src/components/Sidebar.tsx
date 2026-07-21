@@ -25,6 +25,9 @@ const ED_L: Record<string, Record<string, string>> = {
   fr: { customize: "Personnaliser", done: "OK", reset: "Réinitialiser", title: "Ordre & visibilité" },
 };
 
+// Цветовые акценты разделов — чтобы блоки меню различались не только интервалом.
+const GROUP_COLORS: Record<string, string> = { main: "#6366f1", life: "#22c55e", memory: "#a855f7", ai: "#3b82f6", more: "#f59e0b" };
+
 const K_ORDER = "lifeos_nav_order", K_HIDDEN = "lifeos_nav_hidden", K_COLLAPSED = "lifeos_nav_collapsed";
 const miniBtn = (dis: boolean): any => ({ background: "none", border: "none", cursor: dis ? "default" : "pointer", color: "var(--text-3)", padding: 2, opacity: dis ? 0.3 : 1, display: "inline-flex", flexShrink: 0 });
 
@@ -148,7 +151,8 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
               const isCol = collapsed.includes(g.id);
               return (
                 <div key={g.id} style={{ marginBottom: 6, paddingTop: gi > 0 ? 10 : 0, marginTop: gi > 0 ? 4 : 0, borderTop: gi > 0 ? "1px solid var(--border)" : "none" }}>
-                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 5, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "4px 6px 6px", color: "var(--text-3)" }}>
+                  <button onClick={() => toggleCollapse(g.id)} style={{ display: "flex", alignItems: "center", gap: 7, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "4px 6px 6px", color: "var(--text-3)" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: GROUP_COLORS[g.id] || "var(--accent)", flexShrink: 0 }} />
                     <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700 }}>{gl[g.id] || g.id}</span>
                     <i className={`ti ti-chevron-${isCol ? "right" : "down"}`} style={{ fontSize: 14, marginLeft: "auto", color: "var(--text-3)" }} />
                   </button>
