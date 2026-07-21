@@ -215,15 +215,17 @@ export function bookVoicePreamble(raw: any): string {
 }
 
 // ===== Оформление книги (шрифт/обложка/размер). Хранится в sections.__design. =====
-export type BookDesign = { font: string; paper: string; size: string; cover: string };
-export const DEFAULT_DESIGN: BookDesign = { font: "classic", paper: "cream", size: "normal", cover: "classic" };
+export type BookDesign = { font: string; paper: string; size: string; cover: string; coverPhoto: string; giftTo: string; giftFrom: string; epigraph: string; dropcap: boolean };
+export const DEFAULT_DESIGN: BookDesign = { font: "classic", paper: "cream", size: "normal", cover: "classic", coverPhoto: "", giftTo: "", giftFrom: "", epigraph: "", dropcap: false };
 export function normDesign(raw: any): BookDesign {
   const d = raw && typeof raw === "object" ? raw : {};
+  const str = (v: any, n: number) => (typeof v === "string" ? v.slice(0, n).trim() : "");
   const font = ["classic", "literary", "modern"].includes(d.font) ? d.font : "classic";
   const paper = ["cream", "warm", "sage", "rose"].includes(d.paper) ? d.paper : "cream";
   const size = ["compact", "normal", "large"].includes(d.size) ? d.size : "normal";
-  const cover = ["classic", "midnight", "gold"].includes(d.cover) ? d.cover : "classic";
-  return { font, paper, size, cover };
+  const cover = ["classic", "midnight", "gold", "emerald", "burgundy"].includes(d.cover) ? d.cover : "classic";
+  const coverPhoto = typeof d.coverPhoto === "string" && /^https?:\/\//.test(d.coverPhoto) ? d.coverPhoto.slice(0, 600) : "";
+  return { font, paper, size, cover, coverPhoto, giftTo: str(d.giftTo, 120), giftFrom: str(d.giftFrom, 120), epigraph: str(d.epigraph, 600), dropcap: d.dropcap === true };
 }
 
 // ===== Мета книги (посвящение, письма, кэш разделов). Устойчива к отсутствию таблицы. =====
