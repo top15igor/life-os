@@ -521,7 +521,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
       </div>
 
       {/* ГЕРОЙ */}
-      <div className="on-light" style={{ borderRadius: 20, padding: "24px 22px", marginBottom: 18, background: "linear-gradient(135deg, #eef2ff, #fdf2f8 55%, #fff7ed)", border: "1px solid var(--border)" }}>
+      <div className="book-hero">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
@@ -541,12 +541,12 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           </div>
         </div>
         {book.stage === "current" && !isLife && (
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "rgba(255,255,255,0.5)", borderRadius: 10, padding: "9px 12px" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "var(--hero-inset)", borderRadius: 10, padding: "9px 12px" }}>
             <i className="ti ti-calendar-stats" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />{s.yearProgressLine(book.yearProgress)}
           </div>
         )}
         {isLife && (
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "rgba(255,255,255,0.5)", borderRadius: 10, padding: "9px 12px" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, color: "var(--accent-text)", lineHeight: 1.5, marginTop: 14, maxWidth: 560, background: "var(--hero-inset)", borderRadius: 10, padding: "9px 12px" }}>
             <i className="ti ti-infinity" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />{s.lifeProgressLine(`${st.entries} ${word(st.entries, "entries", s.entries)}`)}
           </div>
         )}
