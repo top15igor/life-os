@@ -389,6 +389,41 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
     setMonthLoading(null);
   }
 
+  // Настройки авторского голоса + оформления книги (общие для главной и ридера).
+  const [showTune, setShowTune] = useState(false);
+  const [busyAll, setBusyAll] = useState(false);
+  const [photoPick, setPhotoPick] = useState(false);
+  const [gen, setGen] = useState(() => { const g = meta.sections?.__gen || {}; return { perspective: g.perspective === "third" ? "third" : "first", audience: g.audience || meta.recipient || "self", tone: g.tone || "", intent: g.intent || "" }; });
+  const [design, setDesign] = useState(() => {
+    const d = meta.sections?.__design || {};
+    return {
+      font: BOOK_FONTS[d.font] ? d.font : "classic",
+      paper: BOOK_PAPERS[d.paper] ? d.paper : "cream",
+      size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal",
+      cover: ["classic", "midnight", "gold", "emerald", "burgundy"].includes(d.cover) ? d.cover : "classic",
+      coverPhoto: typeof d.coverPhoto === "string" && /^https?:\/\//.test(d.coverPhoto) ? d.coverPhoto : "",
+      giftTo: typeof d.giftTo === "string" ? d.giftTo : "",
+      giftFrom: typeof d.giftFrom === "string" ? d.giftFrom : "",
+      epigraph: typeof d.epigraph === "string" ? d.epigraph : "",
+      dropcap: d.dropcap === true,
+    };
+  });
+  function applyDesign(patch: any) { const next = { ...design, ...patch }; setDesign(next); fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveDesign", year, design: next }) }).catch(() => {}); }
+  const PRESETS = [
+    { cover: "classic", paper: "cream", font: "classic", size: "normal" },
+    { cover: "midnight", paper: "cream", font: "literary", size: "large" },
+    { cover: "gold", paper: "warm", font: "literary", size: "normal" },
+    { cover: "emerald", paper: "sage", font: "literary", size: "normal" },
+    { cover: "burgundy", paper: "warm", font: "literary", size: "normal" },
+  ];
+  async function saveTuneAndRebuild() {
+    setBusyAll(true);
+    await fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveSettings", year, settings: gen }) }).catch(() => {});
+    await Promise.all([ loadAi("overview", true), loadAi("self", true), loadAi("lessons", true), loadAi("people", true), ...(Array.isArray(book.months) ? book.months.map((mm: any) => loadMonth(mm.month, true)) : []) ]);
+    setBusyAll(false);
+    setShowTune(false);
+  }
+
   function monthLabel(month: string) {
     return new Intl.DateTimeFormat(intlOf(locale as any), { month: "long", year: "numeric" }).format(new Date(month + "-01T12:00:00"));
   }
@@ -621,12 +656,18 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
       <Field label={s.dedication} value={m.dedication} ph={s.dedicationPh} onSave={(v) => saveMeta({ dedication: v }, "ded")} saved={savedFlag === "ded"} saving={savingFlag} s={s} icon="ti-quote" />
 
       {/* ОГЛАВЛЕНИЕ */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "22px 0 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "22px 0 10px" }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>{s.contents}</div>
-        <button onClick={() => { setConfigMode((v) => !v); setOpenKey(null); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer", padding: 4 }}>
-          <i className={`ti ${configMode ? "ti-check" : "ti-adjustments-horizontal"}`} style={{ fontSize: 15 }} />{configMode ? s.doneConfig : s.configBook}
-        </button>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <button onClick={() => setShowTune((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: showTune ? "var(--accent-bg)" : "none", border: showTune ? "1px solid var(--accent)" : "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", fontSize: 13, cursor: "pointer", padding: "5px 11px" }}>
+            <i className="ti ti-adjustments" style={{ fontSize: 15 }} />{s.tune}
+          </button>
+          <button onClick={() => { setConfigMode((v) => !v); setOpenKey(null); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "1px solid var(--border)", borderRadius: 8, color: "var(--accent)", fontSize: 13, cursor: "pointer", padding: "5px 11px" }}>
+            <i className={`ti ${configMode ? "ti-check" : "ti-adjustments-horizontal"}`} style={{ fontSize: 15 }} />{configMode ? s.doneConfig : s.configBook}
+          </button>
+        </div>
       </div>
+      {showTune && <div style={{ marginBottom: 14 }}><TunePanel s={s} gen={gen} setGen={setGen} design={design} applyDesign={applyDesign} PRESETS={PRESETS} saveTuneAndRebuild={saveTuneAndRebuild} busyAll={busyAll} photoPick={photoPick} setPhotoPick={setPhotoPick} memories={memories} /></div>}
       {configMode && <div style={{ fontSize: 12.5, color: "var(--text-3)", margin: "0 2px 10px", lineHeight: 1.5 }}>{s.configHint}</div>}
       {(configMode ? orderedChapters : orderedChapters.filter((c: any) => !hiddenCh.includes(c.key))).map((ch: any, chIdx: number) => {
         const open = openKey === ch.key && !configMode;
@@ -732,6 +773,7 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
           ai={ai} months={months} monthLabel={monthLabel} aiBody={aiBody} dataChapter={dataChapter} titleOf={titleOf}
           loadAi={loadAi} loadMonth={loadMonth} aiLoading={aiLoading} monthLoading={monthLoading} hidden={hiddenCh} photos={photos}
           edits={edits} setEdits={setEdits} memories={memories}
+          design={design} gen={gen} setGen={setGen} applyDesign={applyDesign} PRESETS={PRESETS} saveTuneAndRebuild={saveTuneAndRebuild} busyAll={busyAll} photoPick={photoPick} setPhotoPick={setPhotoPick} showTune={showTune} setShowTune={setShowTune}
           onClose={() => setReader(false)}
         />, document.body)}
 
@@ -743,200 +785,10 @@ export default function BookOfLife({ book, meta, years, year, locale, userName, 
 }
 
 // ===== РИДЕР (полноэкранный, печать) =====
-function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, edits = {}, setEdits, memories = [], onClose }: any) {
-  const [busy, setBusy] = useState(false);
-  const [showTune, setShowTune] = useState(false);
-  const [busyAll, setBusyAll] = useState(false);
-  const [eKey, setEKey] = useState<string | null>(null);
-  const [eDraft, setEDraft] = useState("");
-  const [eBusy, setEBusy] = useState(false);
-  const [gen, setGen] = useState(() => {
-    const g = meta.sections?.__gen || {};
-    return { perspective: g.perspective === "third" ? "third" : "first", audience: g.audience || meta.recipient || "self", tone: g.tone || "", intent: g.intent || "" };
-  });
-  const [design, setDesign] = useState(() => {
-    const d = meta.sections?.__design || {};
-    return {
-      font: BOOK_FONTS[d.font] ? d.font : "classic",
-      paper: BOOK_PAPERS[d.paper] ? d.paper : "cream",
-      size: ["compact", "normal", "large"].includes(d.size) ? d.size : "normal",
-      cover: ["classic", "midnight", "gold", "emerald", "burgundy"].includes(d.cover) ? d.cover : "classic",
-      coverPhoto: typeof d.coverPhoto === "string" && /^https?:\/\//.test(d.coverPhoto) ? d.coverPhoto : "",
-      giftTo: typeof d.giftTo === "string" ? d.giftTo : "",
-      giftFrom: typeof d.giftFrom === "string" ? d.giftFrom : "",
-      epigraph: typeof d.epigraph === "string" ? d.epigraph : "",
-      dropcap: d.dropcap === true,
-    };
-  });
-  const [photoPick, setPhotoPick] = useState(false);
-  function applyDesign(patch: any) {
-    const next = { ...design, ...patch };
-    setDesign(next);
-    fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveDesign", year, design: next }) }).catch(() => {});
-  }
-  // Готовые премиум-темы — один тап меняет обложку/бумагу/шрифт/размер.
-  const PRESETS = [
-    { cover: "classic", paper: "cream", font: "classic", size: "normal" },
-    { cover: "midnight", paper: "cream", font: "literary", size: "large" },
-    { cover: "gold", paper: "warm", font: "literary", size: "normal" },
-    { cover: "emerald", paper: "sage", font: "literary", size: "normal" },
-    { cover: "burgundy", paper: "warm", font: "literary", size: "normal" },
-  ];
+function TunePanel({ s, gen, setGen, design, applyDesign, PRESETS, saveTuneAndRebuild, busyAll, photoPick, setPhotoPick, memories }: any) {
   const theme = BOOK_PAPERS[design.paper] || BOOK_PAPERS.cream;
-  const sizeClass = design.size === "compact" ? "book-sm" : design.size === "large" ? "book-lg" : "book-md";
-
-  function startEditR(key: string) { setEDraft(edits[key] != null ? edits[key] : (ai[key]?.body || "")); setEKey(key); }
-  async function persistEdit(key: string, bodyText: string) {
-    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, editKey: key, editBody: bodyText }) }).catch(() => {});
-    setEdits((c: any) => { const n = { ...c }; if (bodyText.trim()) n[key] = bodyText; else delete n[key]; return n; });
-  }
-  async function saveEditR(key: string) { setEBusy(true); await persistEdit(key, eDraft); setEBusy(false); setEKey(null); }
-  async function revertR(key: string) { setEBusy(true); await persistEdit(key, ""); setEBusy(false); setEKey(null); }
-
-  async function saveTuneAndRebuild() {
-    setBusyAll(true);
-    await fetch("/api/book/section", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveSettings", year, settings: gen }) }).catch(() => {});
-    await Promise.all([
-      loadAi("overview", true), loadAi("self", true), loadAi("lessons", true), loadAi("people", true),
-      ...(Array.isArray(book.months) ? book.months.map((mm: any) => loadMonth(mm.month, true)) : []),
-    ]);
-    setBusyAll(false);
-    setShowTune(false);
-  }
-
-  // Тело главы: режим правки (textarea) → правка пользователя → обычный контент.
-  function bodyFor(key: string, node: any) {
-    if (eKey === key) return (
-      <div className="no-print">
-        <textarea value={eDraft} onChange={(e) => setEDraft(e.target.value)} autoFocus
-          style={{ width: "100%", boxSizing: "border-box", minHeight: 200, padding: "13px 15px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", color: "var(--text)", fontSize: 15.5, lineHeight: 1.7, fontFamily: "var(--font-serif, Georgia, serif)", resize: "vertical" }} placeholder={s.editPh} />
-        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <button onClick={() => setEKey(null)} style={ghostBtn}>{s.cancelEdit}</button>
-          {edits[key] != null && <button onClick={() => revertR(key)} style={ghostBtn}><i className="ti ti-arrow-back-up" style={{ fontSize: 13 }} />{s.resetAi}</button>}
-          <button onClick={() => saveEditR(key)} disabled={eBusy} style={{ ...btnPrimary, opacity: eBusy ? 0.6 : 1 }}><i className="ti ti-check" style={{ fontSize: 15 }} />{s.saveEdit}</button>
-        </div>
-      </div>
-    );
-    if (edits[key] != null) return <div className="book-text" style={{ whiteSpace: "pre-wrap" }}>{edits[key]}</div>;
-    return node;
-  }
-
-  useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onEsc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onEsc); document.body.style.overflow = prev; };
-  }, [onClose]);
-
-  // Автосборка при открытии: сразу собираем «Год в одном взгляде» и последний месяц,
-  // чтобы человек увидел свою историю прозой, а не пустые кнопки «Собрать».
-  useEffect(() => {
-    if (ai.overview === undefined && book.stats?.entries > 0) loadAi("overview");
-    const last = Array.isArray(book.months) && book.months.length ? book.months[book.months.length - 1] : null;
-    if (last && months[last.month] === undefined) loadMonth(last.month);
-    // один раз при открытии ридера
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function buildAll() {
-    setBusy(true);
-    await Promise.all([
-      ai.overview === undefined ? loadAi("overview") : null,
-      ai.self === undefined ? loadAi("self") : null,
-      ai.lessons === undefined ? loadAi("lessons") : null,
-      ai.people === undefined ? loadAi("people") : null,
-      ...book.months.map((mm: any) => loadMonth(mm.month)),
-    ].filter(Boolean));
-    setBusy(false);
-  }
-
-  function doPrint() {
-    document.body.classList.add("printing");
-    const after = () => { document.body.classList.remove("printing"); window.removeEventListener("afterprint", after); };
-    window.addEventListener("afterprint", after);
-    window.print();
-  }
-
-  const L = s.dataLabels;
-  // Премиум-стили обложки (титульная страница). Внутренние страницы остаются светлыми.
-  const COVERS: Record<string, any> = {
-    classic: { bg: theme.paper, fg: "var(--text)", sub: "var(--text-2)", muted: "var(--text-3)", brand: theme.accent, ornament: false, frame: false },
-    midnight: { bg: "#14181f", fg: "#f4efe3", sub: "#cfc8b7", muted: "#8f887a", brand: "#d4af37", ornament: true, frame: true },
-    gold: { bg: theme.paper, fg: "#3a2f1a", sub: "#6f5f3c", muted: "#9a8a63", brand: "#b8912e", ornament: true, frame: true },
-    emerald: { bg: "#0f2a22", fg: "#eef4ee", sub: "#c3d3c6", muted: "#8aa091", brand: "#d4af37", ornament: true, frame: true },
-    burgundy: { bg: "#2a1116", fg: "#f4eaeb", sub: "#d8bdc1", muted: "#a98890", brand: "#d4af37", ornament: true, frame: true },
-  };
-  const cv = COVERS[design.cover] || COVERS.classic;
-  const ornate = cv.ornament; // премиум-обложки → орнаменты и в главах
-  const cover = (
-    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative" } as any}>
-      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.55, borderRadius: 4, pointerEvents: "none" }} />}
-      {design.coverPhoto && (
-        <div style={{ width: "100%", maxWidth: 340, aspectRatio: "3 / 2", borderRadius: 8, overflow: "hidden", marginBottom: 22, border: cv.frame ? `1px solid ${cv.brand}` : "1px solid rgba(0,0,0,0.1)", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
-          <img src={design.coverPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-        </div>
-      )}
-      <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: cv.brand, marginBottom: 16 }}>LIFE OS</div>
-      {cv.ornament && <div className="serif" style={{ color: cv.brand, fontSize: 22, marginBottom: 16, letterSpacing: 8 }}>❦</div>}
-      {isLife ? (
-        <div className="serif" style={{ fontSize: 38, fontWeight: 600, lineHeight: 1.15, maxWidth: 460, color: cv.fg }}>{s.lifeBook}</div>
-      ) : (
-        <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15, color: cv.fg }}>{s.readTitle},<br />{year}</div>
-      )}
-      {isLife && <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.lifeSubtitle}</div>}
-      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: cv.sub, marginTop: 28, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
-      {cv.ornament && <div style={{ width: 44, height: 1, background: cv.brand, opacity: 0.6, margin: "30px 0 0" }} />}
-      <div style={{ fontSize: 13, color: cv.muted, marginTop: cv.ornament ? 16 : 40 }}>{s.by}: {userName || "—"}</div>
-    </div>
-  );
-
-  // Подарочная страница (посвящение) — если заполнено «кому/от кого».
-  const giftPage = (design.giftTo || design.giftFrom) ? (
-    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative", minHeight: 320 } as any}>
-      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.45, borderRadius: 4, pointerEvents: "none" }} />}
-      <div className="serif" style={{ color: cv.brand, fontSize: 26, letterSpacing: 6, marginBottom: 20 }}>❦</div>
-      {design.giftTo && <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: cv.fg, lineHeight: 1.3 }}>{design.giftTo}</div>}
-      <div className="serif" style={{ fontSize: 17, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.giftPageLead}</div>
-      {design.giftFrom && <div className="serif" style={{ fontSize: 15, color: cv.muted, marginTop: 30, lineHeight: 1.6 }}>{s.giftFromWord} {design.giftFrom}</div>}
-    </div>
-  ) : null;
-
-  // Эпиграф — цитата на отдельной странице.
-  const epigraphPage = design.epigraph ? (
-    <div className="book-page" style={{ minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-      <div className="serif" style={{ fontSize: 19, fontStyle: "italic", color: "var(--text-2)", lineHeight: 1.7, maxWidth: 460 }}>«{design.epigraph}»</div>
-    </div>
-  ) : null;
-
-  // Оглавление — только те главы, что реально попадут в книгу (совпадает с рендером ниже).
-  const toc: { key: string; title: string }[] = [];
-  if (!hidden.includes("overview")) toc.push({ key: "overview", title: titleOf("overview") });
-  if (!hidden.includes("months") && book.months.length > 0) toc.push({ key: "months", title: titleOf("months") });
-  for (const k of ["family", "health", "work", "travel", "trace"]) {
-    if (hidden.includes(k)) continue;
-    if (dataChapter(k) || (photos[k] || []).length) toc.push({ key: k, title: titleOf(k) });
-  }
-  for (const k of ["self", "people", "lessons"]) if (!hidden.includes(k)) toc.push({ key: k, title: titleOf(k) });
-  if (meta.letter_self) toc.push({ key: "letter_self", title: s.letterSelf });
-  if (meta.letter_close) toc.push({ key: "letter_close", title: s.letterClose });
-
   return (
-    <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: theme.root, overflowY: "auto", "--font-serif": BOOK_FONTS[design.font], "--book-paper": theme.paper, "--accent": theme.accent } as any}>
-      {/* панель управления (не печатается) */}
-      <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
-        <button onClick={onClose} style={ghostBtn}><i className="ti ti-arrow-left" style={{ fontSize: 15 }} />{s.closeReader}</button>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setShowTune((v) => !v)} style={{ ...ghostBtn, ...(showTune ? { borderColor: "var(--accent)", color: "var(--accent)" } : {}) }}><i className="ti ti-adjustments" style={{ fontSize: 15 }} />{s.tune}</button>
-          <button onClick={buildAll} disabled={busy} style={ghostBtn}><i className={`ti ${busy ? "ti-loader-2" : "ti-sparkles"}`} style={{ fontSize: 15 }} />{s.buildAll}</button>
-          <button onClick={doPrint} style={btnPrimary}><i className="ti ti-download" style={{ fontSize: 16 }} />{s.print}</button>
-        </div>
-      </div>
-
-      <div className={`${sizeClass}${design.dropcap ? " book-drop" : ""}`} style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
-        {/* НАСТРОЙКА АВТОРСКОГО ГОЛОСА — прямо в книге */}
-        {showTune && (
-          <div className="no-print" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border)", padding: "20px 20px", marginBottom: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.10)" }}>
+          <div className="no-print on-light" style={{ background: "#fff", borderRadius: 14, border: "1px solid var(--border)", padding: "20px 20px", marginBottom: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.10)" }}>
             <div style={{ fontSize: 17, fontWeight: 700 }}>{s.tuneTitle}</div>
             <div style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4, marginBottom: 16, lineHeight: 1.5 }}>{s.tuneSub}</div>
 
@@ -1080,7 +932,158 @@ function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, mon
               </span>
             </button>
           </div>
-        )}
+  );
+}
+
+function Reader({ book, meta, year, locale, userName, s, isLife, ai, months, monthLabel, aiBody, dataChapter, titleOf, loadAi, loadMonth, aiLoading, monthLoading, hidden = [], photos = {}, edits = {}, setEdits, memories = [], onClose, design, gen, setGen, applyDesign, PRESETS, saveTuneAndRebuild, busyAll, photoPick, setPhotoPick, showTune, setShowTune }: any) {
+  const [busy, setBusy] = useState(false);
+  const [eKey, setEKey] = useState<string | null>(null);
+  const [eDraft, setEDraft] = useState("");
+  const [eBusy, setEBusy] = useState(false);
+  const theme = BOOK_PAPERS[design.paper] || BOOK_PAPERS.cream;
+  const sizeClass = design.size === "compact" ? "book-sm" : design.size === "large" ? "book-lg" : "book-md";
+
+  function startEditR(key: string) { setEDraft(edits[key] != null ? edits[key] : (ai[key]?.body || "")); setEKey(key); }
+  async function persistEdit(key: string, bodyText: string) {
+    await fetch("/api/book/meta", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ year, editKey: key, editBody: bodyText }) }).catch(() => {});
+    setEdits((c: any) => { const n = { ...c }; if (bodyText.trim()) n[key] = bodyText; else delete n[key]; return n; });
+  }
+  async function saveEditR(key: string) { setEBusy(true); await persistEdit(key, eDraft); setEBusy(false); setEKey(null); }
+  async function revertR(key: string) { setEBusy(true); await persistEdit(key, ""); setEBusy(false); setEKey(null); }
+
+
+  // Тело главы: режим правки (textarea) → правка пользователя → обычный контент.
+  function bodyFor(key: string, node: any) {
+    if (eKey === key) return (
+      <div className="no-print">
+        <textarea value={eDraft} onChange={(e) => setEDraft(e.target.value)} autoFocus
+          style={{ width: "100%", boxSizing: "border-box", minHeight: 200, padding: "13px 15px", borderRadius: 10, border: "1px solid var(--border)", background: "#fff", color: "var(--text)", fontSize: 15.5, lineHeight: 1.7, fontFamily: "var(--font-serif, Georgia, serif)", resize: "vertical" }} placeholder={s.editPh} />
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <button onClick={() => setEKey(null)} style={ghostBtn}>{s.cancelEdit}</button>
+          {edits[key] != null && <button onClick={() => revertR(key)} style={ghostBtn}><i className="ti ti-arrow-back-up" style={{ fontSize: 13 }} />{s.resetAi}</button>}
+          <button onClick={() => saveEditR(key)} disabled={eBusy} style={{ ...btnPrimary, opacity: eBusy ? 0.6 : 1 }}><i className="ti ti-check" style={{ fontSize: 15 }} />{s.saveEdit}</button>
+        </div>
+      </div>
+    );
+    if (edits[key] != null) return <div className="book-text" style={{ whiteSpace: "pre-wrap" }}>{edits[key]}</div>;
+    return node;
+  }
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onEsc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onEsc); document.body.style.overflow = prev; };
+  }, [onClose]);
+
+  // Автосборка при открытии: сразу собираем «Год в одном взгляде» и последний месяц,
+  // чтобы человек увидел свою историю прозой, а не пустые кнопки «Собрать».
+  useEffect(() => {
+    if (ai.overview === undefined && book.stats?.entries > 0) loadAi("overview");
+    const last = Array.isArray(book.months) && book.months.length ? book.months[book.months.length - 1] : null;
+    if (last && months[last.month] === undefined) loadMonth(last.month);
+    // один раз при открытии ридера
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function buildAll() {
+    setBusy(true);
+    await Promise.all([
+      ai.overview === undefined ? loadAi("overview") : null,
+      ai.self === undefined ? loadAi("self") : null,
+      ai.lessons === undefined ? loadAi("lessons") : null,
+      ai.people === undefined ? loadAi("people") : null,
+      ...book.months.map((mm: any) => loadMonth(mm.month)),
+    ].filter(Boolean));
+    setBusy(false);
+  }
+
+  function doPrint() {
+    document.body.classList.add("printing");
+    const after = () => { document.body.classList.remove("printing"); window.removeEventListener("afterprint", after); };
+    window.addEventListener("afterprint", after);
+    window.print();
+  }
+
+  const L = s.dataLabels;
+  // Премиум-стили обложки (титульная страница). Внутренние страницы остаются светлыми.
+  const COVERS: Record<string, any> = {
+    classic: { bg: theme.paper, fg: "var(--text)", sub: "var(--text-2)", muted: "var(--text-3)", brand: theme.accent, ornament: false, frame: false },
+    midnight: { bg: "#14181f", fg: "#f4efe3", sub: "#cfc8b7", muted: "#8f887a", brand: "#d4af37", ornament: true, frame: true },
+    gold: { bg: theme.paper, fg: "#3a2f1a", sub: "#6f5f3c", muted: "#9a8a63", brand: "#b8912e", ornament: true, frame: true },
+    emerald: { bg: "#0f2a22", fg: "#eef4ee", sub: "#c3d3c6", muted: "#8aa091", brand: "#d4af37", ornament: true, frame: true },
+    burgundy: { bg: "#2a1116", fg: "#f4eaeb", sub: "#d8bdc1", muted: "#a98890", brand: "#d4af37", ornament: true, frame: true },
+  };
+  const cv = COVERS[design.cover] || COVERS.classic;
+  const ornate = cv.ornament; // премиум-обложки → орнаменты и в главах
+  const cover = (
+    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative" } as any}>
+      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.55, borderRadius: 4, pointerEvents: "none" }} />}
+      {design.coverPhoto && (
+        <div style={{ width: "100%", maxWidth: 340, aspectRatio: "3 / 2", borderRadius: 8, overflow: "hidden", marginBottom: 22, border: cv.frame ? `1px solid ${cv.brand}` : "1px solid rgba(0,0,0,0.1)", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
+          <img src={design.coverPhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        </div>
+      )}
+      <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: cv.brand, marginBottom: 16 }}>LIFE OS</div>
+      {cv.ornament && <div className="serif" style={{ color: cv.brand, fontSize: 22, marginBottom: 16, letterSpacing: 8 }}>❦</div>}
+      {isLife ? (
+        <div className="serif" style={{ fontSize: 38, fontWeight: 600, lineHeight: 1.15, maxWidth: 460, color: cv.fg }}>{s.lifeBook}</div>
+      ) : (
+        <div className="serif" style={{ fontSize: 40, fontWeight: 600, lineHeight: 1.15, color: cv.fg }}>{s.readTitle},<br />{year}</div>
+      )}
+      {isLife && <div className="serif" style={{ fontSize: 15, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.lifeSubtitle}</div>}
+      {meta.dedication && <div className="serif" style={{ fontSize: 16, fontStyle: "italic", color: cv.sub, marginTop: 28, lineHeight: 1.6, maxWidth: 420 }}>«{meta.dedication}»</div>}
+      {cv.ornament && <div style={{ width: 44, height: 1, background: cv.brand, opacity: 0.6, margin: "30px 0 0" }} />}
+      <div style={{ fontSize: 13, color: cv.muted, marginTop: cv.ornament ? 16 : 40 }}>{s.by}: {userName || "—"}</div>
+    </div>
+  );
+
+  // Подарочная страница (посвящение) — если заполнено «кому/от кого».
+  const giftPage = (design.giftTo || design.giftFrom) ? (
+    <div className="book-page book-cover" style={{ "--cover-bg": cv.bg, background: "var(--cover-bg)", position: "relative", minHeight: 320 } as any}>
+      {cv.frame && <div style={{ position: "absolute", inset: 14, border: `1px solid ${cv.brand}`, opacity: 0.45, borderRadius: 4, pointerEvents: "none" }} />}
+      <div className="serif" style={{ color: cv.brand, fontSize: 26, letterSpacing: 6, marginBottom: 20 }}>❦</div>
+      {design.giftTo && <div className="serif" style={{ fontSize: 24, fontWeight: 600, color: cv.fg, lineHeight: 1.3 }}>{design.giftTo}</div>}
+      <div className="serif" style={{ fontSize: 17, fontStyle: "italic", color: cv.sub, marginTop: 16, lineHeight: 1.6, maxWidth: 420 }}>{s.giftPageLead}</div>
+      {design.giftFrom && <div className="serif" style={{ fontSize: 15, color: cv.muted, marginTop: 30, lineHeight: 1.6 }}>{s.giftFromWord} {design.giftFrom}</div>}
+    </div>
+  ) : null;
+
+  // Эпиграф — цитата на отдельной странице.
+  const epigraphPage = design.epigraph ? (
+    <div className="book-page" style={{ minHeight: 260, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+      <div className="serif" style={{ fontSize: 19, fontStyle: "italic", color: "var(--text-2)", lineHeight: 1.7, maxWidth: 460 }}>«{design.epigraph}»</div>
+    </div>
+  ) : null;
+
+  // Оглавление — только те главы, что реально попадут в книгу (совпадает с рендером ниже).
+  const toc: { key: string; title: string }[] = [];
+  if (!hidden.includes("overview")) toc.push({ key: "overview", title: titleOf("overview") });
+  if (!hidden.includes("months") && book.months.length > 0) toc.push({ key: "months", title: titleOf("months") });
+  for (const k of ["family", "health", "work", "travel", "trace"]) {
+    if (hidden.includes(k)) continue;
+    if (dataChapter(k) || (photos[k] || []).length) toc.push({ key: k, title: titleOf(k) });
+  }
+  for (const k of ["self", "people", "lessons"]) if (!hidden.includes(k)) toc.push({ key: k, title: titleOf(k) });
+  if (meta.letter_self) toc.push({ key: "letter_self", title: s.letterSelf });
+  if (meta.letter_close) toc.push({ key: "letter_close", title: s.letterClose });
+
+  return (
+    <div className="print-root on-light" style={{ position: "fixed", inset: 0, zIndex: 9999, background: theme.root, overflowY: "auto", "--font-serif": BOOK_FONTS[design.font], "--book-paper": theme.paper, "--accent": theme.accent } as any}>
+      {/* панель управления (не печатается) */}
+      <div className="no-print" style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
+        <button onClick={onClose} style={ghostBtn}><i className="ti ti-arrow-left" style={{ fontSize: 15 }} />{s.closeReader}</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setShowTune((v) => !v)} style={{ ...ghostBtn, ...(showTune ? { borderColor: "var(--accent)", color: "var(--accent)" } : {}) }}><i className="ti ti-adjustments" style={{ fontSize: 15 }} />{s.tune}</button>
+          <button onClick={buildAll} disabled={busy} style={ghostBtn}><i className={`ti ${busy ? "ti-loader-2" : "ti-sparkles"}`} style={{ fontSize: 15 }} />{s.buildAll}</button>
+          <button onClick={doPrint} style={btnPrimary}><i className="ti ti-download" style={{ fontSize: 16 }} />{s.print}</button>
+        </div>
+      </div>
+
+      <div className={`${sizeClass}${design.dropcap ? " book-drop" : ""}`} style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 80px" }}>
+        {/* НАСТРОЙКА АВТОРСКОГО ГОЛОСА — прямо в книге */}
+        {showTune && <TunePanel s={s} gen={gen} setGen={setGen} design={design} applyDesign={applyDesign} PRESETS={PRESETS} saveTuneAndRebuild={saveTuneAndRebuild} busyAll={busyAll} photoPick={photoPick} setPhotoPick={setPhotoPick} memories={memories} />}
 
         {cover}
         {giftPage}
