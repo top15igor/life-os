@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { intlOf } from "@/lib/i18n";
@@ -91,7 +91,7 @@ const STR: Record<string, any> = {
     overviewStrip: { entries: "записей", days: "дней с записями", people: "людей рядом", places: "мест" },
     chapTitles: { overview: "Год в одном взгляде", months: "Двенадцать глав года", family: "Семья и близкие", health: "Здоровье и спорт", work: "Работа и проекты", travel: "Путешествия и места", trace: "Мой след", self: "Что я понял о себе", people: "Люди, которым я благодарен", lessons: "Главные уроки года" },
     chapTitlesLife: { overview: "Жизнь в одном взгляде", months: "Главы по месяцам", lessons: "Главные уроки жизни" },
-    dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты", curate: "Править", addName: "Добавить", namePh: "Имя…", doneEdit: "Готово", resetAuto: "Вернуть авто", editedTag: "правлено вручную" },
+    dataLabels: { peopleYear: "Люди этого периода", placesYear: "Места", projects: "Проекты и дела", deeds: "Добрых дел", promises: "Обещаний выполнено", gratitude: "Благодарностей", mood: "Настроение", energy: "Энергия", health: "Здоровье", avg: "в среднем", highlights: "Яркие моменты", curate: "Править", addName: "Добавить", namePh: "Имя…", doneEdit: "Готово", resetAuto: "Вернуть авто", editedTag: "правлено вручную", merge: "Объединить", mergeInto: "Оставить имя", selHint: "Выбери 2+, чтобы объединить" },
   },
   en: {
     stepsTitle: "How your book is born",
@@ -176,7 +176,7 @@ const STR: Record<string, any> = {
     overviewStrip: { entries: "entries", days: "days journaled", people: "people close by", places: "places" },
     chapTitles: { overview: "The year at a glance", months: "Twelve chapters of the year", family: "Family & loved ones", health: "Health & sport", work: "Work & projects", travel: "Travels & places", trace: "My trace", self: "What I learned about myself", people: "People I'm grateful to", lessons: "Key lessons of the year" },
     chapTitlesLife: { overview: "Life at a glance", months: "Chapters by month", lessons: "Key lessons of my life" },
-    dataLabels: { peopleYear: "People of this period", placesYear: "Places", projects: "Projects & work", deeds: "Good deeds", promises: "Promises kept", gratitude: "Gratitudes", mood: "Mood", energy: "Energy", health: "Health", avg: "on average", highlights: "Bright moments", curate: "Edit", addName: "Add", namePh: "Name…", doneEdit: "Done", resetAuto: "Reset to auto", editedTag: "edited manually" },
+    dataLabels: { peopleYear: "People of this period", placesYear: "Places", projects: "Projects & work", deeds: "Good deeds", promises: "Promises kept", gratitude: "Gratitudes", mood: "Mood", energy: "Energy", health: "Health", avg: "on average", highlights: "Bright moments", curate: "Edit", addName: "Add", namePh: "Name…", doneEdit: "Done", resetAuto: "Reset to auto", editedTag: "edited manually", merge: "Merge", mergeInto: "Keep name", selHint: "Select 2+ to merge" },
   },
 };
 STR.uk = STR.ru;
@@ -1325,33 +1325,65 @@ function Field({ label, value, ph, onSave, saved, saving, s, icon, big }: any) {
 function NameList({ items, label, icon, color, custom, onSave, onReset, s }: any) {
   const L = s?.dataLabels || {};
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<{ name: string; count: number }[]>([]);
+  const [draft, setDraft] = useState<{ id: number; name: string; count: number }[]>([]);
   const [newName, setNewName] = useState("");
+  const [sel, setSel] = useState<Set<number>>(() => new Set());
+  const idRef = useRef(0);
+  const nid = () => (idRef.current += 1);
 
   if (!editing && !items?.length && !onSave) return null;
 
-  const start = () => { setDraft((items || []).map((it: any) => ({ name: it.name, count: it.count || 0 }))); setNewName(""); setEditing(true); };
-  const commit = () => { const clean = draft.map((d) => ({ ...d, name: d.name.trim() })).filter((d) => d.name); onSave?.(clean.length ? clean : []); setEditing(false); };
+  const start = () => { idRef.current = 0; setDraft((items || []).map((it: any) => ({ id: nid(), name: it.name, count: it.count || 0 }))); setNewName(""); setSel(new Set()); setEditing(true); };
+  const commit = () => { const clean = draft.map((d) => ({ name: d.name.trim(), count: d.count })).filter((d) => d.name); onSave?.(clean.length ? clean : []); setEditing(false); };
   const reset = () => { onReset?.(); setEditing(false); };
-  const addNew = () => { const n = newName.trim(); if (!n) return; setDraft((d) => [...d, { name: n, count: 1 }]); setNewName(""); };
+  const addNew = () => { const n = newName.trim(); if (!n) return; setDraft((d) => [...d, { id: nid(), name: n, count: 1 }]); setNewName(""); };
+  const toggleSel = (id: number) => setSel((c) => { const n = new Set(c); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const removeRow = (id: number) => { setDraft((c) => c.filter((r) => r.id !== id)); setSel((c) => { const n = new Set(c); n.delete(id); return n; }); };
+  // Объединить выбранные в одну сущность: имя берём у первой выбранной, упоминания суммируем.
+  const mergeSel = () => {
+    if (sel.size < 2) return;
+    setDraft((d) => {
+      const selRows = d.filter((r) => sel.has(r.id));
+      const total = selRows.reduce((a, r) => a + (r.count || 0), 0);
+      const targetId = selRows[0].id;
+      return d.filter((r) => r.id === targetId || !sel.has(r.id)).map((r) => r.id === targetId ? { ...r, count: total } : r);
+    });
+    setSel(new Set());
+  };
 
   if (editing) {
     return (
       <div>
-        <div style={{ fontSize: 12, color: "var(--text-2)", marginBottom: 8 }}>{label}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-          {draft.map((d, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-2)", borderRadius: 10, padding: "5px 6px 5px 11px" }}>
-              <i className={`ti ${icon}`} style={{ fontSize: 15, color, flexShrink: 0 }} />
-              <input value={d.name} onChange={(e) => setDraft((c) => c.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
-                style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 13.5, padding: "2px 0" }} />
-              <button onClick={() => setDraft((c) => c.filter((_, j) => j !== i))} title="✕"
-                style={{ flexShrink: 0, width: 24, height: 24, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--text-3)", cursor: "pointer", borderRadius: 6 }}>
-                <i className="ti ti-x" style={{ fontSize: 15 }} />
-              </button>
-            </div>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <span style={{ fontSize: 12, color: "var(--text-2)" }}>{label}</span>
+          <span style={{ fontSize: 11, color: "var(--text-3)", marginLeft: "auto" }}>{L.selHint}</span>
         </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+          {draft.map((d) => {
+            const on = sel.has(d.id);
+            return (
+              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--surface-2)", borderRadius: 10, padding: "5px 6px 5px 7px", border: on ? "1.5px solid var(--accent)" : "1.5px solid transparent" }}>
+                <button onClick={() => toggleSel(d.id)} title={L.merge}
+                  style={{ flexShrink: 0, width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 6, cursor: "pointer", border: on ? "none" : "1.5px solid var(--border)", background: on ? "var(--accent)" : "transparent", color: "#fff", padding: 0 }}>
+                  {on ? <i className="ti ti-check" style={{ fontSize: 13 }} /> : null}
+                </button>
+                <i className={`ti ${icon}`} style={{ fontSize: 15, color, flexShrink: 0 }} />
+                <input value={d.name} onChange={(e) => setDraft((c) => c.map((x) => x.id === d.id ? { ...x, name: e.target.value } : x))}
+                  style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: "var(--text)", fontSize: 13.5, padding: "2px 0" }} />
+                {d.count > 1 ? <span style={{ flexShrink: 0, color: "var(--text-3)", fontSize: 11 }}>×{d.count}</span> : null}
+                <button onClick={() => removeRow(d.id)} title="✕"
+                  style={{ flexShrink: 0, width: 24, height: 24, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--text-3)", cursor: "pointer", borderRadius: 6 }}>
+                  <i className="ti ti-x" style={{ fontSize: 15 }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {sel.size >= 2 && (
+          <button onClick={mergeSel} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 12 }}>
+            <i className="ti ti-arrows-join" style={{ fontSize: 15 }} />{L.merge} · {sel.size}
+          </button>
+        )}
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNew(); } }} placeholder={L.namePh}
             style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: "8px 12px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5 }} />
