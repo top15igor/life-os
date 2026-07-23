@@ -306,6 +306,38 @@ export async function getOnThisDay(userId: string, todayISO: string): Promise<{ 
   return { period: y ? "year" : "month", summary: (pick.summary || pick.raw_text || "").slice(0, 140) };
 }
 
+// «В этот день»: все записи за ЭТОТ календарный день (ММ-ДД) в прошлые годы +
+// ровно месяц назад. Возвращает список воспоминаний от свежих к старым.
+export async function getDayMemories(userId: string, todayISO: string): Promise<{ date: string; label: "year" | "years" | "month"; n: number; text: string }[]> {
+  const d = new Date(todayISO + "T12:00:00");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const monthAgo = new Date(d); monthAgo.setMonth(d.getMonth() - 1);
+  const monthAgoISO = monthAgo.toISOString().slice(0, 10);
+  try {
+    const db = supabaseAdmin();
+    // Записи в тот же день-месяц прошлых лет (LIKE %-MM-DD) + запись месяц назад.
+    const [sameDay, monthRes] = await Promise.all([
+      db.from("entries").select("entry_date, summary, raw_text").eq("user_id", userId).like("entry_date", `%-${mm}-${dd}`).order("entry_date", { ascending: false }),
+      db.from("entries").select("entry_date, summary, raw_text").eq("user_id", userId).eq("entry_date", monthAgoISO),
+    ]);
+    const out: { date: string; label: "year" | "years" | "month"; n: number; text: string }[] = [];
+    const curY = d.getFullYear();
+    for (const e of (sameDay.data || []) as any[]) {
+      const y = Number((e.entry_date || "").slice(0, 4));
+      if (!y || y >= curY) continue; // не сегодня и не будущее
+      const n = curY - y;
+      out.push({ date: e.entry_date, label: n === 1 ? "year" : "years", n, text: (e.summary || e.raw_text || "").slice(0, 400) });
+    }
+    for (const e of (monthRes.data || []) as any[]) {
+      out.push({ date: e.entry_date, label: "month", n: 1, text: (e.summary || e.raw_text || "").slice(0, 400) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 export async function getBiographerHistory(userId: string, limit = 30) {
   const { data } = await supabaseAdmin()
     .from("biographer_chats")
