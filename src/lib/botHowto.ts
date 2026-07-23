@@ -470,6 +470,8 @@ export function howtoMenu(lang: string, origin: string, token: string): Rendered
     rows.push(d.items.slice(i, i + 2).map((it) => ({ text: it.label, callback_data: `howto:i:${it.key}` })));
   }
   rows.push([{ text: d.tipBtn, callback_data: "howto:tip" }]);
+  const ALL_FEATURES: Record<string, string> = { ru: "📋 Все возможности", en: "📋 All features", uk: "📋 Усі можливості", fr: "📋 Toutes les fonctions", es: "📋 Todas las funciones" };
+  rows.push([{ text: ALL_FEATURES[lang] || ALL_FEATURES.ru, url: `${origin}/u/${token}?next=${encodeURIComponent("/features")}` }]);
   rows.push([{ text: d.fullGuide, url: `${origin}/u/${token}?next=${encodeURIComponent("/guide")}` }]);
   return { text: d.intro, reply_markup: { inline_keyboard: rows } };
 }

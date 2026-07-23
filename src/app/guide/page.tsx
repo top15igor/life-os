@@ -184,9 +184,14 @@ export default async function GuidePage() {
         </div>
         <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 16, maxWidth: 620 }}>{g.pitch}</p>
 
-        <a href={botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500, marginBottom: 22 }}>
-          <i className="ti ti-brand-telegram" style={{ fontSize: 18 }} />{g.openBot}
-        </a>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 22 }}>
+          <a href={botLink} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontSize: 14.5, fontWeight: 500 }}>
+            <i className="ti ti-brand-telegram" style={{ fontSize: 18 }} />{g.openBot}
+          </a>
+          <a href="/features" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "11px 18px", borderRadius: 12, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)", fontSize: 14.5, fontWeight: 500 }}>
+            <i className="ti ti-list-details" style={{ fontSize: 18, color: "var(--accent)" }} />{L("All features", "Усі можливості", "Toutes les fonctions", "Все возможности", "Todas las funciones")}
+          </a>
+        </div>
 
         <GuideAccordion items={items} tocLabel={tocLabel} />
       </main>
