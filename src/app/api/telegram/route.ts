@@ -35,6 +35,8 @@ import { getAiSpend, setAiBalance } from "@/lib/aiSpend";
 import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
 
 export const runtime = "nodejs";
+// Приветственная серия идёт с паузами (живая подача) — даём функции запас времени.
+export const maxDuration = 60;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -692,7 +694,7 @@ export async function POST(req: NextRequest) {
           await sendMessage(cqChat, done, { reply_markup: mainKeyboard(lng, prefs?.acquaintPct) });
           // Новичку (знакомство ещё не начиналось) — сразу мостик в знакомство.
           if ((prefs?.acquaintPct ?? 0) === 0) {
-            await sleep(900);
+            await sleep(2200);
             await sendMessage(cqChat, ACQUAINT_NUDGE[lng] || ACQUAINT_NUDGE.ru, { reply_markup: mainKeyboard(lng) });
           }
         }
@@ -773,7 +775,7 @@ export async function POST(req: NextRequest) {
           const { data: mp } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", res.user.id).maybeSingle();
           const prefs = normalizeMorningPrefs((mp as any)?.morning_prefs);
           if (prefs.acquaintPct === 0) {
-            await sleep(1000);
+            await sleep(2200);
             await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
           }
         } catch {}
@@ -822,12 +824,12 @@ export async function POST(req: NextRequest) {
       const seq = WELCOME[lang] || WELCOME.ru;
       for (let i = 0; i < seq.length; i++) {
         await sendChatAction(chatId, "typing");
-        await sleep(i === 0 ? 400 : 1300);
+        await sleep(i === 0 ? 500 : 2800);
         await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
       }
       // Первым делом — выбор тона общения (кнопки). Нудж на знакомство придёт
       // сразу после выбора (в обработчике tone:), чтобы не сыпать всё разом.
-      await sleep(1200);
+      await sleep(2800);
       await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
     } else {
       await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
@@ -840,11 +842,11 @@ export async function POST(req: NextRequest) {
     const seq = WELCOME[lang] || WELCOME.ru;
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
-      await sleep(i === 0 ? 400 : 1300);
+      await sleep(i === 0 ? 500 : 2800);
       await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
     }
     // Как у новичка: следом — выбор тона общения.
-    await sleep(1200);
+    await sleep(2800);
     await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
     return NextResponse.json({ ok: true });
   }
