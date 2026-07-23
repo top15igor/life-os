@@ -45,6 +45,7 @@ export interface MorningPrefs {
   financeEnabled: boolean;    // месячный финансовый отчёт (1-го числа)
   recurringEnabled: boolean;  // напоминания о регулярных платежах в день списания
   backupEnabled: boolean;     // ежемесячная авто-выгрузка дневника в Obsidian (.zip)
+  taskHorizons: Record<string, "today" | "week" | "month">; // горизонт каждой задачи (по id): сегодня/неделя/месяц
 }
 
 // Для UI профиля (порядок чипов). Старые тоны (coach/mentor/funny) остаются
@@ -64,8 +65,20 @@ export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
-  remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true,
+  remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, taskHorizons: {},
 };
+
+// Горизонты задач: оставить только валидные пары id→(today|week|month), с капом.
+function normalizeTaskHorizons(raw: any): Record<string, "today" | "week" | "month"> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, "today" | "week" | "month"> = {};
+  let n = 0;
+  for (const [id, h] of Object.entries(raw)) {
+    if (n >= 500) break;
+    if (typeof id === "string" && id && (h === "today" || h === "week" || h === "month")) { out[id] = h; n++; }
+  }
+  return out;
+}
 
 const validHour = (h: any): number | null =>
   (typeof h === "number" && Number.isFinite(h) && h >= 0 && h <= 23) ? Math.floor(h) : null;
@@ -113,6 +126,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     financeEnabled: raw.financeEnabled !== false,
     recurringEnabled: raw.recurringEnabled !== false,
     backupEnabled: raw.backupEnabled !== false,
+    taskHorizons: normalizeTaskHorizons(raw.taskHorizons),
   };
 }
 

@@ -6,6 +6,7 @@ import TasksList from "@/components/TasksList";
 import DreamsBoard from "@/components/DreamsBoard";
 import InsightsView from "@/components/InsightsView";
 import { getGoals, getAllTasks, getInsights, getDreams } from "@/lib/queries";
+import { ensureHorizons } from "@/lib/taskHorizon";
 import { isCalendarConnected, getCalendarLinkMap } from "@/lib/googleCalendar";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -36,6 +37,10 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const dreams = tab === "dreams" ? await getDreams(user.id) : [];
   const calConnected = tab === "tasks" ? await isCalendarConnected(user.id) : false;
   const calLinks = tab === "tasks" ? await getCalendarLinkMap(user.id, ["task"]) : {};
+  // Горизонты (Сегодня/Неделя/Месяц) — раскладываем открытые задачи; недостающие раскидывает AI и кэширует.
+  const horizons = tab === "tasks"
+    ? await ensureHorizons(user.id, (tasks as any[]).filter((t) => !t.done).map((t) => ({ id: t.id, text: t.text || "" })))
+    : {};
 
   const tabs = [
     { key: "goals", label: t.nav.goals },
@@ -52,7 +57,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
         <SubTabs base="/goals" active={tab} tabs={tabs} />
 
         {tab === "goals" && <GoalsManager initial={goals as any} locale={locale} />}
-        {tab === "tasks" && <TasksList tasks={tasks as any} locale={locale} calConnected={calConnected} calLinks={calLinks} />}
+        {tab === "tasks" && <TasksList tasks={tasks as any} locale={locale} calConnected={calConnected} calLinks={calLinks} horizons={horizons} />}
         {tab === "dreams" && <DreamsBoard initial={dreams as any} locale={locale} />}
         {tab === "ideas" && <InsightsView insights={insights as any} locale={locale} />}
       </main>
