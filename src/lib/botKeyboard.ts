@@ -5,11 +5,11 @@
 // ============================================================
 
 export const KB: Record<string, { acquaint: string; diary: string; tasks: string; guide: string; invite: string }> = {
-  ru: { acquaint: "🌱 Давай познакомимся", diary: "🗂 CRM твоей жизни", tasks: "🎯 Задачи", guide: "🧭 Зачем я тебе", invite: "🤝 Пригласить друга" },
-  en: { acquaint: "🌱 Let's get acquainted", diary: "🗂 Your Life CRM", tasks: "🎯 Tasks", guide: "🧭 Why I'm here", invite: "🤝 Invite a friend" },
-  uk: { acquaint: "🌱 Давай познайомимось", diary: "🗂 CRM твого життя", tasks: "🎯 Завдання", guide: "🧭 Навіщо я тобі", invite: "🤝 Запросити друга" },
-  fr: { acquaint: "🌱 Faisons connaissance", diary: "🗂 Ton CRM de vie", tasks: "🎯 Tâches", guide: "🧭 Pourquoi moi", invite: "🤝 Inviter un ami" },
-  es: { acquaint: "🌱 Conozcámonos", diary: "🗂 Tu CRM de vida", tasks: "🎯 Tareas", guide: "🧭 Para qué te sirvo", invite: "🤝 Invitar a un amigo" },
+  ru: { acquaint: "🌱 Давай познакомимся", diary: "🪷 CRM твоей жизни", tasks: "🎯 Задачи", guide: "🧭 Зачем я тебе", invite: "🤝 Пригласить друга" },
+  en: { acquaint: "🌱 Let's get acquainted", diary: "🪷 Your Life CRM", tasks: "🎯 Tasks", guide: "🧭 Why I'm here", invite: "🤝 Invite a friend" },
+  uk: { acquaint: "🌱 Давай познайомимось", diary: "🪷 CRM твого життя", tasks: "🎯 Завдання", guide: "🧭 Навіщо я тобі", invite: "🤝 Запросити друга" },
+  fr: { acquaint: "🌱 Faisons connaissance", diary: "🪷 Ton CRM de vie", tasks: "🎯 Tâches", guide: "🧭 Pourquoi moi", invite: "🤝 Inviter un ami" },
+  es: { acquaint: "🌱 Conozcámonos", diary: "🪷 Tu CRM de vida", tasks: "🎯 Tareas", guide: "🧭 Para qué te sirvo", invite: "🤝 Invitar a un amigo" },
 };
 
 // Прежняя подпись кнопки задач («✅ Мои задачи» и др.) — чтобы распознавать
