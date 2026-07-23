@@ -22,7 +22,7 @@ import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/c
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
-import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY, GUIDE_LABEL_LEGACY } from "@/lib/botKeyboard";
+import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY, GUIDE_LABEL_LEGACY, DIARY_LABEL_LEGACY } from "@/lib/botKeyboard";
 import { howtoMenu, howtoItem, howtoTip } from "@/lib/botHowto";
 import { ensureHorizons, setHorizon, bucketize, HORIZONS, type Horizon } from "@/lib/taskHorizon";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
@@ -407,7 +407,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
   if (isAcquaintLabel(text)) return "acquaint";
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (text === k.diary) return "diary";
+    if (text === k.diary || text === DIARY_LABEL_LEGACY[lang]) return "diary";
     if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
     if (text === k.guide || text === GUIDE_LABEL_LEGACY[lang]) return "guide";
     if (text === k.invite) return "invite";
