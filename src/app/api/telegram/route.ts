@@ -17,6 +17,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref, linkTelegramToWebUser } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getDayMemories, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
+import { parseCapsule, createCapsule, listCapsules } from "@/lib/timeCapsule";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
@@ -458,6 +459,60 @@ const MEMORIES: Record<string, { title: string; empty: string; open: string; ago
     empty: "Aún no tienes entradas del pasado para este día. Pero ya llegará — la entrada de hoy será un recuerdo dentro de un año 🌱",
     open: "📖 Abrir diario",
     ago: (m) => m.label === "month" ? "🗓 <b>Hace un mes</b>" : m.n === 1 ? "🗓 <b>Hace un año</b>" : `🗓 <b>Hace ${m.n} años</b>`,
+  },
+};
+
+// ⏳ Капсула времени — письмо в будущее, бот доставит в назначенный день.
+const CAPSULE: Record<string, { help: string; when: string; past: string; saved: (d: string) => string; listEmpty: string; listTitle: string; row: (d: string, b: string) => string; delivered: (d: string) => string }> = {
+  ru: {
+    help: "⏳ <b>Капсула времени</b>\nНапиши письмо в будущее — я сохраню и доставлю его точно в назначенный день.\n\nФормат:\n<code>/capsule 2035-01-01 Текст письма…</code>\n<code>/capsule через 5 лет Текст…</code>\n<code>/capsule 01.09.2027 Текст…</code>\n\nСписок своих капсул — /capsules",
+    when: "Не понял, когда доставить. Укажи дату или «через N лет», например:\n<code>/capsule через 3 года Дорогой я из будущего…</code>",
+    past: "Дата должна быть в будущем 🙂 Капсула — это письмо вперёд по времени.",
+    saved: (d) => `⏳ Капсула запечатана! Доставлю её тебе <b>${d}</b>. До встречи в будущем 💛`,
+    listEmpty: "Пока ни одной капсулы. Напиши письмо в будущее: /capsule",
+    listTitle: "⏳ <b>Твои капсулы времени</b>",
+    row: (d, b) => `• <b>${d}</b> — «${b}»`,
+    delivered: (d) => `⏳ <b>Капсула времени</b>\nТы запечатал это письмо ${d}. Вот оно — прямо в срок:`,
+  },
+  en: {
+    help: "⏳ <b>Time capsule</b>\nWrite a letter to the future — I'll keep it and deliver it exactly on the chosen day.\n\nFormat:\n<code>/capsule 2035-01-01 Your letter…</code>\n<code>/capsule in 5 years Your letter…</code>\n<code>/capsule 01.09.2027 Your letter…</code>\n\nYour capsules — /capsules",
+    when: "I didn't get when to deliver it. Give a date or “in N years”, e.g.:\n<code>/capsule in 3 years Dear future me…</code>",
+    past: "The date must be in the future 🙂 A capsule is a letter forward in time.",
+    saved: (d) => `⏳ Capsule sealed! I'll deliver it to you on <b>${d}</b>. See you in the future 💛`,
+    listEmpty: "No capsules yet. Write a letter to the future: /capsule",
+    listTitle: "⏳ <b>Your time capsules</b>",
+    row: (d, b) => `• <b>${d}</b> — “${b}”`,
+    delivered: (d) => `⏳ <b>Time capsule</b>\nYou sealed this letter on ${d}. Here it is — right on time:`,
+  },
+  uk: {
+    help: "⏳ <b>Капсула часу</b>\nНапиши листа в майбутнє — я збережу й доставлю його точно в призначений день.\n\nФормат:\n<code>/capsule 2035-01-01 Текст листа…</code>\n<code>/capsule через 5 років Текст…</code>\n\nСписок капсул — /capsules",
+    when: "Не зрозумів, коли доставити. Вкажи дату або «через N років», напр.:\n<code>/capsule через 3 роки Любий я з майбутнього…</code>",
+    past: "Дата має бути в майбутньому 🙂 Капсула — це лист уперед у часі.",
+    saved: (d) => `⏳ Капсулу запечатано! Доставлю її тобі <b>${d}</b>. До зустрічі в майбутньому 💛`,
+    listEmpty: "Поки жодної капсули. Напиши листа в майбутнє: /capsule",
+    listTitle: "⏳ <b>Твої капсули часу</b>",
+    row: (d, b) => `• <b>${d}</b> — «${b}»`,
+    delivered: (d) => `⏳ <b>Капсула часу</b>\nТи запечатав цей лист ${d}. Ось він — точно в строк:`,
+  },
+  fr: {
+    help: "⏳ <b>Capsule temporelle</b>\nÉcris une lettre au futur — je la garde et la livre exactement le jour choisi.\n\nFormat :\n<code>/capsule 2035-01-01 Ta lettre…</code>\n<code>/capsule in 5 years Ta lettre…</code>\n\nTes capsules — /capsules",
+    when: "Je n'ai pas saisi quand la livrer. Donne une date ou « in N years », p.ex. :\n<code>/capsule in 3 years Cher moi du futur…</code>",
+    past: "La date doit être dans le futur 🙂 Une capsule est une lettre en avant dans le temps.",
+    saved: (d) => `⏳ Capsule scellée ! Je te la livrerai le <b>${d}</b>. À bientôt dans le futur 💛`,
+    listEmpty: "Aucune capsule pour l'instant. Écris une lettre au futur : /capsule",
+    listTitle: "⏳ <b>Tes capsules temporelles</b>",
+    row: (d, b) => `• <b>${d}</b> — « ${b} »`,
+    delivered: (d) => `⏳ <b>Capsule temporelle</b>\nTu as scellé cette lettre le ${d}. La voici — pile à l'heure :`,
+  },
+  es: {
+    help: "⏳ <b>Cápsula del tiempo</b>\nEscribe una carta al futuro — la guardo y te la entrego justo el día elegido.\n\nFormato:\n<code>/capsule 2035-01-01 Tu carta…</code>\n<code>/capsule in 5 years Tu carta…</code>\n\nTus cápsulas — /capsules",
+    when: "No entendí cuándo entregarla. Indica una fecha o «in N years», p.ej.:\n<code>/capsule in 3 years Querido yo del futuro…</code>",
+    past: "La fecha debe estar en el futuro 🙂 Una cápsula es una carta hacia adelante en el tiempo.",
+    saved: (d) => `⏳ ¡Cápsula sellada! Te la entregaré el <b>${d}</b>. Nos vemos en el futuro 💛`,
+    listEmpty: "Aún no hay cápsulas. Escribe una carta al futuro: /capsule",
+    listTitle: "⏳ <b>Tus cápsulas del tiempo</b>",
+    row: (d, b) => `• <b>${d}</b> — «${b}»`,
+    delivered: (d) => `⏳ <b>Cápsula del tiempo</b>\nSellaste esta carta el ${d}. Aquí está — justo a tiempo:`,
   },
 };
 
@@ -1291,6 +1346,32 @@ export async function POST(req: NextRequest) {
       const lines = mems.slice(0, 8).map((m) => `${M.ago(m)}\n«${esc(m.text)}»`).join("\n\n");
       await sendMessage(chatId, `${M.title}\n\n${lines}`, { reply_markup: { inline_keyboard: [[{ text: M.open, url: `${origin}/u/${user.token}?next=/diary` }]] } });
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  // ⏳ Список капсул времени.
+  if (msg.text === "/capsules") {
+    const lang = langOf(user, msg);
+    const C = CAPSULE[lang] || CAPSULE.ru;
+    const caps = await listCapsules(user.id);
+    if (!caps.length) await sendMessage(chatId, C.listEmpty);
+    else await sendMessage(chatId, `${C.listTitle}\n\n${caps.map((c) => C.row(c.deliver_on, esc((c.body || "").slice(0, 60)))).join("\n")}`);
+    return NextResponse.json({ ok: true });
+  }
+  // ⏳ Создать капсулу времени: /capsule <когда> <текст>.
+  if (msg.text === "/capsule" || (typeof msg.text === "string" && msg.text.startsWith("/capsule "))) {
+    const lang = langOf(user, msg);
+    const C = CAPSULE[lang] || CAPSULE.ru;
+    const arg = (msg.text || "").replace(/^\/capsule\s*/, "").trim();
+    if (!arg) { await sendMessage(chatId, C.help); return NextResponse.json({ ok: true }); }
+    const today = new Date().toISOString().slice(0, 10);
+    const parsed = parseCapsule(arg, today);
+    if ("error" in parsed) {
+      await sendMessage(chatId, parsed.error === "past" ? C.past : parsed.error === "empty" ? C.help : C.when);
+      return NextResponse.json({ ok: true });
+    }
+    const ok = await createCapsule(user.id, chatId, parsed.deliverOn, parsed.body);
+    await sendMessage(chatId, ok ? C.saved(parsed.deliverOn) : "…");
     return NextResponse.json({ ok: true });
   }
 
