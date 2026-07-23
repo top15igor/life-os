@@ -176,7 +176,7 @@ export function howtoMenu(lang: string, origin: string, token: string): Rendered
     rows.push(d.items.slice(i, i + 2).map((it) => ({ text: it.label, callback_data: `howto:i:${it.key}` })));
   }
   rows.push([{ text: d.tipBtn, callback_data: "howto:tip" }]);
-  rows.push([{ text: d.fullGuide, url: `${origin}/u/${token}?next=${encodeURIComponent("/guide/bot")}` }]);
+  rows.push([{ text: d.fullGuide, url: `${origin}/u/${token}?next=${encodeURIComponent("/guide")}` }]);
   return { text: d.intro, reply_markup: { inline_keyboard: rows } };
 }
 
