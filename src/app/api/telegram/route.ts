@@ -26,6 +26,7 @@ import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY } from "@/lib/bot
 import { ensureHorizons, setHorizon, bucketize, HORIZONS, type Horizon } from "@/lib/taskHorizon";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
 import { personalMorning } from "@/lib/morningPersonal";
+import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { morningMessage } from "@/lib/morningPush";
 import { markPushResponded } from "@/lib/pushLog";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -298,6 +299,103 @@ const ACQUAINT_NUDGE: Record<string, string> = {
   fr: "👉 Le plus simple pour commencer — appuie sur « 🌱 Faisons connaissance » en bas. Je pose quelques questions, tu réponds comme à un ami — et tu commences ton journal sans t'en rendre compte 🙂",
   es: "👉 La forma más fácil de empezar — solo toca «🌱 Conozcámonos» abajo. Te haré algunas preguntas, tú responde como a un amigo — y empezarás tu diario sin darte cuenta 🙂",
 };
+
+// ===== Тон общения: первый вопрос новичку (кнопки tone:<key>) =====
+// Выбор сохраняется в users.morning_prefs.chatTone — тот же, что в Профиле
+// («Тон общения с ботом»). Подтверждение приходит УЖЕ в выбранном тоне.
+const TONE_KEYS = ["auto", "friend", "funny", "direct", "calm", "coach", "mentor", "energetic", "business"];
+const TONE_LABELS: Record<string, Record<string, string>> = {
+  ru: { auto: "🪞 Под мой стиль", friend: "🤗 Тёплый", funny: "😄 С юмором", direct: "🎯 Прямой", calm: "🌊 Спокойный", coach: "💪 Коуч", mentor: "🦉 Наставник", energetic: "⚡ Энергичный", business: "💼 Деловой" },
+  en: { auto: "🪞 My style", friend: "🤗 Warm", funny: "😄 Funny", direct: "🎯 Direct", calm: "🌊 Calm", coach: "💪 Coach", mentor: "🦉 Mentor", energetic: "⚡ Energetic", business: "💼 Business" },
+  uk: { auto: "🪞 Під мій стиль", friend: "🤗 Теплий", funny: "😄 З гумором", direct: "🎯 Прямий", calm: "🌊 Спокійний", coach: "💪 Коуч", mentor: "🦉 Наставник", energetic: "⚡ Енергійний", business: "💼 Діловий" },
+  fr: { auto: "🪞 Mon style", friend: "🤗 Chaleureux", funny: "😄 Humour", direct: "🎯 Direct", calm: "🌊 Calme", coach: "💪 Coach", mentor: "🦉 Mentor", energetic: "⚡ Énergique", business: "💼 Pro" },
+  es: { auto: "🪞 Mi estilo", friend: "🤗 Cálido", funny: "😄 Con humor", direct: "🎯 Directo", calm: "🌊 Tranquilo", coach: "💪 Coach", mentor: "🦉 Mentor", energetic: "⚡ Enérgico", business: "💼 Formal" },
+};
+const TONE_Q: Record<string, string> = {
+  ru: "И сразу важное: как мне с тобой разговаривать? 🙂 Выбери тон — я подстроюсь с первого же ответа. Поменять можно в любой момент в Профиле.",
+  en: "One important thing first: how should I talk to you? 🙂 Pick a tone — I'll adapt from my very first reply. You can change it anytime in your Profile.",
+  uk: "І одразу важливе: як мені з тобою розмовляти? 🙂 Обери тон — я підлаштуюсь із першої ж відповіді. Змінити можна будь-коли в Профілі.",
+  fr: "Une chose importante d'abord : comment veux-tu que je te parle ? 🙂 Choisis un ton — je m'adapte dès ma première réponse. Modifiable à tout moment dans le Profil.",
+  es: "Primero algo importante: ¿cómo quieres que te hable? 🙂 Elige un tono — me adapto desde mi primera respuesta. Puedes cambiarlo cuando quieras en tu Perfil.",
+};
+// Подтверждение — в выбранном тоне: человек сразу слышит, как это звучит.
+const TONE_DONE: Record<string, Record<string, string>> = {
+  ru: {
+    auto: "Принято! Буду подстраиваться под твою манеру — пиши как удобно, я подхвачу 👌",
+    friend: "Договорились 🤗 Буду рядом — тепло и по-доброму. Ну что, расскажешь, как прошёл день?",
+    funny: "Есть, шеф! 😄 Обещаю шутить в меру… ну, почти в меру. Рассказывай!",
+    direct: "Ок. Коротко и по делу. Что записываем?",
+    calm: "Хорошо. Спокойно и без суеты — я слушаю.",
+    coach: "Отлично! Тогда сразу вопрос: что сегодня было самым важным для тебя?",
+    mentor: "Хороший выбор. Буду делиться наблюдениями и мягко направлять. Начнём с малого — расскажи про сегодняшний день.",
+    energetic: "Огонь! 🔥 Погнали — рассказывай, что сегодня было!",
+    business: "Принято. Чётко, структурно, по существу. Готов к работе.",
+  },
+  en: {
+    auto: "Got it! I'll mirror your style — write however feels natural and I'll match it 👌",
+    friend: "Deal 🤗 I'll be here — warm and kind. So, tell me about your day?",
+    funny: "Aye aye! 😄 I promise to joke in moderation… well, almost. Go on!",
+    direct: "OK. Short and to the point. What are we logging?",
+    calm: "Alright. Calm and unhurried — I'm listening.",
+    coach: "Great! First question then: what mattered most to you today?",
+    mentor: "Good choice. I'll share observations and gently guide you. Start small — tell me about today.",
+    energetic: "Let's go! 🔥 Tell me everything about your day!",
+    business: "Understood. Clear, structured, essential. Ready to work.",
+  },
+  uk: {
+    auto: "Прийнято! Підлаштуюсь під твою манеру — пиши як зручно, я підхоплю 👌",
+    friend: "Домовились 🤗 Буду поруч — тепло і по-доброму. Ну що, розкажеш, як минув день?",
+    funny: "Є, шефе! 😄 Обіцяю жартувати в міру… ну, майже в міру. Розповідай!",
+    direct: "Ок. Коротко і по суті. Що записуємо?",
+    calm: "Добре. Спокійно і без метушні — я слухаю.",
+    coach: "Чудово! Тоді одразу питання: що сьогодні було найважливішим для тебе?",
+    mentor: "Гарний вибір. Ділитимусь спостереженнями і м'яко скеровуватиму. Почнімо з малого — розкажи про сьогодні.",
+    energetic: "Вогонь! 🔥 Погнали — розповідай, що сьогодні було!",
+    business: "Прийнято. Чітко, структурно, по суті. Готовий до роботи.",
+  },
+  fr: {
+    auto: "C'est noté ! Je m'adapte à ta manière — écris comme tu veux, je suivrai 👌",
+    friend: "Marché conclu 🤗 Je serai là — avec chaleur et bienveillance. Alors, raconte-moi ta journée ?",
+    funny: "À vos ordres ! 😄 Je promets de plaisanter avec modération… enfin, presque. Raconte !",
+    direct: "OK. Court et précis. Qu'est-ce qu'on note ?",
+    calm: "Très bien. Calme et sans hâte — je t'écoute.",
+    coach: "Parfait ! Première question : qu'est-ce qui a compté le plus aujourd'hui ?",
+    mentor: "Bon choix. Je partagerai mes observations et te guiderai en douceur. Commençons petit — raconte ta journée.",
+    energetic: "C'est parti ! 🔥 Raconte-moi ta journée !",
+    business: "Compris. Clair, structuré, essentiel. Prêt à travailler.",
+  },
+  es: {
+    auto: "¡Hecho! Me adaptaré a tu manera — escribe como te sea cómodo y te seguiré 👌",
+    friend: "Trato hecho 🤗 Estaré aquí — con calidez y cariño. ¿Me cuentas cómo fue tu día?",
+    funny: "¡A la orden! 😄 Prometo bromear con moderación… bueno, casi. ¡Cuéntame!",
+    direct: "OK. Corto y al grano. ¿Qué anotamos?",
+    calm: "Bien. Con calma y sin prisa — te escucho.",
+    coach: "¡Genial! Primera pregunta: ¿qué fue lo más importante de hoy?",
+    mentor: "Buena elección. Compartiré observaciones y te guiaré con suavidad. Empecemos poco a poco — cuéntame tu día.",
+    energetic: "¡Vamos! 🔥 ¡Cuéntame todo sobre tu día!",
+    business: "Entendido. Claro, estructurado, esencial. Listo para trabajar.",
+  },
+};
+function toneKeyboard(lang: string) {
+  const L = TONE_LABELS[lang] || TONE_LABELS.ru;
+  const rows: { text: string; callback_data: string }[][] = [];
+  for (let i = 0; i < TONE_KEYS.length; i += 3) {
+    rows.push(TONE_KEYS.slice(i, i + 3).map((k) => ({ text: L[k], callback_data: `tone:${k}` })));
+  }
+  return { reply_markup: { inline_keyboard: rows } };
+}
+// Сохраняет выбранный тон в morning_prefs (не трогая остальные настройки).
+async function saveChatTone(userId: string, tone: string) {
+  try {
+    const db = supabaseAdmin();
+    const { data } = await db.from("users").select("morning_prefs").eq("id", userId).maybeSingle();
+    const prefs = normalizeMorningPrefs({ ...((data as any)?.morning_prefs || {}), chatTone: tone });
+    await db.from("users").update({ morning_prefs: prefs }).eq("id", userId);
+    return prefs;
+  } catch {
+    return null;
+  }
+}
 
 function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
   if (!text) return null;
@@ -580,6 +678,25 @@ export async function POST(req: NextRequest) {
           await sendMessage(cqChat, mdToTelegram(text) || "…", { reply_markup: mainKeyboard(lng, pct) });
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("tone:") && cqChat) {
+      // Выбор тона общения (онбординг или смена): сохраняем и отвечаем УЖЕ в этом тоне.
+      const toneKey = data.slice(5);
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u && TONE_KEYS.includes(toneKey)) {
+          const lng = pickLang((u as any).lang);
+          const prefs = await saveChatTone((u as any).id, toneKey);
+          const done = (TONE_DONE[lng] || TONE_DONE.ru)[toneKey] || "OK";
+          await sendMessage(cqChat, done, { reply_markup: mainKeyboard(lng, prefs?.acquaintPct) });
+          // Новичку (знакомство ещё не начиналось) — сразу мостик в знакомство.
+          if ((prefs?.acquaintPct ?? 0) === 0) {
+            await sleep(900);
+            await sendMessage(cqChat, ACQUAINT_NUDGE[lng] || ACQUAINT_NUDGE.ru, { reply_markup: mainKeyboard(lng) });
+          }
+        }
+      } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lang:") && cqChat) {
       const lng = data.slice(5);
       if (["ru", "en", "uk", "fr", "es"].includes(lng)) {
@@ -650,6 +767,16 @@ export async function POST(req: NextRequest) {
         await noteTgUsername(res.user.id, msg.from?.username);
         const link = `${origin}/u/${res.user.token}`;
         await sendMessage(chatId, LINK_TG[lang].ok, openBtn(lang, link));
+        // Пришедшему из веба тоже первым делом предлагаем выбрать тон общения
+        // (если он ещё «свежий» — знакомство не начиналось).
+        try {
+          const { data: mp } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", res.user.id).maybeSingle();
+          const prefs = normalizeMorningPrefs((mp as any)?.morning_prefs);
+          if (prefs.acquaintPct === 0) {
+            await sleep(1000);
+            await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
+          }
+        } catch {}
       } else {
         const reason = (res as { reason?: string }).reason;
         await sendMessage(chatId, reason === "tg_busy" ? LINK_TG[lang].busy : LINK_TG[lang].expired);
@@ -698,9 +825,10 @@ export async function POST(req: NextRequest) {
         await sleep(i === 0 ? 400 : 1300);
         await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
       }
-      // Нудж новичку: самый лёгкий вход — знакомство.
+      // Первым делом — выбор тона общения (кнопки). Нудж на знакомство придёт
+      // сразу после выбора (в обработчике tone:), чтобы не сыпать всё разом.
       await sleep(1200);
-      await sendMessage(chatId, ACQUAINT_NUDGE[lang] || ACQUAINT_NUDGE.ru, { reply_markup: mainKeyboard(lang) });
+      await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
     } else {
       await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
     }
@@ -715,6 +843,9 @@ export async function POST(req: NextRequest) {
       await sleep(i === 0 ? 400 : 1300);
       await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
     }
+    // Как у новичка: следом — выбор тона общения.
+    await sleep(1200);
+    await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
     return NextResponse.json({ ok: true });
   }
 
