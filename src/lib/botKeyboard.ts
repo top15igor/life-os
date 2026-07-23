@@ -5,17 +5,23 @@
 // ============================================================
 
 export const KB: Record<string, { acquaint: string; diary: string; tasks: string; guide: string; invite: string }> = {
-  ru: { acquaint: "🌱 Давай познакомимся", diary: "📖 Дневник", tasks: "🎯 Задачи", guide: "🧭 Зачем я тебе", invite: "🤝 Пригласить друга" },
-  en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "🎯 Tasks", guide: "🧭 Why I'm here", invite: "🤝 Invite a friend" },
-  uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "🎯 Завдання", guide: "🧭 Навіщо я тобі", invite: "🤝 Запросити друга" },
-  fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "🎯 Tâches", guide: "🧭 Pourquoi moi", invite: "🤝 Inviter un ami" },
-  es: { acquaint: "🌱 Conozcámonos", diary: "📖 Diario", tasks: "🎯 Tareas", guide: "🧭 Para qué te sirvo", invite: "🤝 Invitar a un amigo" },
+  ru: { acquaint: "🌱 Давай познакомимся", diary: "🗂 CRM жизни", tasks: "🎯 Задачи", guide: "🧭 Зачем я тебе", invite: "🤝 Пригласить друга" },
+  en: { acquaint: "🌱 Let's get acquainted", diary: "🗂 Life CRM", tasks: "🎯 Tasks", guide: "🧭 Why I'm here", invite: "🤝 Invite a friend" },
+  uk: { acquaint: "🌱 Давай познайомимось", diary: "🗂 CRM життя", tasks: "🎯 Завдання", guide: "🧭 Навіщо я тобі", invite: "🤝 Запросити друга" },
+  fr: { acquaint: "🌱 Faisons connaissance", diary: "🗂 CRM de vie", tasks: "🎯 Tâches", guide: "🧭 Pourquoi moi", invite: "🤝 Inviter un ami" },
+  es: { acquaint: "🌱 Conozcámonos", diary: "🗂 CRM de vida", tasks: "🎯 Tareas", guide: "🧭 Para qué te sirvo", invite: "🤝 Invitar a un amigo" },
 };
 
 // Прежняя подпись кнопки задач («✅ Мои задачи» и др.) — чтобы распознавать
 // нажатие у пользователей со старой (закэшированной) клавиатурой.
 export const TASKS_LABEL_LEGACY: Record<string, string> = {
   ru: "✅ Мои задачи", en: "✅ My tasks", uk: "✅ Мої завдання", fr: "✅ Mes tâches", es: "✅ Mis tareas",
+};
+
+// Прежняя подпись кнопки «Дневник» — распознаём у старых клавиатур,
+// чтобы нажатие вело на портал (а не сохранялось как запись).
+export const DIARY_LABEL_LEGACY: Record<string, string> = {
+  ru: "📖 Дневник", en: "📖 Diary", uk: "📖 Щоденник", fr: "📖 Journal", es: "📖 Diario",
 };
 
 // Прежняя подпись кнопки «Моя мотивация» — распознаём у старых клавиатур,
