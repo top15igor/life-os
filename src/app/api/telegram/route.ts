@@ -22,7 +22,8 @@ import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/c
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
-import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY } from "@/lib/botKeyboard";
+import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY, GUIDE_LABEL_LEGACY } from "@/lib/botKeyboard";
+import { howtoMenu, howtoItem, howtoTip } from "@/lib/botHowto";
 import { ensureHorizons, setHorizon, bucketize, HORIZONS, type Horizon } from "@/lib/taskHorizon";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
 import { personalMorning } from "@/lib/morningPersonal";
@@ -299,7 +300,7 @@ const ACQUAINT_NUDGE: Record<string, string> = {
   es: "👉 La forma más fácil de empezar — solo toca «🌱 Conozcámonos» abajo. Te haré algunas preguntas, tú responde como a un amigo — y empezarás tu diario sin darte cuenta 🙂",
 };
 
-function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
+function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" | "invite" | null {
   if (!text) return null;
   // Кнопка знакомства меняет подпись по «лестнице близости» и несёт суффикс «· 24%» —
   // распознаём её по всему набору ступеней, а не по одной фразе.
@@ -308,7 +309,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" |
     const k = KB[lang];
     if (text === k.diary) return "diary";
     if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
-    if (text === k.motiv) return "motiv";
+    if (text === k.guide || text === GUIDE_LABEL_LEGACY[lang]) return "guide";
     if (text === k.invite) return "invite";
   }
   return null;
@@ -625,6 +626,24 @@ export async function POST(req: NextRequest) {
           const lng = pickLang((u as any).lang);
           const res = await renderTasks((u as any).id, lng, h, req.nextUrl.origin, (u as any).token);
           if (!("empty" in res)) await editMessageText(cqChat, mid, res.text, res.markup);
+        }
+      } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("howto:") && cqChat) {
+      // Меню «Зачем я тебе»: menu / раздел / случайный лайфхак — редактируем то же сообщение.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang, token").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        const mid = cq.message?.message_id;
+        if (u && mid) {
+          const lng = pickLang((u as any).lang);
+          const arg = data.slice(6);
+          let res: { text: string; reply_markup: any } | null;
+          if (arg === "menu") res = howtoMenu(lng, req.nextUrl.origin, (u as any).token);
+          else if (arg === "tip") res = howtoTip(lng);
+          else if (arg.startsWith("i:")) res = howtoItem(lng, arg.slice(2));
+          else res = null;
+          if (res) await editMessageText(cqChat, mid, res.text, { reply_markup: res.reply_markup });
         }
       } catch { await answerCallback(cq.id); }
     } else {
@@ -1000,15 +1019,10 @@ export async function POST(req: NextRequest) {
       if ("empty" in res) await sendMessage(chatId, T.empty);
       else await sendMessage(chatId, res.text, res.markup);
     }
-    else if (ba === "motiv") {
-      await sendChatAction(chatId, "typing");
-      try {
-        const report = await motivationReport(user.id, lang);
-        await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lang] || GOALS_BTN.ru, url: `${origin}/u/${user.token}?next=/goals` }]] } });
-      } catch (e) {
-        console.error("motiv btn", e);
-        await sendMessage(chatId, "Не получилось собрать сводку. Попробуй чуть позже 🙂");
-      }
+    else if (ba === "guide") {
+      // «🧭 Зачем я тебе» — интерактивное меню способов применения сервиса.
+      const menu = howtoMenu(lang, origin, user.token);
+      await sendMessage(chatId, menu.text, { reply_markup: menu.reply_markup });
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
     else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
