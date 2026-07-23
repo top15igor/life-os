@@ -796,6 +796,17 @@ export async function POST(req: NextRequest) {
           let res: { text: string; reply_markup: any } | null;
           if (arg === "menu") res = howtoMenu(lng, req.nextUrl.origin, (u as any).token);
           else if (arg === "tip") res = howtoTip(lng);
+          else if (arg === "i:crm") {
+            // «Жизнь под контролем» — живая сводка (серия + цели + инсайт) + подсказки как применять.
+            const item = howtoItem(lng, "crm");
+            let text = item?.text || "";
+            try {
+              const report = await motivationReport((u as any).id, lng);
+              if (report) text = `${report}\n\n➖➖➖\n\n${text}`;
+            } catch { /* сводка необязательна — покажем хотя бы подсказки */ }
+            const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
+            res = { text, reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lng] || GOALS_BTN.ru, url: `${req.nextUrl.origin}/u/${(u as any).token}?next=/goals` }], back] } };
+          }
           else if (arg.startsWith("i:")) res = howtoItem(lng, arg.slice(2));
           else res = null;
           if (res) await editMessageText(cqChat, mid, res.text, { reply_markup: res.reply_markup });
