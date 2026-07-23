@@ -1,27 +1,27 @@
 import Sidebar from "@/components/Sidebar";
 import PageHead from "@/components/PageHead";
 import Link from "next/link";
-import { getEntries, getDreams, getEntityMeta, places as placesOf, type Entry } from "@/lib/queries";
+import { getEntries, getDreams, getEntityMeta, getMemories, places as placesOf, type Entry } from "@/lib/queries";
+import { getTrips, getTripSuggestions, VISIT_RE, WISH_RE } from "@/lib/trips";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
 import EntityManager from "@/components/EntityManager";
+import TravelDiary from "@/components/TravelDiary";
 
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { mentions: "записей", last: "последняя", been: "Где я был", wish: "Куда хочу", beenEmpty: "Пока нет мест, где ты бывал — расскажи в записи «был в…», «съездил в…», и они появятся.", wishLink: "Все мечты о путешествиях →", empty: "Мест пока нет — упоминай их в записях, и они появятся здесь." },
-  en: { mentions: "entries", last: "last", been: "Where I've been", wish: "Where I want to go", beenEmpty: "No visited places yet — say «I was in…», «went to…» in an entry and they'll show up.", wishLink: "All travel dreams →", empty: "No places yet — mention them in your entries." },
-  uk: { mentions: "записів", last: "остання", been: "Де я був", wish: "Куди хочу", beenEmpty: "Поки немає місць, де ти бував — скажи в записі «був у…», «їздив у…», і вони з'являться.", wishLink: "Усі мрії про подорожі →", empty: "Місць поки немає — згадуй їх у записах." },
-  fr: { mentions: "entrées", last: "dernière", been: "Où je suis allé", wish: "Où je veux aller", beenEmpty: "Pas encore de lieux visités — dis «j'étais à…», «je suis allé à…» dans une entrée.", wishLink: "Tous les rêves de voyage →", empty: "Pas encore de lieux — mentionne-les dans tes entrées." },
+  ru: { mentions: "записей", last: "последняя", been: "Все места (справочник)", beenSub: "Переименовать, объединить дубли или скрыть место", wish: "Куда хочу", wishLink: "Все мечты о путешествиях →" },
+  en: { mentions: "entries", last: "last", been: "All places (reference)", beenSub: "Rename, merge duplicates or hide a place", wish: "Where I want to go", wishLink: "All travel dreams →" },
+  uk: { mentions: "записів", last: "остання", been: "Усі місця (довідник)", beenSub: "Перейменувати, об'єднати дублі чи приховати місце", wish: "Куди хочу", wishLink: "Усі мрії про подорожі →" },
+  fr: { mentions: "entrées", last: "dernière", been: "Tous les lieux (référence)", beenSub: "Renommer, fusionner ou masquer un lieu", wish: "Où je veux aller", wishLink: "Tous les rêves de voyage →" },
 };
-
-const COLORS = ["#06b6d4", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
 
 function SectionTitle({ icon, color, children }: any) {
   return (
-    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 7, margin: "22px 0 11px" }}>
+    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 7, margin: "26px 0 11px" }}>
       <i className={`ti ${icon}`} style={{ fontSize: 16, color }} />{children}
     </div>
   );
@@ -33,20 +33,24 @@ export default async function PlacesPage() {
   const t = getDict(locale);
   const h = hints(locale);
   const s = STR[locale] || STR.ru;
-  const [entries, dreams, metas] = await Promise.all([getEntries(user.id, 300), getDreams(user.id), getEntityMeta(user.id, "places")]);
+  const [entries, dreams, metas, memoriesRaw] = await Promise.all([
+    getEntries(user.id, 300),
+    getDreams(user.id),
+    getEntityMeta(user.id, "places"),
+    getMemories(user.id),
+  ]);
+  const hiddenNames = new Set(Object.keys(metas).filter((n) => (metas as any)[n]?.hidden));
+  const [trips, suggestions] = await Promise.all([getTrips(user.id), getTripSuggestions(user.id, hiddenNames)]);
+  const memories = memoriesRaw
+    .filter((m) => m.image_url)
+    .map((m) => ({ id: m.id, url: m.image_url as string, title: m.title || "", date: m.mem_date }));
 
-  // Мечты о путешествиях — отдельная секция «Куда хочу».
+  // Мечты о путешествиях — секция «Куда хочу».
   const travelDreams = dreams.filter((d) => d.sphere === "travel");
   const dreamLower = travelDreams.map((d) => (d.text || "").toLowerCase());
   const inDreams = (name: string) => { const k = name.toLowerCase().slice(0, 5); return k.length >= 3 && dreamLower.some((t) => t.includes(k)); };
 
-  // Контекст упоминания места: поездка vs мечта (по тексту записи).
-  // ВАЖНО: в VISIT только однозначно «совершённые» формы. «съездить/поехать» — это намерение,
-  // их тут НЕ ловим (иначе мечта «мечтаю съездить» попадёт в «был»).
-  const VISIT_RE = /(\bбыл[аи]?\b|побыва|съездил|съездили|поехал|ездил|посети|вернул|прилет|отдыхал|переехал|гостил|\bжил\b|жил[аи]? в|летал в|visited|went to|came back|trip to|was in)/i;
-  const WISH_RE = /(мечт|хочу|хотел|объезд|когда-нибудь|планиру|поехать|съездить|побывать|dream|want to go|wish to|would love)/i;
-
-  // Собираем места с накопленным текстом их записей.
+  // Места из записей (для справочника и «куда хочу»).
   const map = new Map<string, { name: string; count: number; lastDate: string; entries: Entry[]; text: string }>();
   for (const e of entries) {
     const etext = `${e.summary || ""} ${e.raw_text || ""}`.toLowerCase();
@@ -60,11 +64,8 @@ export default async function PlacesPage() {
     }
   }
   const allPlaces = [...map.values()];
-  // «Был» = есть ЯВНЫЙ признак поездки и нет признака мечты (строго, чтобы не врать «бывал»).
   const visited = allPlaces.filter((p) => VISIT_RE.test(p.text) && !WISH_RE.test(p.text)).sort((a, b) => b.count - a.count);
-  // «Хочу» = признак мечты и НЕ был, и ещё не показано как мечта в карте желаний.
   const wishPlaces = allPlaces.filter((p) => WISH_RE.test(p.text) && !VISIT_RE.test(p.text) && !inDreams(p.name)).sort((a, b) => b.count - a.count);
-  const nothing = visited.length === 0 && travelDreams.length === 0 && wishPlaces.length === 0;
   const visitedItems = visited.map((p) => ({
     id: metas[p.name]?.id,
     name: p.name,
@@ -79,44 +80,47 @@ export default async function PlacesPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main wide">
-        <PageHead icon="ti-map-pin" color="#06b6d4" title={t.nav.places} hint={h.places} />
+        <PageHead icon="ti-plane-departure" color="#06b6d4" title={t.nav.places} hint={h.places} />
 
-        {nothing ? (
-          <div className="card" style={{ color: "var(--text-2)", fontSize: 14 }}>{s.empty}</div>
-        ) : (
+        {/* Хронология путешествий */}
+        <TravelDiary locale={locale} trips={trips} suggestions={suggestions} memories={memories} />
+
+        {/* КУДА ХОЧУ */}
+        {(travelDreams.length > 0 || wishPlaces.length > 0) && (
           <>
-            {/* ГДЕ Я БЫЛ */}
-            <SectionTitle icon="ti-map-pin" color="#06b6d4">{s.been}</SectionTitle>
-            {visited.length === 0 ? (
-              <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5 }}>{s.beenEmpty}</div>
-            ) : (
-              <EntityManager kind="places" locale={locale} items={visitedItems} />
-            )}
-
-            {/* КУДА ХОЧУ */}
-            {(travelDreams.length > 0 || wishPlaces.length > 0) && (
-              <>
-                <SectionTitle icon="ti-plane" color="#854F0B">{s.wish}</SectionTitle>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
-                  {travelDreams.map((d) => (
-                    <Link key={d.id} href="/goals?tab=dreams" className="card" style={{ display: "flex", alignItems: "center", gap: 11, background: "#FAEEDA66", borderColor: "#85500b33" }}>
-                      <span style={{ width: 36, height: 36, borderRadius: 9, background: "#FAEEDA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>
-                        {d.emoji || "✈️"}
-                      </span>
-                      <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{d.text}</div>
-                    </Link>
-                  ))}
-                  {wishPlaces.map((p) => (
-                    <Link key={p.name} href={`/entry/${p.entries[0].id}`} className="card" style={{ display: "flex", alignItems: "center", gap: 11, background: "#FAEEDA66", borderColor: "#85500b33" }}>
-                      <span style={{ width: 36, height: 36, borderRadius: 9, background: "#FAEEDA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>✈️</span>
-                      <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{p.name}</div>
-                    </Link>
-                  ))}
-                </div>
-                <Link href="/goals?tab=dreams" style={{ display: "inline-block", marginTop: 11, fontSize: 12.5, color: "var(--accent)" }}>{s.wishLink}</Link>
-              </>
-            )}
+            <SectionTitle icon="ti-plane" color="#854F0B">{s.wish}</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
+              {travelDreams.map((d) => (
+                <Link key={d.id} href="/goals?tab=dreams" className="card" style={{ display: "flex", alignItems: "center", gap: 11, background: "#FAEEDA66", borderColor: "#85500b33" }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 9, background: "#FAEEDA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>
+                    {d.emoji || "✈️"}
+                  </span>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{d.text}</div>
+                </Link>
+              ))}
+              {wishPlaces.map((p) => (
+                <Link key={p.name} href={`/entry/${p.entries[0].id}`} className="card" style={{ display: "flex", alignItems: "center", gap: 11, background: "#FAEEDA66", borderColor: "#85500b33" }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 9, background: "#FAEEDA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>✈️</span>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--text)" }}>{p.name}</div>
+                </Link>
+              ))}
+            </div>
+            <Link href="/goals?tab=dreams" style={{ display: "inline-block", marginTop: 11, fontSize: 12.5, color: "var(--accent)" }}>{s.wishLink}</Link>
           </>
+        )}
+
+        {/* ВСЕ МЕСТА — компактный справочник (переименовать/объединить/скрыть) */}
+        {visitedItems.length > 0 && (
+          <details style={{ marginTop: 26 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--text-2)", listStyle: "none", display: "flex", alignItems: "center", gap: 7 }}>
+              <i className="ti ti-map-pin" style={{ fontSize: 16, color: "#06b6d4" }} />{s.been}
+              <span style={{ fontWeight: 400, color: "var(--text-3)", fontSize: 12 }}>· {s.beenSub}</span>
+              <i className="ti ti-chevron-down" style={{ fontSize: 14, color: "var(--text-3)" }} />
+            </summary>
+            <div style={{ marginTop: 11 }}>
+              <EntityManager kind="places" locale={locale} items={visitedItems} />
+            </div>
+          </details>
         )}
       </main>
     </div>
