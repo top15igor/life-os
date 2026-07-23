@@ -146,6 +146,29 @@ const TR: Record<Locale, T> = {
     privacy: { icon: "ti-shield-lock", name: "Une vraie confidentialité", desc: "Toi seul vois ton journal. Exporte ou supprime tout en un clic." },
     opensource: { icon: "ti-brand-github", name: "Code ouvert", desc: "Le projet est public — tu peux vérifier comment tout fonctionne à l'intérieur." },
   },
+  es: {
+    kicker: "Cómo usarlo",
+    title: "Todo lo que LIFE OS puede hacer",
+    sub: "Toca una sección — se despliega la lista de posibilidades. No hace falta registrar nada a mano: tú simplemente cuentas, y LIFE OS lo ordena todo en estos estantes.",
+    g: {
+      input: "Cómo añadir — sin esfuerzo",
+      day: "Tu día y tu diario",
+      body: "Cuerpo y salud",
+      plans: "Planes, metas y tareas",
+      know: "Conocimiento y memoria",
+      ai: "La IA le da sentido a tu vida",
+      people: "Personas, lugares, familia",
+      data: "Tus datos, tu control",
+    },
+    in_voice: { icon: "ti-brand-telegram", name: "Voz en Telegram", desc: "Háblale al bot como a un amigo — de camino, entre tareas. La IA transcribe y lo organiza todo." },
+    in_text: { icon: "ti-edit", name: "Texto y entradas en el sitio", desc: "¿No te gusta la voz? Escribe en texto libre — directo en la app o al bot." },
+    in_photo: { icon: "ti-camera", name: "Fotos y documentos", desc: "Envía una foto o un escaneo — un recibo, una garantía, un momento. La IA entiende el sentido, extrae los datos y los clasifica." },
+    in_link: { icon: "ti-link", name: "Enlaces de Instagram y YouTube", desc: "Envíale al bot un enlace de post, reel o video — la IA extrae lo esencial y lo guarda en tu base de conocimiento." },
+    reminders: { icon: "ti-bell", name: "Recordatorios y mañanas", desc: "Un mensaje matutino personal y recordatorios llegan a Telegram a la hora que te convenga." },
+    export: { icon: "ti-download", name: "Exportar a Markdown y Obsidian", desc: "Descarga todo en un clic. Tu libro de vida se queda contigo — incluso sin internet y sin nuestro servicio." },
+    privacy: { icon: "ti-shield-lock", name: "Privacidad honesta", desc: "Solo tú ves tu diario. Exporta o elimina todo en un clic." },
+    opensource: { icon: "ti-brand-github", name: "Código abierto", desc: "El proyecto es público — puedes comprobar cómo funciona todo por dentro." },
+  },
 };
 
 export function capabilities(locale: Locale): Capabilities {

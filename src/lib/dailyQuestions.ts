@@ -1,7 +1,7 @@
 // Короткий вопрос в конце утреннего/вечернего пуша — чтобы человек сразу ответил
 // (ответ уходит боту как обычная реплика). Ротация по дню (seed), 4 языка.
 
-type Lang = "ru" | "en" | "uk" | "fr";
+type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
 const MORNING: Record<Lang, string[]> = {
   ru: [
@@ -39,6 +39,15 @@ const MORNING: Record<Lang, string[]> = {
     "Qu'est-ce qui te réjouit aujourd'hui ?",
     "Comment est ton corps — en forme ou encore endormi ?",
     "De quoi es-tu reconnaissant ce matin ?",
+  ],
+  es: [
+    "Por cierto, ¿qué tal dormiste? 😴",
+    "¿Cómo te sientes esta mañana?",
+    "¿Con qué ánimo empiezas el día?",
+    "¿Qué es lo más importante para ti hoy?",
+    "¿Qué te hace ilusión hoy?",
+    "¿Cómo está el cuerpo — despierto o todavía despertando?",
+    "¿Por qué le das gracias a esta mañana?",
   ],
 };
 
@@ -78,6 +87,15 @@ const EVENING: Record<Lang, string[]> = {
     "Qu'as-tu appris aujourd'hui ?",
     "De quoi es-tu reconnaissant aujourd'hui ?",
     "Qu'aurais-tu fait autrement aujourd'hui ?",
+  ],
+  es: [
+    "Por cierto, ¿cómo está tu ánimo ahora? 🙂",
+    "¿Qué te alegró hoy?",
+    "¿Qué fue lo mejor del día?",
+    "¿Cómo estás ahora — con energía o cansado(a)?",
+    "¿Qué aprendiste hoy?",
+    "¿Por qué estás agradecido(a) hoy?",
+    "¿Qué harías diferente hoy?",
   ],
 };
 

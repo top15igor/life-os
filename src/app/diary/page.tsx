@@ -15,6 +15,7 @@ const QA: Record<string, { placeholder: string; button: string; saving: string; 
   en: { placeholder: "What happened? Note an event, thought, idea…", button: "Save", saving: "Saving…", hint: "AI will sort the entry into your diary" },
   uk: { placeholder: "Що сталося? Запиши подію, думку, ідею…", button: "Записати", saving: "Зберігаю…", hint: "AI розбере запис і додасть його у щоденник" },
   fr: { placeholder: "Quoi de neuf ? Note un événement, une pensée…", button: "Enregistrer", saving: "Enregistrement…", hint: "L'IA classera l'entrée dans ton journal" },
+  es: { placeholder: "¿Qué pasó? Anota un evento, un pensamiento, una idea…", button: "Guardar", saving: "Guardando…", hint: "La IA clasificará la entrada en tu diario" },
 };
 
 export default async function DiaryPage({ searchParams }: { searchParams: Promise<{ tag?: string; category?: string; person?: string }> }) {

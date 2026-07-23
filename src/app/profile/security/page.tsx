@@ -13,6 +13,7 @@ const STR: Record<string, { title: string; back: string }> = {
   en: { title: "Security", back: "Profile" },
   uk: { title: "Безпека", back: "Профіль" },
   fr: { title: "Sécurité", back: "Profil" },
+  es: { title: "Seguridad", back: "Perfil" },
 };
 
 export default async function SecurityPage() {

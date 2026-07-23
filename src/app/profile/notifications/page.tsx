@@ -16,6 +16,7 @@ const STR: Record<string, { title: string; sub: string; back: string; noTg: stri
   en: { title: "Push notifications", sub: "When, about what and how the bot writes to you in the morning and evening.", back: "Profile", noTg: "Pushes are sent in Telegram. Connect the Telegram bot to set up notifications." },
   uk: { title: "Пуш-сповіщення", sub: "Коли, про що і як бот пише тобі вранці та ввечері.", back: "Профіль", noTg: "Пуші приходять у Telegram. Підключи Telegram-бота, щоб налаштувати сповіщення." },
   fr: { title: "Notifications push", sub: "Quand, sur quoi et comment le bot t'écrit le matin et le soir.", back: "Profil", noTg: "Les push arrivent dans Telegram. Connecte le bot Telegram pour configurer les notifications." },
+  es: { title: "Notificaciones push", sub: "Cuándo, sobre qué y cómo te escribe el bot por la mañana y por la noche.", back: "Perfil", noTg: "Las notificaciones llegan por Telegram. Conecta el bot de Telegram para configurar las notificaciones." },
 };
 
 export default async function NotificationsPage() {

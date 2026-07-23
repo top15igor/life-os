@@ -8,7 +8,7 @@ const T: Record<string, any> = {
 };
 
 export default function RelayButton({ targetId, locale }: { targetId: string; locale: string }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState("");
   const [busy, setBusy] = useState(false);

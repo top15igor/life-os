@@ -18,6 +18,7 @@ const STR: Record<string, { title: string; back: string; yourLink: string; linkH
   en: { title: "Account & sign-in", back: "Profile", yourLink: "Your personal link", linkHint: "Save it — it's how you sign in to your diary on any device." },
   uk: { title: "Акаунт і вхід", back: "Профіль", yourLink: "Твоє особисте посилання", linkHint: "Збережи його — за ним ти входиш у щоденник на будь-якому пристрої." },
   fr: { title: "Compte et connexion", back: "Profil", yourLink: "Ton lien personnel", linkHint: "Garde-le — c'est ainsi que tu te connectes sur n'importe quel appareil." },
+  es: { title: "Cuenta y acceso", back: "Perfil", yourLink: "Tu enlace personal", linkHint: "Guárdalo — es como accedes a tu diario desde cualquier dispositivo." },
 };
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ linked?: string; e?: string }> }) {

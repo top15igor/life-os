@@ -7,7 +7,7 @@ import { personalEvening } from "@/lib/eveningPersonal";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const pickLang = (l: any) => (["ru", "en", "uk", "fr"].includes(l) ? l : "ru");
+const pickLang = (l: any) => (["ru", "en", "uk", "fr", "es"].includes(l) ? l : "ru");
 
 // Предпросмотр вечернего «вопроса для книги» по ТЕКУЩИМ (возможно, несохранённым)
 // настройкам — темы, свои подсказки, режим AI.

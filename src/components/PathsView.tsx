@@ -71,6 +71,22 @@ const STR: Record<string, any> = {
       { emoji: "👶", accent: "pink", title: "La première année de bébé", desc: "Les 365 jours les plus tendres — pour ne rien oublier." },
       { emoji: "🎸", accent: "dark", title: "J'apprends la guitare", desc: "Des premiers accords à ma propre chanson." },
     ] },
+  es: { newPath: "Nuevo camino", title: "Título", titlePh: "Ej.: Recuperar energía", desc: "Descripción (opcional)", descPh: "De qué trata este camino y a dónde lleva", emoji: "Emoji", color: "Color", status: "Estado", active: "En marcha", done: "Completado", makePublic: "Público (visible con el enlace)", save: "Guardar", create: "Crear camino", cancel: "Cancelar", edit: "Editar", del: "Eliminar", open: "Abrir", share: "Compartir", copy: "Copiar", copied: "Copiado", tg: "Telegram", wa: "WhatsApp", more: "Compartir…", close: "Cerrar", shareTitle: "Compartir camino", shareSub: "Envía el enlace — tu amigo verá tu camino y su línea de tiempo de páginas. No necesita cuenta.", pitchTpl: "📖 Mi camino «{t}» en LIFE OS — échale un vistazo:", pages: "pág.", confirmDel: "¿Eliminar este camino? Las páginas se quedan, solo se desvinculan.", empty: "Aún no hay caminos. Un camino es una historia larga: «Recuperar la salud», «Lanzar un proyecto», «200 flexiones». Agrupa en él tus páginas publicadas.", hint: "Vincula páginas a un camino al publicar una entrada (el botón «Publicar»).", privateNote: "desactivado — nadie lo ve",
+    guideTitle: "Cómo funciona", guideHide: "ocultar", guideShow: "¿cómo funciona?",
+    steps: ["Crea un camino — una gran meta o historia hacia la que caminas.", "Publica entradas del diario en él — se van sumando en una línea de tiempo.", "Activa «Público» 🌍 y comparte el enlace — tu progreso inspira a otros."],
+    ideasLabel: "Empieza por aquí — toca una y hazla tuya:",
+    ideas: [
+      { emoji: "🏡", accent: "amber", title: "Construyo una casa", desc: "Desde los cimientos hasta la entrada. Una bitácora de obra viva." },
+      { emoji: "🥾", accent: "green", title: "Camino de Santiago", desc: "800 km a pie. Cada día, una nueva página del camino." },
+      { emoji: "🚭", accent: "pink", title: "Dejo de fumar", desc: "100 días sin cigarrillos. Contando los pasos hacia la libertad." },
+      { emoji: "🍷", accent: "indigo", title: "Un año sobrio", desc: "365 días de claridad. La vida sin alcohol." },
+      { emoji: "🏃", accent: "green", title: "Del sofá al maratón", desc: "Primeros 5 km → 42,2. Todo el recorrido en entradas." },
+      { emoji: "🌅", accent: "dark", title: "Cambio mi vida", desc: "Una nueva versión de mí — una página al día." },
+      { emoji: "💰", accent: "amber", title: "Libertad financiera", desc: "Salgo de deudas y construyo un colchón. Paso a paso." },
+      { emoji: "📖", accent: "indigo", title: "Escribo mi primer libro", desc: "De la idea al punto final. La bitácora de un manuscrito." },
+      { emoji: "👶", accent: "pink", title: "El primer año del bebé", desc: "Los 365 días más tiernos — para no olvidar ni un momento." },
+      { emoji: "🎸", accent: "dark", title: "Aprendo a tocar la guitarra", desc: "De los primeros acordes a mi propia canción." },
+    ] },
 };
 
 const ACCENTS: Record<string, [string, string]> = { indigo: ["#4f46e5", "#7c6ff0"], green: ["#0f9d6e", "#34d399"], amber: ["#c2620a", "#f59e0b"], pink: ["#be1d6a", "#f472b6"], dark: ["#111827", "#374151"] };

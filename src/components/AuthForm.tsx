@@ -75,7 +75,7 @@ export default function AuthForm({
   googleEnabled: boolean;
   initialError?: string;
 }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const ref = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("ref") : null;
 
   const [mode, setMode] = useState<Mode>("login");
@@ -299,7 +299,7 @@ export default function AuthForm({
           <ResumeSessionLink locale={locale} />
           <div style={{ display: "flex", gap: 16 }}>
             <a href="/about" style={{ color: "var(--text-3)", fontSize: 12.5, textDecoration: "none" }}>{t.about}</a>
-            <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12.5, textDecoration: "none" }}>🔒 {locale === "en" || locale === "fr" ? "Privacy" : "Приватность"}</a>
+            <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12.5, textDecoration: "none" }}>🔒 {locale === "en" || locale === "fr" || locale === "es" ? "Privacy" : "Приватность"}</a>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ const STR: Record<string, { title: string; sub: string }> = {
   en: { title: "Reminders", sub: "Set a reminder — it pops up as a notification in Google Calendar." },
   uk: { title: "Нагадування", sub: "Постав нагадування — воно прийде сповіщенням у Google Календар." },
   fr: { title: "Rappels", sub: "Crée un rappel — il s'affiche comme notification dans Google Agenda." },
+  es: { title: "Recordatorios", sub: "Pon un recordatorio — llegará como notificación a Google Calendar." },
 };
 
 export default async function RemindersPage({ searchParams }: { searchParams: Promise<{ cal?: string }> }) {

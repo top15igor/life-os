@@ -7,6 +7,7 @@ const HINTS: Record<string, string[]> = {
   en: ["What happened today?", "Who did you help today?", "What good did you do for others?", "Did you promise anyone something?", "What are you grateful for?", "What did you realize today?"],
   uk: ["Що сьогодні сталося?", "Кому ти сьогодні допоміг?", "Що доброго зробив для інших?", "Ти щось комусь пообіцяв?", "За що ти вдячний?", "Що важливого зрозумів?"],
   fr: ["Que s'est-il passé aujourd'hui ?", "Qui as-tu aidé aujourd'hui ?", "Quel bien as-tu fait aux autres ?", "As-tu promis quelque chose à quelqu'un ?", "De quoi es-tu reconnaissant ?", "Qu'as-tu compris aujourd'hui ?"],
+  es: ["¿Qué pasó hoy?", "¿A quién ayudaste hoy?", "¿Qué bien hiciste por otros?", "¿Le prometiste algo a alguien?", "¿Por qué estás agradecido hoy?", "¿Qué te diste cuenta hoy?"],
 };
 
 export default function DictationHints({ locale }: { locale: string }) {

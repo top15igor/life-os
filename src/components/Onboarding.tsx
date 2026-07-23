@@ -87,6 +87,26 @@ const ONB: Record<string, { next: string; privacy: string; skip: string; login: 
       { t: "Commence la première page de ton livre de vie.", s: "Raconte simplement ta journée.", cta: "🎤 Enregistrer ton premier message" },
     ],
   },
+  es: {
+    next: "Siguiente",
+    privacy: "Privacidad",
+    skip: "Saltar",
+    login: "¿Ya tienes una cuenta?",
+    openCode: "Código abierto",
+    screens: [
+      { t: "Bienvenido a LIFE OS", s: "Tu vida merece ser guardada." },
+      { t: "Olvidarás casi todo lo que pasó hoy.", s: "Pero de días así está hecha toda tu vida." },
+      { t: "Fotografiamos nuestras vacaciones.", s: "Pero casi nunca guardamos nuestros pensamientos." },
+      { t: "Cada idea puede cambiarte la vida.", s: "Pero solo si no la pierdes." },
+      { t: "LIFE OS lo hace todo por ti.", s: "Tú hablas — la IA hace el resto.", list: ["transcribe tu voz", "extrae ideas clave", "conecta proyectos", "hace seguimiento de tu salud", "construye la historia de tu vida"] },
+      { t: "Imagina…", s: "«Muéstrame el momento en que nació la idea de mi negocio» — respuesta en segundos.", list: ["¿Cuándo fui más feliz?", "¿Qué ayudó a mi salud?", "¿Qué decisiones cambiaron mi vida?"] },
+      { t: "Con el tiempo, LIFE OS te entiende.", list: ["qué te inspira", "qué te da energía", "qué hábitos funcionan", "qué proyectos importan más"] },
+      { t: "Es más que un diario.", list: ["Un segundo cerebro", "Un libro de vida", "Una historia de proyectos", "Un archivo familiar", "Un mapa de salud", "Una colección de ideas"] },
+      { t: "Dentro de diez años…", s: "Revivirás tu historia — no a través de fotos, sino de pensamientos y decisiones reales." },
+      { t: "Tus datos son solo tuyos.", s: "Con honestidad, sin letra pequeña:", list: ["Solo tú ves tu diario", "El equipo no lee las entradas", "Código abierto — compruébalo tú mismo", "Descarga o elimina todo con un clic"], trust: true },
+      { t: "Empieza la primera página de tu libro de vida.", s: "Cuéntame simplemente cómo fue tu día de hoy.", cta: "🎤 Grabar tu primer mensaje" },
+    ],
+  },
 };
 
 export default function Onboarding({ locale, botLink }: { locale: string; botLink: string }) {
@@ -153,11 +173,11 @@ export default function Onboarding({ locale, botLink }: { locale: string; botLin
           onClick={() => setI(i > 0 ? i - 1 : 0)}
           style={{ visibility: i > 0 ? "visible" : "hidden", background: "none", border: "none", color: "var(--text-3)", fontSize: 13, cursor: "pointer", padding: 4 }}
         >
-          ← {data.next === "Next" ? "Back" : data.next === "Suivant" ? "Retour" : "Назад"}
+          ← {data.next === "Next" ? "Back" : data.next === "Suivant" ? "Retour" : data.next === "Siguiente" ? "Atrás" : "Назад"}
         </button>
         <div style={{ display: "flex", gap: 18, marginTop: 2, alignItems: "center" }}>
           <a href="/login" style={{ color: "var(--accent)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>{data.login}</a>
-          <a href="/about" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>{data.next === "Next" || data.next === "Suivant" ? "About" : "О проекте"}</a>
+          <a href="/about" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>{data.next === "Next" || data.next === "Suivant" ? "About" : data.next === "Siguiente" ? "Acerca de" : "О проекте"}</a>
           <a href="/privacy" style={{ color: "var(--text-3)", fontSize: 12, textDecoration: "none" }}>🔒 {data.privacy}</a>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { APP_KNOWLEDGE } from "@/lib/assistant";
 export const runtime = "nodejs";
 
 const LANG: Record<string, string> = {
-  ru: "русском", en: "English", uk: "українській", fr: "français",
+  ru: "русском", en: "English", uk: "українській", fr: "français", es: "español",
 };
 
 // Помощник по функционалу приложения. Дёшево (haiku), знает только устройство LIFE OS,

@@ -7,6 +7,7 @@ const STR: Record<string, any> = {
   en: { title: "Open it as an app", text: "Looks like you opened LIFE OS inside Telegram. To use it as an app — copy the link and open it in Safari (then Share → Add to Home Screen).", copy: "Copy link for Safari", copied: "Copied ✓", close: "Hide" },
   uk: { title: "Відкрий як застосунок", text: "Схоже, ти відкрив LIFE OS усередині Telegram. Щоб користуватися як застосунком — скопіюй посилання й відкрий його в Safari (а потім «Поділитися» → «На екран Додому»).", copy: "Скопіювати посилання для Safari", copied: "Скопійовано ✓", close: "Сховати" },
   fr: { title: "Ouvre-le comme une app", text: "Tu as ouvert LIFE OS dans Telegram. Pour l'utiliser comme une app — copie le lien et ouvre-le dans Safari (puis Partager → Sur l'écran d'accueil).", copy: "Copier le lien pour Safari", copied: "Copié ✓", close: "Masquer" },
+  es: { title: "Ábrelo como una app", text: "Parece que abriste LIFE OS dentro de Telegram. Para usarlo como una app — copia el enlace y ábrelo en Safari (luego «Compartir» → «Añadir a pantalla de inicio»).", copy: "Copiar enlace para Safari", copied: "Copiado ✓", close: "Ocultar" },
 };
 
 export default function EnterInBrowser({ link, locale }: { link: string; locale: string }) {

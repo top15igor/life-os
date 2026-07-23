@@ -8,12 +8,13 @@ import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const TITLE: Record<string, string> = { ru: "Визуальная память", en: "Visual Memory", uk: "Візуальна пам'ять", fr: "Mémoire visuelle" };
+const TITLE: Record<string, string> = { ru: "Визуальная память", en: "Visual Memory", uk: "Візуальна пам'ять", fr: "Mémoire visuelle", es: "Memoria visual" };
 const HINT: Record<string, string> = {
   ru: "Фото, документы и важные моменты — с понятным смыслом и местом в твоей истории.",
   en: "Photos, documents and key moments — with clear meaning and a place in your story.",
   uk: "Фото, документи й важливі моменти — зі зрозумілим сенсом і місцем у твоїй історії.",
   fr: "Photos, documents et moments clés — avec un sens clair et une place dans ton histoire.",
+  es: "Fotos, documentos y momentos clave — con un significado claro y un lugar en tu historia.",
 };
 
 export default async function MemoryPage() {

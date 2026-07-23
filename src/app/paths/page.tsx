@@ -9,12 +9,13 @@ import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-const TITLE: Record<string, string> = { ru: "Мои пути", en: "My paths", uk: "Мої шляхи", fr: "Mes chemins" };
+const TITLE: Record<string, string> = { ru: "Мои пути", en: "My paths", uk: "Мої шляхи", fr: "Mes chemins", es: "Mis caminos" };
 const HINT: Record<string, string> = {
   ru: "Путь — длинная история жизни («Восстановление здоровья», «Запуск проекта»). Группируй в него опубликованные страницы — получается публичный таймлайн твоего прогресса.",
   en: "A path is a long life story (“Restoring health”, “Launching a project”). Group published pages into it — a public timeline of your progress.",
   uk: "Шлях — довга історія життя. Групуй у нього опубліковані сторінки — публічний таймлайн твого прогресу.",
   fr: "Un chemin est une longue histoire de vie. Regroupes-y tes pages publiées — une frise publique de ta progression.",
+  es: "Un camino es una historia de vida larga (“Recuperar la salud”, “Lanzar un proyecto”). Agrupa en él tus páginas publicadas — así obtienes una línea de tiempo pública de tu progreso.",
 };
 
 export default async function PathsPage() {

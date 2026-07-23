@@ -303,6 +303,6 @@ const EN: BotDoc = {
 };
 
 export function botGuide(locale: string): BotDoc {
-  if (locale === "en" || locale === "fr") return EN;
+  if (locale === "en" || locale === "fr" || locale === "es") return EN;
   return RU; // uk falls back to ru
 }

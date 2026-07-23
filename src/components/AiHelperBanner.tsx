@@ -20,7 +20,7 @@ const ROLES: Record<string, any> = {
 };
 
 export default function AiHelperBanner({ which, locale }: { which: "analytics" | "biographer" | "lab"; locale: string }) {
-  const r = ROLES[locale === "en" || locale === "fr" ? "en" : "ru"];
+  const r = ROLES[locale === "en" || locale === "fr" || locale === "es" ? "en" : "ru"];
   const role = r[which];
   const more = which === "analytics" ? r.moreA : which === "lab" ? r.moreL : r.more;
 

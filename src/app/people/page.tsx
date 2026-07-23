@@ -14,6 +14,7 @@ const STR = {
   en: { mentions: "mentions", empty: "No people yet — they'll appear when you mention them.", last: "last" },
   uk: { mentions: "згадувань", empty: "Людей поки немає — з'являться, коли згадаєш їх.", last: "останнє" },
   fr: { mentions: "mentions", empty: "Pas encore de personnes — elles apparaîtront quand tu les mentionnes.", last: "dernier" },
+  es: { mentions: "menciones", empty: "Aún no hay personas — aparecerán cuando las menciones en tus entradas.", last: "última" },
 };
 
 export default async function PeoplePage() {

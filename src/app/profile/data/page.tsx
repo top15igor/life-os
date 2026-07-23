@@ -12,6 +12,7 @@ const STR: Record<string, { title: string; back: string }> = {
   en: { title: "Your data", back: "Profile" },
   uk: { title: "Твої дані", back: "Профіль" },
   fr: { title: "Tes données", back: "Profil" },
+  es: { title: "Tus datos", back: "Perfil" },
 };
 
 export default async function DataPage() {

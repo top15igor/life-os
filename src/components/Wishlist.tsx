@@ -61,7 +61,7 @@ const T: Record<string, any> = {
 };
 
 export default function Wishlist({ locale, initial, share }: { locale: string; initial: Wish[]; share: { slug: string | null; isPublic: boolean } }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [wishes, setWishes] = useState<Wish[]>(initial);
   const [url, setUrl] = useState("");
   const [adding, setAdding] = useState(false);

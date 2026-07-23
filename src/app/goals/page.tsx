@@ -20,6 +20,7 @@ const STR = {
   en: { from: "from entry on", empty: "No insights yet — they'll appear from your entries.", dreams: "Wish Map" },
   uk: { from: "із запису від", empty: "Інсайтів поки немає — з'являться з твоїх записів.", dreams: "Карта бажань" },
   fr: { from: "de l'entrée du", empty: "Pas encore d'insights — ils apparaîtront depuis tes entrées.", dreams: "Carte des rêves" },
+  es: { from: "de la entrada del", empty: "Aún no hay ideas — aparecerán a partir de tus entradas.", dreams: "Mapa de sueños" },
 };
 
 export default async function PlansPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {

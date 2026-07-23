@@ -14,6 +14,7 @@ const STR: Record<string, { title: string; sub: string }> = {
   en: { title: "My Trace", sub: "The story of what got better thanks to you." },
   uk: { title: "Мій слід", sub: "Історія того, що стало кращим завдяки тобі." },
   fr: { title: "Mon empreinte", sub: "L'histoire de ce qui s'est amélioré grâce à toi." },
+  es: { title: "Mi huella", sub: "La historia de lo que mejoró gracias a ti." },
 };
 
 export default async function TracePage() {

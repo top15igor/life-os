@@ -8,6 +8,7 @@ const STR: Record<Locale, { title: string; sub: string }> = {
   en: { title: "Show recognized text", sub: "Under voice messages the bot echoes what it heard — easier to spot mistakes (e.g. amounts). Turn off if it's in the way." },
   uk: { title: "Показувати розпізнаний текст", sub: "Під голосовими бот дублює те, що розчув — так легше помітити помилку (напр. суми). Вимкни, якщо заважає." },
   fr: { title: "Afficher le texte reconnu", sub: "Sous les vocaux, le bot répète ce qu'il a entendu — plus facile de repérer une erreur (ex. montants). Désactive si ça gêne." },
+  es: { title: "Mostrar texto reconocido", sub: "Bajo los mensajes de voz, el bot repite lo que entendió — así es más fácil notar si algo se reconoció mal (por ejemplo, importes). Desactívalo si te molesta." },
 };
 
 export default function VoiceTextToggle({ locale, initial }: { locale: Locale; initial: boolean }) {

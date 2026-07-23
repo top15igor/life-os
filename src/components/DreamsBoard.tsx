@@ -57,6 +57,16 @@ const STR: Record<string, any> = {
     empty: "Voici la carte de tes rêves. Ajoute le premier — ou dis « je rêve de… » au bot, il apparaîtra tout seul.",
     emptyHint: "Ex. : une maison au bord de mer, ma voiture, un voyage au Japon, un corps fort…",
   },
+  es: {
+    title: "Mapa de sueños", subtitle: "La IA reúne tus sueños del diario y las notas de voz — y te ayuda a hacerlos realidad.",
+    center: "Mi mapa de sueños", statAll: "sueños en total", statSpheres: "áreas de vida", statProgress: "en marcha", viewMap: "Mapa", viewList: "Lista",
+    add: "Añadir un sueño", ph: "¿Con qué sueñas? Por ej. «Una casa junto al mar»", emojiPh: "🙂", photo: "Foto", save: "Añadir", cancel: "Cancelar",
+    sph: { home: "Hogar", transport: "Transporte", body: "Cuerpo y salud", travel: "Viajes", family: "Familia", business: "Trabajo", money: "Dinero", growth: "Crecimiento", other: "Otro" },
+    status: { dream: "Soñando", progress: "En marcha", done: "Cumplido ✨" },
+    makeGoal: "A metas", del: "Eliminar",
+    empty: "Aquí vive el mapa de tus sueños. Añade el primero — o simplemente dile al bot «sueño con…» y aparecerá solo.",
+    emptyHint: "Por ej.: una casa junto al mar, mi propio coche, un viaje a Japón, un cuerpo fuerte…",
+  },
 };
 
 function resizeImage(file: File, max = 1200): Promise<Blob> {

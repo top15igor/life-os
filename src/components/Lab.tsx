@@ -76,6 +76,24 @@ const STR: Record<string, any> = {
     hypExamples: "Ex. l'IA pourrait remarquer : « les jours où tu marches, ton humeur est meilleure » ou « après des entrées tardives, ton sommeil est pire ».",
     metrics: { mood: "Humeur", energy: "Énergie", health: "Santé", sleep_hours: "Sommeil" },
   },
+  es: {
+    tagline: "La IA detecta patrones y propone hipótesis. Tú las pones a prueba con experimentos sobre tu propia vida.",
+    active: "Experimentos activos", hypotheses: "Hipótesis de la IA", history: "Descubrimientos e historial", custom: "Experimento propio",
+    loading: "La IA está buscando patrones…", noHyp: "Aún no hay suficientes datos para hipótesis — sigue escribiendo y la IA empezará a notar conexiones.",
+    noExp: "No hay experimentos activos. Lanza una hipótesis o tu propio experimento.", noHist: "Todavía no hay experimentos terminados.",
+    check: "Probarlo", disagree: "No estoy de acuerdo", finish: "Terminar y concluir", del: "Eliminar", start: "Empezar", cancel: "Cancelar",
+    days: "d", dayOf: "día", of: "de", obs: "observaciones", basis: "según", durationLabel: "Duración (días)",
+    titlePh: "¿Qué estás probando? Ej. «acostarme antes de las 22:30»", delConfirm: "¿Eliminar el experimento?",
+    conf: { low: "hipótesis", medium: "probable", high: "hay indicios" },
+    result: "Conclusión", enoughNo: "Todavía hay pocos datos — es preliminar. Sigue registrando.",
+    before: "antes", after: "durante", noChange: "sin cambios",
+    howTitle: "Cómo funciona",
+    how: ["1. 👀 Observaciones — hechos de tus entradas: sueño, ánimo, pasos, eventos.", "2. 🔬 Hipótesis — la IA sugiere una conexión: «quizá caminar mejora tu sueño».", "3. 🧪 Experimento — lo pruebas durante unos días.", "4. 💡 Conclusión — la IA compara honestamente «antes» y «durante» y dice si hay suficientes datos."],
+    examplesTitle: "Ejemplos",
+    examples: [{ title: "Acostarse antes de las 22:30", days: 14 }, { title: "21 días sin azúcar", days: 21 }, { title: "10.000 pasos al día", days: 14 }, { title: "Ducha fría por la mañana", days: 21 }, { title: "2 litros de agua al día", days: 14 }, { title: "Caminata de 40 minutos diaria", days: 21 }],
+    hypExamples: "Por ejemplo, la IA podría notar: «en los días que caminas, tu ánimo es mejor» o «después de entradas tardías, tu sueño empeora».",
+    metrics: { mood: "Ánimo", energy: "Energía", health: "Salud", sleep_hours: "Sueño" },
+  },
 };
 
 function Conf({ level, s }: any) {

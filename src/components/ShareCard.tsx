@@ -45,6 +45,15 @@ const STR: Record<string, any> = {
     preview: "Ce que verront tes amis", share: "Partager", download: "Télécharger l'image", shareText: "Mon moment sur LIFE OS :", viaLink: "Ou par lien :",
     tagline: "Je capture ma vie dans le temps",
   },
+  es: {
+    kCustom: "Personalizado", kProgress: "Progreso", kDream: "Sueño", kThought: "Pensamiento",
+    fHeadline: "Título", fBig: "Número (opcional)", fSub: "Leyenda (opcional)", fTitle: "Qué mides", fFrom: "Antes", fTo: "Ahora", fUnit: "Unidad",
+    phHeadline: "Ej.: Corrí mi primer maratón", phBig: "42 km", phSub: "y esto es solo el comienzo", phDream: "Ej.: Visité Japón", phThought: "Un pensamiento o conclusión bonita",
+    emoji: "Emoji", color: "Color", fillDream: "De tus sueños cumplidos:", fillThought: "De tus entradas:", pick: "elegir…",
+    lblDream: "Cumplido", lblThought: "Mi pensamiento",
+    preview: "Así lo verán tus amigos", share: "Compartir", download: "Descargar imagen", shareText: "Mi momento en LIFE OS:", viaLink: "O por enlace:",
+    tagline: "Registrando mi vida a través del tiempo",
+  },
 };
 
 const ACCENTS: Record<string, [string, string]> = {

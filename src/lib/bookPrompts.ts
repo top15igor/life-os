@@ -24,6 +24,7 @@ const TITLES: Record<string, Record<Theme, string>> = {
   en: { family: "Family", health: "Health", work: "Work", travel: "Travel", growth: "About you", gratitude: "Gratitude", emotions: "Feelings" },
   uk: { family: "Сім'я", health: "Здоров'я", work: "Робота", travel: "Подорожі", growth: "Про себе", gratitude: "Вдячність", emotions: "Почуття" },
   fr: { family: "Famille", health: "Santé", work: "Travail", travel: "Voyages", growth: "Sur toi", gratitude: "Gratitude", emotions: "Émotions" },
+  es: { family: "Familia", health: "Salud", work: "Trabajo", travel: "Viajes", growth: "Sobre ti", gratitude: "Gratitud", emotions: "Emociones" },
 };
 
 const QUESTIONS: Record<string, Record<Theme, string[]>> = {
@@ -203,6 +204,50 @@ const QUESTIONS: Record<string, Record<Theme, string[]>> = {
       "Si l'humeur de ta semaine était une météo, laquelle serait-ce ?",
     ],
   },
+  es: {
+    family: [
+      "Cuéntame sobre alguien cercano que estuvo a tu lado este año. ¿Por qué te importa tanto?",
+      "¿Qué momento cálido en familia quieres guardar para siempre?",
+      "¿En quién de tu familia has estado pensando últimamente? ¿Qué te gustaría decirle?",
+      "¿Qué pequeño detalle o tradición familiar hace que tu casa se sienta como un hogar?",
+    ],
+    health: [
+      "¿Cómo te has sentido últimamente — en cuerpo y energía?",
+      "¿Qué hiciste esta semana por tu salud que valga la pena mencionar?",
+      "¿Qué hábito te ayuda, y cuál te frena?",
+      "Si tu cuerpo pudiera darte las gracias o pedirte algo — ¿qué sería?",
+    ],
+    work: [
+      "¿En qué estás trabajando que de verdad te importa?",
+      "¿Qué pequeño paso de hoy merece anotarse como una victoria?",
+      "¿Qué de tu trabajo te inspira, y qué te agota?",
+      "¿Con qué meta o proyecto sueñas pero sigues postergando?",
+    ],
+    travel: [
+      "¿Qué lugar te marcó más este año?",
+      "¿Adónde llevas tiempo queriendo ir — y por qué justo ahí?",
+      "Cuéntame sobre un paseo o un viaje que todavía recuerdas.",
+      "¿Qué lugar cerca de casa te encanta — y por qué?",
+    ],
+    growth: [
+      "¿Qué has entendido de ti mismo últimamente que sea importante?",
+      "¿Qué pensamiento o idea no te deja tranquilo estos días?",
+      "¿Qué te enseñó una dificultad reciente?",
+      "¿Qué te dirías a ti mismo hace un año, sabiendo lo que sabes ahora?",
+    ],
+    gratitude: [
+      "¿Por qué estás agradecido hoy — aunque sea algo pequeño?",
+      "¿A quién quieres darle las gracias pero sigues postergándolo?",
+      "¿Qué buena acción hiciste hace poco — o alguien hizo por ti?",
+      "¿Qué cosa buena pasó esta semana que es fácil de olvidar pero vale la pena guardar?",
+    ],
+    emotions: [
+      "¿Qué sientes ahora mismo — con honestidad, sin filtros?",
+      "¿Qué momento del día te tocó más?",
+      "¿Qué te ha alegrado últimamente, y qué te preocupa?",
+      "Si el ánimo de esta semana fuera el clima — ¿cuál sería?",
+    ],
+  },
 };
 
 function loc(locale?: string): string {
@@ -259,6 +304,7 @@ export function bookPromptMessage(locale: string, question: string): string {
     en: ["📖 A question for your book", "Answer — even by voice — and it becomes a page of your life."],
     uk: ["📖 Питання для книги", "Відповідай — хоч голосом — і це стане сторінкою твого життя."],
     fr: ["📖 Une question pour ton livre", "Réponds — même à la voix — et ça devient une page de ta vie."],
+    es: ["📖 Una pregunta para tu libro", "Responde — hasta por voz — y se convertirá en una página de tu vida."],
   };
   const [head, foot] = wrap[l];
   return `${head}\n\n${question}\n\n${foot}`;

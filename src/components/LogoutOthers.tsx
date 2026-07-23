@@ -35,6 +35,14 @@ const STR: Record<string, any> = {
     confirm: "Déconnecter tous les autres appareils ? Tu restes connectée ici.",
     done: "Terminé — tous les autres appareils déconnectés ✓",
   },
+  es: {
+    title: "Seguridad",
+    lead: "Si compartiste alguna vez tu enlace de acceso, aquí puedes cerrar sesión en todos los demás dispositivos. Solo podrán volver a entrar con tu contraseña/Google o un enlace nuevo del bot. Tú seguirás con la sesión iniciada en este dispositivo.",
+    btn: "Cerrar sesión en todos los demás dispositivos",
+    busy: "Cerrando sesión…",
+    confirm: "¿Cerrar sesión en todos los demás dispositivos? Aquí seguirás con la sesión iniciada.",
+    done: "Listo — todos los demás dispositivos han cerrado sesión ✓",
+  },
 };
 
 export default function LogoutOthers({ locale }: { locale: string }) {

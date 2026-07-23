@@ -19,7 +19,7 @@ import Anthropic from "@anthropic-ai/sdk";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type Lang = "ru" | "en" | "uk" | "fr";
+type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
 // Экранируем спецсимволы для parse_mode:HTML (иначе Telegram молча отклоняет).
 function escHtml(s: string): string {
@@ -81,6 +81,18 @@ const MSG: Record<Lang, {
     digestHeader: "📅 <b>Ta semaine</b>",
     digestLang: "français",
   },
+  es: {
+    reminder: "🌙 ¿Cómo estuvo tu día?\nCuéntame un par de líneas — hasta una nota corta importa para tu Libro de la vida.",
+    reminderStreak: (n) => `🔥 ¡Tu racha — ${n} días seguidos!\nEscribe hoy para no romper la cadena.`,
+    back: {
+      3: "Llevas un par de días sin aparecer 🙂\nTu diario te extraña — ¿qué hay de nuevo?",
+      7: "Ha pasado una semana sin entradas.\nHasta una línea hoy recupera el hábito 🌱",
+      14: "Dos semanas de silencio.\nLa vida sigue — ¿guardamos este momento? 📖",
+      30: "Ha pasado un mes entero.\nLo recuerdo todo y te espero — ¿vuelves con una entrada? 💛",
+    },
+    digestHeader: "📅 <b>Tu semana</b>",
+    digestLang: "español",
+  },
 };
 
 const dayMs = 86400000;
@@ -93,6 +105,7 @@ const ACQ_BACK: Record<Lang, (p: number) => string> = {
   en: (p) => `🌱 We paused our little intro at ${p}% 🙂\nShall we continue? I've got a juicier question waiting — tap “🌱 Let's get acquainted”.`,
   uk: (p) => `🌱 Ми зупинилися на знайомстві на ${p}% 🙂\nПродовжимо? Далі в мене для тебе цікавіше питання — тисни «🌱 Давай познайомимось».`,
   fr: (p) => `🌱 On a mis notre présentation en pause à ${p}% 🙂\nOn continue ? J'ai une question plus croustillante pour toi — appuie sur « 🌱 Faisons connaissance ».`,
+  es: (p) => `🌱 Dejamos nuestra pequeña presentación en pausa en el ${p}% 🙂\n¿Seguimos? Tengo una pregunta más jugosa esperando — toca «🌱 Vamos a conocernos».`,
 };
 const ACQ_NUDGE_CAP = 3;    // не больше 3 пингов-возвратов за всё время
 const ACQ_NUDGE_COOLDOWN = 4; // и не чаще раза в 4 дня
@@ -103,6 +116,7 @@ const BACKUP_CAPTION: Record<Lang, string> = {
   en: "📦 <b>Your diary — monthly backup</b>\nAll entries as plain Markdown files (an Obsidian vault). Download and unzip — your data stays with you forever, independent of any service.",
   uk: "📦 <b>Твій щоденник за місяць — резервна копія</b>\nУсі записи у звичайних Markdown-файлах (Obsidian-vault). Завантаж і розпакуй — дані залишаться в тебе назавжди, незалежно від сервісу.",
   fr: "📦 <b>Ton journal — sauvegarde mensuelle</b>\nToutes les entrées en fichiers Markdown (un coffre Obsidian). Télécharge et décompresse — tes données restent à toi pour toujours, indépendamment du service.",
+  es: "📦 <b>Tu diario del mes — copia de seguridad</b>\nTodas las entradas en archivos Markdown (un vault de Obsidian). Descarga y descomprime — tus datos se quedan contigo para siempre, sin depender de ningún servicio.",
 };
 
 const RECUR_HEAD: Record<Lang, string> = {
@@ -110,6 +124,7 @@ const RECUR_HEAD: Record<Lang, string> = {
   en: "📅 <b>Recurring payments due today</b>\nA reminder — log each by tapping the command below:",
   uk: "📅 <b>Регулярні платежі на сьогодні</b>\nНагадую — записати можна одним натисканням на команду нижче:",
   fr: "📅 <b>Paiements récurrents du jour</b>\nUn rappel — enregistre chacun en touchant la commande ci-dessous :",
+  es: "📅 <b>Pagos recurrentes de hoy</b>\nUn recordatorio — registra cada uno tocando el comando de abajo:",
 };
 
 async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> {
@@ -144,6 +159,7 @@ const MOOD_ASK: Record<Lang, string> = {
   en: "🌙 How's your mood today? Tap once — it helps me see what affects you.",
   uk: "🌙 Який сьогодні настрій? Познач одним дотиком — так я краще зрозумію, що на тебе впливає.",
   fr: "🌙 Ton humeur aujourd'hui ? Un seul tap — ça m'aide à voir ce qui t'influence.",
+  es: "🌙 ¿Cómo está tu ánimo hoy? Toca una vez — así entiendo mejor qué te influye.",
 };
 
 // Gentle one-tap mood check — only if today has no mood signal yet (no manual
@@ -189,7 +205,7 @@ export async function GET(req: NextRequest) {
     const db = supabaseAdmin();
     const { data: u } = await db.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
     if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
-    const lang: Lang = (["ru", "en", "uk", "fr"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
     try {
       const zip = await buildObsidianZip((u as any).id, (u as any).name || undefined);
       const fname = `LIFE_OS_Obsidian_${new Date().toISOString().slice(0, 7)}.zip`;
@@ -259,7 +275,7 @@ export async function GET(req: NextRequest) {
   for (const u of users || []) {
     try {
       if (u.push_enabled === false) continue; // пользователь выключил пуши в Профиле
-      const lang: Lang = (["ru", "en", "uk", "fr"].includes(u.lang) ? u.lang : "ru") as Lang;
+      const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes(u.lang) ? u.lang : "ru") as Lang;
       const m = MSG[lang];
       const prefs = normalizeMorningPrefs(u.morning_prefs);
       const lp = localParts(prefs.tz, nowD);

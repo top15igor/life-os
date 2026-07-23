@@ -314,6 +314,83 @@ const C = {
     design_a: "Classique",
     design_b: "Nouveau",
   },
+  es: {
+    nav_login: "Iniciar sesión",
+    back_to_app: "Volver a la app",
+    hero_badge: "Un sistema operativo personal para tu vida",
+    hero_title: "Tu vida merece ser guardada",
+    hero_sub:
+      "Solo cuentas cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",
+    cta_create: "Crear cuenta",
+    cta_tg: "Abrir en Telegram",
+    cta_hint: "Con Google o correo normal — en un minuto",
+
+    idea_kicker: "Por qué",
+    idea_title: "Casi no recordamos nada",
+    idea_p1:
+      "En una semana olvidarás en qué pensabas hoy. En un año, cómo fue este mes. Fotografiamos nuestras vacaciones, pero casi nunca guardamos nuestros pensamientos, decisiones e ideas — y de eso está hecha la vida.",
+    idea_p2:
+      "LIFE OS elimina toda la fricción. No hay que rellenar ni organizar nada. Tú hablas — la IA hace el resto. Con el tiempo empieza a entenderte: qué te da energía, qué hábitos funcionan, qué decisiones cambiaron tu vida.",
+
+    how_kicker: "Cómo funciona",
+    how: [
+      { n: "1", t: "Cuentas", d: "Por voz o texto — a un bot de Telegram o directo en el sitio. Como a un amigo: «hoy fue…»." },
+      { n: "2", t: "La IA entiende", d: "Transcribe el habla, extrae ideas clave, tareas, estado de ánimo, personas y lugares, y los conecta con tus proyectos." },
+      { n: "3", t: "Ves tu vida", d: "Feed, analítica, libro de vida, mapa de salud y metas. Preguntas — el biógrafo IA responde según tus entradas." },
+    ],
+
+    feat_kicker: "Qué incluye",
+    feats: [
+      { i: "ti-book", t: "Libro de vida", d: "La IA convierte tus días en una verdadera crónica por capítulos y años." },
+      { i: "ti-heart-rate-monitor", t: "Salud", d: "Peso, energía, bienestar — seguidos en el tiempo, sin registro manual." },
+      { i: "ti-target", t: "Metas y sueños", d: "Un mapa de deseos y tareas — la IA los extrae de lo que contaste." },
+      { i: "ti-users", t: "Personas y lugares", d: "Quién está cerca y dónde has estado — el mapa de tu vida se arma solo." },
+      { i: "ti-sparkles", t: "Lo que la IA notó", d: "Patrones, qué te da energía y felicidad — una mirada externa." },
+      { i: "ti-message-chatbot", t: "Biógrafo IA", d: "«¿Cuándo fui más feliz?» — respuesta en segundos según tus entradas." },
+      { i: "ti-bookmarks", t: "Base de conocimiento", d: "Enlaces de Instagram y YouTube — la IA saca la esencia y la guarda para encontrarla por significado." },
+      { i: "ti-camera", t: "Memoria en fotos", d: "Recibos, garantías, momentos — la IA entiende las fotos y las organiza por ti." },
+      { i: "ti-books", t: "Libros y lectura", d: "Qué lees y terminaste, valoraciones y citas, meta del año y recomendaciones de la IA." },
+    ],
+
+    founder_kicker: "Sobre el fundador",
+    founder_title: "Por qué estoy creando LIFE OS",
+    founder_paras: [
+      "Me llamo Igor. Empecé a crear LIFE OS no como un negocio, sino como una carta para quienes vengan después de mí.",
+      "Un día me sorprendió un pensamiento simple y un poco aterrador: apenas recuerdo mi propia vida. Vacaciones, conversaciones, decisiones importantes, ideas que alguna vez me hicieron brillar los ojos — todo eso se va borrando poco a poco. Las fotos quedan, pero ya no recordamos qué pasaba fuera de cuadro ni por qué ese día importó.",
+      "Y entendí algo más: todo lo que aprendí en mi vida — mis errores, descubrimientos y los momentos que valió la pena vivir — un día podría irse conmigo. Mis hijos y nietos verán fotos, pero no conocerán a la persona real que fui. Guardamos las imágenes de nuestra vida, pero casi no nos guardamos a nosotros mismos.",
+      "Quería una herramienta que no exigiera disciplina. Donde bastara con hablar — como a alguien cercano — y la tecnología entendiera lo que pasó, encontrara lo importante y lo convirtiera en una historia de vida. Eso no existía. Así que empecé a crearlo yo mismo — para mí y mi familia.",
+      "LIFE OS es mi diario personal, el archivo de todos mis datos y mi futuro libro de vida. Y ahora lo abro para todos los que tampoco quieren que su experiencia y sus momentos más importantes desaparezcan algún día.",
+    ],
+    founder_quote:
+      "No quiero doblar mi vida para encajar en sistemas complejos. Debería bastar con hablar — y que la tecnología haga el resto. LIFE OS no está pensado para especialistas técnicos, sino para personas comunes.",
+    founder_sign: "Igor Kholodinsky, fundador de LIFE OS",
+
+    testi_kicker: "Testimonios",
+    testi_title: "A la gente le encanta LIFE OS",
+    // TODO: reemplazar con testimonios reales de usuarios (por ahora son ejemplos para el diseño)
+    testi: [
+      { text: "Uso LIFE OS desde hace tres meses y por primera vez no abandoné un diario. Simplemente hablo por Telegram camino a casa — y por la noche leo mi vida, ordenada por capas.", name: "Anna", role: "marketera" },
+      { text: "Probé decenas de apps de notas y las dejé todas. Aquí no hay que configurar nada: hablas como a un amigo, la IA hace el resto.", name: "Dmitry", role: "emprendedor" },
+      { text: "Exporté todo a Obsidian y entendí — de verdad es mío. No dependo del servicio, mis recuerdos siempre están conmigo.", name: "Sergey", role: "ingeniero" },
+      { text: "Lo hago por mi hija. Quiero que algún día pueda leer en qué pensaba yo cuando ella era pequeña.", name: "Maria", role: "mamá" },
+    ],
+
+    trust_own: "Tus datos, siempre tuyos",
+    trust_own_d: "Exportación a Markdown y Obsidian en un clic. Tu libro de vida se queda contigo — incluso sin internet y sin nuestro servicio.",
+    trust_open: "Código abierto",
+    trust_open_d: "El proyecto es público — puedes revisar cómo funciona todo.",
+    trust_priv: "Privacidad honesta",
+    trust_priv_d: "Solo tú ves tu diario. Descarga o elimina todo en un clic.",
+
+    final_title: "Empieza la primera página de tu libro de vida",
+    final_sub: "Gratis. Con Google o correo.",
+
+    foot_priv: "Seguro y privado",
+    foot_code: "Código en GitHub",
+    foot_tester: "Para testers",
+    design_a: "Clásico",
+    design_b: "Nuevo",
+  },
 };
 
 // Премиальный светлый лендинг: ховеры, градиенты, мягкие тени, типографика.

@@ -25,6 +25,11 @@ const STR: Record<string, { lead: string; sec: string[]; privacy: string; pinNot
     pinNote: "Tu as un mot de passe ou Google — cela protège déjà ta connexion. Le PIN est facultatif (utile surtout sur un ordinateur partagé).",
     sec: ["Toi seul vois tes entrées — l'accès se fait via ton lien personnel. Aucun autre utilisateur n'entre dans ton journal.", "Les gens ne les lisent pas : ni les autres utilisateurs, ni notre équipe. Pour les stats, on ne voit que des chiffres anonymes — sans le texte.", "Seule l'IA voit le texte — et uniquement pour préparer tes résumés, réponses et Livre de vie. Jamais pour entraîner des modèles.", "Les données sont transférées et stockées chiffrées ; l'accès se fait via des clés secrètes absentes du code ouvert.", "Tu en es le propriétaire : télécharge tout ou supprime ton compte, sans trace, à tout moment.", "Le code de LIFE OS est ouvert — vérifie toi-même ce qui se passe avec tes données."],
   },
+  es: {
+    lead: "Tu vida está privada y protegida", privacy: "Más sobre privacidad",
+    pinNote: "Tienes contraseña o Google — eso ya protege tu acceso. El PIN es opcional (útil sobre todo en un ordenador compartido).",
+    sec: ["Solo tú ves tus entradas — el acceso es a través de tu enlace personal. No dejamos entrar a otros usuarios a tu diario.", "Nadie las lee: ni otros usuarios ni nuestro equipo. Para las estadísticas solo vemos números anónimos — nunca el texto de tus entradas.", "Solo la IA ve el texto — y únicamente para preparar tus propios resúmenes, respuestas y tu Libro de vida. Nunca se usa para entrenar modelos.", "Los datos se transmiten y guardan cifrados; el acceso es mediante claves secretas que no están en el código abierto.", "Eres el dueño total: puedes descargarlo todo o eliminar tu cuenta sin dejar rastro, cuando quieras.", "El código de LIFE OS es abierto — puedes comprobar tú mismo qué pasa exactamente con tus datos."],
+  },
 };
 
 export default function ProfileSecurity({ locale, hasPin, email }: { locale: string; hasPin: boolean; email: string | null }) {

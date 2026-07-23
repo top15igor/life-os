@@ -6,6 +6,7 @@ const LBL: Record<string, { aware: string; classic: string }> = {
   en: { aware: "New", classic: "Classic" },
   uk: { aware: "Новий", classic: "Класичний" },
   fr: { aware: "Nouveau", classic: "Classique" },
+  es: { aware: "Nuevo", classic: "Clásico" },
 };
 
 function pill(active: boolean): any {

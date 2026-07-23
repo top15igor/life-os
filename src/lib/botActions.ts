@@ -13,7 +13,7 @@ function client() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 }
 
-export type Lang = "ru" | "en" | "uk" | "fr";
+export type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
 export type Route =
   | { kind: "action"; name: string; input: any }
@@ -206,6 +206,27 @@ const M: Record<Lang, any> = {
     mvStatusRead: { want: "à lire", reading: "en cours", read: "lu" } as Record<string, string>,
     media: (kindLabel: string, title: string, statusLabel: string) => `Ajouté à ta Médiathèque : ${kindLabel} « ${title} » — ${statusLabel}.`,
   },
+  es: {
+    goal: (t: string) => `🎯 Agregué una meta: «${t}».`,
+    task: (t: string) => `✅ Agregué una tarea: «${t}».`,
+    taskDone: (t: string) => `✔️ Marqué la tarea como hecha: «${t}».`,
+    taskNone: "No encontré esa tarea abierta. ¿Puedes ser más específico?",
+    weight: (k: number) => `⚖️ Registré el peso: ${k} kg.`,
+    dream: (t: string) => `✨ Agregué un sueño: «${t}».`,
+    dreamDone: (t: string) => `🌟 Marqué el sueño como cumplido: «${t}»!`,
+    dreamNone: "No encontré ese sueño. ¿Puedes ser más específico?",
+    deed: (t: string) => `💛 Registré una buena acción: «${t}».`,
+    delAsk: (t: string) => `🗑 ¿Eliminar la última entrada${t ? `: «${t}»` : ""}? Esta acción no se puede deshacer.`,
+    delLast: (t: string) => `🗑 Eliminé la última entrada${t ? `: «${t}»` : ""}.`,
+    delKept: "Ok, dejé la entrada.",
+    delNone: "No hay entradas para eliminar.",
+    fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    open: "Abrir",
+    mvKind: { film: "🎬 película", series: "📺 serie", book: "📚 libro" } as Record<string, string>,
+    mvStatusWatch: { want: "quiero ver", reading: "viendo", read: "vista" } as Record<string, string>,
+    mvStatusRead: { want: "quiero leer", reading: "leyendo", read: "leído" } as Record<string, string>,
+    media: (kindLabel: string, title: string, statusLabel: string) => `Agregué a tu Mediateca: ${kindLabel} «${title}» — ${statusLabel}.`,
+  },
 };
 
 // Reminder confirmation strings (kept separate from M for brevity).
@@ -214,6 +235,7 @@ const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: st
   en: { label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" } },
   uk: { label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" } },
   fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" } },
+  es: { label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" } },
 };
 
 export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string } };

@@ -39,7 +39,7 @@ function getToken(): string {
 }
 
 export default function WishlistPublic({ locale, ownerName, wishes: initial }: { locale: string; ownerName: string | null; wishes: PublicWish[] }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [wishes, setWishes] = useState<PublicWish[]>(initial);
   const [mine, setMine] = useState<Set<string>>(new Set());
 

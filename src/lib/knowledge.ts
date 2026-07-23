@@ -4,7 +4,7 @@ import { logClaude } from "./usage";
 
 // Ответ по личной Базе знаний: AI отвечает на вопрос, опираясь ТОЛЬКО на
 // сохранённые из Instagram материалы пользователя.
-const LANG: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+const LANG: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français", es: "español" };
 
 export async function askKnowledge(userId: string, question: string, locale = "ru"): Promise<string> {
   const q = (question || "").trim();

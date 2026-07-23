@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 // Ссылка «← назад» вверху подстраниц. По умолчанию ведёт на «Профиль».
-const L: Record<string, string> = { ru: "Профиль", en: "Profile", uk: "Профіль", fr: "Profil" };
+const L: Record<string, string> = { ru: "Профиль", en: "Profile", uk: "Профіль", fr: "Profil", es: "Perfil" };
 
 export default function BackLink({ locale, href = "/profile", label }: { locale: string; href?: string; label?: string }) {
   return (

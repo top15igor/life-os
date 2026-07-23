@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
   let instructions = "";
   try {
     const { data } = await supabaseAdmin().from("users").select("tz_offset, lang").eq("id", user.id).maybeSingle();
-    const vlang = ["ru", "en", "uk", "fr"].includes((data as any)?.lang) ? (data as any).lang : "ru";
+    const vlang = ["ru", "en", "uk", "fr", "es"].includes((data as any)?.lang) ? (data as any).lang : "ru";
     instructions = await buildVoiceInstructions(user.id, user.name, (data as any)?.tz_offset ?? null, vlang);
   } catch {
     instructions = await buildVoiceInstructions(user.id, user.name, null);

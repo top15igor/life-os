@@ -11,9 +11,10 @@ const NOTE: Record<string, string> = {
   en: "✨ We've updated the menu! Now at hand: diary, tasks, motivation and inviting a friend. Use it as usual 🙂",
   uk: "✨ Оновили меню! Тепер під рукою: щоденник, завдання, мотивація та запрошення друга. Користуйся як завжди 🙂",
   fr: "✨ Nous avons mis à jour le menu ! Désormais à portée de main : journal, tâches, motivation et inviter un ami. Utilise-le comme d'habitude 🙂",
+  es: "✨ ¡Actualizamos el menú! Ahora tienes a mano: diario, tareas, motivación e invitar a un amigo. Úsalo como siempre 🙂",
 };
 
-const langOf = (l: any) => (["ru", "en", "uk", "fr"].includes(l) ? l : "ru");
+const langOf = (l: any) => (["ru", "en", "uk", "fr", "es"].includes(l) ? l : "ru");
 
 export async function broadcastKeyboard(): Promise<{ sent: number; skipped: number; failed: number }> {
   const db = supabaseAdmin();

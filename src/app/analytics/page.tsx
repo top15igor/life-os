@@ -18,6 +18,7 @@ const STR: Record<string, any> = {
   en: { map: "Life map", mapHint: "The biggest themes of your life — tap to see entries.", spheres: "Life areas", themes: "Topics", onthis: "This day in history", year: "A year ago today", month: "A month ago today", empty: "Empty for now — first insights appear after a few entries." },
   uk: { map: "Карта життя", mapHint: "Найбільші теми твого життя — натисни, щоб подивитися записи.", spheres: "Сфери життя", themes: "Теми", onthis: "Цей день в історії", year: "Рік тому цього дня", month: "Місяць тому цього дня", empty: "Поки порожньо — перші спостереження з'являться за кілька записів." },
   fr: { map: "Carte de vie", mapHint: "Les plus grands thèmes de ta vie — touche pour voir les entrées.", spheres: "Domaines de vie", themes: "Sujets", onthis: "Ce jour dans l'histoire", year: "Il y a un an aujourd'hui", month: "Il y a un mois aujourd'hui", empty: "Vide pour l'instant — les premières observations arrivent après quelques entrées." },
+  es: { map: "Mapa de vida", mapHint: "Los temas más grandes de tu vida — toca para ver las entradas.", spheres: "Áreas de vida", themes: "Temas", onthis: "Este día en la historia", year: "Hace un año hoy", month: "Hace un mes hoy", empty: "Todavía vacío — las primeras observaciones aparecerán en unas pocas entradas." },
 };
 
 const CAT_COLOR: Record<string, string> = {

@@ -52,6 +52,18 @@ const STR: Record<string, any> = {
       activeOf: (a: number, p: number) => `Amis actifs : ${a} sur ${p}`,
     },
   },
+  es: {
+    btn: "Invitar a un amigo", title: "Regálale a un amigo su Libro de la vida",
+    sub: "Envía el enlace — tu amigo empezará su propio diario, y tú lo verás en tus estadísticas.",
+    copy: "Copiar", copied: "Copiado", tg: "Telegram", wa: "WhatsApp", more: "Compartir…", close: "Cerrar",
+    pitch: "📖 Imagina poder abrir cualquier día de tu vida dentro de 10 años. LIFE OS te ayuda a crear ese «Libro de la vida» — solo graba tus pensamientos por voz y la IA los guarda y los conecta. Pruébalo:",
+    reward: {
+      line: "🎁 Invita a amigos — consigue tu libro impreso gratis.",
+      toNext: (n: number) => `Te faltan ${n} ${n === 1 ? "amigo activo" : "amigos activos"}. Y el libro impreso «Classic» — gratis.`,
+      have: "🎁 Ya tienes disponible un libro impreso gratis — pídelo en la sección «Libro de la vida».",
+      activeOf: (a: number, p: number) => `Amigos activos: ${a} de ${p}`,
+    },
+  },
 };
 
 function shareBtn(bg: string, fg = "#fff"): any {

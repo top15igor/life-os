@@ -17,6 +17,9 @@ const STR: Record<string, any> = {
   fr: { notes: "entrées", open: "Ouvrir", save: "Enregistrer", cancel: "Annuler", confirm: "Supprimer le projet ? Tes entrées restent — seul le projet et ses liens disparaissent.", empty: "Pas encore de projets — ils apparaissent quand tu les mentionnes au bot.",
     mergeMode: "Fusionner", mergeExit: "Terminé", selectHint: "Choisis les projets à fusionner en un.", keep: "Garder :", mergeBtn: "Fusionner", selected: (n: number) => `Sélectionnés : ${n}`,
     mergeConfirm: (n: number, name: string) => `Fusionner ${n} projet(s) dans « ${name} » ? Leurs entrées y sont déplacées, les cartes en trop sont supprimées. Les entrées restent.` },
+  es: { notes: "entradas", open: "Abrir", save: "Guardar", cancel: "Cancelar", confirm: "¿Eliminar el proyecto? Tus entradas se quedan — solo se elimina el proyecto y sus vínculos.", empty: "Aún no hay proyectos — aparecerán cuando se los menciones al bot.",
+    mergeMode: "Combinar", mergeExit: "Listo", selectHint: "Marca los proyectos que quieras fusionar en uno.", keep: "Mantener:", mergeBtn: "Combinar", selected: (n: number) => `Seleccionados: ${n}`,
+    mergeConfirm: (n: number, name: string) => `¿Fusionar ${n} proyecto(s) en «${name}»? Sus entradas se moverán ahí, las tarjetas de más se eliminarán. Las entradas en sí no se pierden.` },
 };
 
 const COLORS = ["#3b82f6", "#0ea5e9", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899"];

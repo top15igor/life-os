@@ -83,6 +83,13 @@ Je suis LIFE OS, ton journal personnel avec intelligence artificielle. Tu me rac
 Et tout de suite l'essentiel, pour que tu sois à l'aise : tout ce que tu me confies reste entre nous. Toi seul vois ton journal — ni les autres, ni mon équipe ; pour les stats, on ne voit que des chiffres anonymes, sans le texte. Les données sont chiffrées, et tu peux tout télécharger ou supprimer à tout moment, sans laisser de trace. Ici, tu peux être toi-même — sans masque et sans jugement.
 
 Pour que je te sois plus utile à toi précisément, faisons connaissance. Commençons simple : comment t'appelles-tu — et comment t'appellent ceux qui t'aiment ?`,
+  es: `Hola 🙂 Vamos a conocernos — primero un par de palabras sobre en qué te puedo ayudar, y luego me cuentas sobre ti.
+
+Soy LIFE OS, tu diario personal con inteligencia artificial. Simplemente me cuentas cómo fue tu día — por texto o por voz — y yo lo convierto en estructura: noto tu ánimo y tu energía, veo qué te recarga y qué te agota, y con el tiempo reúno tus días en un verdadero libro de tu vida, por capítulos y años. Por las mañanas te lanzo una pregunta cálida, te recuerdo lo importante y te muestro «este día hace un año». No hay que rellenar nada casilla por casilla — solo habla, yo me encargo del resto.
+
+Y de una vez lo más importante, para que estés tranquilo: todo lo que me cuentes queda solo entre nosotros. Solo tú ves tu diario — ni otras personas ni mi equipo lo leen; para las estadísticas solo se ven números anónimos, sin texto. Los datos se guardan cifrados, y puedes descargarlo o borrarlo todo cuando quieras, sin dejar rastro. Aquí puedes ser tú mismo — sin máscaras y sin juicios.
+
+Para poder serte más útil a ti en concreto, vamos a conocernos. Empecemos por lo simple: ¿cómo te llamas — y cómo te llaman quienes te quieren?`,
 };
 
 const RETURN_LEAD: Record<string, string> = {
@@ -90,6 +97,7 @@ const RETURN_LEAD: Record<string, string> = {
   en: "Oh, you're back — I'm glad 🙂 Let's pick up where we left off.",
   uk: "О, ти повернувся — я радий 🙂 Продовжимо, де зупинилися.",
   fr: "Oh, te revoilà — j'en suis ravi 🙂 Reprenons où on s'était arrêtés.",
+  es: "Oh, has vuelto — qué alegría 🙂 Sigamos donde lo dejamos.",
 };
 
 const PAGE_LEAD: Record<string, string> = {
@@ -97,12 +105,14 @@ const PAGE_LEAD: Record<string, string> = {
   en: "Look what came out of us just chatting 👇",
   uk: "Дивись, що в нас вийшло, поки ми просто балакали 👇",
   fr: "Regarde ce qui est sorti de notre simple conversation 👇",
+  es: "Mira lo que salió de nosotros solo charlando 👇",
 };
 const PAGE_OUTRO: Record<string, string> = {
   ru: "\n\n☝️ Так начинается твоя книга. Каждый твой ответ я тихо сохраняю отдельной записью в дневник — она наполняется сама, просто пока мы разговариваем 🙂 Загляни в «📖 Дневник», когда захочешь.",
   en: "\n\n☝️ This is how your book begins. Every answer of yours I quietly save as its own diary entry — it fills up on its own, just as we talk 🙂 Peek into “📖 Diary” whenever you like.",
   uk: "\n\n☝️ Так починається твоя книга. Кожну твою відповідь я тихо зберігаю окремим записом у щоденник — вона наповнюється сама, просто поки ми розмовляємо 🙂 Зазирни в «📖 Щоденник», коли захочеш.",
   fr: "\n\n☝️ C'est ainsi que commence ton livre. Chaque réponse, je l'enregistre discrètement comme une entrée à part dans ton journal — il se remplit tout seul, juste en discutant 🙂 Jette un œil au « 📖 Journal » quand tu veux.",
+  es: "\n\n☝️ Así empieza tu libro. Cada respuesta tuya la guardo en silencio como una entrada aparte en tu diario — se va llenando solo, mientras simplemente conversamos 🙂 Échale un vistazo a «📖 Diario» cuando quieras.",
 };
 
 // Тёплая «глубокая» отметка (однократно ~90%). Не финал: человека знать до конца
@@ -112,6 +122,7 @@ const DEEP: Record<string, string> = {
   en: "\n\n💛 You know, we've really gotten to know each other. I feel you much better now — and I keep discovering more, because a person can never be fully known, and that's beautiful. So keep telling me — I'm in no hurry.",
   uk: "\n\n💛 Знаєш, ми добре впізнали одне одного. Я відчуваю тебе вже куди краще — і все одно продовжую відкривати нове, адже людину до кінця не пізнати, і це прекрасно. Тож розповідай далі — я нікуди не поспішаю.",
   fr: "\n\n💛 Tu sais, on a vraiment appris à se connaître. Je te ressens bien mieux maintenant — et je continue à découvrir, car on ne connaît jamais tout à fait quelqu'un, et c'est beau. Alors continue à me raconter — je ne suis pas pressé.",
+  es: "\n\n💛 ¿Sabes? Nos hemos llegado a conocer muy bien. Ahora te siento mucho mejor — y aun así sigo descubriendo cosas nuevas, porque a una persona nunca se la conoce del todo, y eso es hermoso. Así que sigue contándome — no tengo ninguna prisa.",
 };
 
 // Первые 2 вопроса — сценарные, с быстрыми кнопками-ответами (порог входа = один тап).
@@ -125,12 +136,14 @@ const SCRIPTED: Scripted[] = [
       en: "By the way, I can send the morning question exactly when it suits you — tuned to your rhythm. And you — a night owl or an early bird?",
       uk: "До речі, ранкове питання я вмію надсилати тоді, коли тобі зручно — під твій ритм. А ти по життю хто — сова чи жайворонок?",
       fr: "Au fait, je peux t'envoyer la question du matin au moment qui te convient — à ton rythme. Et toi — plutôt couche-tard ou lève-tôt ?",
+      es: "Por cierto, puedo enviarte la pregunta de la mañana justo cuando te venga bien — a tu ritmo. Y tú, ¿eres más noctámbulo o madrugador?",
     },
     opts: {
       ru: [{ label: "🌅 Жаворонок", value: "я жаворонок" }, { label: "🌙 Сова", value: "я сова" }, { label: "🧟 Как получится", value: "как получится" }],
       en: [{ label: "🌅 Early bird", value: "I'm an early bird" }, { label: "🌙 Night owl", value: "I'm a night owl" }, { label: "🧟 It varies", value: "my schedule varies" }],
       uk: [{ label: "🌅 Жайворонок", value: "я жайворонок" }, { label: "🌙 Сова", value: "я сова" }, { label: "🧟 Як вийде", value: "режим плаває, як вийде" }],
       fr: [{ label: "🌅 Lève-tôt", value: "je suis lève-tôt" }, { label: "🌙 Couche-tard", value: "je suis couche-tard" }, { label: "🧟 Ça dépend", value: "mon rythme varie" }],
+      es: [{ label: "🌅 Madrugador", value: "soy madrugador" }, { label: "🌙 Noctámbulo", value: "soy noctámbulo" }, { label: "🧟 Depende", value: "mi horario varía" }],
     },
   },
   {
@@ -139,12 +152,14 @@ const SCRIPTED: Scripted[] = [
       en: "Over time I pick up on your little rituals — that's what a portrait of your day is built from ☕ And what wakes you up in the mornings?",
       uk: "З часом я підмічаю твої маленькі ритуали — з них і складається портрет дня ☕ А тебе що скоріше будить зранку?",
       fr: "Avec le temps, je repère tes petits rituels — c'est de là que se construit le portrait de ta journée ☕ Et toi, qu'est-ce qui te réveille le matin ?",
+      es: "Con el tiempo voy notando tus pequeños rituales — de ahí se arma el retrato de tu día ☕ ¿Y a ti qué es lo que más te despierta por las mañanas?",
     },
     opts: {
       ru: [{ label: "☕ Кофе", value: "кофе по утрам" }, { label: "🍵 Чай", value: "чай по утрам" }, { label: "🚫 Ни то ни другое", value: "ни кофе, ни чай" }],
       en: [{ label: "☕ Coffee", value: "coffee in the mornings" }, { label: "🍵 Tea", value: "tea in the mornings" }, { label: "🚫 Neither", value: "neither coffee nor tea" }],
       uk: [{ label: "☕ Кава", value: "кава зранку" }, { label: "🍵 Чай", value: "чай зранку" }, { label: "🚫 Ні те ні те", value: "ні кава, ні чай" }],
       fr: [{ label: "☕ Café", value: "le café le matin" }, { label: "🍵 Thé", value: "le thé le matin" }, { label: "🚫 Ni l'un ni l'autre", value: "ni café ni thé" }],
+      es: [{ label: "☕ Café", value: "café por las mañanas" }, { label: "🍵 Té", value: "té por las mañanas" }, { label: "🚫 Ninguno de los dos", value: "ni café ni té" }],
     },
   },
 ];
@@ -323,18 +338,21 @@ const PORTRAIT_LEAD: Record<string, string> = {
   en: "Here's what I've already gathered about you 👇",
   uk: "Ось що я вже встиг про тебе зрозуміти 👇",
   fr: "Voici ce que j'ai déjà compris de toi 👇",
+  es: "Esto es lo que ya he llegado a entender de ti 👇",
 };
 const PORTRAIT_EMPTY: Record<string, string> = {
   ru: "Мы только начали 🙂 Расскажи ещё чуть-чуть о себе — и я соберу твой портрет.",
   en: "We've only just started 🙂 Tell me a bit more about yourself — and I'll put together your portrait.",
   uk: "Ми тільки почали 🙂 Розкажи ще трохи про себе — і я зберу твій портрет.",
   fr: "On vient juste de commencer 🙂 Parle-moi encore un peu de toi — et je dresserai ton portrait.",
+  es: "Acabamos de empezar 🙂 Cuéntame un poco más sobre ti — y armaré tu retrato.",
 };
 const PORTRAIT_OUTRO: Record<string, string> = {
   ru: "\n\nЧем больше расскажешь — тем точнее я тебя узнаю 🙂",
   en: "\n\nThe more you share — the better I'll know you 🙂",
   uk: "\n\nЧим більше розкажеш — тим точніше я тебе впізнаю 🙂",
   fr: "\n\nPlus tu m'en dis — mieux je te connaîtrai 🙂",
+  es: "\n\nCuanto más me cuentes — mejor te conoceré 🙂",
 };
 
 // Ловим просьбу «что ты обо мне знаешь» в свободном тексте (во время знакомства).
@@ -344,7 +362,8 @@ export function isPortraitAsk(text: string): boolean {
     /что\s+ты\s+.*(обо\s+мне|про\s+меня)|что\s+.*(обо\s+мне|про\s+меня)\s+знаешь|что\s+ты\s+знаешь|мой\s+портрет|что\s+запомнил/.test(t) ||
     /what.*(you|u).*(know|remember).*about\s+me|my\s+portrait/.test(t) ||
     /що\s+ти\s+.*про\s+мене|мій\s+портрет/.test(t) ||
-    /(sais|sait).*(de|sur)\s+moi|mon\s+portrait/.test(t)
+    /(sais|sait).*(de|sur)\s+moi|mon\s+portrait/.test(t) ||
+    /qu[eé].*(sabes|conoces).*(de|sobre)\s+m[ií]|mi\s+retrato|qu[eé]\s+recuerdas/.test(t)
   );
 }
 
@@ -372,7 +391,7 @@ ${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
 // Вопросы — это assistant-реплики в companion_messages. Курсор acquaintNav хранит,
 // на сколько вопросов назад от «живого края» сейчас смотрит пользователь (0 = последний).
 const NEXT_LEAD: Record<string, string> = {
-  ru: "Хорошо, дальше 🙂", en: "Sure, next one 🙂", uk: "Добре, далі 🙂", fr: "D'accord, la suivante 🙂",
+  ru: "Хорошо, дальше 🙂", en: "Sure, next one 🙂", uk: "Добре, далі 🙂", fr: "D'accord, la suivante 🙂", es: "Vale, siguiente 🙂",
 };
 
 // Список последних assistant-вопросов (по возрастанию времени).
@@ -449,6 +468,7 @@ const PAUSE_MSG: Record<string, string> = {
   en: "Alright, let's stop here for today 🙂 I've remembered everything — whenever you like, tap “🌱 Let's get acquainted” and we'll pick up right where we left off. I've already got a juicier question saved for you.\n\nAnd if you feel like it — just ask “what do you know about me,” and I'll put together your portrait from what I've gathered.",
   uk: "Добре, на сьогодні зупинимось 🙂 Я все запам'ятав — будь-коли тисни «🌱 Давай познайомимось», і продовжимо саме з того місця. У мене вже припасене для тебе цікавіше питання.\n\nА захочеш — просто спитай «що ти про мене знаєш», і я зберу твій портрет із того, що вже зрозумів.",
   fr: "D'accord, on s'arrête là pour aujourd'hui 🙂 J'ai tout retenu — quand tu veux, appuie sur « 🌱 Faisons connaissance » et on reprend exactement où on s'est arrêtés. J'ai déjà une question plus croustillante en réserve pour toi.\n\nEt si tu veux — demande simplement « que sais-tu de moi », et je dresserai ton portrait à partir de ce que j'ai compris.",
+  es: "Vale, lo dejamos aquí por hoy 🙂 Lo he recordado todo — cuando quieras, toca «🌱 Vamos a conocernos» y seguimos justo donde lo dejamos. Ya tengo guardada una pregunta más interesante para ti.\n\nY si te apetece, simplemente pregunta «qué sabes de mí», y armaré tu retrato con lo que ya he entendido.",
 };
 export async function pauseAcquaint(userId: string, lang = "ru"): Promise<{ text: string; pct: number }> {
   const { prefs, pct } = await readState(userId);

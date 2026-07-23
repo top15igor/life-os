@@ -14,8 +14,9 @@ const HINT: Record<string, string> = {
   en: "Fair pricing: you pay for the diary's value, not a just-in-case subscription.",
   uk: "Чесна оплата: платиш за цінність щоденника, а не «підписку про всяк випадок».",
   fr: "Tarification juste : tu paies pour la valeur du journal, pas un abonnement « au cas où ».",
+  es: "Precios justos: pagas por el valor del diario, no por una suscripción «por si acaso».",
 };
-const TITLE: Record<string, string> = { ru: "Тарифы", en: "Plans", uk: "Тарифи", fr: "Forfaits" };
+const TITLE: Record<string, string> = { ru: "Тарифы", en: "Plans", uk: "Тарифи", fr: "Forfaits", es: "Planes" };
 
 export default async function PricingPage() {
   const user = await requireUser();

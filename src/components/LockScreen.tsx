@@ -7,6 +7,7 @@ const STR: Record<string, any> = {
   en: { title: "Enter PIN", sub: "Access to your diary is protected by a PIN.", wrong: "Wrong PIN", unlock: "Unlock", forgot: "Forgot PIN?", forgotHint: "Open the bot in Telegram and send /resetpin — the PIN will be reset and you can sign in.", logout: "Log out" },
   uk: { title: "Введіть PIN", sub: "Доступ до щоденника захищено PIN-кодом.", wrong: "Невірний PIN", unlock: "Увійти", forgot: "Забув PIN?", forgotHint: "Відкрий бота в Telegram і надішли /resetpin — PIN скинеться, і ти зможеш увійти.", logout: "Вийти" },
   fr: { title: "Saisis le PIN", sub: "L'accès à ton journal est protégé par un PIN.", wrong: "PIN incorrect", unlock: "Déverrouiller", forgot: "PIN oublié ?", forgotHint: "Ouvre le bot dans Telegram et envoie /resetpin — le PIN sera réinitialisé.", logout: "Se déconnecter" },
+  es: { title: "Ingresa el PIN", sub: "El acceso a tu diario está protegido con un PIN.", wrong: "PIN incorrecto", unlock: "Entrar", forgot: "¿Olvidaste el PIN?", forgotHint: "Abre el bot en Telegram y envía /resetpin — el PIN se restablecerá y podrás entrar.", logout: "Cerrar sesión" },
 };
 
 export default function LockScreen({ locale }: { locale: string }) {

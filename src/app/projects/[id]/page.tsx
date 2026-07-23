@@ -13,6 +13,7 @@ const STR: Record<string, any> = {
   en: { back: "to projects", entries: "Project entries", tasks: "Project tasks", insights: "Insights", notFound: "Project not found.", empty: "No entries in this project yet." },
   uk: { back: "до проєктів", entries: "Записи проєкту", tasks: "Завдання проєкту", insights: "Інсайти", notFound: "Проєкт не знайдено.", empty: "Записів у проєкті поки немає." },
   fr: { back: "aux projets", entries: "Entrées du projet", tasks: "Tâches du projet", insights: "Insights", notFound: "Projet introuvable.", empty: "Pas encore d'entrées dans ce projet." },
+  es: { back: "a proyectos", entries: "Entradas del proyecto", tasks: "Tareas del proyecto", insights: "Ideas", notFound: "Proyecto no encontrado.", empty: "Aún no hay entradas en este proyecto." },
 };
 
 function SectionTitle({ children }: any) {

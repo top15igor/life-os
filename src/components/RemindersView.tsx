@@ -140,6 +140,37 @@ const STR: Record<string, any> = {
     repeatBadge: { daily: "chaque jour", weekly: "chaque semaine", monthly: "chaque mois", yearly: "chaque année" },
     remindOpts: { 0: "À l'heure", 10: "10 min avant", 30: "30 min avant", 60: "1 h avant", 1440: "1 jour avant" },
   },
+  es: {
+    calTitle: "Google Calendar",
+    calOnDesc: "Los recordatorios y tareas van a tu Google Calendar como eventos reales con notificaciones.",
+    calOffDesc: "Conecta Google Calendar y los recordatorios llegarán a tu teléfono en el momento justo.",
+    connect: "Conectar Google Calendar",
+    connected: "Conectado",
+    disconnect: "Desconectar",
+    addTitle: "Nuevo recordatorio",
+    ph: "Recuérdame… ej. «Llamar al médico»",
+    when: "Cuándo",
+    add: "Añadir",
+    save: "Guardar",
+    cancel: "Cancelar",
+    edit: "Editar",
+    upcoming: "Próximos",
+    past: "Pasados",
+    empty: "Todavía no hay recordatorios. Añade el primero arriba.",
+    inCal: "En el calendario",
+    notInCal: "Solo en LIFE OS",
+    del: "Eliminar",
+    allDay: "Todo el día",
+    repeat: "Repetir",
+    remind: "Recordar",
+    okMsg: "Google Calendar conectado ✓",
+    errMsg: "No se pudo conectar el calendario. Inténtalo de nuevo.",
+    norefreshMsg: "Google no concedió acceso. Pulsa «Conectar» otra vez y aprueba el permiso del Calendario.",
+    nologinMsg: "La sesión expiró — inicia sesión y vuelve a intentarlo.",
+    repeatOpts: { none: "No repetir", daily: "Cada día", weekly: "Cada semana", monthly: "Cada mes", yearly: "Cada año" },
+    repeatBadge: { daily: "cada día", weekly: "cada semana", monthly: "cada mes", yearly: "cada año" },
+    remindOpts: { 0: "A la hora", 10: "10 min antes", 30: "30 min antes", 60: "1 hora antes", 1440: "1 día antes" },
+  },
 };
 
 const REMIND_VALUES = [0, 10, 30, 60, 1440];
@@ -337,7 +368,7 @@ export default function RemindersView({
   }
 
   function fmt(r: Reminder): string {
-    const loc = locale === "uk" ? "uk-UA" : locale === "fr" ? "fr-FR" : locale === "en" ? "en-US" : "ru-RU";
+    const loc = locale === "uk" ? "uk-UA" : locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : locale === "en" ? "en-US" : "ru-RU";
     try {
       const d = new Date(r.due_at);
       if (r.all_day) return d.toLocaleDateString(loc, { day: "numeric", month: "short" });

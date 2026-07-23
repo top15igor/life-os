@@ -10,6 +10,7 @@ const STR: Record<string, any> = {
   en: { add: "To calendar", inCal: "In calendar", save: "Add", connect: "Connect calendar", saving: "…", err: "Error" },
   uk: { add: "У календар", inCal: "У календарі", save: "Додати", connect: "Підключи календар", saving: "…", err: "Помилка" },
   fr: { add: "Au calendrier", inCal: "Au calendrier", save: "Ajouter", connect: "Connecter l'agenda", saving: "…", err: "Erreur" },
+  es: { add: "Al calendario", inCal: "En el calendario", save: "Añadir", connect: "Conecta el calendario", saving: "…", err: "Error" },
 };
 
 // Default: tomorrow 09:00 local, formatted for <input type="datetime-local">.

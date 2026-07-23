@@ -49,6 +49,17 @@ const STR: Record<string, any> = {
       "👨‍👩‍👧 Plus de temps en famille, sans téléphone",
     ],
   },
+  es: {
+    addBtn: "Añadir", placeholder: "Nueva meta para el año…",
+    emptyTitle: "¿Por dónde empezar?",
+    emptyHint: "Una meta es algo que quieres lograr este año. Toca un ejemplo para ponerlo en el campo, o escribe el tuyo.",
+    examples: [
+      "🏃 Correr un medio maratón", "📚 Leer 24 libros este año", "🇬🇧 Hablar inglés con fluidez",
+      "💰 Ahorrar un colchón de 6 meses", "🧘 Meditar cada día", "💪 Ponerte en forma, bajar 10 kg",
+      "✈️ Visitar un país en el que nunca has estado", "🎸 Aprender a tocar la guitarra", "🚭 Dejar de fumar",
+      "👨‍👩‍👧 Más tiempo en familia, sin el teléfono",
+    ],
+  },
 };
 
 const COLORS = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];

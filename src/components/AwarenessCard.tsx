@@ -87,6 +87,24 @@ const S: Record<string, any> = {
     have: (n: number) => `Déjà rassemblé : ${n} jours d'entrées.`,
     cta: "Ce que j'ai remarqué",
   },
+  es: {
+    title: "Solo cuéntame — yo llevo el registro por ti.",
+    sub: "Cuenta tu día por voz o texto. Yo lo organizo todo y le hago seguimiento.",
+    examples: [
+      { say: "Hoy comí pescado y verduras", to: "registro tu alimentación" },
+      { say: "Corrí 5 km esta mañana", to: "registro el deporte" },
+      { say: "Me siento cansado, me duele la cabeza", to: "sigo tu salud" },
+      { say: "Hoy tengo un ánimo excelente", to: "veo tu estado emocional" },
+      { say: "Se me ocurrió una idea de negocio", to: "la guardo en ideas" },
+      { say: "Ayudé a mi vecina con las compras", to: "lo sumo a tu huella" },
+      { say: "Dormí 7 horas", to: "registro tu sueño" },
+    ],
+    trackTitle: "Lo que registro",
+    labels: { food: "Alimentación", sport: "Deporte", health: "Salud", mood: "Ánimo", sleep: "Sueño", ideas: "Ideas", goals: "Metas", deeds: "Buenas acciones" },
+    payoff: "Y al final de cada semana, mes y año armaré tu reporte — por ejemplo: «este año: 1.240 km corridos, 312 entradas y 47 buenas acciones». Cuanto más cuentas, más nítida es la imagen.",
+    have: (n: number) => `Ya acumulado: ${n} día${n === 1 ? "" : "s"} con entradas.`,
+    cta: "Lo que ya noté",
+  },
 };
 
 export default function AwarenessCard({ locale, totalDays }: { locale: string; totalDays: number }) {

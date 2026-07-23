@@ -11,6 +11,7 @@ const STR: Record<string, any> = {
   en: { lblEntries: "Entries", lblDays: "Days journaled", lblVoice: "Voice notes", lblDeeds: "Good deeds", lblDreams: "Dreams come true", lblStreak: "Day streak", since: "On LIFE OS since", tagline: "Capturing my life over time", cta: "Start your own diary", ctaSub: "Free. Just talk through your day — AI sorts it all out.", notFound: "No such page, or it's hidden.", months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] },
   uk: { lblEntries: "Записи", lblDays: "Днів у щоденнику", lblVoice: "Голосові", lblDeeds: "Добрі справи", lblDreams: "Мрії збулися", lblStreak: "Днів поспіль", since: "У LIFE OS з", tagline: "Записую своє життя у часі", cta: "Завести свій щоденник", ctaSub: "Безкоштовно. Наговорюєш день голосом — AI усе розкладає.", notFound: "Такої сторінки немає або вона прихована.", months: ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"] },
   fr: { lblEntries: "Entrées", lblDays: "Jours journalisés", lblVoice: "Vocaux", lblDeeds: "Bonnes actions", lblDreams: "Rêves réalisés", lblStreak: "Jours d'affilée", since: "Sur LIFE OS depuis", tagline: "Je capture ma vie dans le temps", cta: "Créer ton journal", ctaSub: "Gratuit. Raconte ta journée à la voix — l'IA range tout.", notFound: "Cette page n'existe pas ou est masquée.", months: ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."] },
+  es: { lblEntries: "Entradas", lblDays: "Días en el diario", lblVoice: "Notas de voz", lblDeeds: "Buenas acciones", lblDreams: "Sueños cumplidos", lblStreak: "Días seguidos", since: "En LIFE OS desde", tagline: "Registrando mi vida a través del tiempo", cta: "Crea tu propio diario", ctaSub: "Gratis. Cuenta tu día por voz — la IA lo ordena todo.", notFound: "Esa página no existe o está oculta.", months: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"] },
 };
 
 function Tile({ n, label, accent }: { n: number; label: string; accent?: boolean }) {
@@ -40,7 +41,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const inviteCode = await getHandle(prof.userId, prof.name);
   const pages = await getPublicPages(prof.userId);
   const blocks = new Set(prof.blocks);
-  const bookTitle = locale === "en" ? "Public book" : locale === "fr" ? "Livre public" : locale === "uk" ? "Публічна книга" : "Публичная книга";
+  const bookTitle = locale === "en" ? "Public book" : locale === "fr" ? "Livre public" : locale === "uk" ? "Публічна книга" : locale === "es" ? "Libro público" : "Публичная книга";
   const sinceStr = st.memberSince ? (() => { const [y, m] = st.memberSince!.split("-"); return `${s.since} ${s.months[Number(m) - 1]} ${y}`; })() : "";
   const initial = (prof.name || "?").trim().charAt(0).toUpperCase() || "?";
 

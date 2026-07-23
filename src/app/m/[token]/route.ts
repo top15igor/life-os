@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   res.cookies.set("solo", req.nextUrl.searchParams.get("solo") === "0" ? "0" : "1", { path: "/", maxAge: year });
   // Язык из приложения → cookie locale, чтобы веб-разделы рендерились на выбранном языке.
   const loc = req.nextUrl.searchParams.get("locale");
-  if (loc && ["ru", "en", "uk", "fr"].includes(loc)) {
+  if (loc && ["ru", "en", "uk", "fr", "es"].includes(loc)) {
     res.cookies.set("locale", loc, { path: "/", maxAge: year });
   }
   return res;

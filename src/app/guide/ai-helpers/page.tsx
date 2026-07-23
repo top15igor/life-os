@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const BACK: Record<string, string> = { ru: "Инструкция", en: "Guide", uk: "Інструкція", fr: "Guide" };
+const BACK: Record<string, string> = { ru: "Инструкция", en: "Guide", uk: "Інструкція", fr: "Guide", es: "Guía" };
 
 export default async function AiHelpersPage() {
   await requireUser();

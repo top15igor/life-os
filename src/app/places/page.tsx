@@ -15,6 +15,7 @@ const STR: Record<string, any> = {
   en: { mentions: "entries", last: "last", been: "Where I've been", wish: "Where I want to go", beenEmpty: "No visited places yet — say «I was in…», «went to…» in an entry and they'll show up.", wishLink: "All travel dreams →", empty: "No places yet — mention them in your entries." },
   uk: { mentions: "записів", last: "остання", been: "Де я був", wish: "Куди хочу", beenEmpty: "Поки немає місць, де ти бував — скажи в записі «був у…», «їздив у…», і вони з'являться.", wishLink: "Усі мрії про подорожі →", empty: "Місць поки немає — згадуй їх у записах." },
   fr: { mentions: "entrées", last: "dernière", been: "Où je suis allé", wish: "Où je veux aller", beenEmpty: "Pas encore de lieux visités — dis «j'étais à…», «je suis allé à…» dans une entrée.", wishLink: "Tous les rêves de voyage →", empty: "Pas encore de lieux — mentionne-les dans tes entrées." },
+  es: { mentions: "entradas", last: "última", been: "Dónde he estado", wish: "A dónde quiero ir", beenEmpty: "Todavía no hay lugares donde hayas estado — cuenta en una entrada «estuve en…», «fui a…», y aparecerán.", wishLink: "Todos los sueños de viaje →", empty: "Aún no hay lugares — menciónalos en tus entradas." },
 };
 
 const COLORS = ["#06b6d4", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];

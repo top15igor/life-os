@@ -99,6 +99,7 @@ const S: Record<Locale, AssistantStrings> = {
   },
   uk: {} as AssistantStrings,
   fr: {} as AssistantStrings,
+  es: {} as AssistantStrings,
 };
 S.uk = {
   bubble: "Помічник",
@@ -155,6 +156,34 @@ S.fr = {
   fbSending: "Envoi…",
   fbThanks: "Merci ! 🙏 Je le lirai personnellement.",
   fbError: "Échec de l'envoi. Réessayez.",
+};
+S.es = {
+  bubble: "Ayudante",
+  title: "Ayudante",
+  hereNow: "Estás aquí",
+  canDo: "Qué puedes hacer aquí",
+  goNext: "A dónde ir después",
+  searchPh: "Busca de todo — entradas, personas, secciones…",
+  searchNone: "No se encontró nada",
+  askTitle: "Preguntar a la IA",
+  askPh: "ej.: ¿cómo registro mi peso? ¿dónde están mis sueños?",
+  askBtn: "Preguntar",
+  asking: "Pensando…",
+  askHint: "La IA conoce la app y te dice dónde tocar.",
+  askError: "No se pudo responder. Intenta de nuevo.",
+  fullGuide: "Guía completa",
+  close: "Cerrar",
+  greet: "¡Hola! Te ayudo a orientarte.",
+  fbTitle: "Enviar un deseo",
+  fbSub: "¿Quieres una mejora, una sincronización con un servicio u otra cosa? Escríbeme, lo leo personalmente.",
+  fbIdea: "💡 Mejora",
+  fbSync: "🔗 Integración",
+  fbOther: "💬 Otro",
+  fbPh: "¿Qué agregar o mejorar?",
+  fbSend: "Enviar",
+  fbSending: "Enviando…",
+  fbThanks: "¡Gracias! 🙏 Lo leeré personalmente.",
+  fbError: "No se envió. Intenta de nuevo.",
 };
 
 export function assistantStrings(locale: Locale): AssistantStrings {
@@ -402,9 +431,11 @@ const GUIDES: Record<Locale, Record<string, PageGuide>> = {
   },
   uk: {} as Record<string, PageGuide>,
   fr: {} as Record<string, PageGuide>,
+  es: {} as Record<string, PageGuide>,
 };
 GUIDES.uk = GUIDES.ru;
 GUIDES.fr = GUIDES.en;
+GUIDES.es = GUIDES.en;
 
 // Вкладки и под-разделы, которых нет в верхнем меню (NAV) — чтобы их тоже
 // находил поиск по названию: «Карта желаний», «Задачи», «Инсайты», «Энергия» и т.д.
@@ -443,7 +474,7 @@ const DESTS_EN: Dest[] = [
 ];
 
 export function searchDestinations(locale: Locale): Dest[] {
-  return locale === "en" || locale === "fr" ? DESTS_EN : DESTS_RU;
+  return locale === "en" || locale === "fr" || locale === "es" ? DESTS_EN : DESTS_RU;
 }
 
 export function pageGuide(locale: Locale, path: string): PageGuide | null {
