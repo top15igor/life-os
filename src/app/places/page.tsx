@@ -17,6 +17,7 @@ const STR: Record<string, any> = {
   en: { mentions: "entries", last: "last", been: "All places (reference)", beenSub: "Rename, merge duplicates or hide a place", wish: "Where I want to go", wishLink: "All travel dreams →" },
   uk: { mentions: "записів", last: "остання", been: "Усі місця (довідник)", beenSub: "Перейменувати, об'єднати дублі чи приховати місце", wish: "Куди хочу", wishLink: "Усі мрії про подорожі →" },
   fr: { mentions: "entrées", last: "dernière", been: "Tous les lieux (référence)", beenSub: "Renommer, fusionner ou masquer un lieu", wish: "Où je veux aller", wishLink: "Tous les rêves de voyage →" },
+  es: { mentions: "entradas", last: "última", been: "Todos los lugares (referencia)", beenSub: "Renombrar, combinar duplicados u ocultar un lugar", wish: "A dónde quiero ir", wishLink: "Todos los sueños de viaje →" },
 };
 
 function SectionTitle({ icon, color, children }: any) {

@@ -37,16 +37,16 @@ export const runtime = "nodejs";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function pickLang(code?: string): "ru" | "en" | "uk" | "fr" {
+function pickLang(code?: string): "ru" | "en" | "uk" | "fr" | "es" {
   const c = (code || "").slice(0, 2);
-  return c === "uk" ? "uk" : c === "en" ? "en" : c === "fr" ? "fr" : "ru";
+  return c === "uk" ? "uk" : c === "en" ? "en" : c === "fr" ? "fr" : c === "es" ? "es" : "ru";
 }
 
 // Язык сообщений бота: ВЫБОР пользователя (users.lang) важнее языка Telegram-клиента.
 // Если выбор не задан — падаем на язык приложения Telegram.
-function langOf(user: any, msg: any): "ru" | "en" | "uk" | "fr" {
+function langOf(user: any, msg: any): "ru" | "en" | "uk" | "fr" | "es" {
   const v = user?.lang;
-  if (v === "ru" || v === "en" || v === "uk" || v === "fr") return v;
+  if (v === "ru" || v === "en" || v === "uk" || v === "fr" || v === "es") return v;
   return pickLang(msg?.from?.language_code);
 }
 
@@ -56,18 +56,21 @@ const LANG_CHOICES: { code: string; label: string }[] = [
   { code: "en", label: "🇬🇧 English" },
   { code: "uk", label: "🇺🇦 Українська" },
   { code: "fr", label: "🇫🇷 Français" },
+  { code: "es", label: "🇪🇸 Español" },
 ];
 const LANG_PROMPT: Record<string, string> = {
   ru: "🌐 Выбери язык бота:",
   en: "🌐 Choose the bot language:",
   uk: "🌐 Обери мову бота:",
   fr: "🌐 Choisis la langue du bot :",
+  es: "🌐 Elige el idioma del bot:",
 };
 const LANG_DONE: Record<string, string> = {
   ru: "✅ Готово! Бот теперь говорит по-русски.",
   en: "✅ Done! The bot now speaks English.",
   uk: "✅ Готово! Бот тепер розмовляє українською.",
   fr: "✅ C'est fait ! Le bot parle maintenant français.",
+  es: "✅ ¡Listo! Ahora el bot habla español.",
 };
 function langKeyboard() {
   return { inline_keyboard: LANG_CHOICES.map((c) => [{ text: c.label, callback_data: `lang:${c.code}` }]) };
@@ -120,6 +123,15 @@ const WELCOME: Record<string, string[]> = {
     "🔒 Et l'essentiel : toi seul vois tes entrées. L'équipe ne les lit pas, et le code est ouvert — vérifie toi-même. Exporte ou supprime tout en un clic.",
     "Au fait, tu peux tout voir joliment sur le web — voici ton lien personnel, garde-le :\n{link}",
   ],
+  es: [
+    "👋 ¡Hola!\nDentro de un año, apenas recordarás el día de hoy.",
+    "Pero toda tu vida está hecha de días como este.",
+    "🎤 Solo envíame tu primer mensaje de voz — cuéntame cómo fue tu día.",
+    "Yo me encargo del resto: lo guardo, encuentro lo importante, extraigo ideas clave y empiezo a escribir tu Libro de la vida.",
+    "Y después podré responder cualquier pregunta sobre tu vida. 📖",
+    "🔒 Y lo más importante: solo tú ves tus entradas. El equipo no las lee, y el código es abierto — puedes comprobarlo tú mismo. Exporta o elimina todo con un clic.",
+    "Por cierto, también puedes verlo todo muy bien en la web — aquí tienes tu enlace personal, guárdalo:\n{link}",
+  ],
 };
 
 const RETURN: Record<string, string> = {
@@ -127,6 +139,7 @@ const RETURN: Record<string, string> = {
   en: "Welcome back! 👋\nJust send a voice note or text — I'll sort it all out.\n\nYour personal diary link:\n{link}",
   uk: "З поверненням! 👋\nПросто надішли голосове або текст — я все розкладу.\n\nТвоє особисте посилання на щоденник:\n{link}",
   fr: "Bon retour ! 👋\nEnvoie une note vocale ou un texte — je m'occupe du reste.\n\nTon lien personnel vers le journal :\n{link}",
+  es: "¡Bienvenido de nuevo! 👋\nSolo envía una nota de voz o un texto — yo me encargo de organizarlo todo.\n\nTu enlace personal al diario:\n{link}",
 };
 
 const CONFIRM: Record<string, any> = {
@@ -134,19 +147,21 @@ const CONFIRM: Record<string, any> = {
   en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command", heard: "Saved in your words", gist: "In short" },
   uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend", heard: "Записав твоїми словами", gist: "Коротко" },
   fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend", heard: "Enregistré avec tes mots", gist: "En bref" },
+  es: { saved: "Entrada guardada", insights: "insight(s)", tasks: "tarea(s)", tags: "etiqueta(s)", streakWord: "días seguidos", book: "📖 Mi Libro de la vida", ask: "🧠 Preguntar", share: "📤 Compartir con un amigo", tasksTitle: "Tareas", insightsTitle: "Insights", moneyTitle: "Dinero", money: "💰 Abrir Dinero", moneyFail: "No se pudo guardar en Dinero — prueba el comando /spend", heard: "Guardado con tus palabras", gist: "En resumen" },
 };
 
 // Символы валют для подтверждения в боте.
 const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB: "₽", GBP: "£", PLN: "zł", KZT: "₸", GEL: "₾", TRY: "₺", AED: "AED" };
 
 // Подпись кнопки «открыть раздел» после действия бота.
-const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir" };
+const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir", es: "↗️ Abrir" };
 // Подтверждение удаления записи.
 const DEL_BTN: Record<string, { yes: string; no: string; done: string; kept: string; gone: string }> = {
   ru: { yes: "🗑 Да, удалить", no: "Отмена", done: "🗑 Запись удалена.", kept: "Ок, оставил запись.", gone: "Записи уже нет." },
   en: { yes: "🗑 Yes, delete", no: "Cancel", done: "🗑 Entry deleted.", kept: "Ok, kept the entry.", gone: "The entry is already gone." },
   uk: { yes: "🗑 Так, видалити", no: "Скасувати", done: "🗑 Запис видалено.", kept: "Ок, залишив запис.", gone: "Запису вже немає." },
   fr: { yes: "🗑 Oui, supprimer", no: "Annuler", done: "🗑 Entrée supprimée.", kept: "Ok, entrée conservée.", gone: "L'entrée n'existe plus." },
+  es: { yes: "🗑 Sí, eliminar", no: "Cancelar", done: "🗑 Entrada eliminada.", kept: "Ok, entrada conservada.", gone: "La entrada ya no existe." },
 };
 
 const FIXED: Record<string, string> = {
@@ -154,6 +169,7 @@ const FIXED: Record<string, string> = {
   en: "✏️ Updated your previous entry:",
   uk: "✏️ Виправив попередній запис:",
   fr: "✏️ J'ai corrigé l'entrée précédente :",
+  es: "✏️ Corregí tu entrada anterior:",
 };
 
 // /voicetext — настройка «показывать распознанный текст под голосовыми».
@@ -178,6 +194,11 @@ const VOICETEXT: Record<string, { on: string; off: string; na: string }> = {
     off: "🙈 C'est fait ! Je ne répète plus le texte reconnu sous les vocaux — seulement le résumé et le détail. Réactiver : /voicetext on",
     na: "⏳ Ce réglage n'est pas encore disponible — réessaie un peu plus tard.",
   },
+  es: {
+    on: "📝 ¡Listo! Ahora mostraré el texto reconocido debajo de los mensajes de voz — así es más fácil notar si algo se entendió mal (por ejemplo, importes). Desactivar: /voicetext off",
+    off: "🙈 ¡Listo! Ya no repetiré el texto reconocido debajo de los mensajes de voz — solo el resumen y el desglose. Reactivar: /voicetext on",
+    na: "⏳ Esta configuración aún no está disponible — inténtalo de nuevo más tarde.",
+  },
 };
 
 const BOOK_PHOTO: Record<string, { working: string; saved: string; open: string; failed: string }> = {
@@ -185,6 +206,7 @@ const BOOK_PHOTO: Record<string, { working: string; saved: string; open: string;
   en: { working: "📚 Recognizing the book…", saved: "Added to your library:", open: "📚 Open Books", failed: "Couldn't recognize the book. Snap the cover or barcode more clearly." },
   uk: { working: "📚 Розпізнаю книгу…", saved: "Додав у бібліотеку:", open: "📚 Відкрити Книги", failed: "Не вдалося розпізнати книгу на фото. Сфоткай обкладинку або штрих-код чіткіше." },
   fr: { working: "📚 Je reconnais le livre…", saved: "Ajouté à ta bibliothèque :", open: "📚 Ouvrir les Livres", failed: "Impossible de reconnaître le livre. Photographie la couverture ou le code-barres plus nettement." },
+  es: { working: "📚 Reconociendo el libro…", saved: "Añadido a tu biblioteca:", open: "📚 Abrir Libros", failed: "No pude reconocer el libro. Fotografía la portada o el código de barras con más nitidez." },
 };
 
 const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: string; open: string; failed: string; unsupported: string }> = {
@@ -192,6 +214,7 @@ const MEM_MSG: Record<string, { recognizing: string; readingDoc: string; saved: 
   en: { recognizing: "📸 Reading the photo…", readingDoc: "📄 Reading the document…", saved: "Saved to Visual Memory:", open: "📂 Open memory", failed: "Couldn't read the photo, try again.", unsupported: "For now I understand photos and PDFs. Send a PDF or a photo 🙂" },
   uk: { recognizing: "📸 Розпізнаю фото…", readingDoc: "📄 Читаю документ…", saved: "Зберіг у Візуальну пам'ять:", open: "📂 Відкрити пам'ять", failed: "Не вдалося розібрати фото, спробуй ще раз.", unsupported: "Поки розумію фото та PDF. Надішли PDF або фото 🙂" },
   fr: { recognizing: "📸 Je lis la photo…", readingDoc: "📄 Je lis le document…", saved: "Enregistré dans la Mémoire visuelle :", open: "📂 Ouvrir la mémoire", failed: "Impossible de lire la photo, réessaie.", unsupported: "Pour l'instant je comprends les photos et les PDF. Envoie un PDF ou une photo 🙂" },
+  es: { recognizing: "📸 Leyendo la foto…", readingDoc: "📄 Leyendo el documento…", saved: "Guardado en Memoria visual:", open: "📂 Abrir memoria", failed: "No pude leer la foto, inténtalo de nuevo.", unsupported: "Por ahora entiendo fotos y PDF. Envía un PDF o una foto 🙂" },
 };
 
 const IG_MSG: Record<string, { working: string; saved: string; open: string; video: string; noAudio: string; failed: string; limited: string; saveFail: string }> = {
@@ -199,6 +222,7 @@ const IG_MSG: Record<string, { working: string; saved: string; open: string; vid
   en: { working: "🔖 Saving to your Knowledge Base…", saved: "Saved to your Knowledge Base:", open: "📚 Open Knowledge Base", video: "⬇️ Download video", noAudio: "ℹ️ Couldn't get the video audio — saved from the caption.", failed: "Couldn't fetch this {src} post. Try another link or send a screenshot/video.", limited: "📉 Monthly parsing limit reached. It resets at the start of next month — or upgrade the plan.", saveFail: "⚠️ I parsed the post but couldn't save it to your Knowledge Base. Please try again a bit later." },
   uk: { working: "🔖 Зберігаю в Базу знань…", saved: "Зберіг у Базу знань:", open: "📚 Відкрити Базу знань", video: "⬇️ Завантажити відео", noAudio: "ℹ️ Звук відео дістати не вдалося — зберіг за підписом.", failed: "Не вдалося забрати цей пост з {src}. Спробуй інше посилання або надішли скріншот/відео.", limited: "📉 Закінчився місячний ліміт на розбір постів. Він оновиться на початку наступного місяця — або підвищ тариф.", saveFail: "⚠️ Розібрав пост, але не зміг записати його в Базу знань. Спробуй ще раз трохи пізніше." },
   fr: { working: "🔖 J'enregistre dans ta Base de connaissances…", saved: "Enregistré dans ta Base de connaissances :", open: "📚 Ouvrir la Base de connaissances", video: "⬇️ Télécharger la vidéo", noAudio: "ℹ️ Impossible de récupérer l'audio — enregistré depuis la légende.", failed: "Impossible de récupérer ce post {src}. Essaie un autre lien ou envoie une capture/vidéo.", limited: "📉 Limite mensuelle d'analyse atteinte. Elle se réinitialise au début du mois prochain — ou augmente le forfait.", saveFail: "⚠️ J'ai analysé le post mais je n'ai pas pu l'enregistrer dans ta Base de connaissances. Réessaie un peu plus tard." },
+  es: { working: "🔖 Guardando en tu Base de conocimiento…", saved: "Guardado en tu Base de conocimiento:", open: "📚 Abrir Base de conocimiento", video: "⬇️ Descargar video", noAudio: "ℹ️ No pude obtener el audio del video — guardado a partir de la descripción.", failed: "No pude obtener esta publicación de {src}. Prueba con otro enlace o envía una captura/video.", limited: "📉 Se alcanzó el límite mensual de análisis. Se reinicia al comienzo del próximo mes — o mejora el plan.", saveFail: "⚠️ Analicé la publicación pero no pude guardarla en tu Base de conocimiento. Inténtalo de nuevo un poco más tarde." },
 };
 
 const WISH_MSG: Record<string, { working: string; saved: string; open: string; failed: string; shareHint: string }> = {
@@ -206,6 +230,7 @@ const WISH_MSG: Record<string, { working: string; saved: string; open: string; f
   en: { working: "🎁 Adding to your Wishlist…", saved: "Added to your Wishlist:", open: "🔗 Link for friends", failed: "Couldn't fetch the product card. Open the Wishlist on the site and add it manually.", shareHint: "Share this link with friends — they'll see the list and can secretly reserve a gift. Manage it in the app: Menu → Wishlist." },
   uk: { working: "🎁 Додаю у Вішліст…", saved: "Додав у Вішліст:", open: "🔗 Посилання для друзів", failed: "Не вдалося забрати картку товару. Відкрий Вішліст на сайті й додай вручну.", shareHint: "Ділись цим посиланням з друзями — вони побачать список і зможуть таємно «забронювати» подарунок. Керувати — у застосунку: Меню → Вішліст." },
   fr: { working: "🎁 J'ajoute à ta liste de souhaits…", saved: "Ajouté à ta liste de souhaits :", open: "🔗 Lien pour tes amis", failed: "Impossible de récupérer la fiche produit. Ouvre la liste sur le site et ajoute-la manuellement.", shareHint: "Partage ce lien avec tes amis — ils verront la liste et pourront réserver un cadeau en secret. Gère-la dans l'app : Menu → Liste de souhaits." },
+  es: { working: "🎁 Añadiendo a tu Lista de deseos…", saved: "Añadido a tu Lista de deseos:", open: "🔗 Enlace para amigos", failed: "No pude obtener la ficha del producto. Abre la Lista de deseos en el sitio y añádelo manualmente.", shareHint: "Comparte este enlace con tus amigos — verán la lista y podrán reservar un regalo en secreto. Gestiónala en la app: Menú → Lista de deseos." },
 };
 
 const MILE: Record<string, any> = {
@@ -213,6 +238,7 @@ const MILE: Record<string, any> = {
   en: { first: "🎉 Your first entry! Your Book of Life has begun.", count: (n: number) => `🎉 Already ${n} entries! Your story is growing.`, streak: (n: number) => `🔥 ${n} days in a row — amazing, keep it up!` },
   uk: { first: "🎉 Це твій перший запис! Книга життя почалася.", count: (n: number) => `🎉 Уже ${n} записів! Твоя історія росте.`, streak: (n: number) => `🔥 ${n} днів поспіль — неймовірно, так тримати!` },
   fr: { first: "🎉 Ta première entrée ! Ton Livre de vie a commencé.", count: (n: number) => `🎉 Déjà ${n} entrées ! Ton histoire grandit.`, streak: (n: number) => `🔥 ${n} jours d'affilée — incroyable, continue !` },
+  es: { first: "🎉 ¡Tu primera entrada! Tu Libro de la vida ha comenzado.", count: (n: number) => `🎉 ¡Ya ${n} entradas! Tu historia está creciendo.`, streak: (n: number) => `🔥 ${n} días seguidos — ¡increíble, sigue así!` },
 };
 
 const MEM: Record<string, any> = {
@@ -220,6 +246,7 @@ const MEM: Record<string, any> = {
   en: { year: (t: string) => `⏳ A year ago today you wrote: “${t}”`, month: (t: string) => `⏳ A month ago today: “${t}”` },
   uk: { year: (t: string) => `⏳ Рік тому цього дня ти писав: «${t}»`, month: (t: string) => `⏳ Місяць тому цього дня: «${t}»` },
   fr: { year: (t: string) => `⏳ Il y a un an, ce jour-là tu écrivais : « ${t} »`, month: (t: string) => `⏳ Il y a un mois, ce jour-là : « ${t} »` },
+  es: { year: (t: string) => `⏳ Hace un año, en este día escribiste: «${t}»`, month: (t: string) => `⏳ Hace un mes, en este día: «${t}»` },
 };
 
 const INVITE: Record<string, { text: string; share: string }> = {
@@ -227,6 +254,7 @@ const INVITE: Record<string, { text: string; share: string }> = {
   en: { text: "📖 Imagine that in 10 years you could open any day of your life.\nRemember what you dreamed of, what ideas came to you, which decisions changed everything and what made you happy.\n\nLIFE OS helps you create such a “Book of Life”. Just record your thoughts by voice, and AI saves them, finds the connections and turns scattered days into the story of your life.\n\nTry it 👉 {bot}", share: "📤 Share" },
   uk: { text: "📖 Уяви, що через 10 років ти зможеш відкрити будь-який день свого життя.\nПригадати, про що мріяв, які ідеї приходили, які рішення змінили все і що робило тебе щасливим.\n\nLIFE OS допомагає створити таку «Книгу життя». Просто записуй думки голосом, а AI сам збереже їх, знайде зв'язки й перетворить розрізнені дні на історію твого життя.\n\nСпробуй 👉 {bot}", share: "📤 Поділитися" },
   fr: { text: "📖 Imagine que dans 10 ans tu puisses ouvrir n'importe quel jour de ta vie.\nTe souvenir de tes rêves, des idées qui te venaient, des décisions qui ont tout changé et de ce qui te rendait heureux.\n\nLIFE OS t'aide à créer un tel « Livre de vie ». Enregistre simplement tes pensées à la voix, et l'IA les sauvegarde, trouve les liens et transforme des jours épars en l'histoire de ta vie.\n\nEssaie 👉 {bot}", share: "📤 Partager" },
+  es: { text: "📖 Imagina que dentro de 10 años pudieras abrir cualquier día de tu vida.\nRecordar con qué soñabas, qué ideas se te ocurrían, qué decisiones lo cambiaron todo y qué te hacía feliz.\n\nLIFE OS te ayuda a crear ese «Libro de la vida». Simplemente graba tus pensamientos por voz, y la IA los guarda, encuentra las conexiones y convierte días dispersos en la historia de tu vida.\n\nPruébalo 👉 {bot}", share: "📤 Compartir" },
 };
 
 function milestoneFor(count: number, streak: number, lang: string): string | null {
@@ -240,12 +268,12 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
 // «Следующий вопрос →» — движение вперёд по вопросам знакомства (замена «Пропустить»).
-const NEXT_BTN: Record<string, string> = { ru: "Следующий вопрос →", en: "Next question →", uk: "Наступне питання →", fr: "Question suivante →" };
+const NEXT_BTN: Record<string, string> = { ru: "Следующий вопрос →", en: "Next question →", uk: "Наступне питання →", fr: "Question suivante →", es: "Siguiente pregunta →" };
 // Компактные кнопки навигации, когда пользователь уже листает вопросы (пред/след).
-const NAV_PREV: Record<string, string> = { ru: "← Пред.", en: "← Prev", uk: "← Попер.", fr: "← Préc." };
-const NAV_NEXT: Record<string, string> = { ru: "След. →", en: "Next →", uk: "Наст. →", fr: "Suiv. →" };
+const NAV_PREV: Record<string, string> = { ru: "← Пред.", en: "← Prev", uk: "← Попер.", fr: "← Préc.", es: "← Ant." };
+const NAV_NEXT: Record<string, string> = { ru: "След. →", en: "Next →", uk: "Наст. →", fr: "Suiv. →", es: "Sig. →" };
 // «На сегодня хватит» — мягкая пауза с сохранением прогресса (не «стоп»).
-const PAUSE_BTN: Record<string, string> = { ru: "😴 На сегодня хватит", en: "😴 Enough for today", uk: "😴 На сьогодні досить", fr: "😴 Assez pour aujourd'hui" };
+const PAUSE_BTN: Record<string, string> = { ru: "😴 На сегодня хватит", en: "😴 Enough for today", uk: "😴 На сьогодні досить", fr: "😴 Assez pour aujourd'hui", es: "😴 Suficiente por hoy" };
 // Клавиатура под вопросом знакомства. nav:
 //  "single" — обычный вид: одна кнопка «Следующий вопрос →» + «Пауза»;
 //  "both"   — пользователь листает вопросы: «← Пред.» и «След. →» + «Пауза».
@@ -268,6 +296,7 @@ const ACQUAINT_NUDGE: Record<string, string> = {
   en: "👉 The easiest way to start — just tap “🌱 Let's get acquainted” below. I'll ask a few questions, you answer like to a friend — and you'll start your diary without even noticing 🙂",
   uk: "👉 Найлегший спосіб почати — просто натисни «🌱 Давай познайомимось» внизу. Я поставлю кілька запитань, а ти відповідай як другу — і непомітно заведеш свій щоденник 🙂",
   fr: "👉 Le plus simple pour commencer — appuie sur « 🌱 Faisons connaissance » en bas. Je pose quelques questions, tu réponds comme à un ami — et tu commences ton journal sans t'en rendre compte 🙂",
+  es: "👉 La forma más fácil de empezar — solo toca «🌱 Conozcámonos» abajo. Te haré algunas preguntas, tú responde como a un amigo — y empezarás tu diario sin darte cuenta 🙂",
 };
 
 function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "motiv" | "invite" | null {
@@ -290,10 +319,11 @@ const HELP: Record<string, (o: string) => string> = {
   en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
   uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
   fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n\nTout est dans le Guide :\n${o}/guide`,
+  es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
 };
 
-const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :" };
-const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent" };
+const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
+const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent", es: "💰 Abrir Dinero" };
 
 // Распознать токен валюты (код или символ) → ISO-код, иначе null.
 const CUR_TOKEN: Record<string, string> = {
@@ -332,7 +362,7 @@ function parseQuickFinance(rest: string, defaultCur: string): { amount: number; 
     note: note ? note.slice(0, 200) : null,
   };
 }
-const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal" };
+const OPEN: Record<string, string> = { ru: "📖 Открыть мой дневник", en: "📖 Open my diary", uk: "📖 Відкрити щоденник", fr: "📖 Ouvrir mon journal", es: "📖 Abrir mi diario" };
 
 // Сообщения при связке веб-аккаунта с ботом (/start link_<token>).
 const LINK_TG: Record<string, { ok: string; busy: string; expired: string }> = {
@@ -356,6 +386,11 @@ const LINK_TG: Record<string, { ok: string; busy: string; expired: string }> = {
     busy: "⚠️ Ce Telegram est déjà lié à un autre compte LIFE OS avec des entrées. Connecte-toi à celui-ci ou envoie /link.",
     expired: "⚠️ Ce lien a expiré. Ouvre le site → « Connecter Telegram » puis clique le nouveau lien.",
   },
+  es: {
+    ok: "✅ ¡Listo! Tu cuenta ahora está vinculada al bot.\nSolo háblame aquí — voz, texto, fotos. Yo guardo todo en tu diario.",
+    busy: "⚠️ Este Telegram ya está vinculado a otra cuenta de LIFE OS con entradas. Inicia sesión en esa cuenta o envía /link.",
+    expired: "⚠️ Este enlace caducó. Abre el sitio → «Conectar Telegram» de nuevo y toca el enlace nuevo.",
+  },
 };
 
 function openBtn(lang: string, link: string) {
@@ -375,6 +410,7 @@ const TASKS_MSG: Record<string, { title: string; empty: string; open: string; em
   en: { title: "🎯 <b>Your tasks</b>", empty: "No open tasks yet 🎉\nThey'll show up on their own when you mention something like “need to do…”.", open: "✅ Open all tasks", emptyBucket: "Nothing here yet.", hint: "Move tasks between horizons easily in the app." },
   uk: { title: "🎯 <b>Твої завдання</b>", empty: "Відкритих завдань поки немає 🎉\nВони з'являться самі, коли в записі промайне щось на кшталт «треба зробити…».", open: "✅ Відкрити всі завдання", emptyBucket: "Тут поки порожньо.", hint: "Пересувати завдання між горизонтами зручно в застосунку." },
   fr: { title: "🎯 <b>Tes tâches</b>", empty: "Pas encore de tâches 🎉\nElles apparaîtront quand tu mentionneras « à faire… ».", open: "✅ Voir toutes les tâches", emptyBucket: "Rien ici pour l'instant.", hint: "Déplace les tâches entre horizons facilement dans l'app." },
+  es: { title: "🎯 <b>Tus tareas</b>", empty: "Aún no hay tareas pendientes 🎉\nAparecerán solas cuando menciones algo como «hay que hacer…».", open: "✅ Ver todas las tareas", emptyBucket: "Aquí no hay nada todavía.", hint: "Mueve las tareas entre horizontes fácilmente en la app." },
 };
 
 // Подписи горизонтов (с цветовыми маркерами).
@@ -383,6 +419,7 @@ const HZ_LABEL: Record<string, Record<Horizon, string>> = {
   en: { today: "🔴 Today", week: "🟡 Week", month: "🟢 Month" },
   uk: { today: "🔴 Сьогодні", week: "🟡 Тиждень", month: "🟢 Місяць" },
   fr: { today: "🔴 Aujourd'hui", week: "🟡 Semaine", month: "🟢 Mois" },
+  es: { today: "🔴 Hoy", week: "🟡 Semana", month: "🟢 Mes" },
 };
 
 // Собрать текст + inline-клавиатуру для экрана задач на выбранном горизонте.
@@ -408,7 +445,7 @@ async function renderTasks(userId: string, lang: string, active: Horizon, origin
 }
 
 // Кнопка «Моя мотивация»: стрик + цели + свежий инсайт прямо в чат.
-const GOALS_BTN: Record<string, string> = { ru: "🎯 Открыть цели", en: "🎯 Open goals", uk: "🎯 Відкрити цілі", fr: "🎯 Voir les objectifs" };
+const GOALS_BTN: Record<string, string> = { ru: "🎯 Открыть цели", en: "🎯 Open goals", uk: "🎯 Відкрити цілі", fr: "🎯 Voir les objectifs", es: "🎯 Ver objetivos" };
 const MOTIV: Record<string, { streak: (n: number) => string; noStreak: string; goals: string; noGoals: string; insight: string; footer: string }> = {
   ru: {
     streak: (n) => `🔥 <b>${n} дней подряд</b> — ты в потоке, держи темп!`,
@@ -433,6 +470,12 @@ const MOTIV: Record<string, { streak: (n: number) => string; noStreak: string; g
     noStreak: "🔥 Pas encore de série — fais une entrée aujourd'hui et lance le compteur !",
     goals: "🎯 <b>Tes objectifs :</b>", noGoals: "🎯 Pas encore d'objectifs — ajoute ce que tu vises pour suivre tes progrès.",
     insight: "💡 <b>Insight récent :</b>", footer: "Un petit pas aujourd'hui — une grande histoire dans un an. 🌱",
+  },
+  es: {
+    streak: (n) => `🔥 <b>${n} días seguidos</b> — estás en racha, ¡sigue así!`,
+    noStreak: "🔥 Aún no hay racha — ¡haz una entrada hoy y pon en marcha el contador!",
+    goals: "🎯 <b>Tus metas:</b>", noGoals: "🎯 Aún no hay metas — añade a qué aspiras para seguir tu progreso.",
+    insight: "💡 <b>Insight reciente:</b>", footer: "Un pequeño paso hoy — una gran historia dentro de un año. 🌱",
   },
 };
 
@@ -539,7 +582,7 @@ export async function POST(req: NextRequest) {
       } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lang:") && cqChat) {
       const lng = data.slice(5);
-      if (["ru", "en", "uk", "fr"].includes(lng)) {
+      if (["ru", "en", "uk", "fr", "es"].includes(lng)) {
         try { await supabaseAdmin().from("users").update({ lang: lng }).eq("chat_id", cqChat); } catch {}
         await answerCallback(cq.id, LANG_DONE[lng]);
         await sendMessage(cqChat, LANG_DONE[lng], { reply_markup: mainKeyboard(lng) });
@@ -779,7 +822,7 @@ export async function POST(req: NextRequest) {
     const lang = langOf(user, msg);
     await setChatMode(user.id, true);
     const greet =
-      lang === "en"
+      lang === "en" || lang === "es"
         ? "💬 Chat mode is on. I'm your friend who knows your whole story — let's just talk: ask, share, think out loud. I can also look things up online.\n\nWrite /stop to leave, /newchat to start fresh."
         : "💬 Режим беседы включён. Я — твой друг, который знает всю твою историю. Давай просто поговорим: спрашивай, делись, рассуждай вслух. Если надо — загляну и в интернет за свежим.\n\nЧтобы выйти — /stop, начать заново — /newchat.";
     await sendMessage(chatId, greet);
@@ -791,7 +834,7 @@ export async function POST(req: NextRequest) {
     await setChatMode(user.id, false);
     await sendMessage(
       chatId,
-      lang === "en"
+      lang === "en" || lang === "es"
         ? "✅ Left chat mode. Your messages go back to the diary. Type /chat anytime to talk again."
         : "✅ Вышли из беседы. Сообщения снова идут в дневник. Захочешь поговорить — /chat."
     );
@@ -804,7 +847,7 @@ export async function POST(req: NextRequest) {
     await setChatMode(user.id, true);
     await sendMessage(
       chatId,
-      lang === "en" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
+      lang === "en" || lang === "es" ? "🆕 Started a fresh conversation. I'm all ears." : "🆕 Начали новую беседу. Я весь внимание."
     );
     return NextResponse.json({ ok: true });
   }

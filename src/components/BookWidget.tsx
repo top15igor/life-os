@@ -7,6 +7,7 @@ const STR: Record<string, any> = {
   en: { title: (y: number) => `Your book “My life, ${y}”`, growing: (n: number) => `${n} entries are becoming its pages`, sub: "A year of your life — a future legacy for your loved ones.", cta: "Open the book", ready: "ready" },
   uk: { title: (y: number) => `Твоя книга «Моє життя, ${y}»`, growing: (n: number) => `${n} записів уже стануть її сторінками`, sub: "Рік твого життя — майбутня спадщина для близьких.", cta: "Відкрити книгу", ready: "готовність" },
   fr: { title: (y: number) => `Ton livre « Ma vie, ${y} »`, growing: (n: number) => `${n} entrées deviennent ses pages`, sub: "Une année de ta vie — un futur héritage pour tes proches.", cta: "Ouvrir le livre", ready: "prêt" },
+  es: { title: (y: number) => `Tu libro «Mi vida, ${y}»`, growing: (n: number) => `${n} entradas ya se están convirtiendo en sus páginas`, sub: "Un año de tu vida — un futuro legado para tus seres queridos.", cta: "Abrir el libro", ready: "listo" },
 };
 
 export default function BookWidget({ book, locale }: { book: { year: number; entries: number; readiness: number }; locale: string }) {

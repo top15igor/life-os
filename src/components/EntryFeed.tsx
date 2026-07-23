@@ -12,6 +12,7 @@ const EMPTY: Record<string, string> = {
   en: "No entries in this category yet.",
   uk: "У цій категорії поки немає записів.",
   fr: "Pas encore d'entrées dans cette catégorie.",
+  es: "Todavía no hay entradas en esta categoría.",
 };
 
 export default function EntryFeed({ entries, t, locale }: { entries: Entry[]; t: any; locale: string }) {

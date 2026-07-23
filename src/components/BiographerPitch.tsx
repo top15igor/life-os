@@ -36,7 +36,7 @@ const P: Record<string, any> = {
 };
 
 export default function BiographerPitch({ locale }: { locale: string }) {
-  const p = locale === "en" || locale === "fr" ? P.en : P.ru;
+  const p = locale === "en" || locale === "fr" || locale === "es" ? P.en : P.ru;
 
   return (
     <div>

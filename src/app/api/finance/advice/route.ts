@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const LANGS = ["ru", "en", "uk", "fr"] as const;
+const LANGS = ["ru", "en", "uk", "fr", "es"] as const;
 
 // AI-советник по финансам для веба: разбор + советы + урок финграмотности.
 // Возвращает чистый текст (HTML-теги из ответа убраны) для безопасного показа.

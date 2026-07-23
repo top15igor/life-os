@@ -9,12 +9,13 @@ export const KB: Record<string, { acquaint: string; diary: string; tasks: string
   en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "🎯 Tasks", motiv: "🔥 My motivation", invite: "🤝 Invite a friend" },
   uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "🎯 Завдання", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга" },
   fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "🎯 Tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
+  es: { acquaint: "🌱 Conozcámonos", diary: "📖 Diario", tasks: "🎯 Tareas", motiv: "🔥 Mi motivación", invite: "🤝 Invitar a un amigo" },
 };
 
 // Прежняя подпись кнопки задач («✅ Мои задачи» и др.) — чтобы распознавать
 // нажатие у пользователей со старой (закэшированной) клавиатурой.
 export const TASKS_LABEL_LEGACY: Record<string, string> = {
-  ru: "✅ Мои задачи", en: "✅ My tasks", uk: "✅ Мої завдання", fr: "✅ Mes tâches",
+  ru: "✅ Мои задачи", en: "✅ My tasks", uk: "✅ Мої завдання", fr: "✅ Mes tâches", es: "✅ Mis tareas",
 };
 
 // Лестница близости: подпись кнопки знакомства эволюционирует по мере роста
@@ -45,6 +46,12 @@ const ACQ_LADDER: Record<string, { min: number; label: string }[]> = {
     { min: 30, label: "😌 Je te fais confiance" }, { min: 40, label: "🫂 Plus que des amis" }, { min: 50, label: "👊 Frères" },
     { min: 60, label: "🎭 On peut jurer" }, { min: 70, label: "🏡 Famille" }, { min: 80, label: "🔥 Encore plus proches ?" },
     { min: 90, label: "😎 Je n'ai jamais douté de toi" },
+  ],
+  es: [
+    { min: 0, label: KB.es.acquaint }, { min: 5, label: "🌿 Seguimos conociéndonos" }, { min: 10, label: "🤫 Cuchicheemos" }, { min: 20, label: "🤝 Nos vamos conociendo" },
+    { min: 30, label: "😌 Ya confío en ti" }, { min: 40, label: "🫂 Más que amigos" }, { min: 50, label: "👊 Hermanos" },
+    { min: 60, label: "🎭 Ya podemos hablar sin filtro" }, { min: 70, label: "🏡 Familia" }, { min: 80, label: "🔥 ¿Aún más cerca?" },
+    { min: 90, label: "😎 Nunca dudé de ti" },
   ],
 };
 

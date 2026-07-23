@@ -45,6 +45,26 @@ const STR: Record<string, any> = {
     act: { active: "writes actively", warm: "writes sometimes", started: "away for a while", idle: "no entries yet" },
     legend: "Activity",
   },
+  es: {
+    title: "Personas que invitaste",
+    sub: "A quién trajiste a LIFE OS — y a quién invitaron ellos. Solo tú lo ves.",
+    direct: "Invitados directamente",
+    network: "Toda la red",
+    active: "Activos",
+    invited: "invitó",
+    entries: "entradas",
+    joinedNever: "aún sin entradas",
+    inviteT: "Tu enlace de invitación",
+    inviteS: "Compártelo — quien empiece un diario con él aparecerá aquí, en tu árbol.",
+    emptyT: "Todavía nadie",
+    emptyS: "Aún no has invitado a nadie. Comparte tu enlace — tu árbol crecerá aquí: amigos, y a quienes ellos inviten después.",
+    rewardA: "Amigos activos",
+    rewardB: "para un libro gratis",
+    rewardDone: "¡Ya tienes disponible un libro gratis — reclámalo en tu Libro de la vida!",
+    capped: "Red grande — se muestra la parte superior.",
+    act: { active: "escribe activamente", warm: "escribe a veces", started: "ausente desde hace tiempo", idle: "aún sin entradas" },
+    legend: "Actividad",
+  },
 };
 
 const ACT: Record<RefActivity, { color: string; bg: string }> = {
@@ -129,7 +149,7 @@ export default function ReferralTreeView({
   status: ReferralStatus;
   inviteLink: string;
 }) {
-  const s = STR[locale] || (locale === "uk" ? STR.ru : locale === "fr" ? STR.en : STR.ru);
+  const s = STR[locale] || (locale === "uk" ? STR.ru : locale === "fr" ? STR.en : locale === "es" ? STR.en : STR.ru);
   const stat = (val: number, label: string, color: string) => (
     <div className="card" style={{ flex: 1, minWidth: 92, textAlign: "center", padding: "13px 8px" }}>
       <div style={{ fontSize: 24, fontWeight: 700, color }}>{val}</div>

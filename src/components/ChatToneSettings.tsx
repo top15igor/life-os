@@ -143,6 +143,37 @@ const STR: Record<string, L> = {
       funny: "Alors, fais ton rapport — comment se sont passées les aventures du jour ? 😄",
     },
   },
+  es: {
+    title: "Tono de conversación con el bot",
+    sub: "Cómo te habla tu amigo IA — en el chat, por voz y en «Pregúntale a tu vida».",
+    saved: "Guardado",
+    exampleLabel: "Ejemplo",
+    styleLabel: "Tu propio estilo (opcional)",
+    stylePlaceholder: "Describe con tus palabras cómo debe hablarte el bot. Ej.: «con sencillez, con ejemplos, sin introducciones largas» o «llámame ‘jefe’».",
+    tone: { auto: "Mi estilo", friend: "Cálido", direct: "Directo", calm: "Tranquilo", business: "Formal", energetic: "Enérgico", coach: "Coach", mentor: "Mentor", funny: "Con humor" },
+    desc: {
+      auto: "El bot se adaptará a tu forma de escribir — sonará más o menos como tú.",
+      friend: "Con cariño, como alguien cercano, de tú. Te apoya y se solidariza contigo.",
+      direct: "Al grano y corto. Sin rodeos, te empuja hacia una acción concreta.",
+      calm: "Sereno y neutral, sin emociones ni dramatismo de más.",
+      business: "Concreto, por prioridades, tranquilo y sin sentimentalismos.",
+      energetic: "Animado y estimulante, pero sin forzar ni sonar ridículo.",
+      coach: "Energiza y motiva, te empuja con suavidad a actuar — como un coach.",
+      mentor: "Reflexivo, al grano y respetuoso — como un mentor sabio.",
+      funny: "Con humor ligero y amable — sonriente, pero al grano y sin sarcasmo.",
+    },
+    example: {
+      auto: "Me adapto a ti: si escribes corto y con emoji — así te respondo 👍",
+      friend: "¡Qué bueno saber de ti! ¿Cómo estás hoy, de verdad?",
+      direct: "Ok. Tu única tarea principal de hoy — ¿cuál es?",
+      calm: "Hola. Cuéntame cómo estuvo tu día.",
+      business: "Resumen del día: ¿qué se hizo y cuál es la prioridad para mañana?",
+      energetic: "¡Yo! Vamos 🔥 ¿Qué conquistamos hoy?",
+      coach: "Puedes más de lo que crees. ¿Por dónde empezamos?",
+      mentor: "Cuéntame qué tienes en mente. Pensémoslo juntos, con calma.",
+      funny: "A ver, cuenta — ¿cómo estuvieron las aventuras de hoy? 😄",
+    },
+  },
 };
 
 export default function ChatToneSettings({ locale, initial }: { locale: string; initial: MorningPrefs }) {

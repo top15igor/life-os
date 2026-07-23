@@ -9,19 +9,20 @@ import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
 import { getFinanceData, getFinanceSummary, shiftMonth, currentMonth } from "./finance";
 
-type Lang = "ru" | "en" | "uk" | "fr";
-const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+type Lang = "ru" | "en" | "uk" | "fr" | "es";
+const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "English", uk: "українській", fr: "français", es: "español" };
 
 const HDR: Record<Lang, { month: (m: string) => string; review: string; none: string }> = {
   ru: { month: (m) => `📊 <b>Финансовый отчёт за ${m}</b>`, review: "📊 <b>Финансовый разбор</b>", none: "Пока нет финансовых операций для разбора. Добавь доходы и расходы в разделе «Деньги» — и я подготовлю отчёт и подскажу, как улучшить финансы. 💪" },
   en: { month: (m) => `📊 <b>Financial report — ${m}</b>`, review: "📊 <b>Financial review</b>", none: "No financial transactions yet to review. Add income and expenses in the Money section — and I'll prepare a report and tips to improve your finances. 💪" },
   uk: { month: (m) => `📊 <b>Фінансовий звіт за ${m}</b>`, review: "📊 <b>Фінансовий розбір</b>", none: "Поки немає фінансових операцій для розбору. Додай доходи й витрати в розділі «Гроші» — і я підготую звіт і підкажу, як покращити фінанси. 💪" },
   fr: { month: (m) => `📊 <b>Rapport financier — ${m}</b>`, review: "📊 <b>Bilan financier</b>", none: "Aucune opération financière à analyser pour l'instant. Ajoute des revenus et dépenses dans la section Argent — et je préparerai un rapport et des conseils. 💪" },
+  es: { month: (m) => `📊 <b>Informe financiero de ${m}</b>`, review: "📊 <b>Análisis financiero</b>", none: "Todavía no hay operaciones financieras para analizar. Agrega ingresos y gastos en la sección «Dinero» — y prepararé un informe con consejos para mejorar tus finanzas. 💪" },
 };
 
 // Месяц вида «июнь 2024» / «June 2024» на языке пользователя.
 function monthName(month: string, lang: Lang): string {
-  const intl = lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : lang === "uk" ? "uk-UA" : "ru-RU";
+  const intl = lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : lang === "uk" ? "uk-UA" : lang === "es" ? "es-ES" : "ru-RU";
   try { return new Date(month + "-01T00:00:00").toLocaleDateString(intl, { month: "long", year: "numeric" }); }
   catch { return month; }
 }

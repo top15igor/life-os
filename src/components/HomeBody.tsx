@@ -177,6 +177,7 @@ export default async function HomeBody() {
     en: { placeholder: "What happened? Write a few lines…", button: "Add", saving: "Saving…" },
     uk: { placeholder: "Що сталося? Напиши кілька рядків…", button: "Додати", saving: "Зберігаю…" },
     fr: { placeholder: "Que s'est-il passé ? Écris quelques lignes…", button: "Ajouter", saving: "Enregistrement…" },
+    es: { placeholder: "¿Qué pasó? Escribe un par de líneas…", button: "Añadir", saving: "Guardando…" },
   }[locale] || { placeholder: "…", button: "+", saving: "…" };
 
   return (

@@ -1,16 +1,17 @@
-export type Locale = "ru" | "en" | "uk" | "fr";
+export type Locale = "ru" | "en" | "uk" | "fr" | "es";
 
 export const LOCALES: { code: Locale; label: string; short: string; intl: string }[] = [
   { code: "ru", label: "Русский", short: "RU", intl: "ru-RU" },
   { code: "en", label: "English", short: "EN", intl: "en-GB" },
   { code: "uk", label: "Українська", short: "UK", intl: "uk-UA" },
   { code: "fr", label: "Français", short: "FR", intl: "fr-FR" },
+  { code: "es", label: "Español", short: "ES", intl: "es-ES" },
 ];
 
 export const DEFAULT_LOCALE: Locale = "ru";
 
 export function isLocale(x: any): x is Locale {
-  return x === "ru" || x === "en" || x === "uk" || x === "fr";
+  return x === "ru" || x === "en" || x === "uk" || x === "fr" || x === "es";
 }
 export function intlOf(l: Locale): string {
   return LOCALES.find((x) => x.code === l)?.intl || "ru-RU";
@@ -134,6 +135,23 @@ const dicts: Record<Locale, Dict> = {
     voice: "Voix", text: "Texte",
     entry: { back: "retour au journal", title: "Entrée", voiceFull: "vocale", textFull: "texte", original: "Original", aiSummary: "Résumé IA", extracted: "Données extraites", tags: "Tags", categories: "Catégories", people: "Personnes", projects: "Projets", places: "Lieux", insights: "Insights", tasks: "Tâches", gratitude: "Gratitude", notFound: "Entrée introuvable." },
     cats: cats("Santé", "Sport", "Alimentation", "Famille", "Relations", "Affaires", "Finances", "Idées", "Insights", "Tâches", "Gratitude", "Voyages", "Émotions", "Problèmes", "Décisions", "Événements"),
+  },
+  es: {
+    brand: "LIFE OS",
+    nav: { today: "Hoy", dashboard: "Panel", guide: "Guía", diary: "Diario", tasks: "Tareas", wellness: "Salud", plans: "Metas y tareas", finance: "Dinero", health: "Salud", energy: "Energía", sport: "Deporte", food: "Alimentación", family: "Familia", projects: "Proyectos", insights: "Ideas", goals: "Metas", lifebook: "Libro de la vida", knowledge: "Base de conocimiento", books: "Mediateca", trace: "Mi huella", reminders: "Recordatorios", memory: "Memoria", people: "Personas", places: "Viajes", analytics: "Lo que notó la IA", lab: "Laboratorio", biographer: "Biógrafo", wishlist: "Lista de deseos", share: "Compartir", paths: "Mis caminos", profile: "Perfil" },
+    greetings: { night: "Buenas noches", morning: "Buenos días", day: "Buenas tardes", evening: "Buenas tardes" },
+    entriesWord: "entradas",
+    quickCapture: "Captura rápida",
+    quickHint: "Envía una nota de voz o un texto al bot de Telegram — aparecerá aquí",
+    entriesOfDay: "Entradas del día",
+    noEntriesToday: "Aún no hay entradas. Escribe o habla al bot de Telegram y aparecerán aquí.",
+    mood: "Ánimo", energy: "Energía", health: "Salud", focus: "Enfoque",
+    diaryTitle: "Diario",
+    filters: { date: "Fecha", category: "Categoría", tags: "Etiquetas", mood: "Ánimo", people: "Personas" },
+    diaryEmpty: "Aún no hay entradas. Escribe al bot de Telegram — aquí aparecerá tu feed.",
+    voice: "Voz", text: "Texto",
+    entry: { back: "al diario", title: "Entrada", voiceFull: "de voz", textFull: "texto", original: "Original", aiSummary: "Resumen IA", extracted: "Datos extraídos", tags: "Etiquetas", categories: "Categorías", people: "Personas", projects: "Proyectos", places: "Lugares", insights: "Ideas", tasks: "Tareas", gratitude: "Gratitud", notFound: "Entrada no encontrada." },
+    cats: cats("Salud", "Deporte", "Alimentación", "Familia", "Relaciones", "Negocios", "Finanzas", "Ideas", "Reflexiones", "Tareas", "Gratitud", "Viajes", "Emociones", "Problemas", "Decisiones", "Eventos"),
   },
 };
 

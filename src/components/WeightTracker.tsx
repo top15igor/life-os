@@ -11,11 +11,12 @@ const STR: Record<string, any> = {
   en: { title: "Weight", current: "Current weight", noData: "No weight yet", on: "on", add: "Log weight", goalSet: "Set a goal", goalEdit: "Edit goal", goal: "Goal", to: "by", left: "to go", reached: "Goal reached!", pace: "need ≈", perWeek: "kg/wk", date: "Date", kg: "kg", save: "Save", cancel: "Cancel", targetKg: "Target weight, kg", targetDate: "Target date", gain: "to gain", lose: "to lose", days: "days", chartHint: "Each dot is a measurement · tap to remove", delConfirm: "Remove the measurement on {d}?" },
   uk: { title: "Вага", current: "Поточна вага", noData: "Ваги поки немає", on: "від", add: "Записати вагу", goalSet: "Задати ціль", goalEdit: "Змінити ціль", goal: "Ціль", to: "до", left: "залишилось", reached: "Ціль досягнута!", pace: "треба ≈", perWeek: "кг/тиж", date: "Дата", kg: "кг", save: "Зберегти", cancel: "Скасувати", targetKg: "Цільова вага, кг", targetDate: "Бажана дата", gain: "набрати", lose: "скинути", days: "дн.", chartHint: "Кожна точка — замір · натисни, щоб прибрати", delConfirm: "Прибрати замір за {d}?" },
   fr: { title: "Poids", current: "Poids actuel", noData: "Pas encore de poids", on: "le", add: "Noter le poids", goalSet: "Définir un objectif", goalEdit: "Modifier l'objectif", goal: "Objectif", to: "pour le", left: "restant", reached: "Objectif atteint !", pace: "besoin ≈", perWeek: "kg/sem", date: "Date", kg: "kg", save: "Enregistrer", cancel: "Annuler", targetKg: "Poids cible, kg", targetDate: "Date cible", gain: "à prendre", lose: "à perdre", days: "j", chartHint: "Chaque point est une mesure · touchez pour retirer", delConfirm: "Retirer la mesure du {d} ?" },
+  es: { title: "Peso", current: "Peso actual", noData: "Todavía no hay peso", on: "el", add: "Registrar peso", goalSet: "Fijar una meta", goalEdit: "Editar meta", goal: "Meta", to: "para el", left: "restante", reached: "¡Meta alcanzada!", pace: "necesitas ≈", perWeek: "kg/sem", date: "Fecha", kg: "kg", save: "Guardar", cancel: "Cancelar", targetKg: "Peso objetivo, kg", targetDate: "Fecha objetivo", gain: "para ganar", lose: "para perder", days: "días", chartHint: "Cada punto es una medición · toca para quitarla", delConfirm: "¿Quitar la medición del {d}?" },
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 function fmt(locale: string, d: string) {
-  try { return new Date(d + "T00:00:00").toLocaleDateString(locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : locale === "uk" ? "uk-UA" : "ru-RU", { day: "numeric", month: "long" }); }
+  try { return new Date(d + "T00:00:00").toLocaleDateString(locale === "en" ? "en-US" : locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : locale === "uk" ? "uk-UA" : "ru-RU", { day: "numeric", month: "long" }); }
   catch { return d; }
 }
 

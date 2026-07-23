@@ -134,7 +134,7 @@ const TOOL: Anthropic.Tool = {
 const SYS_ANALYZE = `Ты — аналитик личного дневника LIFE OS. Тебе дают одну дневниковую запись на русском (расшифровка голоса или текст). Разбери её и вызови инструмент save_analysis.
 
 Правила:
-- Пиши на ТОМ ЖЕ языке, что и сама запись (русский / украинский / английский / французский). Не выдумывай того, чего нет в тексте.
+- Пиши на ТОМ ЖЕ языке, что и сама запись (русский / украинский / английский / французский / испанский). Не выдумывай того, чего нет в тексте.
 - summary: 1–2 тёплых живых предложения ОТ ПЕРВОГО ЛИЦА (от «я»), как будто это пишешь ты сам в свой дневник. НЕ пиши «человек», «автор» или в третьем лице. По-человечески, без канцелярита.
 - mood/energy/health: 1–10, если упомянуто или ясно из тона; иначе не указывай.
 - categories: только из разрешённого списка (slug).
@@ -271,6 +271,7 @@ export const KNOWLEDGE_FOLDERS_BY_LOCALE: Record<string, string[]> = {
   en: ["Health", "Fitness & Body", "Food & Recipes", "Psychology & Growth", "Money & Finance", "Business & Marketing", "Tech & AI", "Travel", "Home & Living", "Relationships & Family", "Education", "Other"],
   uk: ["Здоров'я", "Спорт і тіло", "Їжа та рецепти", "Психологія та саморозвиток", "Гроші та фінанси", "Бізнес і маркетинг", "Технології та AI", "Подорожі", "Дім і побут", "Стосунки та сім'я", "Освіта", "Інше"],
   fr: ["Santé", "Sport & Corps", "Cuisine & Recettes", "Psychologie & Développement", "Argent & Finance", "Business & Marketing", "Tech & IA", "Voyages", "Maison & Quotidien", "Relations & Famille", "Éducation", "Autre"],
+  es: ["Salud", "Deporte y cuerpo", "Comida y recetas", "Psicología y crecimiento", "Dinero y finanzas", "Negocios y marketing", "Tecnología e IA", "Viajes", "Hogar y vida diaria", "Relaciones y familia", "Educación", "Otro"],
 };
 
 export function knowledgeFolders(locale?: string): string[] {
@@ -305,7 +306,7 @@ export function canonicalFolder(raw: string | null | undefined, locale?: string)
   return (raw || "").trim() || folders[folders.length - 1];
 }
 
-const LANG_NAME: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+const LANG_NAME: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français", es: "español" };
 
 function savedTool(locale: string): Anthropic.Tool {
   return {

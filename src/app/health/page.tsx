@@ -25,6 +25,7 @@ const STR: Record<string, any> = {
   en: { health: "Health", sleep: "Sleep", weight: "Weight", su: "h", wu: "kg", trend: "Daily dynamics", perDay: "daily average", from: "on", noData: "no data", entries: "Health entries", empty: "No health entries yet — mention wellbeing, sleep, workouts and they'll show here.", noTrend: "The chart appears once your entries have a few health, energy or mood ratings.", nowTitle: "Health right now", goalsTitle: "Health goals" },
   uk: { health: "Здоров'я", sleep: "Сон", weight: "Вага", su: "год", wu: "кг", trend: "Динаміка по днях", perDay: "середнє за день", from: "від", noData: "немає даних", entries: "Записи про здоров'я", empty: "Записів про здоров'я поки немає — згадуй самопочуття, сон, тренування.", noTrend: "Динаміка з'явиться, коли в записах буде хоча б кілька оцінок.", nowTitle: "Здоров'я зараз", goalsTitle: "Цілі щодо здоров'я" },
   fr: { health: "Santé", sleep: "Sommeil", weight: "Poids", su: "h", wu: "kg", trend: "Dynamique quotidienne", perDay: "moyenne par jour", from: "le", noData: "pas de données", entries: "Entrées santé", empty: "Pas encore d'entrées santé — mentionne bien-être, sommeil, sport.", noTrend: "La courbe apparaît dès que tes entrées ont quelques évaluations.", nowTitle: "Santé en ce moment", goalsTitle: "Objectifs santé" },
+  es: { health: "Salud", sleep: "Sueño", weight: "Peso", su: "h", wu: "kg", trend: "Dinámica diaria", perDay: "promedio diario", from: "el", noData: "sin datos", entries: "Entradas de salud", empty: "Aún no hay entradas de salud — menciona tu bienestar, sueño, entrenamientos, y aparecerán aquí.", noTrend: "El gráfico aparecerá cuando tus entradas tengan algunas valoraciones de salud, energía o ánimo.", nowTitle: "Salud ahora", goalsTitle: "Metas de salud" },
 };
 
 // Короткая дата для подписи оси: «26.06».
@@ -54,9 +55,9 @@ function dailyTrend(entries: Entry[], keys: { name: string; color: string; key: 
 }
 
 const TREND: Record<HealthTrend, any> = {
-  worsening: { ru: "становится хуже", en: "getting worse", uk: "стає гірше", fr: "s'aggrave", color: "#ef4444", icon: "ti-trending-down" },
-  stable: { ru: "без изменений", en: "stable", uk: "без змін", fr: "stable", color: "#64748b", icon: "ti-minus" },
-  improving: { ru: "идёт на улучшение", en: "improving", uk: "покращується", fr: "s'améliore", color: "#10b981", icon: "ti-trending-up" },
+  worsening: { ru: "становится хуже", en: "getting worse", uk: "стає гірше", fr: "s'aggrave", es: "está empeorando", color: "#ef4444", icon: "ti-trending-down" },
+  stable: { ru: "без изменений", en: "stable", uk: "без змін", fr: "stable", es: "estable", color: "#64748b", icon: "ti-minus" },
+  improving: { ru: "идёт на улучшение", en: "improving", uk: "покращується", fr: "s'améliore", es: "está mejorando", color: "#10b981", icon: "ti-trending-up" },
 };
 
 function HealthNow({ focus, s, locale }: any) {
@@ -139,9 +140,9 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
   const sportEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "sport"));
   const foodEntries = all.filter((e: Entry) => cats(e).some((c: any) => c.slug === "food"));
 
-  const overview: Record<string, string> = { ru: "Обзор", en: "Overview", uk: "Огляд", fr: "Aperçu" };
-  const dashLabel: Record<string, string> = { ru: "Дашборд", en: "Dashboard", uk: "Дашборд", fr: "Tableau de bord" };
-  const settingsLabel: Record<string, string> = { ru: "Настройки", en: "Settings", uk: "Налаштування", fr: "Paramètres" };
+  const overview: Record<string, string> = { ru: "Обзор", en: "Overview", uk: "Огляд", fr: "Aperçu", es: "Resumen" };
+  const dashLabel: Record<string, string> = { ru: "Дашборд", en: "Dashboard", uk: "Дашборд", fr: "Tableau de bord", es: "Panel" };
+  const settingsLabel: Record<string, string> = { ru: "Настройки", en: "Settings", uk: "Налаштування", fr: "Paramètres", es: "Ajustes" };
   const tabs = [
     { key: "dashboard", label: dashLabel[locale] || dashLabel.en },
     { key: "health", label: overview[locale] || overview.en },

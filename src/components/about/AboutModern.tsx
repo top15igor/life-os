@@ -230,6 +230,38 @@ const D: Record<Locale, Dict> = {
     footerLinks: ["À propos", "Confidentialité", "Sécurité", "Contact"], copyright: "© 2026 LIFE OS · Ton journal de vie personnel — un second cerveau",
     inApp: "Vers l'app", designA: "Classique", designB: "Nouveau",
   },
+  es: {
+    nav: { how: "Cómo funciona", features: "Funciones", book: "Libro de vida", stories: "Historias", login: "Iniciar sesión", start: "Empezar gratis" },
+    heroBadge: "El diario con IA de tu vida · un segundo cerebro",
+    heroPre: "Cuéntale tu día — ", heroItalic: "y LIFE OS lo convierte", heroPost: " en un libro de vida.",
+    heroP: "Comida, deporte, bienestar, emociones, eventos y pensamientos — solo dilos en voz alta. La IA lo ordena todo en secciones y lo convierte en una historia clara de tu vida.",
+    watch: "Ver cómo funciona", statsCount: "Más de 10.000 personas", statsSub: "ya guardan su vida en LIFE OS",
+    today: "Hoy", micPrompt: "toca el micrófono — pruébalo tú mismo",
+    mic: { idle: ["Toca y habla", "Yo me encargo de saber dónde guardarlo"], recording: ["Escuchando…", "Habla con calma, estoy grabando"], recognizing: ["Reconociendo…", "Ordenando por secciones"], sorted: "Listo", savedTo: (c) => `Guardado en «${c}»` },
+    catName: { food: "Comida", sport: "Deporte", health: "Bienestar", emotions: "Emociones", events: "Eventos", thoughts: "Pensamientos" },
+    initial: [{ text: "Corrí 5,2 km junto al río", cat: "sport", time: "08:15" }, { text: "Comí una tortilla y ensalada", cat: "food", time: "11:30" }, { text: "Tranquilo y concentrado", cat: "emotions", time: "14:20" }],
+    queue: [{ text: "Bebí un vaso grande de agua", cat: "food" }, { text: "Hice 20 minutos de estiramientos", cat: "sport" }, { text: "Me siento con energía después de caminar", cat: "health" }, { text: "Quedé con Andrés, hablamos del proyecto", cat: "events" }, { text: "Se me ocurrió una idea para un producto nuevo", cat: "thoughts" }],
+    howKicker: "Cómo funciona", howTitle: "Solo habla de tu vida — la IA hace el resto", howSub: "Nada de formularios, etiquetas ni tablas. Tú hablas — LIFE OS entiende, ordena y guarda.",
+    steps: [{ title: "Cuéntaselo", desc: "Por voz, texto o foto — como te venga bien ahora mismo." }, { title: "La IA entiende", desc: "Detecta de qué se trata: comida, deporte, emociones, un evento o un pensamiento." }, { title: "Lo ordena", desc: "Guarda la entrada en la sección correcta y la conecta con el pasado." }, { title: "Crea tu libro", desc: "Reúne todo en una crónica tranquila y en la historia de tu vida." }],
+    featKicker: "Qué hay dentro", featTitle: "Toda tu vida en un solo lugar", featSub: "Di una frase — y ella sola aterriza en la sección correcta. Esto es lo que LIFE OS entiende de inmediato.",
+    categories: catList(
+      { food: "Comida", sport: "Deporte", health: "Bienestar", emotions: "Emociones", events: "Eventos", thoughts: "Pensamientos" },
+      { food: "Comidas, agua, vitaminas", sport: "Entrenamientos, running, pasos", health: "Energía, sueño, salud", emotions: "Ánimo, sentimientos, estrés", events: "Encuentros, viajes, momentos", thoughts: "Ideas, decisiones, hallazgos" },
+      { food: ["Comí una tortilla", "Bebí agua", "Tomé vitaminas"], sport: ["Corrí 5 km", "Hice ejercicio", "10.000 pasos"], health: ["Dormí mal", "Dolor de cabeza", "Mucha energía"], emotions: ["Tranquilo", "Irritado", "Alegre"], events: ["Encuentro con Andrés", "Viaje a la montaña"], thoughts: ["Una idea para un proyecto", "Me di cuenta de que…"] }
+    ),
+    bookBadge: "La IA lo crea automáticamente", bookPre: "De tus palabras nace ", bookItalic: "un libro de vida", bookPost: ".",
+    bookP: "Cada semana la IA reúne tus entradas en una crónica tranquila: qué cambió, qué se repitió, qué fue importante. Con los años se convertirá en una historia invaluable — para ti y las generaciones futuras.",
+    bookPoints: ["La IA escribe la crónica por ti — sin esfuerzo", "Ves qué cambió y qué se repitió", "Totalmente privado — tus datos son solo tuyos"],
+    chapterLabel: "CAPÍTULO · JUNIO 2026", chapterTitle: "«El mes en que volviste a correr»",
+    aiLines: ["Entrenaste 11 veces — el doble que en mayo.", "Tu sueño fue más estable los días sin cena tardía.", "Tuviste más energía los días de caminatas largas."],
+    bookStats: [{ value: "84 km", label: "corridos este mes" }, { value: "286", label: "entradas de vida" }, { value: "42", label: "hallazgos clave" }],
+    storiesKicker: "Historias", storiesTitle: "Lo que dicen quienes ya usan LIFE OS",
+    testimonials: [{ name: "Alejo", role: "Emprendedor", quote: "LIFE OS es como un segundo cerebro. Ya no olvido nada y siento que voy en la dirección correcta." }, { name: "María", role: "Mamá de dos hijos", quote: "Ahora todos los momentos importantes están guardados. Con los años será una historia invaluable de nuestra familia." }, { name: "Igor", role: "Viajero", quote: "La IA crea sola la crónica de mis viajes. Lugares, emociones, eventos — todo en un solo lugar y bien presentado." }],
+    ctaTitle: "Tu vida merece ser guardada", ctaP: "Empieza hoy — di tu primera frase, y LIFE OS empezará a reunir tu historia.",
+    ctaPoints: ["Gratis para siempre", "IA incluida", "Datos protegidos"],
+    footerLinks: ["Acerca de", "Privacidad", "Seguridad", "Contacto"], copyright: "© 2026 LIFE OS · Tu diario de vida personal — un segundo cerebro",
+    inApp: "Ir a la app", designA: "Clásico", designB: "Nuevo",
+  },
 };
 
 type MicState = "idle" | "recording" | "recognizing" | "sorted";

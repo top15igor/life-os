@@ -68,6 +68,21 @@ const P: Record<string, PrivacyContent> = {
     note: "Un vrai « même nous ne pouvons pas lire » n'est possible qu'avec un chiffrement de bout en bout — mais l'IA ne pourrait plus analyser tes entrées. Nous avons choisi la valeur de l'IA avec des règles d'accès strictes. Si la confidentialité maximale compte pour toi, contacte-nous.",
     back: "Accueil",
   },
+  es: {
+    title: "Privacidad",
+    intro: "LIFE OS es tu espacio privado. Aquí te contamos con honestidad cómo tratamos lo que le confías al servicio.",
+    points: [
+      { icon: "ti-lock", title: "Tu diario solo lo ves tú", text: "Tus entradas se abren únicamente con tu enlace personal. Nunca se las mostramos a otros usuarios." },
+      { icon: "ti-eye-off", title: "El equipo no lee tus entradas", text: "Para las estadísticas solo vemos números anónimos: cuántas entradas hay y qué temas en porcentajes. No leemos, vendemos ni compartimos el texto en sí." },
+      { icon: "ti-robot", title: "La IA trabaja solo para ti", text: "Para crear resúmenes, insights y responder tus preguntas, el texto lo procesa una IA (Anthropic Claude y OpenAI Whisper). Se usa solo para eso y, según los términos de sus API, no sirve para entrenar sus modelos." },
+      { icon: "ti-shield-lock", title: "Cifrado y copias de seguridad", text: "Los datos se guardan cifrados y se transmiten por un canal seguro. Hay copias de seguridad para que nada se pierda." },
+      { icon: "ti-trash", title: "Tú controlas tus datos", text: "¿Quieres borrarlo todo? Escríbele al bot y eliminaremos tu diario por completo." },
+      { icon: "ti-download", title: "Llévate todo cuando quieras", text: "Un solo archivo con todas tus entradas — descárgalo cuando quieras, en Perfil." },
+      { icon: "ti-brand-github", title: "Código abierto — compruébalo tú mismo", text: "El código de LIFE OS es abierto. Cualquiera (o tu programador) puede ver exactamente qué pasa con los datos. No te fíes de nuestra palabra — compruébalo." },
+    ],
+    note: "El verdadero \"ni siquiera nosotros podemos leerlo\" solo es posible con cifrado de extremo a extremo — pero entonces la IA no podría analizar tus entradas. Elegimos el valor de la IA junto con reglas de acceso estrictas. Si la privacidad máxima te importa, escríbenos.",
+    back: "Inicio",
+  },
 };
 
 export function privacyContent(locale: string): PrivacyContent {

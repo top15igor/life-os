@@ -35,6 +35,14 @@ const STR: Record<string, any> = {
     conf: { low: "supposition", medium: "probable", high: "sûr" }, basis: "d'après", retry: "Actualiser", loadingHint: "Cela prend 10–20 secondes", failed: "Impossible de générer. Réessaie.",
     empty: "Les observations apparaîtront avec plus d'entrées. Écris au bot chaque jour 🙂",
   },
+  es: {
+    loading: "La IA está estudiando tu vida…",
+    noticed: "Hoy la IA notó", discovery: "Descubrimiento clave",
+    happiness: "Qué te hace feliz", givers: "Qué te da energía", drainers: "Qué te quita energía",
+    chains: "Causas → efectos", surprise: "La IA se sorprendió", story: "Historia de los últimos 30 días", patterns: "Patrones",
+    conf: { low: "supuesto", medium: "probable", high: "seguro" }, basis: "según", retry: "Actualizar", loadingHint: "Esto tarda entre 10 y 20 segundos", failed: "No se pudieron generar las observaciones. Intenta actualizar.",
+    empty: "Las observaciones aparecerán cuando tengas más entradas. Escríbele al bot cada día 🙂",
+  },
 };
 
 function Conf({ level, s }: any) {

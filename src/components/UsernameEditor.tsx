@@ -63,6 +63,21 @@ const STR: Record<string, any> = {
     copied: "Copié ✓",
     inviteLbl: "Lien d'invitation",
   },
+  es: {
+    title: "Tu nombre de enlace",
+    sub: "Esta es tu dirección en LIFE OS — como @nombre en Instagram. Sirve tanto para invitar amigos como para tu página pública.",
+    label: "Nombre de enlace",
+    checking: "Comprobando…",
+    available: "Disponible ✓",
+    taken: "Ya está en uso — prueba con otro",
+    invalid: "3–30 caracteres: letras, números, guion",
+    save: "Guardar",
+    saving: "Guardando…",
+    saved: "Guardado ✓",
+    copy: "Copiar enlace",
+    copied: "Copiado ✓",
+    inviteLbl: "Enlace de invitación",
+  },
 };
 
 type Status = "idle" | "checking" | "available" | "taken" | "invalid";

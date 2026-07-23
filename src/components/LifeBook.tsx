@@ -8,6 +8,7 @@ const STR: Record<string, any> = {
   en: { open: "Open chapter", close: "Collapse", loading: "AI is writing the chapter…", empty: "Your Book of Life begins once you have entries.", entries: "entries" },
   uk: { open: "Відкрити главу", close: "Згорнути", loading: "AI пише главу…", empty: "Книга життя почнеться, коли з'являться записи.", entries: "записів" },
   fr: { open: "Ouvrir le chapitre", close: "Réduire", loading: "L'IA écrit le chapitre…", empty: "Ton Livre de vie commence dès que tu as des entrées.", entries: "entrées" },
+  es: { open: "Abrir capítulo", close: "Contraer", loading: "La IA está escribiendo el capítulo…", empty: "Tu Libro de vida empezará en cuanto tengas entradas.", entries: "entradas" },
 };
 
 export default function LifeBook({ months, locale }: { months: { month: string; count: number }[]; locale: string }) {

@@ -6,7 +6,7 @@ import { getChatVoice, voiceLine } from "./chatVoice";
 // в выбранном пользователем тоне/стиле. НЕ пересказывает запись и не меняет факты —
 // это тёплый отклик рядом с фактическим разбором. Best-effort: при ошибке — null,
 // сохранение записи от этого не зависит.
-const LANG_CODE: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+const LANG_CODE: Record<string, string> = { ru: "русском", en: "English", uk: "українській", fr: "français", es: "español" };
 
 export async function friendReaction(userId: string, entryText: string, lang = "ru"): Promise<string | null> {
   const clean = (entryText || "").trim();

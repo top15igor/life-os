@@ -8,6 +8,7 @@ const STR: Record<string, any> = {
   en: { copy: "Copy", copied: "Copied", logout: "Log out", delete: "Delete account", confirm1: "Delete account and ALL entries permanently?", confirm2: "Are you sure? This is irreversible.", deleting: "Deleting…" },
   uk: { copy: "Копіювати", copied: "Скопійовано", logout: "Вийти", delete: "Видалити акаунт", confirm1: "Видалити акаунт і ВСІ записи без можливості відновлення?", confirm2: "Точно? Це незворотно.", deleting: "Видаляю…" },
   fr: { copy: "Copier", copied: "Copié", logout: "Se déconnecter", delete: "Supprimer le compte", confirm1: "Supprimer le compte et TOUTES les entrées définitivement ?", confirm2: "Sûr ? C'est irréversible.", deleting: "Suppression…" },
+  es: { copy: "Copiar", copied: "Copiado", logout: "Cerrar sesión", delete: "Eliminar cuenta", confirm1: "¿Eliminar la cuenta y TODAS las entradas sin posibilidad de recuperarlas?", confirm2: "¿Seguro? Esto es irreversible.", deleting: "Eliminando…" },
 };
 
 export function CopyLink({ link, locale }: { link: string; locale: string }) {
@@ -55,6 +56,7 @@ const PSTR: Record<string, any> = {
   en: { on: "PIN is set — access protected", off: "No PIN set", set: "Set PIN", change: "Change PIN", remove: "Remove PIN", newPin: "New PIN (4–8 digits)", current: "Current PIN", save: "Save", cancel: "Cancel", bad: "PIN must be 4–8 digits", wrong: "Wrong current PIN", noCol: "Run pin.sql in Supabase first." },
   uk: { on: "PIN встановлено — вхід захищено", off: "PIN не встановлено", set: "Встановити PIN", change: "Змінити PIN", remove: "Прибрати PIN", newPin: "Новий PIN (4–8 цифр)", current: "Поточний PIN", save: "Зберегти", cancel: "Скасувати", bad: "PIN — від 4 до 8 цифр", wrong: "Невірний поточний PIN", noCol: "Спершу запусти pin.sql у Supabase." },
   fr: { on: "PIN défini — accès protégé", off: "Aucun PIN", set: "Définir un PIN", change: "Changer le PIN", remove: "Retirer le PIN", newPin: "Nouveau PIN (4–8 chiffres)", current: "PIN actuel", save: "Enregistrer", cancel: "Annuler", bad: "Le PIN doit faire 4–8 chiffres", wrong: "PIN actuel incorrect", noCol: "Lance d'abord pin.sql dans Supabase." },
+  es: { on: "PIN establecido — acceso protegido", off: "No hay PIN establecido", set: "Establecer PIN", change: "Cambiar PIN", remove: "Quitar PIN", newPin: "Nuevo PIN (4–8 dígitos)", current: "PIN actual", save: "Guardar", cancel: "Cancelar", bad: "El PIN debe tener de 4 a 8 dígitos", wrong: "PIN actual incorrecto", noCol: "Primero ejecuta pin.sql en Supabase." },
 };
 
 export function PinSettings({ locale, hasPin }: { locale: string; hasPin: boolean }) {
@@ -127,6 +129,7 @@ const NOTIF_STR: Record<string, { title: string; sub: string }> = {
   en: { title: "Telegram notifications", sub: "Morning motivation and evening “book questions”. You can turn it off anytime." },
   uk: { title: "Сповіщення в Telegram", sub: "Ранкова мотивація та вечірні «питання для книги». Можна вимкнути будь-коли." },
   fr: { title: "Notifications Telegram", sub: "Motivation du matin et « questions pour ton livre » le soir. Désactivable à tout moment." },
+  es: { title: "Notificaciones en Telegram", sub: "Motivación matutina y «preguntas para tu libro» por la noche. Puedes desactivarlo cuando quieras." },
 };
 
 export function NotificationToggle({ locale, enabled }: { locale: string; enabled: boolean }) {

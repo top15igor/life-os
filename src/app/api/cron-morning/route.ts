@@ -25,7 +25,7 @@ function dayOfYear(): number {
   return Math.floor((now.getTime() - new Date(now.getUTCFullYear(), 0, 0).getTime()) / 86400000);
 }
 
-const pickLang = (l: any) => (["ru", "en", "uk", "fr"].includes(l) ? l : "ru");
+const pickLang = (l: any) => (["ru", "en", "uk", "fr", "es"].includes(l) ? l : "ru");
 
 // «Пора ли слать этому пользователю прямо сейчас?» Возвращает локальный ключ-дату
 // (для защиты от повтора) или null, если ещё не его час.

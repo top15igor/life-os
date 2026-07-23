@@ -7,7 +7,7 @@ import { morningMessage } from "@/lib/morningPush";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const pickLang = (l: any) => (["ru", "en", "uk", "fr"].includes(l) ? l : "ru");
+const pickLang = (l: any) => (["ru", "en", "uk", "fr", "es"].includes(l) ? l : "ru");
 
 // Предпросмотр утреннего сообщения по ТЕКУЩИМ (возможно, несохранённым)
 // настройкам — чтобы пользователь увидел пример прямо в профиле.

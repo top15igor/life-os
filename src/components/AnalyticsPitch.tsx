@@ -54,7 +54,7 @@ const P: Record<string, any> = {
 };
 
 export default function AnalyticsPitch({ locale, progress }: { locale: string; progress?: { count: number; need: number } }) {
-  const p = locale === "en" || locale === "fr" ? P.en : P.ru;
+  const p = locale === "en" || locale === "fr" || locale === "es" ? P.en : P.ru;
   const earnedFree = !!progress && progress.count >= progress.need;
   const left = progress ? Math.max(0, progress.need - progress.count) : 0;
   const pctDone = progress ? Math.min(100, Math.round((progress.count / progress.need) * 100)) : 0;

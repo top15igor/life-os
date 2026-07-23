@@ -17,12 +17,14 @@ const GROUPS_L: Record<string, Record<string, string>> = {
   en: { main: "Main", life: "Life & goals", memory: "Memory & people", ai: "AI helpers", more: "More" },
   uk: { main: "Головне", life: "Життя та цілі", memory: "Пам'ять і люди", ai: "AI-помічники", more: "Ще" },
   fr: { main: "Principal", life: "Vie & objectifs", memory: "Mémoire & gens", ai: "Assistants IA", more: "Plus" },
+  es: { main: "Principal", life: "Vida y metas", memory: "Memoria y gente", ai: "Asistentes IA", more: "Más" },
 };
 const ED_L: Record<string, Record<string, string>> = {
   ru: { customize: "Настроить меню", done: "Готово", reset: "Сбросить", title: "Порядок и видимость" },
   en: { customize: "Customize menu", done: "Done", reset: "Reset", title: "Order & visibility" },
   uk: { customize: "Налаштувати меню", done: "Готово", reset: "Скинути", title: "Порядок і видимість" },
   fr: { customize: "Personnaliser", done: "OK", reset: "Réinitialiser", title: "Ordre & visibilité" },
+  es: { customize: "Personalizar menú", done: "Listo", reset: "Restablecer", title: "Orden y visibilidad" },
 };
 
 // Цветовые акценты разделов — чтобы блоки меню различались не только интервалом.

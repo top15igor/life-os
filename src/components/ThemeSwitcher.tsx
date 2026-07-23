@@ -9,6 +9,7 @@ const LABELS: Record<string, Record<Theme, string>> = {
   en: { auto: "Auto", light: "Light", dark: "Dark" },
   uk: { auto: "Авто", light: "Світла", dark: "Темна" },
   fr: { auto: "Auto", light: "Clair", dark: "Sombre" },
+  es: { auto: "Auto", light: "Claro", dark: "Oscuro" },
 };
 
 // Применяет тему на лету: auto → по системной, иначе явно.

@@ -57,6 +57,15 @@ const STR: Record<string, any> = {
     autosort: "Trier par catégorie", sorting: "Je trie…", sortedN: (n: number) => `Triés : ${n}`, sortedNone: "Rien à trier",
     catNames: { growth: "Développement", health: "Santé", relationships: "Relations", work: "Travail & argent", emotions: "Émotions", habits: "Habitudes", other: "Autre" },
   },
+  es: {
+    search: "Buscar en los insights…", from: "de la entrada del", nofound: "No se encontró nada para",
+    list: "Lista", cards: "Tarjetas", grouped: "Por categoría", total: "Total", found: "Encontrados",
+    emptyTitle: "Aquí se acumulan tus insights", emptyHint: "Los insights son pensamientos y descubrimientos que la IA encuentra en tus entradas. Solo cuéntale al bot tu día — y aquí aparecerán tus descubrimientos sobre ti mismo.",
+    edit: "Editar", del: "Eliminar", save: "Guardar", cancel: "Cancelar", delConfirm: "¿Eliminar este insight?",
+    setCat: "Categoría", noCat: "Sin categoría",
+    autosort: "Ordenar por categorías", sorting: "Ordenando…", sortedN: (n: number) => `Ordenados: ${n}`, sortedNone: "Nada que ordenar",
+    catNames: { growth: "Crecimiento", health: "Salud", relationships: "Relaciones", work: "Trabajo y dinero", emotions: "Emociones", habits: "Hábitos", other: "Otro" },
+  },
 };
 
 const toggleBtn = (active: boolean): any => ({

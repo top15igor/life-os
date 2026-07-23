@@ -42,6 +42,14 @@ const STR: Record<string, { hint: string; updated: string; view: string; blocksT
     p: { minimal: ["Minimal", "Un démarrage calme et épuré — par défaut"], mindful: ["Pleine conscience", "Chaleureux, avec une carte d'aide"], focus: ["Focus & objectifs", "Tâches, objectifs, projets, histoires"], trace: ["Belle empreinte", "Bonnes actions, promesses, gratitude"], balance: ["Équilibre de vie", "Bien-être, bonté, gratitude"], custom: ["Composer la mienne", "Choisis les blocs à afficher"] },
     b: { habit: "Série", trace: "Mon empreinte du jour", promises: "Promesses", traceWeek: "Empreinte de la semaine", context: "Contexte du jour", metrics: "Bien-être", changes: "Ce qui a changé", focus: "Focus du jour", stories: "Histoires et projets", tasks: "Tâches", gratitude: "Gratitude" },
   },
+  es: {
+    hint: "Alrededor de qué armar la principal. Se aplica al instante.",
+    updated: "Página principal actualizada",
+    view: "Ver la principal →",
+    blocksTitle: "Qué bloques mostrar",
+    p: { minimal: ["Mínimo", "Un comienzo tranquilo y sin adornos — predeterminado"], mindful: ["Consciencia", "Cálida, con una tarjeta de aprendizaje"], focus: ["Enfoque y metas", "Tareas, metas, proyectos, historias"], trace: ["Buena huella", "Buenas acciones, promesas, gratitud"], balance: ["Equilibrio de vida", "Bienestar, bondad, gratitud"], custom: ["Armar la mía", "Elige tú qué bloques mostrar"] },
+    b: { habit: "Racha", trace: "Mi huella de hoy", promises: "Promesas", traceWeek: "Huella de la semana", context: "Contexto del día", metrics: "Bienestar", changes: "Qué cambió", focus: "Enfoque del día", stories: "Historias y proyectos", tasks: "Tareas", gratitude: "Gratitud" },
+  },
 };
 
 export default function HomePresetPicker({ current, locale, currentBlocks }: { current: string; locale: string; currentBlocks?: string[] }) {

@@ -10,6 +10,7 @@ const STR: Record<string, any> = {
   en: { title: "Life Intelligence", causes: "Why this happened", consequences: "What changed after", related: "Related & similar", decisions: "Decisions that emerged", patterns: "Patterns", loading: "AI is building connections…", empty: "Connections will appear as more entries accumulate." },
   uk: { title: "Life Intelligence", causes: "Чому це сталося", consequences: "Що змінилося після", related: "Пов'язані та схожі", decisions: "Які рішення з'явилися", patterns: "Закономірності", loading: "AI вибудовує зв'язки…", empty: "Зв'язки з'являться, коли накопичиться більше записів." },
   fr: { title: "Life Intelligence", causes: "Pourquoi est-ce arrivé", consequences: "Ce qui a changé après", related: "Liés et similaires", decisions: "Décisions apparues", patterns: "Tendances", loading: "L'IA construit les liens…", empty: "Les liens apparaîtront à mesure que les entrées s'accumulent." },
+  es: { title: "Life Intelligence", causes: "Por qué pasó esto", consequences: "Qué cambió después", related: "Relacionado y similar", decisions: "Decisiones que surgieron", patterns: "Patrones", loading: "La IA está construyendo conexiones…", empty: "Las conexiones aparecerán a medida que se acumulen más entradas." },
 };
 
 const CONF: Record<string, { c: string; bg: string }> = {

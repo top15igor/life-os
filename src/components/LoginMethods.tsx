@@ -66,7 +66,7 @@ export default function LoginMethods({
   email: string | null;
   notice?: "linked" | "emailtaken";
 }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [open, setOpen] = useState(false);
   const [em, setEm] = useState("");
   const [pw, setPw] = useState("");

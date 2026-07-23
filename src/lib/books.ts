@@ -60,7 +60,7 @@ export async function searchBooks(query: string): Promise<BookHit[]> {
 
 export type MediaHit = BookHit & { description: string | null; kind: MediaKind };
 
-const TMDB_LANG: Record<string, string> = { ru: "ru-RU", en: "en-US", uk: "uk-UA", fr: "fr-FR" };
+const TMDB_LANG: Record<string, string> = { ru: "ru-RU", en: "en-US", uk: "uk-UA", fr: "fr-FR", es: "es-ES" };
 
 // Ищет фильм (kind=film) или сериал (kind=series) в TMDb: постер, описание, год.
 // Без ключа возвращает [] — тогда UI предложит добавить вручную по названию.
@@ -277,7 +277,7 @@ export async function recommendBooks(userId: string, books: Book[], locale = "ru
   const basis = liked.length ? liked : books.filter((b) => b.status === "read").map((b) => `${b.title}${b.author ? " — " + b.author : ""}`);
   if (!basis.length) return [];
   const have = new Set(books.map((b) => b.title.toLowerCase().trim()));
-  const lang = locale === "en" || locale === "fr" ? "English" : "Russian";
+  const lang = locale === "en" || locale === "fr" || locale === "es" ? "English" : "Russian";
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const TOOL = {

@@ -7,6 +7,7 @@ const STR: Record<string, { done: string; kept: string; empty: string }> = {
   en: { done: "Done", kept: "Done ✓", empty: "No promises yet. Mention what you promised someone — I'll remind you." },
   uk: { done: "Виконано", kept: "Виконано ✓", empty: "Обіцянок поки немає. Згадай у записі, що комусь пообіцяв — я нагадаю." },
   fr: { done: "Fait", kept: "Fait ✓", empty: "Pas encore de promesses. Dis ce que tu as promis — je te le rappellerai." },
+  es: { done: "Hecho", kept: "Hecho ✓", empty: "Aún no hay promesas. Cuéntame en una entrada qué le prometiste a alguien — yo te lo recordaré." },
 };
 
 type P = { id: string; text: string; status?: string };

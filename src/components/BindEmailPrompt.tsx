@@ -32,7 +32,7 @@ const T: Record<string, any> = {
 };
 
 export default function BindEmailPrompt({ hasEmail, locale, googleEnabled = false }: { hasEmail: boolean; locale: string; googleEnabled?: boolean }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const dismissedKey = "lifeos_bindemail_dismissed";
   const [hidden, setHidden] = useState(false);
   const [email, setEmail] = useState("");

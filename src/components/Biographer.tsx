@@ -18,6 +18,7 @@ const STR: Record<string, any> = {
   en: { placeholder: "Ask about your life…", ask: "Ask", asking: "AI is weaving the story…", historyTitle: "Recent questions", suggestions: ["Tell the story of my main project", "How did my health change?", "When was I happiest?", "Which decisions changed my life?"] },
   uk: { placeholder: "Запитай про своє життя…", ask: "Запитати", asking: "AI збирає історію…", historyTitle: "Останні запитання", suggestions: ["Розкажи історію мого головного проєкту", "Як змінювалося моє здоров'я?", "Коли я був найщасливішим?", "Які рішення змінили моє життя?"] },
   fr: { placeholder: "Pose une question sur ta vie…", ask: "Demander", asking: "L'IA tisse l'histoire…", historyTitle: "Questions récentes", suggestions: ["Raconte l'histoire de mon projet principal", "Comment ma santé a-t-elle évolué ?", "Quand étais-je le plus heureux ?", "Quelles décisions ont changé ma vie ?"] },
+  es: { placeholder: "Pregunta sobre tu vida…", ask: "Preguntar", asking: "La IA está tejiendo la historia…", historyTitle: "Preguntas recientes", suggestions: ["Cuéntame la historia de mi proyecto principal", "¿Cómo ha cambiado mi salud?", "¿Cuándo fui más feliz?", "¿Qué decisiones cambiaron mi vida?"] },
 };
 
 export default function Biographer({ locale, initialHistory }: { locale: string; initialHistory?: QA[] }) {

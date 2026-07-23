@@ -9,6 +9,7 @@ const REC: Record<string, any> = {
   en: { rec: "Recording", transcribing: "Transcribing…", mic: "Record by voice", stop: "Stop", denied: "No microphone access. Allow it in your browser settings.", saved: "Entry saved", open: "Open entry", empty: "Didn't catch that — try again.", compact: "Note an event, thought or promise…" },
   uk: { rec: "Триває запис", transcribing: "Розпізнаю голос…", mic: "Записати голосом", stop: "Стоп", denied: "Немає доступу до мікрофона. Дозволь його в налаштуваннях браузера.", saved: "Запис збережено", open: "Відкрити запис", empty: "Нічого не розчув — спробуй ще раз.", compact: "Записати подію, думку чи обіцянку…" },
   fr: { rec: "Enregistrement", transcribing: "Transcription…", mic: "Enregistrer à la voix", stop: "Stop", denied: "Pas d'accès au micro. Autorise-le dans les réglages du navigateur.", saved: "Entrée enregistrée", open: "Ouvrir l'entrée", empty: "Je n'ai rien entendu — réessaie.", compact: "Noter un événement, une pensée ou une promesse…" },
+  es: { rec: "Grabando", transcribing: "Transcribiendo…", mic: "Grabar por voz", stop: "Detener", denied: "Sin acceso al micrófono. Permítelo en la configuración del navegador.", saved: "Entrada guardada", open: "Abrir entrada", empty: "No entendí nada — inténtalo de nuevo.", compact: "Anota un evento, pensamiento o promesa…" },
 };
 
 function mmss(s: number) {

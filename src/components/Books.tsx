@@ -73,7 +73,7 @@ function Stars({ value, onSet }: { value: number | null; onSet: (n: number) => v
 const STATUS_COLOR: Record<string, string> = { want: "#6366f1", reading: "#0ea5e9", read: "#10b981" };
 
 export default function Books({ locale, initial, quotes: initialQuotes, goal: initialGoal, share }: { locale: string; initial: Book[]; quotes: Quote[]; goal: number; share: { slug: string | null; isPublic: boolean } }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [books, setBooks] = useState<Book[]>(initial);
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [goal, setGoal] = useState(initialGoal);

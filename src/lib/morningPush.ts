@@ -43,6 +43,16 @@ const MORNING: Record<string, string[]> = {
     "Bonjour. Respire, ne te presse pas. Un bon pas aujourd'hui vaut mieux que dix pressés.",
     "Bonjour. Quoi qu'il en soit d'hier, aujourd'hui est une page blanche. Commence par ce qui compte pour toi.",
   ],
+  es: [
+    "Buenos días. No intentes hacerlo todo de golpe — elige una cosa importante y empieza por ahí.",
+    "Buenos días. El día será lo que tú hagas de él. Empieza con calma, sin prisa.",
+    "Buenos días. A veces el mejor comienzo es solo el primer pequeño paso. El resto viene solo.",
+    "Buenos días. No tienes que ser productivo cada minuto. Elige lo importante y ocúpate de ello.",
+    "Buenos días. Si el día parece enorme, divídelo en partes y toma la primera.",
+    "Buenos días. Hoy no se trata de ser perfecto, sino de avanzar. Paso a paso.",
+    "Buenos días. Respira, no te apures. Un buen paso hoy vale más que diez apresurados.",
+    "Buenos días. Sea como sea que fue ayer, hoy es una página en blanco. Empieza por lo que te importa.",
+  ],
 };
 
 export function morningMessage(locale: string, seed: number): string {

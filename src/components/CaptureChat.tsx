@@ -62,6 +62,17 @@ const STR: Record<string, any> = {
     reply: "Réponds à la voix ou au texte…", micChat: "Parle — c'est plus rapide",
     showAll: (n: number) => `↑ Voir toute la conversation (${n})`,
   },
+  es: {
+    ph: "Anota un evento o pregúntale a tu amigo IA…", phChat: "Pregúntale a tu amigo IA…",
+    write: "Anotar", chat: "Amigo IA", saved: "Guardado", open: "Abrir entrada →", openRem: "Abrir recordatorios →",
+    thinking: "Pensando…", err: "Se cortó la conexión, dilo otra vez 🙂",
+    intro: "¡Hola! Soy tu amigo IA — sé todo sobre ti por tu diario y busco datos frescos en internet. ¿De qué hablamos?",
+    note: "La memoria se comparte con Telegram — puedes continuar ahí cuando quieras.",
+    mic: "Hablar", stop: "Detener", collapse: "Colapsar chat",
+    tipWrite: "Guardar un pensamiento en tu diario", tipChat: "Pregúntale a tu amigo IA — sabe todo sobre ti y busca en internet", tipSend: "Enviar",
+    reply: "Responde con voz o texto…", micChat: "Habla — es más rápido",
+    showAll: (n: number) => `↑ Mostrar toda la conversación (${n})`,
+  },
 };
 
 export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: string }) {
@@ -140,7 +151,7 @@ export default function CaptureChat({ locale = "ru" }: { qa?: any; locale?: stri
   }
 
   // Reminder voice/text command: "напомни …" -> create a reminder instead of an entry.
-  const REMIND_RE = /^\s*(напомни|напоминай|нагадай|нагадуй|remind|rappelle)/i;
+  const REMIND_RE = /^\s*(напомни|напоминай|нагадай|нагадуй|remind|rappelle|recu[eé]rda|recu[eé]rdame|recordar)/i;
 
   async function saveEntry() {
     const t = text.trim();

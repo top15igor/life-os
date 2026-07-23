@@ -8,6 +8,7 @@ const STR: Record<string, any> = {
   en: { open: "Feedback", title: "Report / Suggest", sub: "Found a problem or have an idea — write to me. I read everything personally.", idea: "💡 Idea", bug: "🐞 Problem", other: "💬 Other", ph: "Your message…", send: "Send", sending: "Sending…", thanks: "Thank you! 🙏", thanksSub: "I'll read this personally.", done: "Done" },
   uk: { open: "Зворотний зв'язок", title: "Повідомити / Запропонувати", sub: "Знайшли проблему чи є ідея — напишіть. Я читаю все особисто.", idea: "💡 Ідея", bug: "🐞 Проблема", other: "💬 Інше", ph: "Ваше повідомлення…", send: "Надіслати", sending: "Надсилаю…", thanks: "Дякую! 🙏", thanksSub: "Я прочитаю це особисто.", done: "Готово" },
   fr: { open: "Retour", title: "Signaler / Suggérer", sub: "Un problème ou une idée — écris-moi. Je lis tout personnellement.", idea: "💡 Idée", bug: "🐞 Problème", other: "💬 Autre", ph: "Ton message…", send: "Envoyer", sending: "Envoi…", thanks: "Merci ! 🙏", thanksSub: "Je lirai cela personnellement.", done: "Fait" },
+  es: { open: "Comentarios", title: "Informar / Sugerir", sub: "¿Encontraste un problema o tienes una idea? Escríbeme. Lo leo todo personalmente.", idea: "💡 Idea", bug: "🐞 Problema", other: "💬 Otro", ph: "Tu mensaje…", send: "Enviar", sending: "Enviando…", thanks: "¡Gracias! 🙏", thanksSub: "Lo leeré personalmente.", done: "Listo" },
 };
 
 export default function Feedback({ locale, variant = "sidebar" }: { locale: string; variant?: "sidebar" | "drawer" }) {

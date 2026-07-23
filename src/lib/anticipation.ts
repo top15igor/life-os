@@ -6,9 +6,9 @@ import { logClaude } from "./usage";
 // записями + открытыми делами/обещаниями + повторяющимися напоминаниями. Возвращает
 // МАКСИМУМ одну своевременную, реально полезную подсказку — или null. Кэш на день.
 
-type Lang = "ru" | "en" | "uk" | "fr";
+type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
-const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "English", uk: "українській", fr: "français" };
+const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "English", uk: "українській", fr: "français", es: "español" };
 
 function localDay(off?: number | null): string {
   const ms = Date.now() + (typeof off === "number" ? off : 0) * 60000;

@@ -10,7 +10,7 @@ import InviteButton from "./InviteButton";
 import Feedback from "./Feedback";
 import type { Locale } from "@/lib/i18n";
 
-const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu" };
+const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu", es: "Menú" };
 
 export default function MobileNav({ navLabels, locale, isOwner, inviteLink, homeHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; homeHref?: string }) {
   const path = usePathname();

@@ -27,7 +27,7 @@ const T: Record<string, any> = {
 const STATUS_COLOR: Record<string, string> = { reading: "#0ea5e9", read: "#10b981" };
 
 export default function BooksPublic({ locale, ownerName, books }: { locale: string; ownerName: string | null; books: PublicBook[] }) {
-  const t = locale === "en" || locale === "fr" ? T.en : T.ru;
+  const t = locale === "en" || locale === "fr" || locale === "es" ? T.en : T.ru;
   const [tab, setTab] = useState<"all" | "read" | "reading">("all");
   const shown = tab === "all" ? books : books.filter((b) => b.status === tab);
 

@@ -8,6 +8,7 @@ const STR: Record<string, any> = {
   en: { title: "Set a PIN", text: "Protect your diary: web access will need a code. Now or later in Profile.", set: "Set", later: "Later", placeholder: "Choose a PIN (4–8 digits)", save: "Done", cancel: "Cancel", bad: "PIN must be 4–8 digits" },
   uk: { title: "Постав PIN-код", text: "Захисти щоденник: вхід у веб буде під кодом. Зараз або пізніше у «Профілі».", set: "Поставити", later: "Пізніше", placeholder: "Придумай PIN (4–8 цифр)", save: "Готово", cancel: "Скасувати", bad: "PIN — від 4 до 8 цифр" },
   fr: { title: "Définis un PIN", text: "Protège ton journal : l'accès web demandera un code. Maintenant ou plus tard dans Profil.", set: "Définir", later: "Plus tard", placeholder: "Choisis un PIN (4–8 chiffres)", save: "OK", cancel: "Annuler", bad: "Le PIN doit faire 4–8 chiffres" },
+  es: { title: "Crea un PIN", text: "Protege tu diario: el acceso web pedirá un código. Ahora o más tarde en «Perfil».", set: "Crear", later: "Más tarde", placeholder: "Elige un PIN (4–8 dígitos)", save: "Listo", cancel: "Cancelar", bad: "El PIN debe tener entre 4 y 8 dígitos" },
 };
 
 export default function PinPrompt({ hasPin, locale, hasEmail = false }: { hasPin: boolean; locale: string; hasEmail?: boolean }) {

@@ -46,6 +46,15 @@ const STR: Record<string, any> = {
     examples: ["Prendre rendez-vous chez le médecin", "Ne pas oublier d'appeler maman", "Envoyer le rapport demain"],
     emptyCta: "Écrire maintenant",
   },
+  es: {
+    open: "Pendientes", done: "Hechas", source: "entrada",
+    horizons: { today: "🔴 Hoy", week: "🟡 Esta semana", month: "🟢 Este mes" },
+    moveTo: "Mover a:", horizonHint: "La IA ya ordenó tus tareas por horizonte — ajústalas con los botones si algo no encaja.",
+    emptyTitle: "Aquí aparecerán tus tareas",
+    emptyHint: "Las tareas aparecen solas — cuando una entrada menciona «tengo que hacer…». Solo dile al bot o escribe en «Hoy», por ejemplo:",
+    examples: ["Tengo que pedir cita con el médico", "No olvidar llamar a mamá", "Enviar el informe mañana"],
+    emptyCta: "Escribir ahora",
+  },
 };
 
 export default function TasksList({

@@ -7,6 +7,7 @@ const STR: Record<string, any> = {
   en: { title: "Life balance", loading: "AI is looking at your life…", growing: "What's growing", neglected: "Neglected", evolution: "How it's changing", empty: "Fills in as entries accumulate — AI will show what's growing, what's neglected and where life is heading.", up: "up", down: "down", flat: "stable" },
   uk: { title: "Життєвий баланс", loading: "AI дивиться на твоє життя…", growing: "Що зараз росте", neglected: "Без уваги", evolution: "Як змінюється", empty: "Наповниться, коли накопичиться більше записів — AI покаже, що росте, що забуто й куди все рухається.", up: "росте", down: "знижується", flat: "стабільно" },
   fr: { title: "Équilibre de vie", loading: "L'IA observe ta vie…", growing: "Ce qui grandit", neglected: "Négligé", evolution: "Comment ça évolue", empty: "Se remplit avec les entrées — l'IA montrera ce qui grandit, ce qui est négligé et où va ta vie.", up: "monte", down: "baisse", flat: "stable" },
+  es: { title: "Balance de vida", loading: "La IA está mirando tu vida…", growing: "Lo que está creciendo", neglected: "Descuidado", evolution: "Cómo está cambiando", empty: "Se irá llenando a medida que se acumulen entradas — la IA mostrará qué está creciendo, qué está descuidado y hacia dónde va tu vida.", up: "sube", down: "baja", flat: "estable" },
 };
 
 function Header({ emoji, title }: { emoji: string; title: string }) {

@@ -605,14 +605,16 @@ const E: Record<Locale, Extras> = {
     ],
   },
 
-  // UK/FR наследуют контент (ru/en) ниже через guideExtras(); подписи разделов берём из ru/en.
+  // UK/FR/ES наследуют контент (ru/en) ниже через guideExtras(); подписи разделов берём из ru/en.
   uk: {} as Extras,
   fr: {} as Extras,
+  es: {} as Extras,
 };
 
-// UK ≈ RU, FR ≈ EN (контент новых разделов; основной гид остаётся полностью переведённым в guide.ts).
+// UK ≈ RU, FR ≈ EN, ES ≈ EN (контент новых разделов; основной гид остаётся полностью переведённым в guide.ts).
 E.uk = E.ru;
 E.fr = E.en;
+E.es = E.en;
 
 export function guideExtras(locale: Locale): Extras {
   return E[locale] || E.ru;
@@ -636,5 +638,5 @@ export function upcoming(locale: Locale): ChangeItem[] {
     { t: "Morning reminder", d: "A gentle push so you don't forget to log your day.", tag: "soon" },
     { t: "Family book", d: "A shared chronicle across generations.", tag: "soon" },
   ];
-  return locale === "en" || locale === "fr" ? en : ru;
+  return locale === "en" || locale === "fr" || locale === "es" ? en : ru;
 }

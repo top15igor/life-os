@@ -7,7 +7,7 @@ import { recallContext } from "./semanticMemory";
 import { getChatVoice, voiceLine } from "./chatVoice";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
-const ASK_LANG: Record<string, string> = { ru: "русском", en: "английском (English)", uk: "українській", fr: "французском (français)" };
+const ASK_LANG: Record<string, string> = { ru: "русском", en: "английском (English)", uk: "українській", fr: "французском (français)", es: "испанском (español)" };
 
 export async function askLife(userId: string, question: string, lang: string = "ru"): Promise<string> {
   const db = supabaseAdmin();

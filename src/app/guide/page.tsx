@@ -48,24 +48,27 @@ export default async function GuidePage() {
   const upcomingList = upcoming(locale);
   const botLink = await getBotLink();
 
-  const L = (en: string, uk: string, fr: string, ru: string) =>
-    locale === "en" ? en : locale === "uk" ? uk : locale === "fr" ? fr : ru;
+  const L = (en: string, uk: string, fr: string, ru: string, es: string) =>
+    locale === "en" ? en : locale === "uk" ? uk : locale === "fr" ? fr : locale === "es" ? es : ru;
 
   const tocLabel = L("Tap a section to expand it — right here, no jumping around.",
     "Натисни розділ — він розкриється тут же, без стрибків.",
     "Touche une section — elle s'ouvre ici, sans saut.",
-    "Нажми на раздел — он раскроется прямо здесь, без прыжков по странице.");
-  const aiHelpersLabel = L("Three AI helpers", "Три AI-помічники", "Trois assistants IA", "Три AI-помощника");
+    "Нажми на раздел — он раскроется прямо здесь, без прыжков по странице.",
+    "Toca una sección para expandirla — justo aquí, sin saltos.");
+  const aiHelpersLabel = L("Three AI helpers", "Три AI-помічники", "Trois assistants IA", "Три AI-помощника", "Tres ayudantes de IA");
   const aiHelpersSub = L("Analytics, Biographer, Lab — how they differ",
     "Аналітика, Біограф, Лабораторія — чим відрізняються",
     "Analytique, Biographe, Labo — leurs différences",
-    "«Что заметил AI», Биограф, Лаборатория — чем отличаются");
-  const botGuideLabel = L("Telegram bot guide", "Інструкція по Telegram-боту", "Guide du bot Telegram", "Инструкция по Telegram-боту");
+    "«Что заметил AI», Биограф, Лаборатория — чем отличаются",
+    "Análisis, Biógrafo, Laboratorio — en qué se diferencian");
+  const botGuideLabel = L("Telegram bot guide", "Інструкція по Telegram-боту", "Guide du bot Telegram", "Инструкция по Telegram-боту", "Guía del bot de Telegram");
   const botGuideSub = L("Everything the bot can do, step by step",
     "Все, що вміє бот, покроково",
     "Tout ce que le bot sait faire, pas à pas",
-    "Всё, что умеет бот, по шагам");
-  const readMore = L("Read more", "Детальніше", "En savoir plus", "Подробнее");
+    "Всё, что умеет бот, по шагам",
+    "Todo lo que puede hacer el bot, paso a paso");
+  const readMore = L("Read more", "Детальніше", "En savoir plus", "Подробнее", "Leer más");
 
   const items: AccItem[] = [
     {
