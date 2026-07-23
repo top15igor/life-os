@@ -11,11 +11,12 @@ const C = {
   ru: {
     nav_login: "Войти",
     back_to_app: "В приложение",
-    hero_badge: "Личная операционная система жизни",
-    hero_title: "Твоя жизнь заслуживает быть сохранённой",
+    hero_badge: "Фотографии хранят, как ты выглядел. LIFE OS — каким ты был.",
+    hero_title: "Сохранись.",
     hero_sub:
-      "Ты просто рассказываешь, как прошёл день — голосом или текстом. AI расшифровывает, раскладывает по смыслу и собирает из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
-    cta_create: "Создать аккаунт",
+      "Твоя жизнь — слишком ценная, чтобы её забыть. Просто расскажи, как прошёл день — голосом или текстом. AI расшифрует, поймёт и соберёт из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
+    hero_note: "чтобы было куда вернуться",
+    cta_create: "Начать сохраняться",
     cta_tg: "Открыть в Telegram",
     cta_hint: "Через Google или обычную почту — за минуту",
 
@@ -88,11 +89,12 @@ const C = {
   en: {
     nav_login: "Sign in",
     back_to_app: "Back to app",
-    hero_badge: "A personal operating system for your life",
-    hero_title: "Your life deserves to be saved",
+    hero_badge: "Photos keep how you looked. LIFE OS keeps who you were.",
+    hero_title: "Save yourself.",
     hero_sub:
-      "You just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
-    cta_create: "Create account",
+      "Your life is too precious to forget. Just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
+    hero_note: "so you have somewhere to return",
+    cta_create: "Start saving yourself",
     cta_tg: "Open in Telegram",
     cta_hint: "With Google or regular email — in a minute",
 
@@ -165,11 +167,12 @@ const C = {
   uk: {
     nav_login: "Увійти",
     back_to_app: "До застосунку",
-    hero_badge: "Особиста операційна система життя",
-    hero_title: "Твоє життя заслуговує бути збереженим",
+    hero_badge: "Фото зберігають, який ти був на вигляд. LIFE OS — яким ти був.",
+    hero_title: "Збережися.",
     hero_sub:
-      "Ти просто розповідаєш, як минув день — голосом або текстом. AI розшифровує, розкладає за змістом і збирає з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
-    cta_create: "Створити акаунт",
+      "Твоє життя — надто цінне, щоб його забути. Просто розкажи, як минув день — голосом або текстом. AI розшифрує, зрозуміє й збере з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
+    hero_note: "щоб було куди повернутися",
+    cta_create: "Почати зберігатися",
     cta_tg: "Відкрити в Telegram",
     cta_hint: "Через Google або звичайну пошту — за хвилину",
 
@@ -241,11 +244,12 @@ const C = {
   fr: {
     nav_login: "Se connecter",
     back_to_app: "Vers l'app",
-    hero_badge: "Un système d'exploitation personnel pour ta vie",
-    hero_title: "Ta vie mérite d'être sauvegardée",
+    hero_badge: "Les photos gardent ton apparence. LIFE OS garde qui tu étais.",
+    hero_title: "Sauvegarde-toi.",
     hero_sub:
-      "Tu racontes simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
-    cta_create: "Créer un compte",
+      "Ta vie est trop précieuse pour être oubliée. Raconte simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
+    hero_note: "pour avoir un endroit où revenir",
+    cta_create: "Commencer à te sauvegarder",
     cta_tg: "Ouvrir dans Telegram",
     cta_hint: "Avec Google ou un e-mail ordinaire — en une minute",
 
@@ -317,11 +321,12 @@ const C = {
   es: {
     nav_login: "Iniciar sesión",
     back_to_app: "Volver a la app",
-    hero_badge: "Un sistema operativo personal para tu vida",
-    hero_title: "Tu vida merece ser guardada",
+    hero_badge: "Las fotos guardan cómo te veías. LIFE OS guarda quién eras.",
+    hero_title: "Guárdate.",
     hero_sub:
-      "Solo cuentas cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",
-    cta_create: "Crear cuenta",
+      "Tu vida es demasiado valiosa para olvidarla. Solo cuenta cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",
+    hero_note: "para tener adónde volver",
+    cta_create: "Empezar a guardarte",
     cta_tg: "Abrir en Telegram",
     cta_hint: "Con Google o correo normal — en un minuto",
 
@@ -506,7 +511,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>
         </div>
-        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 16 }}>{t.cta_hint}</div>}
+        {(t as any).hero_note && <div style={{ fontSize: 14, color: "var(--text-2)", fontStyle: "italic", marginTop: 13, fontFamily: "var(--font-serif, Georgia, serif)" }}>— {(t as any).hero_note}</div>}
+        {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 10 }}>{t.cta_hint}</div>}
       </div>
 
       {/* Idea */}
