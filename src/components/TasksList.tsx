@@ -11,7 +11,7 @@ const HORIZONS: Horizon[] = ["today", "week", "month"];
 
 const STR: Record<string, any> = {
   ru: {
-    open: "Открытые", done: "Выполненные", source: "запись",
+    open: "Открытые", done: "Выполненные", source: "запись", all: "Все", emptyFilter: "В этом горизонте пусто 🎉",
     horizons: { today: "🔴 Сегодня", week: "🟡 На неделю", month: "🟢 На месяц" },
     moveTo: "Перенести:", horizonHint: "AI сам разложил задачи по горизонтам — перетащи кнопками, если что-то не туда.",
     emptyTitle: "Здесь будут твои задачи",
@@ -20,7 +20,7 @@ const STR: Record<string, any> = {
     emptyCta: "Записать сейчас",
   },
   en: {
-    open: "Open", done: "Done", source: "entry",
+    open: "Open", done: "Done", source: "entry", all: "All", emptyFilter: "Nothing in this horizon 🎉",
     horizons: { today: "🔴 Today", week: "🟡 This week", month: "🟢 This month" },
     moveTo: "Move to:", horizonHint: "AI sorted your tasks into horizons — nudge them with the buttons if something's off.",
     emptyTitle: "Your tasks will appear here",
@@ -29,7 +29,7 @@ const STR: Record<string, any> = {
     emptyCta: "Write now",
   },
   uk: {
-    open: "Відкриті", done: "Виконані", source: "запис",
+    open: "Відкриті", done: "Виконані", source: "запис", all: "Усі", emptyFilter: "У цьому горизонті порожньо 🎉",
     horizons: { today: "🔴 Сьогодні", week: "🟡 На тиждень", month: "🟢 На місяць" },
     moveTo: "Перенести:", horizonHint: "AI сам розклав завдання по горизонтах — перетягни кнопками, якщо щось не туди.",
     emptyTitle: "Тут будуть твої завдання",
@@ -38,7 +38,7 @@ const STR: Record<string, any> = {
     emptyCta: "Записати зараз",
   },
   fr: {
-    open: "En cours", done: "Terminées", source: "entrée",
+    open: "En cours", done: "Terminées", source: "entrée", all: "Toutes", emptyFilter: "Rien dans cet horizon 🎉",
     horizons: { today: "🔴 Aujourd'hui", week: "🟡 Cette semaine", month: "🟢 Ce mois" },
     moveTo: "Déplacer :", horizonHint: "L'IA a trié tes tâches par horizon — ajuste avec les boutons si besoin.",
     emptyTitle: "Tes tâches apparaîtront ici",
@@ -47,7 +47,7 @@ const STR: Record<string, any> = {
     emptyCta: "Écrire maintenant",
   },
   es: {
-    open: "Pendientes", done: "Hechas", source: "entrada",
+    open: "Pendientes", done: "Hechas", source: "entrada", all: "Todas", emptyFilter: "Nada en este horizonte 🎉",
     horizons: { today: "🔴 Hoy", week: "🟡 Esta semana", month: "🟢 Este mes" },
     moveTo: "Mover a:", horizonHint: "La IA ya ordenó tus tareas por horizonte — ajústalas con los botones si algo no encaja.",
     emptyTitle: "Aquí aparecerán tus tareas",
@@ -73,6 +73,11 @@ export default function TasksList({
   const s = STR[locale] || STR.ru;
   const [items, setItems] = useState<Task[]>(tasks);
   const [hz, setHz] = useState<Record<string, Horizon>>(horizons);
+  // Стартовый фильтр — «Сегодня» (как в лучших todo); если сегодня пусто — «Все».
+  const [filter, setFilter] = useState<Horizon | "all" | "done">(() => {
+    const hasToday = tasks.some((t) => !t.done && (horizons[t.id] || "week") === "today");
+    return hasToday ? "today" : "all";
+  });
 
   function toggle(id: string, done: boolean) {
     setItems((prev) => prev.map((t) => (t.id === id ? { ...t, done } : t)));
@@ -110,6 +115,11 @@ export default function TasksList({
   const open = items.filter((t) => !t.done);
   const done = items.filter((t) => t.done);
   const hzOf = (id: string): Horizon => hz[id] || "week";
+  const counts: Record<Horizon, number> = {
+    today: open.filter((t) => hzOf(t.id) === "today").length,
+    week: open.filter((t) => hzOf(t.id) === "week").length,
+    month: open.filter((t) => hzOf(t.id) === "month").length,
+  };
 
   const Row = (t: Task) => (
     <div key={t.id} className="card" style={{ marginBottom: 8, padding: "12px 14px" }}>
@@ -129,44 +139,65 @@ export default function TasksList({
           </Link>
         )}
       </div>
+      {/* Перенос: показываем только ДРУГИЕ горизонты (текущий и так виден по фильтру/группе) */}
       {!t.done && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 9, paddingLeft: 31 }}>
-          {HORIZONS.map((h) => {
-            const on = hzOf(t.id) === h;
-            return (
-              <button key={h} onClick={() => move(t.id, h)}
-                style={{ fontSize: 11.5, padding: "3px 10px", borderRadius: 99, cursor: "pointer", border: on ? "1px solid var(--accent)" : "1px solid var(--border)", background: on ? "var(--accent-bg)" : "transparent", color: on ? "var(--accent-text)" : "var(--text-3)", fontWeight: on ? 600 : 400 }}>
-                {s.horizons[h]}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 8, paddingLeft: 31 }}>
+          <span style={{ fontSize: 11, color: "var(--text-3)" }}>{s.moveTo}</span>
+          {HORIZONS.filter((h) => h !== hzOf(t.id)).map((h) => (
+            <button key={h} onClick={() => move(t.id, h)}
+              style={{ fontSize: 11.5, padding: "3px 10px", borderRadius: 99, cursor: "pointer", border: "1px solid var(--border)", background: "transparent", color: "var(--text-3)" }}>
+              {s.horizons[h]}
+            </button>
+          ))}
         </div>
       )}
     </div>
   );
 
+  // Фильтры-вкладки (как в лучших todo): Сегодня / Неделя / Месяц / Все / Выполненные.
+  const chip = (on: boolean): any => ({
+    display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 99, cursor: "pointer",
+    border: on ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+    background: on ? "var(--accent-bg)" : "var(--surface)",
+    color: on ? "var(--accent-text)" : "var(--text-2)", fontSize: 13, fontWeight: on ? 600 : 400,
+  });
+  const shown = filter === "done" ? done : filter === "all" ? open : open.filter((t) => hzOf(t.id) === filter);
+
   return (
     <div>
-      {open.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5 }}>{s.horizonHint}</div>
-          {HORIZONS.map((h) => {
-            const group = open.filter((t) => hzOf(t.id) === h);
-            if (!group.length) return null;
-            return (
-              <div key={h} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", marginBottom: 9 }}>{s.horizons[h]} · {group.length}</div>
-                {group.map(Row)}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {done.length > 0 && (
-        <div>
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 9 }}>{s.done} · {done.length}</div>
-          {done.map(Row)}
-        </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 14 }}>
+        {HORIZONS.map((h) => (
+          <button key={h} onClick={() => setFilter(h)} style={chip(filter === h)}>
+            {s.horizons[h]}<span style={{ opacity: 0.7 }}>{counts[h]}</span>
+          </button>
+        ))}
+        <button onClick={() => setFilter("all")} style={chip(filter === "all")}>
+          {s.all}<span style={{ opacity: 0.7 }}>{open.length}</span>
+        </button>
+        {done.length > 0 && (
+          <button onClick={() => setFilter("done")} style={chip(filter === "done")}>
+            ✅ {s.done}<span style={{ opacity: 0.7 }}>{done.length}</span>
+          </button>
+        )}
+      </div>
+
+      {filter === "all" && <div style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5 }}>{s.horizonHint}</div>}
+
+      {filter === "all" ? (
+        HORIZONS.map((h) => {
+          const group = open.filter((t) => hzOf(t.id) === h);
+          if (!group.length) return null;
+          return (
+            <div key={h} style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", marginBottom: 9 }}>{s.horizons[h]} · {group.length}</div>
+              {group.map(Row)}
+            </div>
+          );
+        })
+      ) : shown.length === 0 ? (
+        <div className="card" style={{ color: "var(--text-2)", fontSize: 13.5 }}>{s.emptyFilter}</div>
+      ) : (
+        shown.map(Row)
       )}
     </div>
   );
