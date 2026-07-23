@@ -19,7 +19,7 @@ import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
-import { startAcquaint, acquaintReply, acquaintSkip, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
+import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY } from "@/lib/botKeyboard";
@@ -239,15 +239,26 @@ function milestoneFor(count: number, streak: number, lang: string): string | nul
 
 // Клавиатура (KB, mainKeyboard) вынесена в @/lib/botKeyboard, чтобы её
 // можно было переиспользовать в кронах и разовой рассылке.
-const SKIP_BTN: Record<string, string> = { ru: "Пропустить →", en: "Skip →", uk: "Пропустити →", fr: "Passer →" };
+// «Следующий вопрос →» — движение вперёд по вопросам знакомства (замена «Пропустить»).
+const NEXT_BTN: Record<string, string> = { ru: "Следующий вопрос →", en: "Next question →", uk: "Наступне питання →", fr: "Question suivante →" };
+// Компактные кнопки навигации, когда пользователь уже листает вопросы (пред/след).
+const NAV_PREV: Record<string, string> = { ru: "← Пред.", en: "← Prev", uk: "← Попер.", fr: "← Préc." };
+const NAV_NEXT: Record<string, string> = { ru: "След. →", en: "Next →", uk: "Наст. →", fr: "Suiv. →" };
 // «На сегодня хватит» — мягкая пауза с сохранением прогресса (не «стоп»).
 const PAUSE_BTN: Record<string, string> = { ru: "😴 На сегодня хватит", en: "😴 Enough for today", uk: "😴 На сьогодні досить", fr: "😴 Assez pour aujourd'hui" };
-// Клавиатура под вопросом знакомства: быстрые чипы-ответы (если есть) + «Пропустить» + «Пауза».
+// Клавиатура под вопросом знакомства. nav:
+//  "single" — обычный вид: одна кнопка «Следующий вопрос →» + «Пауза»;
+//  "both"   — пользователь листает вопросы: «← Пред.» и «След. →» + «Пауза».
 // Постоянная нижняя клавиатура при этом остаётся.
-function acqMarkup(lang: string, chips?: { label: string; value: string }[]) {
+function acqMarkup(lang: string, chips?: { label: string; value: string }[], nav: "single" | "both" = "single") {
   const rows: any[] = [];
   for (const c of chips || []) rows.push([{ text: c.label, callback_data: `acq:opt:${c.value}` }]);
-  rows.push([{ text: SKIP_BTN[lang] || SKIP_BTN.ru, callback_data: "acq:skip" }, { text: PAUSE_BTN[lang] || PAUSE_BTN.ru, callback_data: "acq:pause" }]);
+  if (nav === "both") {
+    rows.push([{ text: NAV_PREV[lang] || NAV_PREV.ru, callback_data: "acq:prev" }, { text: NAV_NEXT[lang] || NAV_NEXT.ru, callback_data: "acq:next" }]);
+    rows.push([{ text: PAUSE_BTN[lang] || PAUSE_BTN.ru, callback_data: "acq:pause" }]);
+  } else {
+    rows.push([{ text: NEXT_BTN[lang] || NEXT_BTN.ru, callback_data: "acq:next" }, { text: PAUSE_BTN[lang] || PAUSE_BTN.ru, callback_data: "acq:pause" }]);
+  }
   return { reply_markup: { inline_keyboard: rows } };
 }
 const acqInline = (lang: string) => acqMarkup(lang);
@@ -474,8 +485,9 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
-    } else if (data === "acq:skip" && cqChat) {
-      // «Пропустить →» в знакомстве: задаём следующий вопрос без давления.
+    } else if ((data === "acq:next" || data === "acq:skip") && cqChat) {
+      // «Следующий вопрос →»: шаг вперёд по вопросам (или генерация нового на живом крае).
+      // acq:skip оставлен для старых сообщений с прежней кнопкой «Пропустить».
       try {
         const db = supabaseAdmin();
         const { data: u } = await db.from("users").select("id, name, lang").eq("chat_id", cqChat).maybeSingle();
@@ -483,8 +495,20 @@ export async function POST(req: NextRequest) {
         if (u && await isAcquainting((u as any).id)) {
           const lng = pickLang((u as any).lang);
           await sendChatAction(cqChat, "typing");
-          const next = await acquaintSkip((u as any).id, (u as any).name ?? null, lng);
-          await sendMessage(cqChat, mdToTelegram(next) || "…", acqInline(lng));
+          const { text } = await acquaintNextQ((u as any).id, (u as any).name ?? null, lng);
+          await sendMessage(cqChat, mdToTelegram(text) || "…", acqMarkup(lng, undefined, "both"));
+        }
+      } catch { await answerCallback(cq.id); }
+    } else if (data === "acq:prev" && cqChat) {
+      // «← Пред.»: шаг назад по уже заданным вопросам (без генерации).
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u && await isAcquainting((u as any).id)) {
+          const lng = pickLang((u as any).lang);
+          const { text } = await acquaintPrevQ((u as any).id, lng);
+          await sendMessage(cqChat, mdToTelegram(text) || "…", acqMarkup(lng, undefined, "both"));
         }
       } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("acq:opt:") && cqChat) {
