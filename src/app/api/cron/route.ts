@@ -154,6 +154,15 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
   }
 }
 
+// ⏳ Заголовок при доставке капсулы времени (тело — то, что написал пользователь).
+const CAPSULE_DELIVER: Record<Lang, (created: string) => string> = {
+  ru: (d) => `⏳ <b>Капсула времени</b>\nТы запечатал это письмо ${d}. Вот оно — точно в срок:`,
+  en: (d) => `⏳ <b>Time capsule</b>\nYou sealed this letter on ${d}. Here it is — right on time:`,
+  uk: (d) => `⏳ <b>Капсула часу</b>\nТи запечатав цей лист ${d}. Ось він — точно в строк:`,
+  fr: (d) => `⏳ <b>Capsule temporelle</b>\nTu as scellé cette lettre le ${d}. La voici — pile à l'heure :`,
+  es: (d) => `⏳ <b>Cápsula del tiempo</b>\nSellaste esta carta el ${d}. Aquí está — justo a tiempo:`,
+};
+
 const MOOD_ASK: Record<Lang, string> = {
   ru: "🌙 Как настроение сегодня? Отметь одним тапом — так я лучше пойму, что на тебя влияет.",
   en: "🌙 How's your mood today? Tap once — it helps me see what affects you.",
@@ -270,7 +279,7 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0 };
 
   for (const u of users || []) {
     try {
@@ -279,6 +288,19 @@ export async function GET(req: NextRequest) {
       const m = MSG[lang];
       const prefs = normalizeMorningPrefs(u.morning_prefs);
       const lp = localParts(prefs.tz, nowD);
+
+      // ⏳ Доставка капсул времени — по назначенному дню, независимо от тихих дней
+      // (это не пуш-напоминание, а письмо, которое пользователь сам запланировал).
+      try {
+        const { data: caps } = await db.from("time_capsules").select("id, body, created_at").eq("user_id", u.id).eq("delivered", false).lte("deliver_on", today).limit(20);
+        for (const c of (caps || []) as any[]) {
+          const created = String(c.created_at || "").slice(0, 10);
+          await sendMessage(u.chat_id, `${(CAPSULE_DELIVER[lang] || CAPSULE_DELIVER.ru)(created)}\n\n${escHtml(c.body || "")}`);
+          await db.from("time_capsules").update({ delivered: true, delivered_at: new Date().toISOString() }).eq("id", c.id);
+          stats.capsules++;
+        }
+      } catch { /* таблицы капсул может не быть — мягко пропускаем */ }
+
       if (prefs.quietDays.includes(lp.weekday)) continue; // тихий день — никаких пушей
       const ev = prefs.evening;
       // Недельный AI-итог — в выбранный пользователем день (по умолчанию воскресенье).
