@@ -5,10 +5,16 @@
 // ============================================================
 
 export const KB: Record<string, { acquaint: string; diary: string; tasks: string; motiv: string; invite: string }> = {
-  ru: { acquaint: "🌱 Давай познакомимся", diary: "📖 Дневник", tasks: "✅ Мои задачи", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга" },
-  en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "✅ My tasks", motiv: "🔥 My motivation", invite: "🤝 Invite a friend" },
-  uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "✅ Мої завдання", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга" },
-  fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "✅ Mes tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
+  ru: { acquaint: "🌱 Давай познакомимся", diary: "📖 Дневник", tasks: "🎯 Задачи", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга" },
+  en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "🎯 Tasks", motiv: "🔥 My motivation", invite: "🤝 Invite a friend" },
+  uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "🎯 Завдання", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга" },
+  fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "🎯 Tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
+};
+
+// Прежняя подпись кнопки задач («✅ Мои задачи» и др.) — чтобы распознавать
+// нажатие у пользователей со старой (закэшированной) клавиатурой.
+export const TASKS_LABEL_LEGACY: Record<string, string> = {
+  ru: "✅ Мои задачи", en: "✅ My tasks", uk: "✅ Мої завдання", fr: "✅ Mes tâches",
 };
 
 // Лестница близости: подпись кнопки знакомства эволюционирует по мере роста

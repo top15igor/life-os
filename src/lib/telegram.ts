@@ -173,12 +173,12 @@ export async function sendMessage(chatId: number, text: string, extra?: Record<s
 }
 
 // Заменить текст сообщения (и убрать инлайн-кнопки) — напр. после подтверждения.
-export async function editMessageText(chatId: number, messageId: number, text: string): Promise<void> {
+export async function editMessageText(chatId: number, messageId: number, text: string, extra?: Record<string, any>): Promise<void> {
   try {
     await fetch(`${API}/editMessageText`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
     });
   } catch { /* not critical */ }
 }
