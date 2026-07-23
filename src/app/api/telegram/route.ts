@@ -16,7 +16,7 @@ import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggle
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref, linkTelegramToWebUser } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
-import { getStreak, getEntryCount, getOnThisDay, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
+import { getStreak, getEntryCount, getOnThisDay, getDayMemories, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
@@ -410,7 +410,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
     const k = KB[lang];
     if (text === k.diary || (DIARY_LABEL_LEGACY[lang] || []).includes(text)) return "diary";
     if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
-    if (text === k.guide || text === GUIDE_LABEL_LEGACY[lang]) return "guide";
+    if (text === k.guide || (GUIDE_LABEL_LEGACY[lang] || []).includes(text)) return "guide";
     if (text === k.invite) return "invite";
   }
   return null;
@@ -425,6 +425,42 @@ const HELP: Record<string, (o: string) => string> = {
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
+// 📸 «В этот день» — воспоминания за этот календарный день.
+type Mem = { date: string; label: "year" | "years" | "month"; n: number; text: string };
+const plYearRu = (n: number) => { const a = n % 100, b = n % 10; if (a > 10 && a < 20) return "лет"; if (b === 1) return "год"; if (b >= 2 && b <= 4) return "года"; return "лет"; };
+const MEMORIES: Record<string, { title: string; empty: string; open: string; ago: (m: Mem) => string }> = {
+  ru: {
+    title: "📸 <b>В этот день</b>",
+    empty: "За этот день у тебя пока нет записей из прошлого. Но всё впереди — сегодняшняя запись станет воспоминанием через год 🌱",
+    open: "📖 Открыть дневник",
+    ago: (m) => m.label === "month" ? "🗓 <b>Месяц назад</b>" : m.n === 1 ? "🗓 <b>Год назад</b>" : `🗓 <b>${m.n} ${plYearRu(m.n)} назад</b>`,
+  },
+  en: {
+    title: "📸 <b>On this day</b>",
+    empty: "No entries from the past for this day yet. But it's coming — today's entry becomes a memory a year from now 🌱",
+    open: "📖 Open diary",
+    ago: (m) => m.label === "month" ? "🗓 <b>A month ago</b>" : m.n === 1 ? "🗓 <b>A year ago</b>" : `🗓 <b>${m.n} years ago</b>`,
+  },
+  uk: {
+    title: "📸 <b>У цей день</b>",
+    empty: "За цей день у тебе поки немає записів з минулого. Але все попереду — сьогоднішній запис стане спогадом за рік 🌱",
+    open: "📖 Відкрити щоденник",
+    ago: (m) => m.label === "month" ? "🗓 <b>Місяць тому</b>" : m.n === 1 ? "🗓 <b>Рік тому</b>" : `🗓 <b>${m.n} р. тому</b>`,
+  },
+  fr: {
+    title: "📸 <b>Ce jour-là</b>",
+    empty: "Pas encore d'entrées du passé pour ce jour. Mais ça vient — l'entrée d'aujourd'hui deviendra un souvenir dans un an 🌱",
+    open: "📖 Ouvrir le journal",
+    ago: (m) => m.label === "month" ? "🗓 <b>Il y a un mois</b>" : m.n === 1 ? "🗓 <b>Il y a un an</b>" : `🗓 <b>Il y a ${m.n} ans</b>`,
+  },
+  es: {
+    title: "📸 <b>En este día</b>",
+    empty: "Aún no tienes entradas del pasado para este día. Pero ya llegará — la entrada de hoy será un recuerdo dentro de un año 🌱",
+    open: "📖 Abrir diario",
+    ago: (m) => m.label === "month" ? "🗓 <b>Hace un mes</b>" : m.n === 1 ? "🗓 <b>Hace un año</b>" : `🗓 <b>Hace ${m.n} años</b>`,
+  },
+};
+
 // «🪷 CRM твоей жизни» — краткое описание + переход на портал (главный вход).
 const CRM_INTRO: Record<string, string> = {
   ru: "🪷 <b>CRM твоей жизни</b>\n\nLIFE OS — это CRM для управления твоей жизнью. Всё о тебе в одном месте: записи, люди, цели и задачи, финансы, память и Книга жизни. Я собираю и раскладываю по полочкам, чтобы ты видел свою жизнь целиком и вёл её осознанно.",
@@ -1242,6 +1278,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Ассистент: /ask <вопрос> или /q <вопрос> — отвечает по записям, НЕ сохраняет.
+  // 📸 «В этот день» — воспоминания за этот календарный день из прошлых лет.
+  if (msg.text === "/memories" || msg.text === "/vetotden" || (typeof msg.text === "string" && /^(воспоминания|в этот день|recuerdos|memories|souvenirs|спогади)$/i.test(msg.text.trim()))) {
+    const lang = langOf(user, msg);
+    await sendChatAction(chatId, "typing");
+    const today = new Date().toISOString().slice(0, 10);
+    const mems = await getDayMemories(user.id, today);
+    const M = MEMORIES[lang] || MEMORIES.ru;
+    if (!mems.length) {
+      await sendMessage(chatId, M.empty);
+    } else {
+      const lines = mems.slice(0, 8).map((m) => `${M.ago(m)}\n«${esc(m.text)}»`).join("\n\n");
+      await sendMessage(chatId, `${M.title}\n\n${lines}`, { reply_markup: { inline_keyboard: [[{ text: M.open, url: `${origin}/u/${user.token}?next=/diary` }]] } });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   if (msg.text === "/ask" || msg.text === "/q" || (typeof msg.text === "string" && (msg.text.startsWith("/ask ") || msg.text.startsWith("/q ")))) {
     const q = (msg.text || "").replace(/^\/(ask|q)\s*/, "").trim();
     if (!q) {
