@@ -10,17 +10,21 @@ function destFrom(req: NextRequest): string {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
 }
 
-// Есть ли уже валидная сессия в cookie (session_secret или legacy token)?
-async function hasSession(req: NextRequest): Promise<boolean> {
+// id пользователя текущей сессии в cookie (session_secret или legacy token), либо null.
+async function sessionUserId(req: NextRequest): Promise<string | null> {
   const c = req.cookies.get("lifeos_token")?.value;
-  if (!c) return false;
+  if (!c) return null;
   const db = supabaseAdmin();
   try {
     const { data } = await db.from("users").select("id").eq("session_secret", c).maybeSingle();
-    if (data) return true;
+    if (data) return (data as any).id;
   } catch {}
-  const { data: legacy } = await db.from("users").select("id").eq("token", c).maybeSingle();
-  return !!legacy;
+  try {
+    const { data: legacy } = await db.from("users").select("id").eq("token", c).maybeSingle();
+    return (legacy as any)?.id || null;
+  } catch {
+    return null;
+  }
 }
 
 // Вход по ОДНОРАЗОВОЙ ссылке из бота: /u/<token>.
@@ -32,13 +36,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   const db = supabaseAdmin();
   const { data: user } = await db.from("users").select("id, token, session_secret").eq("token", token).maybeSingle();
 
+  // id текущей сессии в браузере (нужно и для guard'а, и для ветки «токен сгорел»).
+  const curId = await sessionUserId(req);
+
   if (!user) {
     // Токен «сгорел» (уже использован) или неверен. Если человек уже вошёл — просто ведём по next,
     // чтобы старые ссылки из истории бота не выкидывали на экран входа.
-    if (await hasSession(req)) {
+    if (curId) {
       return NextResponse.redirect(new URL(destFrom(req), req.url));
     }
     return NextResponse.redirect(new URL("/login?e=link", req.url));
+  }
+
+  // Защита от «переслал ссылку — чужой молча зашёл в твой аккаунт»: если в браузере
+  // уже есть сессия ДРУГОГО пользователя, не переключаем тихо — просим подтвердить.
+  // (?sw=1 приходит со страницы подтверждения — тогда переключаем.)
+  const confirmed = req.nextUrl.searchParams.get("sw") === "1";
+  if (curId && curId !== user.id && !confirmed) {
+    return NextResponse.redirect(new URL(`/switch?t=${encodeURIComponent(token)}`, req.url));
   }
 
   // Cookie = session_secret (стабильный ключ сессии). Если колонки нет (миграция не запущена) —

@@ -1325,8 +1325,12 @@ export async function POST(req: NextRequest) {
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
     else if (ba === "diary") {
-      // «🪷 CRM твоей жизни»: краткое описание + переход на портал.
-      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, url: link }]] } });
+      // «🪷 CRM твоей жизни»: это ОПИСАНИЕ, которое часто пересылают друзьям.
+      // Кнопка ведёт на ПУБЛИЧНУЮ ссылку-приглашение /i/<username>, а НЕ на личный
+      // вход /u/<token>: иначе переслал сообщение = отдал доступ к своему дневнику.
+      // Владелец (уже вошёл) по ней попадёт на свою ленту, друг — на приглашение.
+      const crmLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
+      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, url: crmLink }]] } });
     }
     else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     return NextResponse.json({ ok: true });
