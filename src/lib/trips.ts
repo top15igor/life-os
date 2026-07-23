@@ -95,11 +95,13 @@ export async function getTripSuggestions(userId: string, hiddenNames?: Set<strin
       dismissed = new Set((dm || []).map((d: any) => d.key));
     } catch {}
 
-    // Группируем записи по месту.
+    // Группируем записи по месту. Предлагаем только имена собственные
+    // (с заглавной буквы): «Бильбао» — да, «пляж»/«детская площадка» — нет.
     const byPlace = new Map<string, Entry[]>();
     for (const e of entries) {
       for (const name of placesOf(e)) {
         if (hidden.has(name)) continue;
+        if (!/^[A-ZА-ЯЁІЇЄҐ]/.test(name)) continue;
         const arr = byPlace.get(name);
         if (arr) arr.push(e);
         else byPlace.set(name, [e]);
