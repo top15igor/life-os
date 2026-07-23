@@ -16,7 +16,7 @@ const PRESET_VIS: Record<string, string[] | undefined> = {
   focus: ["book", "habit", "context", "changes", "focus", "stories", "tasks"],
   trace: ["book", "habit", "trace", "promises", "traceWeek", "context", "gratitude"],
   balance: ["book", "habit", "context", "metrics", "changes", "gratitude", "trace"],
-  minimal: ["book", "habit", "focus", "gratitude"],
+  minimal: ["book", "habit", "gratitude"],
 };
 
 const DEFAULT_BLOCKS = ["book", "habit", "trace", "promises", "focus", "context", "gratitude"];
@@ -126,17 +126,7 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
   const [tab, setTab] = useState(0);
 
   const t0 = T0[locale] || T0.ru;
-  const inBookWord = (({ ru: "в книге", uk: "у книзі", en: "in your book", fr: "dans ton livre", es: "en tu libro" }) as Record<string, string>)[locale] || "в книге";
-  const dashWord = (({ ru: "Открыть дашборд", uk: "Відкрити дашборд", en: "Open dashboard", fr: "Ouvrir le tableau de bord", es: "Abrir panel" }) as Record<string, string>)[locale] || "Открыть дашборд";
   const bq = (({ ru: { label: "Вопрос для книги", cta: "Записать" }, en: { label: "A question for your book", cta: "Note" }, uk: { label: "Питання для книги", cta: "Записати" }, fr: { label: "Une question pour ton livre", cta: "Noter" }, es: { label: "Una pregunta para tu libro", cta: "Anotar" } }) as Record<string, { label: string; cta: string }>)[locale] || { label: "Вопрос для книги", cta: "Записать" };
-  const entriesWord = (n: number) => {
-    if (locale === "en") return n === 1 ? "entry" : "entries";
-    if (locale === "fr") return n === 1 ? "entrée" : "entrées";
-    if (locale === "es") return n === 1 ? "entrada" : "entradas";
-    const a = Math.abs(n) % 100, b = a % 10;
-    if (locale === "uk") return a > 10 && a < 20 ? "записів" : b === 1 ? "запис" : b > 1 && b < 5 ? "записи" : "записів";
-    return a > 10 && a < 20 ? "записей" : b === 1 ? "запись" : b > 1 && b < 5 ? "записи" : "записей";
-  };
   const heroPool = HEROLINES[locale] || HEROLINES.ru;
   const quotePool = QUOTES[locale] || QUOTES.ru;
   const doy = data.dayOfYear || 0;
@@ -215,27 +205,6 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
             <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
           ))}
         </div>
-        {curPreset === "minimal" && (data.habit || (data.book && data.book.entries > 0)) && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", rowGap: 6 }}>
-            {data.habit && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 500 }}>
-                <span style={{ fontSize: 15, filter: data.habit.streak > 0 ? "none" : "grayscale(1)", opacity: data.habit.streak > 0 ? 1 : 0.5 }}>🔥</span>
-                {data.habit.streak} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{t0.daysInRow}</span>
-              </span>
-            )}
-            {data.book && data.book.entries > 0 && (
-              <>
-                <span style={{ color: "var(--text-3)" }}>·</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 500 }}>
-                  <i className="ti ti-book-2" style={{ fontSize: 15, color: "var(--accent)" }} />{data.book.entries} {entriesWord(data.book.entries)} <span style={{ color: "var(--text-2)", fontWeight: 400 }}>{inBookWord}</span>
-                </span>
-              </>
-            )}
-            <Link href="/health" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--accent-text)", fontWeight: 600, textDecoration: "none", padding: "6px 12px", borderRadius: 9, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
-              <i className="ti ti-chart-histogram" style={{ fontSize: 15 }} />{dashWord}<i className="ti ti-chevron-right" style={{ fontSize: 14 }} />
-            </Link>
-          </div>
-        )}
       </div>
 
       {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
