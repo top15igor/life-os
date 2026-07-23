@@ -163,10 +163,11 @@ async function readState(userId: string): Promise<St> {
   }
 }
 
-async function writeState(userId: string, prefs: any, patch: { active?: boolean; pct?: number }): Promise<void> {
+async function writeState(userId: string, prefs: any, patch: { active?: boolean; pct?: number; nav?: number }): Promise<void> {
   const next = { ...prefs };
   if (patch.active !== undefined) next.acquaintActive = patch.active;
   if (patch.pct !== undefined) next.acquaintPct = Math.max(0, Math.min(100, Math.floor(patch.pct)));
+  if (patch.nav !== undefined) next.acquaintNav = Math.max(0, Math.floor(patch.nav));
   try {
     await supabaseAdmin().from("users").update({ morning_prefs: next }).eq("id", userId);
   } catch { /* нет колонки — фича мягко деградирует */ }
@@ -367,16 +368,60 @@ ${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
   }
 }
 
-// Пользователь нажал «Пропустить →»: не давим, просто задаём следующий вопрос
-// (без реакции и без сохранения). Прогресс слегка растёт — движение вперёд.
-const SKIP_LEAD: Record<string, string> = {
-  ru: "Окей, пропустим 🙂", en: "Okay, let's skip that 🙂", uk: "Гаразд, пропустимо 🙂", fr: "D'accord, on saute ça 🙂",
+// Навигация по вопросам знакомства: «Следующий вопрос →» и «← Пред.».
+// Вопросы — это assistant-реплики в companion_messages. Курсор acquaintNav хранит,
+// на сколько вопросов назад от «живого края» сейчас смотрит пользователь (0 = последний).
+const NEXT_LEAD: Record<string, string> = {
+  ru: "Хорошо, дальше 🙂", en: "Sure, next one 🙂", uk: "Добре, далі 🙂", fr: "D'accord, la suivante 🙂",
 };
-export async function acquaintSkip(userId: string, name: string | null, lang = "ru"): Promise<string> {
+
+// Список последних assistant-вопросов (по возрастанию времени).
+async function assistantTurns(userId: string, limit = 40): Promise<string[]> {
+  try {
+    const { data } = await supabaseAdmin()
+      .from("companion_messages").select("content, created_at")
+      .eq("user_id", userId).eq("role", "assistant").order("created_at", { ascending: false }).limit(limit);
+    return ((data as any[]) || []).map((r) => (r.content || "").trim()).filter(Boolean).reverse();
+  } catch {
+    return [];
+  }
+}
+
+// Сбросить курсор навигации на живой край (после обычного ответа пользователя).
+export async function resetAcquaintNav(userId: string): Promise<void> {
+  const { prefs } = await readState(userId);
+  if ((prefs.acquaintNav || 0) !== 0) await writeState(userId, prefs, { nav: 0 });
+}
+
+// «Следующий вопрос →»: если стоим в прошлом (nav>0) — шаг к живому краю (показываем
+// уже заданный следующий вопрос без генерации); если на краю — генерируем новый.
+export async function acquaintNextQ(userId: string, name: string | null, lang = "ru"): Promise<{ text: string; hasPrev: boolean }> {
+  const { prefs } = await readState(userId);
+  const nav = prefs.acquaintNav || 0;
+  if (nav > 0) {
+    const newNav = nav - 1;
+    await writeState(userId, prefs, { nav: newNav });
+    const turns = await assistantTurns(userId);
+    const text = turns[turns.length - 1 - newNav] || "";
+    return { text, hasPrev: turns.length > 1 };
+  }
   const next = await genTurn(userId, name, lang, null);
-  const text = `${SKIP_LEAD[lang] || SKIP_LEAD.ru} ${next}`;
+  const text = `${NEXT_LEAD[lang] || NEXT_LEAD.ru} ${next}`;
   await append(userId, "assistant", text);
-  return text;
+  await writeState(userId, prefs, { nav: 0 });
+  const turns = await assistantTurns(userId);
+  return { text, hasPrev: turns.length > 1 };
+}
+
+// «← Пред.»: шаг назад по истории заданных вопросов (без генерации).
+export async function acquaintPrevQ(userId: string, lang = "ru"): Promise<{ text: string; hasPrev: boolean }> {
+  const { prefs } = await readState(userId);
+  const turns = await assistantTurns(userId);
+  const maxNav = Math.max(0, turns.length - 1);
+  const nav = Math.min(maxNav, (prefs.acquaintNav || 0) + 1);
+  await writeState(userId, prefs, { nav });
+  const text = turns[turns.length - 1 - nav] || "";
+  return { text, hasPrev: nav < maxNav };
 }
 
 export async function stopAcquaint(userId: string): Promise<void> {
@@ -434,6 +479,8 @@ export async function acquaintReply(userId: string, name: string | null, userTex
   const st = await readState(userId);
   const answer = userText.trim();
   await append(userId, "user", answer);
+  // Ответ — это «живой край»: сбрасываем курсор навигации по вопросам (persist через writeState ниже).
+  st.prefs.acquaintNav = 0;
 
   // Книга наполняется прямо из разговора: каждый содержательный ответ становится
   // ОТДЕЛЬНОЙ записью дневника (source "acquaint"). Короткие чипы («сова»/«кофе»)
