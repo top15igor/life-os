@@ -34,6 +34,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logUsage } from "@/lib/usage";
 import { getAiSpend, setAiBalance } from "@/lib/aiSpend";
 import { BAND_TO_MOOD, bandMeta, type MoodBand } from "@/lib/mood";
+import { PMF_SCORES, savePmfAnswer, pmfThanks, pmfCallbackOk, type PmfScore } from "@/lib/pmf";
 
 export const runtime = "nodejs";
 // Приветственная серия идёт с паузами (живая подача) — даём функции запас времени.
@@ -650,6 +651,22 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if (data.startsWith("pmf:") && cqChat) {
+      // PMF-опрос (вопрос Шона Эллиса): фиксируем ответ и меняем вопрос на благодарность.
+      const score = data.slice(4) as PmfScore;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        if (u && PMF_SCORES.includes(score)) {
+          const lng = pickLang((u as any).lang);
+          await savePmfAnswer((u as any).id, score);
+          await answerCallback(cq.id, pmfCallbackOk(lng));
+          const mid = cq.message?.message_id;
+          if (mid) await editMessageText(cqChat, mid, pmfThanks(lng, score));
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch { await answerCallback(cq.id); }
     } else if ((data === "acq:next" || data === "acq:skip") && cqChat) {
       // «Следующий вопрос →»: шаг вперёд по вопросам (или генерация нового на живом крае).
       // acq:skip оставлен для старых сообщений с прежней кнопкой «Пропустить».

@@ -190,6 +190,14 @@ export default async function AdminPage() {
             </div>
             <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
           </Link>
+          <Link href="/admin/pmf" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+            <i className="ti ti-target-arrow" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Продукт-маркет-фит</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Опрос «что почувствуешь, если LIFE OS исчезнет?» — ответы и PMF-балл</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
+          </Link>
           <Link href="/admin/tests" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "#0e9f6e12", border: "1px solid #0e9f6e55" }}>
             <i className="ti ti-checklist" style={{ fontSize: 24, color: "#0e9f6e" }} />
             <div style={{ flex: 1 }}>
