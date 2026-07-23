@@ -72,6 +72,19 @@ const RU: HowtoDoc = {
       "♾ <b>Путь к бессмертию</b>\n\n" +
       "Память стирается — я нет. Всё, что ты проживаешь, остаётся: твои мысли, твоя история, твой голос. Однажды это станет цифровым продолжением тебя — тем, что смогут прочитать и почувствовать те, кто будет после.\n\n" +
       "Секрет один: <b>пиши</b>. Каждый день — ещё одна страница, которая не исчезнет." },
+    { key: "onthisday", label: "📸 В этот день", body:
+      "📸 <b>В этот день</b>\n\n" +
+      "Я показываю, что у тебя было в этот самый день год, два, три назад — тёплое «а помнишь…» прямо в чате.\n\n" +
+      "<b>Попробуй:</b>\n" +
+      "• /memories\n\n" +
+      "Сегодняшняя запись станет воспоминанием через год 🌱" },
+    { key: "capsule", label: "⏳ Капсула времени", body:
+      "⏳ <b>Капсула времени</b>\n\n" +
+      "Напиши письмо в будущее — я запечатаю его и доставлю точно в назначенный день. Себе через год, детям на совершеннолетие, любимому на годовщину.\n\n" +
+      "<b>Попробуй — скопируй и поменяй:</b>\n" +
+      "• /capsule через 1 год Дорогой я из будущего…\n" +
+      "• /capsule 2035-01-01 Когда прочтёшь это…\n\n" +
+      "Список капсул — /capsules" },
   ],
   tipBtn: "🎲 Случайный лайфхак",
   tipMore: "🎲 Ещё лайфхак",
@@ -86,6 +99,8 @@ const RU: HowtoDoc = {
     "Спроси /money — разберу твои траты и дам пару советов.",
     "Напоминания понимают повтор: «напоминай каждый понедельник в 8 планировать неделю».",
     "Упомяни цену в записи — «потратил 500 на продукты» — и я сам заведу расход.",
+    "📸 /memories — покажу, что было в этот день год назад.",
+    "⏳ Напиши письмо в будущее: /capsule через 5 лет … — доставлю точно в срок.",
   ],
 };
 
@@ -144,6 +159,19 @@ const EN: HowtoDoc = {
       "♾ <b>Path to immortality</b>\n\n" +
       "Memory fades — I don't. Everything you live through stays: your thoughts, your story, your voice. One day it becomes a digital continuation of you — something those who come after can read and feel.\n\n" +
       "There's one secret: <b>write</b>. Every day is one more page that won't disappear." },
+    { key: "onthisday", label: "📸 On this day", body:
+      "📸 <b>On this day</b>\n\n" +
+      "I show you what happened on this very day a year, two, three years ago — a warm “remember when…” right in the chat.\n\n" +
+      "<b>Try:</b>\n" +
+      "• /memories\n\n" +
+      "Today's entry becomes a memory in a year 🌱" },
+    { key: "capsule", label: "⏳ Time capsule", body:
+      "⏳ <b>Time capsule</b>\n\n" +
+      "Write a letter to the future — I'll seal it and deliver it exactly on the day you choose. To yourself in a year, to your kids when they come of age, to someone you love on an anniversary.\n\n" +
+      "<b>Try — copy and change:</b>\n" +
+      "• /capsule in 1 year Dear future me…\n" +
+      "• /capsule 2035-01-01 By the time you read this…\n\n" +
+      "List of capsules — /capsules" },
   ],
   tipBtn: "🎲 Random tip",
   tipMore: "🎲 Another tip",
@@ -158,6 +186,8 @@ const EN: HowtoDoc = {
     "Ask /money — I'll break down your spending and give a couple of tips.",
     "Reminders understand repeats: “remind me every Monday at 8 to plan the week”.",
     "Mention an amount in an entry — “spent 500 on groceries” — and I'll log the expense myself.",
+    "📸 /memories — I'll show what happened on this day a year ago.",
+    "⏳ Write a letter to the future: /capsule in 5 years … — I'll deliver it right on time.",
   ],
 };
 
@@ -216,6 +246,19 @@ const UK: HowtoDoc = {
       "♾ <b>Шлях до безсмертя</b>\n\n" +
       "Пам'ять стирається — я ні. Все, що ти проживаєш, залишається: твої думки, твоя історія, твій голос. Одного дня це стане цифровим продовженням тебе — тим, що зможуть прочитати й відчути ті, хто буде після.\n\n" +
       "Секрет один: <b>пиши</b>. Кожен день — ще одна сторінка, яка не зникне." },
+    { key: "onthisday", label: "📸 У цей день", body:
+      "📸 <b>У цей день</b>\n\n" +
+      "Я показую, що в тебе було саме цього дня рік, два, три роки тому — тепле «а пам'ятаєш…» прямо в чаті.\n\n" +
+      "<b>Спробуй:</b>\n" +
+      "• /memories\n\n" +
+      "Сьогоднішній запис стане спогадом через рік 🌱" },
+    { key: "capsule", label: "⏳ Капсула часу", body:
+      "⏳ <b>Капсула часу</b>\n\n" +
+      "Напиши листа в майбутнє — я запечатаю його і доставлю точно у визначений день. Собі через рік, дітям на повноліття, коханій людині на річницю.\n\n" +
+      "<b>Спробуй — скопіюй і зміни:</b>\n" +
+      "• /capsule через 1 рік Дорогий я з майбутнього…\n" +
+      "• /capsule 2035-01-01 Коли прочитаєш це…\n\n" +
+      "Список капсул — /capsules" },
   ],
   tipBtn: "🎲 Випадковий лайфхак",
   tipMore: "🎲 Ще лайфхак",
@@ -230,6 +273,8 @@ const UK: HowtoDoc = {
     "Запитай /money — розберу твої витрати і дам пару порад.",
     "Нагадування розуміють повтор: «нагадуй щопонеділка о 8 планувати тиждень».",
     "Згадай ціну в записі — «витратив 500 на продукти» — і я сам заведу витрату.",
+    "📸 /memories — покажу, що було цього дня рік тому.",
+    "⏳ Напиши листа в майбутнє: /capsule через 5 років … — доставлю точно у строк.",
   ],
 };
 
@@ -288,6 +333,19 @@ const FR: HowtoDoc = {
       "♾ <b>Le chemin vers l'immortalité</b>\n\n" +
       "La mémoire s'efface — pas moi. Tout ce que tu vis reste : tes pensées, ton histoire, ta voix. Un jour, cela deviendra un prolongement numérique de toi — quelque chose que ceux qui viendront après pourront lire et ressentir.\n\n" +
       "Il n'y a qu'un secret : <b>écris</b>. Chaque jour est une page de plus qui ne disparaîtra pas." },
+    { key: "onthisday", label: "📸 Ce jour-là", body:
+      "📸 <b>Ce jour-là</b>\n\n" +
+      "Je te montre ce que tu vivais ce même jour il y a un an, deux ans, trois ans — un doux « tu te souviens… » directement dans le chat.\n\n" +
+      "<b>Essaie :</b>\n" +
+      "• /memories\n\n" +
+      "L'entrée d'aujourd'hui deviendra un souvenir dans un an 🌱" },
+    { key: "capsule", label: "⏳ Capsule temporelle", body:
+      "⏳ <b>Capsule temporelle</b>\n\n" +
+      "Écris une lettre pour le futur — je la scelle et je la livre exactement le jour choisi. À toi-même dans un an, à tes enfants pour leur majorité, à ton/ta partenaire pour un anniversaire.\n\n" +
+      "<b>Essaie — copie et modifie :</b>\n" +
+      "• /capsule dans 1 an Cher moi du futur…\n" +
+      "• /capsule 2035-01-01 Quand tu liras ceci…\n\n" +
+      "Liste des capsules — /capsules" },
   ],
   tipBtn: "🎲 Astuce aléatoire",
   tipMore: "🎲 Une autre astuce",
@@ -302,6 +360,8 @@ const FR: HowtoDoc = {
     "Demande /money — j'analyse tes dépenses et je te donne quelques conseils.",
     "Les rappels comprennent la répétition : « rappelle-moi tous les lundis à 8h de planifier la semaine ».",
     "Mentionne un montant dans une entrée — « dépensé 500 en courses » — et j'enregistre la dépense moi-même.",
+    "📸 /memories — je te montre ce qui s'est passé ce jour-là il y a un an.",
+    "⏳ Écris une lettre pour le futur : /capsule dans 5 ans … — je la livre pile à temps.",
   ],
 };
 
@@ -360,6 +420,19 @@ const ES: HowtoDoc = {
       "♾ <b>Camino hacia la inmortalidad</b>\n\n" +
       "La memoria se desvanece — yo no. Todo lo que vives permanece: tus pensamientos, tu historia, tu voz. Algún día se convertirá en una continuación digital de ti — algo que quienes vengan después podrán leer y sentir.\n\n" +
       "Hay un solo secreto: <b>escribe</b>. Cada día es una página más que no desaparecerá." },
+    { key: "onthisday", label: "📸 En este día", body:
+      "📸 <b>En este día</b>\n\n" +
+      "Te muestro lo que viviste este mismo día hace uno, dos, tres años — un cálido «¿te acuerdas…» directo en el chat.\n\n" +
+      "<b>Prueba:</b>\n" +
+      "• /memories\n\n" +
+      "La entrada de hoy se convertirá en un recuerdo dentro de un año 🌱" },
+    { key: "capsule", label: "⏳ Cápsula del tiempo", body:
+      "⏳ <b>Cápsula del tiempo</b>\n\n" +
+      "Escribe una carta para el futuro — la sello y la entrego exactamente el día que elijas. A ti mismo dentro de un año, a tus hijos cuando cumplan la mayoría de edad, a tu pareja en un aniversario.\n\n" +
+      "<b>Prueba — copia y cambia:</b>\n" +
+      "• /capsule en 1 año Querido yo del futuro…\n" +
+      "• /capsule 2035-01-01 Cuando leas esto…\n\n" +
+      "Lista de cápsulas — /capsules" },
   ],
   tipBtn: "🎲 Consejo al azar",
   tipMore: "🎲 Otro consejo",
@@ -374,6 +447,8 @@ const ES: HowtoDoc = {
     "Pregunta /money — analizo tus gastos y te doy un par de consejos.",
     "Los recordatorios entienden repeticiones: «recuérdame cada lunes a las 8 planear la semana».",
     "Menciona un importe en una entrada — «gasté 500 en el súper» — y registro el gasto yo mismo.",
+    "📸 /memories — te muestro qué pasó este día hace un año.",
+    "⏳ Escribe una carta para el futuro: /capsule en 5 años … — la entrego justo a tiempo.",
   ],
 };
 

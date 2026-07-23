@@ -926,6 +926,22 @@ export async function POST(req: NextRequest) {
             const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
             res = { text, reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lng] || GOALS_BTN.ru, url: `${req.nextUrl.origin}/u/${(u as any).token}?next=/goals` }], back] } };
           }
+          else if (arg === "i:onthisday") {
+            // «📸 В этот день» — живые воспоминания за этот календарный день + как включить.
+            const item = howtoItem(lng, "onthisday");
+            let text = item?.text || "";
+            try {
+              const today = new Date().toISOString().slice(0, 10);
+              const mems = await getDayMemories((u as any).id, today);
+              const M = MEMORIES[lng] || MEMORIES.ru;
+              if (mems.length) {
+                const lines = mems.slice(0, 5).map((m) => `${M.ago(m)}\n«${esc(m.text)}»`).join("\n\n");
+                text = `${M.title}\n\n${lines}\n\n➖➖➖\n\n${text}`;
+              }
+            } catch { /* воспоминания необязательны — покажем описание */ }
+            const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
+            res = { text, reply_markup: { inline_keyboard: [back] } };
+          }
           else if (arg.startsWith("i:")) res = howtoItem(lng, arg.slice(2));
           else res = null;
           if (res) await editMessageText(cqChat, mid, res.text, { reply_markup: res.reply_markup });
