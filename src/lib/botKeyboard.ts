@@ -4,18 +4,24 @@
 //  кронах и разовой рассылке (обновление кнопок у всех юзеров).
 // ============================================================
 
-export const KB: Record<string, { acquaint: string; diary: string; tasks: string; motiv: string; invite: string }> = {
-  ru: { acquaint: "🌱 Давай познакомимся", diary: "📖 Дневник", tasks: "🎯 Задачи", motiv: "🔥 Моя мотивация", invite: "🤝 Пригласить друга" },
-  en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "🎯 Tasks", motiv: "🔥 My motivation", invite: "🤝 Invite a friend" },
-  uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "🎯 Завдання", motiv: "🔥 Моя мотивація", invite: "🤝 Запросити друга" },
-  fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "🎯 Tâches", motiv: "🔥 Ma motivation", invite: "🤝 Inviter un ami" },
-  es: { acquaint: "🌱 Conozcámonos", diary: "📖 Diario", tasks: "🎯 Tareas", motiv: "🔥 Mi motivación", invite: "🤝 Invitar a un amigo" },
+export const KB: Record<string, { acquaint: string; diary: string; tasks: string; guide: string; invite: string }> = {
+  ru: { acquaint: "🌱 Давай познакомимся", diary: "📖 Дневник", tasks: "🎯 Задачи", guide: "🧭 Зачем я тебе", invite: "🤝 Пригласить друга" },
+  en: { acquaint: "🌱 Let's get acquainted", diary: "📖 Diary", tasks: "🎯 Tasks", guide: "🧭 Why I'm here", invite: "🤝 Invite a friend" },
+  uk: { acquaint: "🌱 Давай познайомимось", diary: "📖 Щоденник", tasks: "🎯 Завдання", guide: "🧭 Навіщо я тобі", invite: "🤝 Запросити друга" },
+  fr: { acquaint: "🌱 Faisons connaissance", diary: "📖 Journal", tasks: "🎯 Tâches", guide: "🧭 Pourquoi moi", invite: "🤝 Inviter un ami" },
+  es: { acquaint: "🌱 Conozcámonos", diary: "📖 Diario", tasks: "🎯 Tareas", guide: "🧭 Para qué te sirvo", invite: "🤝 Invitar a un amigo" },
 };
 
 // Прежняя подпись кнопки задач («✅ Мои задачи» и др.) — чтобы распознавать
 // нажатие у пользователей со старой (закэшированной) клавиатурой.
 export const TASKS_LABEL_LEGACY: Record<string, string> = {
   ru: "✅ Мои задачи", en: "✅ My tasks", uk: "✅ Мої завдання", fr: "✅ Mes tâches", es: "✅ Mis tareas",
+};
+
+// Прежняя подпись кнопки «Моя мотивация» — распознаём у старых клавиатур,
+// чтобы нажатие вело в новое меню «Зачем я тебе».
+export const GUIDE_LABEL_LEGACY: Record<string, string> = {
+  ru: "🔥 Моя мотивация", en: "🔥 My motivation", uk: "🔥 Моя мотивація", fr: "🔥 Ma motivation", es: "🔥 Mi motivación",
 };
 
 // Лестница близости: подпись кнопки знакомства эволюционирует по мере роста
@@ -91,7 +97,7 @@ export function mainKeyboard(lang: string, acquaintPct?: number) {
     keyboard: [
       [{ text: acquaintLabel(lang, acquaintPct) }],
       [{ text: k.diary }, { text: k.tasks }],
-      [{ text: k.motiv }, { text: k.invite }],
+      [{ text: k.guide }, { text: k.invite }],
     ],
     resize_keyboard: true,
     is_persistent: true,
