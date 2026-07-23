@@ -163,12 +163,19 @@ export function mdToTelegram(s: string): string {
   return t.trim();
 }
 
+// «Пиши как человек»: длинные тире (— и –) — фирменный признак ИИ-текста, людей
+// это раздражает. Меняем на обычный дефис НА ВЫХОДЕ — одно место для всех сообщений
+// бота (и AI-ответов, и статичных текстов). Промптам доверять нельзя, фильтру — можно.
+function humanizeDashes(t: string): string {
+  return String(t || "").replace(/[—–]/g, "-");
+}
+
 // Отправить сообщение пользователю (extra — доп. поля, напр. reply_markup с кнопками).
 export async function sendMessage(chatId: number, text: string, extra?: Record<string, any>): Promise<void> {
   await fetch(`${API}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
+    body: JSON.stringify({ chat_id: chatId, text: humanizeDashes(text), parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
   });
 }
 
@@ -178,7 +185,7 @@ export async function editMessageText(chatId: number, messageId: number, text: s
     await fetch(`${API}/editMessageText`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: humanizeDashes(text), parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
     });
   } catch { /* not critical */ }
 }
