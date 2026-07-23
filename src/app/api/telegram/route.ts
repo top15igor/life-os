@@ -407,7 +407,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
   if (isAcquaintLabel(text)) return "acquaint";
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
-    if (text === k.diary || text === DIARY_LABEL_LEGACY[lang]) return "diary";
+    if (text === k.diary || (DIARY_LABEL_LEGACY[lang] || []).includes(text)) return "diary";
     if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
     if (text === k.guide || text === GUIDE_LABEL_LEGACY[lang]) return "guide";
     if (text === k.invite) return "invite";
@@ -424,6 +424,17 @@ const HELP: Record<string, (o: string) => string> = {
 };
 
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
+// «🗂 CRM твоей жизни» — краткое описание + переход на портал (главный вход).
+const CRM_INTRO: Record<string, string> = {
+  ru: "🗂 <b>CRM твоей жизни</b>\n\nLIFE OS — это CRM для управления твоей жизнью. Всё о тебе в одном месте: записи, люди, цели и задачи, финансы, память и Книга жизни. Я собираю и раскладываю по полочкам, чтобы ты видел свою жизнь целиком и вёл её осознанно.",
+  en: "🗂 <b>Your Life CRM</b>\n\nLIFE OS is a CRM for running your life. Everything about you in one place: entries, people, goals and tasks, finances, memory and your Book of Life. I gather it and sort it out so you see your whole life and run it consciously.",
+  uk: "🗂 <b>CRM твого життя</b>\n\nLIFE OS — це CRM для управління твоїм життям. Усе про тебе в одному місці: записи, люди, цілі й завдання, фінанси, пам'ять і Книга життя. Я збираю й розкладаю по поличках, щоб ти бачив своє життя цілком і вів його усвідомлено.",
+  fr: "🗂 <b>Ton CRM de vie</b>\n\nLIFE OS est un CRM pour piloter ta vie. Tout sur toi au même endroit : entrées, personnes, objectifs et tâches, finances, mémoire et ton Livre de vie. Je rassemble et je range pour que tu voies ta vie en entier et la mènes en conscience.",
+  es: "🗂 <b>Tu CRM de vida</b>\n\nLIFE OS es un CRM para gestionar tu vida. Todo sobre ti en un solo lugar: entradas, personas, metas y tareas, finanzas, memoria y tu Libro de la vida. Lo reúno y lo ordeno para que veas tu vida entera y la lleves con conciencia.",
+};
+const CRM_OPEN: Record<string, string> = {
+  ru: "🗂 Открыть CRM моей жизни", en: "🗂 Open my Life CRM", uk: "🗂 Відкрити CRM мого життя", fr: "🗂 Ouvrir mon CRM de vie", es: "🗂 Abrir mi CRM de vida",
+};
 const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent", es: "💰 Abrir Dinero" };
 
 // Распознать токен валюты (код или символ) → ISO-код, иначе null.
@@ -1205,6 +1216,10 @@ export async function POST(req: NextRequest) {
       await sendMessage(chatId, menu.text, { reply_markup: menu.reply_markup });
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
+    else if (ba === "diary") {
+      // «🗂 CRM твоей жизни»: краткое описание + переход на портал.
+      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, url: link }]] } });
+    }
     else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     return NextResponse.json({ ok: true });
   }
