@@ -24,31 +24,31 @@ export const TASKS_LABEL_LEGACY: Record<string, string> = {
 // Вайб «микс»: тепло + искорка юмора ближе к вершине.
 const ACQ_LADDER: Record<string, { min: number; label: string }[]> = {
   ru: [
-    { min: 0, label: KB.ru.acquaint }, { min: 5, label: "🌿 Продолжаем знакомиться" }, { min: 10, label: "🤫 Пошушукаемся" }, { min: 20, label: "🤝 Притираемся" },
+    { min: 0, label: KB.ru.acquaint }, { min: 5, label: "🌿 Продолжаем знакомиться" }, { min: 10, label: "🤿 Копнём глубже" }, { min: 20, label: "🤝 Притираемся" },
     { min: 30, label: "😌 Уже доверяю" }, { min: 40, label: "🫂 Больше, чем друзья" }, { min: 50, label: "👊 Братья" },
     { min: 60, label: "🎭 Уже можно и матом" }, { min: 70, label: "🏡 Семья" }, { min: 80, label: "🔥 Куда ещё ближе?" },
     { min: 90, label: "😎 Я в тебе не сомневался" },
   ],
   en: [
-    { min: 0, label: KB.en.acquaint }, { min: 5, label: "🌿 Getting to know you" }, { min: 10, label: "🤫 Let's whisper" }, { min: 20, label: "🤝 Breaking the ice" },
+    { min: 0, label: KB.en.acquaint }, { min: 5, label: "🌿 Getting to know you" }, { min: 10, label: "🤿 Digging deeper" }, { min: 20, label: "🤝 Breaking the ice" },
     { min: 30, label: "😌 Starting to trust you" }, { min: 40, label: "🫂 More than friends" }, { min: 50, label: "👊 Brothers" },
     { min: 60, label: "🎭 We can swear now" }, { min: 70, label: "🏡 Family" }, { min: 80, label: "🔥 Can we get closer?" },
     { min: 90, label: "😎 Never doubted you" },
   ],
   uk: [
-    { min: 0, label: KB.uk.acquaint }, { min: 5, label: "🌿 Продовжуємо знайомитись" }, { min: 10, label: "🤫 Пошепочемось" }, { min: 20, label: "🤝 Притираємось" },
+    { min: 0, label: KB.uk.acquaint }, { min: 5, label: "🌿 Продовжуємо знайомитись" }, { min: 10, label: "🤿 Копнемо глибше" }, { min: 20, label: "🤝 Притираємось" },
     { min: 30, label: "😌 Уже довіряю" }, { min: 40, label: "🫂 Більше, ніж друзі" }, { min: 50, label: "👊 Брати" },
     { min: 60, label: "🎭 Уже можна й матом" }, { min: 70, label: "🏡 Сім'я" }, { min: 80, label: "🔥 Куди ще ближче?" },
     { min: 90, label: "😎 Я в тобі не сумнівався" },
   ],
   fr: [
-    { min: 0, label: KB.fr.acquaint }, { min: 5, label: "🌿 On fait connaissance" }, { min: 10, label: "🤫 Chuchotons" }, { min: 20, label: "🤝 On s'apprivoise" },
+    { min: 0, label: KB.fr.acquaint }, { min: 5, label: "🌿 On fait connaissance" }, { min: 10, label: "🤿 Creusons plus loin" }, { min: 20, label: "🤝 On s'apprivoise" },
     { min: 30, label: "😌 Je te fais confiance" }, { min: 40, label: "🫂 Plus que des amis" }, { min: 50, label: "👊 Frères" },
     { min: 60, label: "🎭 On peut jurer" }, { min: 70, label: "🏡 Famille" }, { min: 80, label: "🔥 Encore plus proches ?" },
     { min: 90, label: "😎 Je n'ai jamais douté de toi" },
   ],
   es: [
-    { min: 0, label: KB.es.acquaint }, { min: 5, label: "🌿 Seguimos conociéndonos" }, { min: 10, label: "🤫 Cuchicheemos" }, { min: 20, label: "🤝 Nos vamos conociendo" },
+    { min: 0, label: KB.es.acquaint }, { min: 5, label: "🌿 Seguimos conociéndonos" }, { min: 10, label: "🤿 Vamos más a fondo" }, { min: 20, label: "🤝 Nos vamos conociendo" },
     { min: 30, label: "😌 Ya confío en ti" }, { min: 40, label: "🫂 Más que amigos" }, { min: 50, label: "👊 Hermanos" },
     { min: 60, label: "🎭 Ya podemos hablar sin filtro" }, { min: 70, label: "🏡 Familia" }, { min: 80, label: "🔥 ¿Aún más cerca?" },
     { min: 90, label: "😎 Nunca dudé de ti" },
@@ -70,10 +70,15 @@ export function acquaintLabel(lang: string, pct?: number) {
   return p > 0 && p < 100 ? `${base} · ${p}%` : base;
 }
 
+// Прежние подписи ступеней: у пользователей в чатах остались старые клавиатуры —
+// нажатия по ним должны распознаваться и после переименования.
+const ACQ_LEGACY = new Set(["🤫 Пошушукаемся", "🤫 Let's whisper", "🤫 Пошепочемось", "🤫 Chuchotons", "🤫 Cuchicheemos"]);
+
 // Распознать нажатие кнопки знакомства при ЛЮБОЙ ступени/проценте (для buttonAction).
 export function isAcquaintLabel(text?: string): boolean {
   if (!text) return false;
   const base = text.split(" · ")[0];
+  if (ACQ_LEGACY.has(base)) return true;
   for (const lang of Object.keys(ACQ_LADDER)) {
     if ((ACQ_LADDER[lang] || []).some((r) => r.label === base)) return true;
   }
