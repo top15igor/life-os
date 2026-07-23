@@ -506,12 +506,15 @@ async function sendInvite(chatId: number, lang: string, origin: string, userId: 
 
 // Кнопка «🎯 Задачи»: открытые задачи, разложенные по горизонтам «Сегодня / Неделя / Месяц».
 const TASKS_MSG: Record<string, { title: string; empty: string; open: string; emptyBucket: string; hint: string }> = {
-  ru: { title: "🎯 <b>Твои задачи</b>", empty: "Открытых задач пока нет 🎉\nОни появятся сами, когда в записи мелькнёт что-то вроде «надо сделать…».", open: "✅ Открыть все задачи", emptyBucket: "Здесь пока пусто.", hint: "Двигать задачи между горизонтами удобно в приложении." },
-  en: { title: "🎯 <b>Your tasks</b>", empty: "No open tasks yet 🎉\nThey'll show up on their own when you mention something like “need to do…”.", open: "✅ Open all tasks", emptyBucket: "Nothing here yet.", hint: "Move tasks between horizons easily in the app." },
-  uk: { title: "🎯 <b>Твої завдання</b>", empty: "Відкритих завдань поки немає 🎉\nВони з'являться самі, коли в записі промайне щось на кшталт «треба зробити…».", open: "✅ Відкрити всі завдання", emptyBucket: "Тут поки порожньо.", hint: "Пересувати завдання між горизонтами зручно в застосунку." },
-  fr: { title: "🎯 <b>Tes tâches</b>", empty: "Pas encore de tâches 🎉\nElles apparaîtront quand tu mentionneras « à faire… ».", open: "✅ Voir toutes les tâches", emptyBucket: "Rien ici pour l'instant.", hint: "Déplace les tâches entre horizons facilement dans l'app." },
-  es: { title: "🎯 <b>Tus tareas</b>", empty: "Aún no hay tareas pendientes 🎉\nAparecerán solas cuando menciones algo como «hay que hacer…».", open: "✅ Ver todas las tareas", emptyBucket: "Aquí no hay nada todavía.", hint: "Mueve las tareas entre horizontes fácilmente en la app." },
+  ru: { title: "🎯 <b>Твои задачи</b>", empty: "Открытых задач пока нет 🎉\nОни появятся сами, когда в записи мелькнёт что-то вроде «надо сделать…».", open: "✅ Открыть все задачи", emptyBucket: "Здесь пока пусто.", hint: "Сделал задачу? Тапни «✓ её номер» внизу — отмечу. Двигать между горизонтами удобно в приложении." },
+  en: { title: "🎯 <b>Your tasks</b>", empty: "No open tasks yet 🎉\nThey'll show up on their own when you mention something like “need to do…”.", open: "✅ Open all tasks", emptyBucket: "Nothing here yet.", hint: "Finished one? Tap “✓ its number” below and I'll mark it. Move tasks between horizons in the app." },
+  uk: { title: "🎯 <b>Твої завдання</b>", empty: "Відкритих завдань поки немає 🎉\nВони з'являться самі, коли в записі промайне щось на кшталт «треба зробити…».", open: "✅ Відкрити всі завдання", emptyBucket: "Тут поки порожньо.", hint: "Зробив завдання? Тапни «✓ його номер» унизу — позначу. Пересувати між горизонтами зручно в застосунку." },
+  fr: { title: "🎯 <b>Tes tâches</b>", empty: "Pas encore de tâches 🎉\nElles apparaîtront quand tu mentionneras « à faire… ».", open: "✅ Voir toutes les tâches", emptyBucket: "Rien ici pour l'instant.", hint: "Tâche finie ? Touche « ✓ son numéro » en bas — je la coche. Déplace-les entre horizons dans l'app." },
+  es: { title: "🎯 <b>Tus tareas</b>", empty: "Aún no hay tareas pendientes 🎉\nAparecerán solas cuando menciones algo como «hay que hacer…».", open: "✅ Ver todas las tareas", emptyBucket: "Aquí no hay nada todavía.", hint: "¿Tarea hecha? Toca «✓ su número» abajo y la marco. Mueve las tareas entre horizontes en la app." },
 };
+
+// Подтверждение отметки задачи (всплывашка при тапе «✓ N»).
+const TASK_DONE: Record<string, string> = { ru: "✅ Сделано:", en: "✅ Done:", uk: "✅ Зроблено:", fr: "✅ Fait :", es: "✅ Hecho:" };
 
 // Подписи горизонтов (с цветовыми маркерами).
 const HZ_LABEL: Record<string, Record<Horizon, string>> = {
@@ -532,16 +535,23 @@ async function renderTasks(userId: string, lang: string, active: Horizon, origin
   const buckets = bucketize(tasks as any[], map);
   const counts: Record<Horizon, number> = { today: buckets.today.length, week: buckets.week.length, month: buckets.month.length };
 
-  const rows = buckets[active].slice(0, 40).map((t: any) => `• ${esc(t.text || "")}`);
+  const list = buckets[active].slice(0, 40);
+  const rows = list.map((t: any, i: number) => `${i + 1}. ${esc(t.text || "")}`);
   const more = buckets[active].length > 40 ? `\n… +${buckets[active].length - 40}` : "";
   const body = rows.length ? rows.join("\n") + more : `<i>${T.emptyBucket}</i>`;
   const summary = HORIZONS.map((h) => `${HL[h]} — ${counts[h]}`).join("   ");
   const text = `${T.title}\n${summary}\n\n<b>${HL[active]}</b>\n${body}\n\n<i>${T.hint}</i>`;
 
+  // Кнопки-галочки: «✓ N» отмечает задачу N сделанной (id зашит в callback).
+  const doneRows: { text: string; callback_data: string }[][] = [];
+  for (let i = 0; i < list.length; i += 5) {
+    doneRows.push(list.slice(i, i + 5).map((t: any, j: number) => ({ text: `✓ ${i + j + 1}`, callback_data: `tskd:${active}:${t.id}` })));
+  }
+
   // Вкладки: активная помечена стрелкой; счётчик прямо в подписи.
   const tabs = HORIZONS.map((h) => ({ text: `${h === active ? "‹ " : ""}${HL[h]} ${counts[h]}${h === active ? " ›" : ""}`, callback_data: `tsk:${h}` }));
   const url = `${origin}/u/${token}?next=${encodeURIComponent("/goals?tab=tasks")}`;
-  return { text, markup: { reply_markup: { inline_keyboard: [tabs, [{ text: T.open, url }]] } } };
+  return { text, markup: { reply_markup: { inline_keyboard: [...doneRows, tabs, [{ text: T.open, url }]] } } };
 }
 
 // Кнопка «Моя мотивация»: стрик + цели + свежий инсайт прямо в чат.
@@ -730,6 +740,32 @@ export async function POST(req: NextRequest) {
           }
           await answerCallback(cq.id, msgText);
           if (mid) await editMessageText(cqChat, mid, msgText);
+        }
+      } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("tskd:") && cqChat) {
+      // «✓ N» — отметить задачу сделанной прямо из бота; список перерисовывается.
+      const [, hRaw, taskId] = data.split(":");
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang, token").eq("chat_id", cqChat).maybeSingle();
+        if (u && taskId) {
+          const lng = pickLang((u as any).lang);
+          const { data: task } = await db.from("tasks").select("text").eq("id", taskId).eq("user_id", (u as any).id).maybeSingle();
+          await db.from("tasks").update({ done: true }).eq("id", taskId).eq("user_id", (u as any).id);
+          const D = TASK_DONE[lng] || TASK_DONE.ru;
+          await answerCallback(cq.id, `${D} ${String((task as any)?.text || "").slice(0, 150)}`);
+          const mid = cq.message?.message_id;
+          const hz: Horizon = (HORIZONS as string[]).includes(hRaw) ? (hRaw as Horizon) : "today";
+          if (mid) {
+            const res = await renderTasks((u as any).id, lng, hz, req.nextUrl.origin, (u as any).token);
+            if ("empty" in res) {
+              await editMessageText(cqChat, mid, (TASKS_MSG[lng] || TASKS_MSG.ru).empty);
+            } else {
+              await editMessageText(cqChat, mid, res.text, res.markup);
+            }
+          }
+        } else {
+          await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("tsk:") && cqChat) {
