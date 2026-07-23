@@ -59,6 +59,12 @@ export const ACTION_TOOLS: any[] = [
       required: ["title", "kind"],
     },
   },
+  {
+    name: "rename_person",
+    description:
+      "Пользователь исправляет ИМЯ человека: «её зовут X (а не Y)», «настоящее имя — X», «переименуй Y в X», «исправь имя», «это не Y, это X», «запиши, что её зовут X». Переименовывает человека в базе людей и исправляет его имя во всех сохранённых инсайтах — выбирай это, а НЕ save_entry, когда суть сообщения = поправить имя. from — имя, как записано сейчас (неправильное), to — правильное; оба в именительном падеже.",
+    input_schema: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } }, required: ["from", "to"] },
+  },
   { name: "delete_last_entry", description: "Удалить ПОСЛЕДНЮЮ запись дневника. ТОЛЬКО при явной команде удаления, где прямо сказано «удали/убери/сотри» + «(последнюю) запись»: «удали последнюю запись», «убери предыдущую запись», «сотри последнее». НЕ выбирай на фразы-поправки и недовольство («не то записал», «не надо было это добавлять», «надо было иначе», «неправильно», «зачем ты…») — это НЕ команда удаления, для них save_entry.", input_schema: { type: "object", properties: {} } },
   { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать — ИЛИ возмущается/уточняет по поводу уже записанного («почему трату не учёл?», «где сегодняшний расход?», «чего не показал?»). Это НЕ новая запись, повторно данные (в т.ч. траты) записывать не нужно.", input_schema: { type: "object", properties: {} } },
   { name: "save_entry", description: "Обычная дневниковая запись: рассказ о дне, мысли, чувства, событие, идея. ПО УМОЛЧАНИЮ выбирай это.", input_schema: { type: "object", properties: {} } },
@@ -72,6 +78,7 @@ const SYS =
   "«Напомни …» с датой/временем → set_reminder (разбери дату и время по местному времени). «Добавь задачу» без времени → add_task. " +
   "Если человек просто описывает, что сделал («сегодня пробежал 5 км», «поговорил с мамой») — это save_entry, НЕ действие. " +
   "ВАЖНО: фразы-поправки, недовольство и уточнения («не так записал», «не надо было это добавлять», «надо было иначе», «зачем ты…», «неправильно понял») — это НЕ команда действия и тем более НЕ удаление; по умолчанию save_entry. " +
+  "ИСКЛЮЧЕНИЕ: если поправка — про ИМЯ человека («её зовут X», «настоящее имя — X», «переименуй Y в X», «исправь имя», «запиши у себя и измени: её зовут X») → rename_person, чтобы имя исправилось во всей базе, а не легло новой записью. " +
   "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
@@ -115,6 +122,22 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
   }
 }
 
+// Нормализация имени для сравнения (регистр, ё→е, пробелы).
+const normName = (x: string) => (x || "").toLowerCase().replace(/ё/g, "е").trim();
+
+const escRx = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Заменить имя в тексте с учётом падежных окончаний: если оба имени кончаются
+// на -а/-я, меняем основу и сохраняем окончание («Стельку» → «Эстельку»).
+function renameInText(text: string, from: string, to: string): string {
+  const lf = from.slice(-1).toLowerCase(), lt = to.slice(-1).toLowerCase();
+  const flex = "ая".includes(lf) && lf === lt;
+  const fromCore = flex ? from.slice(0, -1) : from;
+  const toCore = flex ? to.slice(0, -1) : to;
+  const rx = new RegExp(`(?<![а-яёa-z])${escRx(fromCore)}${flex ? "([а-яё]{1,3})" : "(?![а-яёa-z])"}`, "gi");
+  return text.replace(rx, (_m, tail?: string) => toCore + (typeof tail === "string" ? tail : ""));
+}
+
 // Локальная дата YYYY-MM-DD пользователя (по tz_offset, как в saveEntry).
 function localDay(off?: number | null): string {
   const ms = Date.now() + (typeof off === "number" ? off : 0) * 60000;
@@ -137,6 +160,8 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
+    renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
     open: "Открыть",
     mvKind: { film: "🎬 фильм", series: "📺 сериал", book: "📚 книгу" } as Record<string, string>,
     mvStatusWatch: { want: "хочу посмотреть", reading: "смотрю", read: "посмотрел" } as Record<string, string>,
@@ -158,6 +183,8 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    rename: (a: string, b: string) => `✏️ Fixed: “${a}” → “${b}” — in people and insights.`,
+    renameNone: (a: string) => `Couldn't find “${a}” in people or insights. How is the name written now?`,
     open: "Open",
     mvKind: { film: "🎬 film", series: "📺 series", book: "📚 book" } as Record<string, string>,
     mvStatusWatch: { want: "want to watch", reading: "watching", read: "watched" } as Record<string, string>,
@@ -179,6 +206,8 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
+    renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
     open: "Відкрити",
     mvKind: { film: "🎬 фільм", series: "📺 серіал", book: "📚 книгу" } as Record<string, string>,
     mvStatusWatch: { want: "хочу подивитися", reading: "дивлюся", read: "переглянув" } as Record<string, string>,
@@ -200,6 +229,8 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    rename: (a: string, b: string) => `✏️ Corrigé : « ${a} » → « ${b} » — dans les personnes et les insights.`,
+    renameNone: (a: string) => `Je n'ai pas trouvé « ${a} ». Comment le nom est-il écrit actuellement ?`,
     open: "Ouvrir",
     mvKind: { film: "🎬 film", series: "📺 série", book: "📚 livre" } as Record<string, string>,
     mvStatusWatch: { want: "à voir", reading: "en cours", read: "vu" } as Record<string, string>,
@@ -303,6 +334,52 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const kindLabel = s.mvKind[kind] || s.mvKind.film;
       const statusLabel = (kind === "book" ? s.mvStatusRead : s.mvStatusWatch)[status];
       return { text: s.media(kindLabel, title, statusLabel), openNext: "/books" };
+    }
+    if (name === "rename_person") {
+      const from = String(input?.from || "").trim();
+      const to = String(input?.to || "").trim();
+      if (!from || !to || normName(from) === normName(to)) return { text: s.fail };
+
+      // 1) Человек в базе людей: переименовать (или слить со уже существующим правильным).
+      let renamed = false;
+      try {
+        const { data: ppl } = await db.from("people").select("id,name").eq("user_id", userId);
+        const nf = normName(from), nt = normName(to);
+        const oldP = (ppl || []).find((p: any) => normName(p.name) === nf);
+        const newP = (ppl || []).find((p: any) => normName(p.name) === nt);
+        if (oldP && newP && oldP.id !== newP.id) {
+          // Слияние: перевешиваем связи записей на правильного человека, дубль удаляем.
+          const { data: oldLinks } = await db.from("entry_people").select("entry_id").eq("person_id", oldP.id);
+          const { data: newLinks } = await db.from("entry_people").select("entry_id").eq("person_id", newP.id);
+          const have = new Set((newLinks || []).map((l: any) => l.entry_id));
+          const moves = (oldLinks || []).filter((l: any) => !have.has(l.entry_id));
+          if (moves.length) await db.from("entry_people").insert(moves.map((l: any) => ({ entry_id: l.entry_id, person_id: newP.id })));
+          await db.from("entry_people").delete().eq("person_id", oldP.id);
+          await db.from("people").delete().eq("id", oldP.id);
+          renamed = true;
+        } else if (oldP) {
+          await db.from("people").update({ name: to }).eq("id", oldP.id);
+          renamed = true;
+        }
+      } catch (e) { console.error("rename_person people", e); }
+
+      // 2) Инсайты: правим имя в тексте (с учётом падежных окончаний — «Стельку» → «Эстельку»).
+      let fixed = 0;
+      try {
+        const lf = from.slice(-1).toLowerCase();
+        const core = "ая".includes(lf) && lf === to.slice(-1).toLowerCase() ? from.slice(0, -1) : from;
+        const { data: ins } = await db.from("insights").select("id,text").eq("user_id", userId).ilike("text", `%${core}%`);
+        for (const i of (ins || []) as any[]) {
+          const t2 = renameInText(i.text || "", from, to);
+          if (t2 !== i.text) { await db.from("insights").update({ text: t2 }).eq("id", i.id); fixed++; }
+        }
+      } catch (e) { console.error("rename_person insights", e); }
+
+      // 3) «Мой след»: поле «кому помог».
+      try { await db.from("good_deeds").update({ person: to }).eq("user_id", userId).ilike("person", from); } catch {}
+
+      if (!renamed && !fixed) return { text: s.renameNone(from) };
+      return { text: s.rename(from, to), openNext: "/people" };
     }
     if (name === "delete_last_entry") {
       // Не удаляем сразу — спрашиваем подтверждение (защита от случайной потери записи).

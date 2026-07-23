@@ -5,7 +5,7 @@ import { transcribe } from "@/lib/transcribe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction } from "@/lib/botActions";
-import { isCorrection, amendLastEntry } from "@/lib/amendEntry";
+import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
@@ -1238,7 +1238,9 @@ export async function POST(req: NextRequest) {
     // и НЕ отвечаем как на вопрос. ВАЖНО: проверяем ДО classifyIntent — иначе
     // фразы вроде «ты неправильно записал…» классификатор принимает за вопрос,
     // уводит в askLife, и запись в базе не меняется (бот «поговорил», но не исправил).
-    if (!forceSave && isCorrection(text)) {
+    // Исправление имени человека — НЕ правка последней записи: пропускаем к роутеру,
+    // у которого есть действие rename_person (правит имя во всей базе).
+    if (!forceSave && isCorrection(text) && !isNameCorrection(text)) {
       const amended = await amendLastEntry(user.id, text);
       if (amended) {
         const lang = langOf(user, msg);

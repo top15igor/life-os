@@ -15,6 +15,15 @@ export function isCorrection(text: string): boolean {
   return !!text && (MARKERS.test(text) || MISHEARD.test(text));
 }
 
+// Исправление ИМЕНИ человека («её зовут X», «настоящее имя — X», «переименуй…»,
+// «исправь имя») — этим занимается действие rename_person через роутер: имя надо
+// поменять во всей базе (люди + инсайты), а не в одной последней записи.
+const NAME_FIX =
+  /(зовут|звати|кличут|переимен|настоящее имя|справжнє ім'я|real name|(исправь|поправь|виправ|поменяй|зміни|change|fix)\s+(имя|ім'я|name))/i;
+export function isNameCorrection(text: string): boolean {
+  return !!text && NAME_FIX.test(text);
+}
+
 // Применить поправку к ПОСЛЕДНЕЙ сегодняшней записи: пере-разобрать и заменить производные.
 export async function amendLastEntry(
   userId: string,
