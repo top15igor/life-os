@@ -199,13 +199,9 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
         )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", rowGap: 10, marginBottom: 18 }}>
-        <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", borderRadius: 12, padding: 4 }}>
-          {s.tabs.map((label: string, i: number) => (
-            <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
-          ))}
-        </div>
-      </div>
+      {/* Строка-переключатель «Сегодня / Путь / Наследие» скрыта — главная показывает
+          только «Сегодня». Цели/проекты/книга/биограф доступны через нижнее меню и разделы. */}
+      <div style={{ height: 4 }} />
 
       {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
 
@@ -416,11 +412,9 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
                 <Link key={e.id} href={`/entry/${e.id}`} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: "1px solid var(--border)" }}>
                   <div style={{ flexShrink: 0, width: 48, textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 500 }}>{e.time}</div><i className={`ti ${e.source === "telegram_voice" ? "ti-microphone" : "ti-message"}`} style={{ fontSize: 13, color: "var(--text-3)" }} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, lineHeight: 1.55, marginBottom: 6 }}>{e.summary}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {e.cats.map((c: any) => (<span key={c.slug} style={{ fontSize: 11.5, padding: "2px 8px", borderRadius: 7, background: "var(--surface-2)", color: CAT_COLOR[c.slug] || "var(--text-2)" }}>{c.name}</span>))}
-                      {e.tags.map((tg: string) => (<span key={tg} style={{ fontSize: 11.5, padding: "2px 8px", borderRadius: 7, color: "var(--accent)" }}>#{tg}</span>))}
-                    </div>
+                    {/* Теги и категории скрыты — на главной оставляем только время и текст.
+                        Полные метки видны в самой записи и в «Дневнике». */}
+                    <div style={{ fontSize: 13.5, lineHeight: 1.55 }}>{e.summary}</div>
                   </div>
                 </Link>
               ))
