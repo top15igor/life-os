@@ -42,7 +42,7 @@ const RU: HowtoDoc = {
       "• /chat\n" +
       "• поставь напоминание завтра в 10 позвонить маме\n\n" +
       "Выйти из беседы — /stop." },
-    { key: "ask", label: "❓ Спроси свою жизнь", body:
+    { key: "ask", label: "❓ Спроси жизнь", body:
       "❓ <b>Спроси свою жизнь</b>\n\n" +
       "Задай вопрос по своему дневнику — найду ответ даже в старых записях.\n\n" +
       "<b>Попробуй — скопируй и отправь:</b>\n" +
@@ -55,7 +55,7 @@ const RU: HowtoDoc = {
       "<b>Попробуй:</b>\n" +
       "• что ты обо мне знаешь?\n\n" +
       "Соберу твой портрет из того, что уже понял." },
-    { key: "crm", label: "🗂 Жизнь под контролем", body:
+    { key: "crm", label: "🗂 Под контролем", body:
       "🗂 <b>CRM твоей жизни</b>\n\n" +
       "Я держу под рукой то, что важно: задачи, цели, обещания, напоминания и финансы. Ничего не теряется.\n\n" +
       "<b>Попробуй:</b>\n" +
@@ -68,7 +68,7 @@ const RU: HowtoDoc = {
       "<b>Попробуй:</b>\n" +
       "• передай Коле, что опоздаю на час\n" +
       "• /invite — позвать близкого" },
-    { key: "immortal", label: "♾ Путь к бессмертию", body:
+    { key: "immortal", label: "♾ Бессмертие", body:
       "♾ <b>Путь к бессмертию</b>\n\n" +
       "Память стирается — я нет. Всё, что ты проживаешь, остаётся: твои мысли, твоя история, твой голос. Однажды это станет цифровым продолжением тебя — тем, что смогут прочитать и почувствовать те, кто будет после.\n\n" +
       "Секрет один: <b>пиши</b>. Каждый день — ещё одна страница, которая не исчезнет." },
@@ -127,7 +127,7 @@ const EN: HowtoDoc = {
       "<b>Try:</b>\n" +
       "• what do you know about me?\n\n" +
       "I'll put together your portrait from what I've gathered." },
-    { key: "crm", label: "🗂 Life under control", body:
+    { key: "crm", label: "🗂 In control", body:
       "🗂 <b>The CRM of your life</b>\n\n" +
       "I keep what matters at hand: tasks, goals, promises, reminders and finances. Nothing slips through.\n\n" +
       "<b>Try:</b>\n" +
@@ -140,7 +140,7 @@ const EN: HowtoDoc = {
       "<b>Try:</b>\n" +
       "• tell Kolya I'll be an hour late\n" +
       "• /invite — bring someone close in" },
-    { key: "immortal", label: "♾ Path to immortality", body:
+    { key: "immortal", label: "♾ Immortality", body:
       "♾ <b>Path to immortality</b>\n\n" +
       "Memory fades — I don't. Everything you live through stays: your thoughts, your story, your voice. One day it becomes a digital continuation of you — something those who come after can read and feel.\n\n" +
       "There's one secret: <b>write</b>. Every day is one more page that won't disappear." },
