@@ -88,7 +88,9 @@ export async function noteTgUsername(userId: string, username?: string | null): 
 }
 
 // Находит пользователя по chat_id или создаёт нового (при первом сообщении).
-export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string): Promise<User> {
+// source — канал привлечения из помеченной ссылки t.me/<bot>?start=src_<slug>;
+// пишется только при создании (существующему пользователю источник не меняем).
+export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string, source?: string): Promise<User> {
   const db = supabaseAdmin();
 
   const { data: existing } = await db
@@ -114,11 +116,16 @@ export async function getOrCreateUser(chatId: number, name?: string, referredBy?
   const token = randomUUID();
   let ref = await resolveRefToId(referredBy);
   if (ref === id) ref = null;
-  const { data, error } = await db
-    .from("users")
-    .insert({ id, chat_id: chatId, name: name || null, token, referred_by: ref, lang: lang || null })
-    .select("id, token, name")
-    .single();
+  const row: any = { id, chat_id: chatId, name: name || null, token, referred_by: ref, lang: lang || null };
+  if (source) row.source = source;
+  let { data, error } = await db.from("users").insert(row).select("id, token, name").single();
+
+  // Защита: если колонки source ещё нет в базе (SQL не применён) —
+  // регистрация не должна падать, пробуем без источника.
+  if (error && source) {
+    delete row.source;
+    ({ data, error } = await db.from("users").insert(row).select("id, token, name").single());
+  }
 
   if (error) {
     // Гонка: возможно, пользователь только что создан параллельно.

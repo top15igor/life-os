@@ -990,16 +990,19 @@ export async function POST(req: NextRequest) {
   }
 
   // Реферал: /start ref_<id> — кто пригласил.
+  // Канал привлечения: /start src_<slug> — помеченная ссылка из посева/видео.
   let referredBy: string | undefined;
+  let source: string | undefined;
   if (typeof msg.text === "string" && msg.text.startsWith("/start ")) {
     const payload = msg.text.slice(7).trim();
     if (payload.startsWith("ref_")) referredBy = payload.slice(4);
+    if (payload.startsWith("src_") && /^[a-z0-9_-]{2,32}$/i.test(payload.slice(4))) source = payload.slice(4).toLowerCase();
   }
 
   // Каждый пользователь Telegram = аккаунт. Создаём при первом сообщении.
   let user;
   try {
-    user = await getOrCreateUser(chatId, msg.from?.first_name, referredBy, pickLang(msg.from?.language_code));
+    user = await getOrCreateUser(chatId, msg.from?.first_name, referredBy, pickLang(msg.from?.language_code), source);
   } catch (e) {
     console.error(e);
     await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
