@@ -27,6 +27,11 @@ const C = {
     idea_p2:
       "LIFE OS убирает всё трение. Не нужно ничего заполнять и систематизировать. Ты говоришь — остальное делает AI. Со временем он начинает понимать тебя: что даёт энергию, какие привычки работают, какие решения меняли твою жизнь.",
 
+    crm_kicker: "Для тех, кто ведёт дела",
+    crm_title: "Ты помнишь про клиентов лучше, чем про свою жизнь",
+    crm_p1: "У тебя есть CRM, заметки, таблицы — целая система, чтобы не забыть про работу и клиентов. А своя жизнь — мысли, здоровье, близкие, решения — нигде. Она просто утекает.",
+    crm_p2: "LIFE OS — это CRM наоборот: система, которая помнит не клиентов, а тебя. И вести её не надо — просто говори, остальное сделает AI.",
+
     how_kicker: "Как это работает",
     how: [
       { n: "1", t: "Рассказываешь", d: "Голосом или текстом — в Telegram-бота или прямо на сайте. Как другу: «сегодня было…»." },
@@ -104,6 +109,11 @@ const C = {
       "In a week you'll forget what you thought about today. In a year — what this month was like. We photograph our vacations but almost never save our thoughts, decisions and ideas — yet that's what life is made of.",
     idea_p2:
       "LIFE OS removes all the friction. Nothing to fill in or organize. You speak — AI does the rest. Over time it starts to understand you: what gives you energy, which habits work, which decisions changed your life.",
+
+    crm_kicker: "For people who run things",
+    crm_title: "You remember your customers better than your own life",
+    crm_p1: "You've got a CRM, notes, spreadsheets — a whole system so you never forget work and clients. But your own life — thoughts, health, the people you love, decisions — lives nowhere. It just slips away.",
+    crm_p2: "LIFE OS is a CRM in reverse: a system that remembers you, not your customers. And you don't manage it — you just talk, AI does the rest.",
 
     how_kicker: "How it works",
     how: [
@@ -183,6 +193,11 @@ const C = {
     idea_p2:
       "LIFE OS прибирає все тертя. Не треба нічого заповнювати й систематизувати. Ти говориш — решту робить AI. З часом він починає розуміти тебе: що дає енергію, які звички працюють, які рішення змінювали твоє життя.",
 
+    crm_kicker: "Для тих, хто веде справи",
+    crm_title: "Ти пам'ятаєш про клієнтів краще, ніж про власне життя",
+    crm_p1: "У тебе є CRM, нотатки, таблиці — ціла система, щоб не забути про роботу й клієнтів. А власне життя — думки, здоров'я, близькі, рішення — ніде. Воно просто витікає.",
+    crm_p2: "LIFE OS — це CRM навпаки: система, що пам'ятає не клієнтів, а тебе. І вести її не треба — просто говори, решту зробить AI.",
+
     how_kicker: "Як це працює",
     how: [
       { n: "1", t: "Розповідаєш", d: "Голосом або текстом — Telegram-боту або прямо на сайті. Як другу: «сьогодні було…»." },
@@ -260,6 +275,11 @@ const C = {
     idea_p2:
       "LIFE OS supprime toute friction. Rien à remplir ni à organiser. Tu parles — l'IA fait le reste. Avec le temps, elle apprend à te comprendre : ce qui te donne de l'énergie, quelles habitudes marchent, quelles décisions ont changé ta vie.",
 
+    crm_kicker: "Pour ceux qui gèrent",
+    crm_title: "Tu te souviens mieux de tes clients que de ta propre vie",
+    crm_p1: "Tu as un CRM, des notes, des tableurs — tout un système pour ne rien oublier du travail et des clients. Mais ta propre vie — pensées, santé, proches, décisions — n'existe nulle part. Elle file, tout simplement.",
+    crm_p2: "LIFE OS, c'est un CRM à l'envers : un système qui se souvient de toi, pas de tes clients. Et tu n'as rien à gérer — parle, l'IA fait le reste.",
+
     how_kicker: "Comment ça marche",
     how: [
       { n: "1", t: "Tu racontes", d: "À la voix ou au texte — au bot Telegram ou directement sur le site. Comme à un ami : « aujourd'hui… »." },
@@ -336,6 +356,11 @@ const C = {
       "En una semana olvidarás en qué pensabas hoy. En un año, cómo fue este mes. Fotografiamos nuestras vacaciones, pero casi nunca guardamos nuestros pensamientos, decisiones e ideas — y de eso está hecha la vida.",
     idea_p2:
       "LIFE OS elimina toda la fricción. No hay que rellenar ni organizar nada. Tú hablas — la IA hace el resto. Con el tiempo empieza a entenderte: qué te da energía, qué hábitos funcionan, qué decisiones cambiaron tu vida.",
+
+    crm_kicker: "Para quien lleva las riendas",
+    crm_title: "Recuerdas a tus clientes mejor que tu propia vida",
+    crm_p1: "Tienes un CRM, notas, hojas de cálculo — todo un sistema para no olvidar el trabajo y los clientes. Pero tu propia vida — pensamientos, salud, seres queridos, decisiones — no está en ningún lado. Simplemente se escapa.",
+    crm_p2: "LIFE OS es un CRM al revés: un sistema que te recuerda a ti, no a tus clientes. Y no hay que gestionarlo — solo habla, la IA hace el resto.",
 
     how_kicker: "Cómo funciona",
     how: [
@@ -522,6 +547,18 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 700 }}>{t.idea_p1}</p>
         <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: 0, maxWidth: 700 }}>{t.idea_p2}</p>
       </div>
+
+      {/* CRM-контраст — для прагматиков/предпринимателей */}
+      {(t as any).crm_title && (
+        <div style={{ ...section, padding: "0 22px 56px" }}>
+          <div className="card" style={{ borderLeft: "3px solid var(--accent)", background: "var(--accent-bg)", padding: "22px 24px" }}>
+            <div className="lp-kicker" style={{ marginBottom: 10 }}>{(t as any).crm_kicker}</div>
+            <h2 className="lp-h2" style={{ margin: "0 0 14px", fontSize: "clamp(22px, 3vw, 30px)", maxWidth: 720 }}>{(t as any).crm_title}</h2>
+            <p style={{ fontSize: 16.5, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 12px", maxWidth: 720 }}>{(t as any).crm_p1}</p>
+            <p style={{ fontSize: 16.5, color: "var(--text)", fontWeight: 500, lineHeight: 1.6, margin: 0, maxWidth: 720 }}>{(t as any).crm_p2}</p>
+          </div>
+        </div>
+      )}
 
       {/* How */}
       <div className="lp-band" style={{ padding: "60px 0" }}>
