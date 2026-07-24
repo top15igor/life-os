@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mapsLink } from "@/lib/geocode";
 
-type Item = { id?: number; name: string; hidden: boolean; meta: string; entries: { id: string; text: string }[]; lat?: number | null; lng?: number | null };
+type Item = { id?: number; name: string; hidden: boolean; meta: string; entries: { id: string; text: string }[]; lat?: number | null; lng?: number | null; href?: string };
 
 const STR: Record<string, any> = {
   ru: { manage: "Изменить", rename: "Переименовать", merge: "Объединить", hide: "Скрыть", unhide: "Вернуть", save: "Сохранить", cancel: "Отмена", mergeInto: "Объединить с:", mergeNote: "Все упоминания перейдут к выбранному, дубль исчезнет.", noOthers: "Нет других для объединения", hiddenSec: "Скрытые", needSql: "Чтобы скрывать — запусти SQL (entities_hidden.sql).", renamePh: "Имя", onMap: "На карте" },
@@ -60,7 +60,11 @@ export default function EntityManager({ kind, locale, items }: { kind: "people" 
                 style={{ width: "100%", boxSizing: "border-box", padding: "6px 9px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14 }} />
             ) : (
               <>
-                <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                {p.href ? (
+                  <Link href={p.href} style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", color: "var(--text)" }}>{p.name} <i className="ti ti-chevron-right" style={{ fontSize: 12, color: "var(--text-3)" }} /></Link>
+                ) : (
+                  <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                )}
                 <div style={{ fontSize: 11.5, color: "var(--text-3)" }}>{p.meta}</div>
               </>
             )}

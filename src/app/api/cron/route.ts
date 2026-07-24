@@ -12,6 +12,7 @@ import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { eveningQuestion } from "@/lib/dailyQuestions";
 import { localParts } from "@/lib/pushSchedule";
+import { peopleDigestMessage } from "@/lib/peopleCrm";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import Anthropic from "@anthropic-ai/sdk";
@@ -225,6 +226,21 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Самотест дайджеста «Повод написать»: /api/cron?people=<secret> — шлёт владельцу
+  // (или отвечает, что давно не упоминавшихся близких нет), без массовой рассылки.
+  const ppl = req.nextUrl.searchParams.get("people");
+  if (ppl !== null) {
+    if (ppl !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const db2 = supabaseAdmin();
+    const { data: u } = await db2.from("users").select("id, lang").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
+    const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    const msg = await peopleDigestMessage((u as any).id, lang);
+    if (msg) await sendMessage(Number(chat), msg);
+    return NextResponse.json({ ok: true, people: true, sent: !!msg });
+  }
+
   const test = req.nextUrl.searchParams.get("test");
   if (test !== null) {
     if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -360,6 +376,19 @@ export async function GET(req: NextRequest) {
           logPush(u.id, "weekly").catch(() => {});
           stats.digests++;
         }
+      }
+
+      // 💛 «Повод написать» — раз в неделю по средам: близкие люди, давно не
+      // появлявшиеся в записях (+ активное обещание как повод). Молчим, если некого.
+      if (!isWeeklyDay && lp.weekday === 3 && prefs.remindersEnabled !== false) {
+        try {
+          const msg = await peopleDigestMessage(u.id, lang);
+          if (msg) {
+            await sendMessage(u.chat_id, msg);
+            logPush(u.id, "people").catch(() => {});
+            (stats as any).peopleDigests = ((stats as any).peopleDigests || 0) + 1;
+          }
+        } catch (e) { console.error("people digest", u.id, e); }
       }
 
       // 🌱 Возврат к знакомству: человек поставил «Давай познакомимся» на паузу
