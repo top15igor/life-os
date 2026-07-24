@@ -1,6 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import Link from "next/link";
-import { getEntry, cats, tagList, people } from "@/lib/queries";
+import { getEntry, getEntryVoiceUrl, cats, tagList, people } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict, dateLabel } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -67,6 +67,8 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
     );
   }
 
+  const voiceUrl = e.source === "telegram_voice" ? await getEntryVoiceUrl(id, user.id) : null;
+  const voiceLabel = { ru: "🎙 Твой голос — навсегда", en: "🎙 Your voice — forever", uk: "🎙 Твій голос — назавжди", fr: "🎙 Ta voix — pour toujours", es: "🎙 Tu voz — para siempre" }[locale] || "🎙 Твой голос — навсегда";
   const placeNames = (e.entry_places || []).map((x: any) => x.places?.name).filter(Boolean);
   const projectNames = (e.entry_projects || []).map((x: any) => x.projects?.name).filter(Boolean);
   const catNames = cats(e).map((c: any) => t.cats[c.slug] || c.slug);
@@ -91,6 +93,15 @@ export default async function EntryPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         </div>
+
+        {voiceUrl && (
+          <div style={{ marginBottom: 16, background: "var(--accent-bg)", border: "1px solid var(--accent)", borderRadius: 14, padding: "13px 15px" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--accent-text)", marginBottom: 9, display: "flex", alignItems: "center", gap: 7 }}>
+              <i className="ti ti-microphone" style={{ fontSize: 16 }} />{voiceLabel}
+            </div>
+            <audio controls preload="none" src={voiceUrl} style={{ width: "100%", height: 40 }} />
+          </div>
+        )}
 
         <Section icon="ti-quote" title={t.entry.original}>
           <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: "12px 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-2)" }}>

@@ -40,6 +40,16 @@ export async function getEntry(id: string, userId: string): Promise<Entry | null
   return data;
 }
 
+// 🎙 Ссылка на оригинальное голосовое записи (мягко: нет колонки → null).
+export async function getEntryVoiceUrl(id: string, userId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin().from("entries").select("voice_url").eq("id", id).eq("user_id", userId).maybeSingle();
+    return (data as any)?.voice_url || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getToday(userId: string): Promise<{ date: string | null; entries: Entry[] }> {
   const all = await getEntries(userId, 100);
   if (!all.length) return { date: null, entries: [] };
