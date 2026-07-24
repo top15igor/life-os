@@ -10,12 +10,12 @@ type Dict = { badge: string; title: string; lead: string; metaCount: string; met
 const RU: Dict = {
   badge: "Каталог возможностей",
   title: "Твоя жизнь, собранная в одном месте — и сохранённая навсегда",
-  lead: "CRM твоей жизни. Ты просто живёшь и рассказываешь о днях — а LIFE OS запоминает, понимает и пишет твою Книгу жизни. Путь к маленькому бессмертию — по одной записи в день.",
+  lead: "Сохранись. Ты просто живёшь и рассказываешь о днях — а LIFE OS запоминает, понимает и пишет твою Книгу жизни. По одной записи в день — чтобы было куда вернуться.",
   metaCount: "50+ возможностей", metaA: "Telegram-бот + веб", metaB: "5 языков",
   login: "Войти", app: "В приложение",
   closeKicker: "Одна идея", closeTitle: "Ты просто живёшь. Остальное — на мне.",
   closeText: "Каждый день — ещё одна страница, которая не исчезнет. Через год это уже история, которую приятно перечитывать. Через жизнь — то, что останется.",
-  sign: "🪷 LIFE OS — CRM твоей жизни",
+  sign: "💾 LIFE OS — Сохранись.",
   final: "Начни первую страницу своей Книги жизни", finalCta: "Создать аккаунт",
   foot: "Каталог возможностей LIFE OS · обновляется по мере роста продукта",
   cats: [
@@ -43,7 +43,7 @@ const RU: Dict = {
       { t: "Редактор прямо в книге", d: "Правь главы, объединяй людей и проекты в одну сущность — не выходя из книги." },
       { t: "Скачать и напечатать", d: "PDF в один клик или заказать физическую книгу — идеальный подарок близким." },
     ] },
-    { kicker: "CRM жизни", title: "Всё о тебе — под рукой", lead: "Задачи, цели, деньги, люди, здоровье, места. LIFE OS держит твою жизнь в порядке, как CRM держит бизнес.", items: [
+    { kicker: "CRM наоборот", title: "Всё о тебе — под рукой", lead: "Задачи, цели, деньги, люди, здоровье, места. LIFE OS держит твою жизнь в порядке, как CRM держит бизнес — только помнит не клиентов, а тебя.", items: [
       { t: "🎯 Цели и задачи", d: "С горизонтами Сегодня / Неделя / Месяц — AI сам раскладывает, ты корректируешь." },
       { t: "⏰ Напоминания", d: "Обычными словами, с повторами, синхронизация с Google Календарём." },
       { t: "💰 Деньги", d: "Расходы и доходы, отчёты и советы; авто-подтягивание из банка (Monobank)." },
@@ -61,7 +61,7 @@ const RU: Dict = {
       { t: "Портрет", d: "«Что ты обо мне знаешь» — AI собирает тебя из всего, что ты рассказал." },
       { t: "Лаборатория", d: "Экспериментальные AI-инструменты — то, что появляется первым." },
     ] },
-    { kicker: "Наследие", title: "Путь к маленькому бессмертию", lead: "То, ради чего всё это. Память стирается — LIFE OS нет. Твоя история останется тем, кто будет после.", edge: "var(--lotus, #cf5f92)", items: [
+    { kicker: "Наследие", title: "То, что останется", lead: "То, ради чего всё это. Память стирается — записи нет. Твоя история останется тем, кто будет после.", edge: "var(--lotus, #cf5f92)", items: [
       { t: "Давай познакомимся", d: "Бот бережно расспрашивает и наполняет книгу; отношения растут по «лестнице близости»." },
       { t: "📸 В этот день", d: "Что у тебя было в этот самый день год, два, три назад — тёплое «а помнишь…»." },
       { t: "⏳ Капсула времени", d: "Письмо в будущее — доставлю точно в назначенный день. Себе, детям, любимому." },
@@ -87,12 +87,12 @@ const RU: Dict = {
 const EN: Dict = {
   badge: "Feature catalog",
   title: "Your life, gathered in one place — and kept forever",
-  lead: "The CRM of your life. You just live and tell it about your days — and LIFE OS remembers, understands and writes your Book of Life. A path to a little immortality — one entry a day.",
+  lead: "Save yourself. You just live and tell it about your days — and LIFE OS remembers, understands and writes your Book of Life. One entry a day — so you have somewhere to return.",
   metaCount: "50+ features", metaA: "Telegram bot + web", metaB: "5 languages",
   login: "Log in", app: "Open app",
   closeKicker: "One idea", closeTitle: "You just live. I'll handle the rest.",
   closeText: "Every day is one more page that won't disappear. In a year it's a story worth rereading. In a lifetime — what remains.",
-  sign: "🪷 LIFE OS — the CRM of your life",
+  sign: "💾 LIFE OS — Save yourself.",
   final: "Start the first page of your Book of Life", finalCta: "Create account",
   foot: "LIFE OS feature catalog · updated as the product grows",
   cats: [
@@ -120,7 +120,7 @@ const EN: Dict = {
       { t: "Edit inside the book", d: "Edit chapters, merge people and projects into one entity — without leaving the book." },
       { t: "Download & print", d: "One-click PDF or order a physical book — the most personal gift." },
     ] },
-    { kicker: "Life CRM", title: "Everything about you — at hand", lead: "Tasks, goals, money, people, health, places. LIFE OS keeps your life in order like a CRM keeps a business.", items: [
+    { kicker: "CRM in reverse", title: "Everything about you — at hand", lead: "Tasks, goals, money, people, health, places. LIFE OS keeps your life in order like a CRM keeps a business — only it remembers you, not your clients.", items: [
       { t: "🎯 Goals & tasks", d: "With Today / Week / Month horizons — AI sorts, you adjust." },
       { t: "⏰ Reminders", d: "In plain words, with repeats, synced to Google Calendar." },
       { t: "💰 Money", d: "Expenses and income, reports and tips; auto-import from your bank (Monobank)." },
@@ -138,7 +138,7 @@ const EN: Dict = {
       { t: "Portrait", d: "“What do you know about me” — AI assembles you from everything you shared." },
       { t: "Lab", d: "Experimental AI tools — where new things show up first." },
     ] },
-    { kicker: "Legacy", title: "A path to a little immortality", lead: "What it's all for. Memory fades — LIFE OS doesn't. Your story stays for those who come after.", edge: "var(--lotus, #cf5f92)", items: [
+    { kicker: "Legacy", title: "What remains", lead: "What it's all for. Memory fades — your entries don't. Your story stays for those who come after.", edge: "var(--lotus, #cf5f92)", items: [
       { t: "Let's get acquainted", d: "The bot gently asks and fills your book; the bond grows along a “closeness ladder”." },
       { t: "📸 On this day", d: "What you lived on this very day a year, two, three ago — a warm “remember…”." },
       { t: "⏳ Time capsule", d: "A letter to the future — delivered right on the chosen day. To yourself, kids, a loved one." },

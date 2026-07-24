@@ -1,6 +1,6 @@
 // ============================================================
 //  Меню «✨ Зачем я тебе» — интерактивная «инструкция по применению».
-//  Продаёт идею (CRM жизни → Книга жизни → путь к маленькому бессмертию)
+//  Продаёт идею («Сохранись» → Книга жизни → то, что останется близким)
 //  и показывает главные способы применения: у каждого раздела — короткая
 //  польза + готовые к отправке фразы. Плюс «🎲 Лайфхак» (случайный совет).
 //  Рендер чистый (без БД); данные локализованы (ru+en, uk→ru, fr/es→en).
@@ -20,8 +20,8 @@ export type HowtoDoc = {
 const RU: HowtoDoc = {
   intro:
     "✨ <b>Зачем я тебе</b>\n\n" +
-    "Я — CRM твоей жизни. Ты просто живёшь и рассказываешь мне о днях, а я запоминаю: людей, моменты, мысли, победы — раскладываю по полочкам и собираю в твою <b>Книгу жизни</b>. То, что обычно стирает время, у тебя останется навсегда.\n\n" +
-    "Это твой путь к маленькому бессмертию — по одной записи в день. Выбери раздел — покажу, как это работает 👇",
+    "Я помогаю тебе сохраниться. Ты просто живёшь и рассказываешь мне о днях, а я запоминаю: людей, моменты, мысли, победы — раскладываю по полочкам и собираю в твою <b>Книгу жизни</b>. То, что обычно стирает время, у тебя останется навсегда.\n\n" +
+    "Сохранись — по одной записи в день, чтобы было куда вернуться. Выбери раздел — покажу, как это работает 👇",
   items: [
     { key: "book", label: "📖 Книга жизни", body:
       "📖 <b>Книга жизни</b>\n\n" +
@@ -56,8 +56,8 @@ const RU: HowtoDoc = {
       "• что ты обо мне знаешь?\n\n" +
       "Соберу твой портрет из того, что уже понял." },
     { key: "crm", label: "🗂 Под контролем", body:
-      "🗂 <b>CRM твоей жизни</b>\n\n" +
-      "Я держу под рукой то, что важно: задачи, цели, обещания, напоминания и финансы. Ничего не теряется.\n\n" +
+      "🗂 <b>Твоя жизнь под контролем</b>\n\n" +
+      "Как CRM — только наоборот: помню не клиентов, а тебя. Задачи, цели, обещания, напоминания и финансы — всё под рукой, ничего не теряется.\n\n" +
       "<b>Попробуй:</b>\n" +
       "• напомни завтра в 9 оплатить аренду\n" +
       "• добавь цель пробежать марафон\n" +
@@ -68,9 +68,9 @@ const RU: HowtoDoc = {
       "<b>Попробуй:</b>\n" +
       "• передай Коле, что опоздаю на час\n" +
       "• /invite — позвать близкого" },
-    { key: "immortal", label: "♾ Бессмертие", body:
-      "♾ <b>Путь к бессмертию</b>\n\n" +
-      "Память стирается — я нет. Всё, что ты проживаешь, остаётся: твои мысли, твоя история, твой голос. Однажды это станет цифровым продолжением тебя — тем, что смогут прочитать и почувствовать те, кто будет после.\n\n" +
+    { key: "immortal", label: "💾 Сохранись", body:
+      "💾 <b>Сохранись</b>\n\n" +
+      "Память стирается — я нет. Всё, что ты проживаешь, остаётся: твои мысли, твоя история, твой голос. Однажды это прочитают те, кто будет после — и узнают тебя настоящего.\n\n" +
       "Секрет один: <b>пиши</b>. Каждый день — ещё одна страница, которая не исчезнет." },
     { key: "onthisday", label: "📸 В этот день", body:
       "📸 <b>В этот день</b>\n\n" +
@@ -107,8 +107,8 @@ const RU: HowtoDoc = {
 const EN: HowtoDoc = {
   intro:
     "✨ <b>Why I'm here</b>\n\n" +
-    "I'm the CRM of your life. You just live and tell me about your days, and I remember: people, moments, thoughts, wins — sort them out and gather them into your <b>Book of Life</b>. What time usually erases, you get to keep forever.\n\n" +
-    "It's your path to a little immortality — one entry a day. Pick a section — I'll show you how it works 👇",
+    "I help you save yourself. You just live and tell me about your days, and I remember: people, moments, thoughts, wins — sort them out and gather them into your <b>Book of Life</b>. What time usually erases, you get to keep forever.\n\n" +
+    "Save yourself — one entry a day, so you have somewhere to return. Pick a section — I'll show you how it works 👇",
   items: [
     { key: "book", label: "📖 Book of Life", body:
       "📖 <b>Book of Life</b>\n\n" +
@@ -143,8 +143,8 @@ const EN: HowtoDoc = {
       "• what do you know about me?\n\n" +
       "I'll put together your portrait from what I've gathered." },
     { key: "crm", label: "🗂 In control", body:
-      "🗂 <b>The CRM of your life</b>\n\n" +
-      "I keep what matters at hand: tasks, goals, promises, reminders and finances. Nothing slips through.\n\n" +
+      "🗂 <b>Your life, in control</b>\n\n" +
+      "Like a CRM — only in reverse: I remember you, not your clients. Tasks, goals, promises, reminders and finances — all at hand, nothing slips through.\n\n" +
       "<b>Try:</b>\n" +
       "• remind me tomorrow at 9 to pay rent\n" +
       "• add a goal to run a marathon\n" +
@@ -155,9 +155,9 @@ const EN: HowtoDoc = {
       "<b>Try:</b>\n" +
       "• tell Kolya I'll be an hour late\n" +
       "• /invite — bring someone close in" },
-    { key: "immortal", label: "♾ Immortality", body:
-      "♾ <b>Path to immortality</b>\n\n" +
-      "Memory fades — I don't. Everything you live through stays: your thoughts, your story, your voice. One day it becomes a digital continuation of you — something those who come after can read and feel.\n\n" +
+    { key: "immortal", label: "💾 Save yourself", body:
+      "💾 <b>Save yourself</b>\n\n" +
+      "Memory fades — I don't. Everything you live through stays: your thoughts, your story, your voice. One day those who come after will read it — and know the real you.\n\n" +
       "There's one secret: <b>write</b>. Every day is one more page that won't disappear." },
     { key: "onthisday", label: "📸 On this day", body:
       "📸 <b>On this day</b>\n\n" +
@@ -194,8 +194,8 @@ const EN: HowtoDoc = {
 const UK: HowtoDoc = {
   intro:
     "✨ <b>Навіщо я тобі</b>\n\n" +
-    "Я — CRM твого життя. Ти просто живеш і розповідаєш мені про дні, а я запам'ятовую: людей, моменти, думки, перемоги — розкладаю по поличках і збираю у твою <b>Книгу життя</b>. Те, що зазвичай стирає час, у тебе залишиться назавжди.\n\n" +
-    "Це твій шлях до маленького безсмертя — по одному запису на день. Обери розділ — покажу, як це працює 👇",
+    "Я допомагаю тобі зберегтися. Ти просто живеш і розповідаєш мені про дні, а я запам'ятовую: людей, моменти, думки, перемоги — розкладаю по поличках і збираю у твою <b>Книгу життя</b>. Те, що зазвичай стирає час, у тебе залишиться назавжди.\n\n" +
+    "Збережися — по одному запису на день, щоб було куди повернутися. Обери розділ — покажу, як це працює 👇",
   items: [
     { key: "book", label: "📖 Книга життя", body:
       "📖 <b>Книга життя</b>\n\n" +
@@ -230,8 +230,8 @@ const UK: HowtoDoc = {
       "• що ти знаєш про мене?\n\n" +
       "Зберу твій портрет із того, що вже зрозумів." },
     { key: "crm", label: "🗂 Під контролем", body:
-      "🗂 <b>CRM твого життя</b>\n\n" +
-      "Я тримаю під рукою те, що важливо: завдання, цілі, обіцянки, нагадування і фінанси. Нічого не губиться.\n\n" +
+      "🗂 <b>Твоє життя під контролем</b>\n\n" +
+      "Як CRM — тільки навпаки: пам'ятаю не клієнтів, а тебе. Завдання, цілі, обіцянки, нагадування і фінанси — все під рукою, нічого не губиться.\n\n" +
       "<b>Спробуй:</b>\n" +
       "• нагадай завтра о 9 оплатити оренду\n" +
       "• додай ціль пробігти марафон\n" +
@@ -242,9 +242,9 @@ const UK: HowtoDoc = {
       "<b>Спробуй:</b>\n" +
       "• передай Колі, що спізнюся на годину\n" +
       "• /invite — покликати рідного" },
-    { key: "immortal", label: "♾ Безсмертя", body:
-      "♾ <b>Шлях до безсмертя</b>\n\n" +
-      "Пам'ять стирається — я ні. Все, що ти проживаєш, залишається: твої думки, твоя історія, твій голос. Одного дня це стане цифровим продовженням тебе — тим, що зможуть прочитати й відчути ті, хто буде після.\n\n" +
+    { key: "immortal", label: "💾 Збережися", body:
+      "💾 <b>Збережися</b>\n\n" +
+      "Пам'ять стирається — я ні. Все, що ти проживаєш, залишається: твої думки, твоя історія, твій голос. Одного дня це прочитають ті, хто буде після — і впізнають тебе справжнього.\n\n" +
       "Секрет один: <b>пиши</b>. Кожен день — ще одна сторінка, яка не зникне." },
     { key: "onthisday", label: "📸 У цей день", body:
       "📸 <b>У цей день</b>\n\n" +
@@ -281,8 +281,8 @@ const UK: HowtoDoc = {
 const FR: HowtoDoc = {
   intro:
     "✨ <b>Pourquoi je suis là</b>\n\n" +
-    "Je suis le CRM de ta vie. Tu vis simplement et tu me racontes tes journées, et je me souviens : des gens, des moments, des pensées, des victoires — je trie tout et je les rassemble dans ton <b>Livre de vie</b>. Ce que le temps efface d'habitude, tu le gardes pour toujours.\n\n" +
-    "C'est ton chemin vers une petite immortalité — une entrée par jour. Choisis une rubrique — je te montre comment ça marche 👇",
+    "Je t'aide à te sauvegarder. Tu vis simplement et tu me racontes tes journées, et je me souviens : des gens, des moments, des pensées, des victoires — je trie tout et je les rassemble dans ton <b>Livre de vie</b>. Ce que le temps efface d'habitude, tu le gardes pour toujours.\n\n" +
+    "Sauvegarde-toi — une entrée par jour, pour avoir un endroit où revenir. Choisis une rubrique — je te montre comment ça marche 👇",
   items: [
     { key: "book", label: "📖 Livre de vie", body:
       "📖 <b>Livre de vie</b>\n\n" +
@@ -317,8 +317,8 @@ const FR: HowtoDoc = {
       "• qu'est-ce que tu sais de moi ?\n\n" +
       "Je rassemble ton portrait à partir de ce que j'ai compris." },
     { key: "crm", label: "🗂 Sous contrôle", body:
-      "🗂 <b>Le CRM de ta vie</b>\n\n" +
-      "Je garde à portée de main ce qui compte : tâches, objectifs, promesses, rappels et finances. Rien ne se perd.\n\n" +
+      "🗂 <b>Ta vie sous contrôle</b>\n\n" +
+      "Comme un CRM — mais à l'envers : je me souviens de toi, pas de tes clients. Tâches, objectifs, promesses, rappels et finances — tout à portée de main, rien ne se perd.\n\n" +
       "<b>Essaie :</b>\n" +
       "• rappelle-moi demain à 9h de payer le loyer\n" +
       "• ajoute un objectif : courir un marathon\n" +
@@ -329,9 +329,9 @@ const FR: HowtoDoc = {
       "<b>Essaie :</b>\n" +
       "• dis à Kolya que j'aurai une heure de retard\n" +
       "• /invite — inviter un proche" },
-    { key: "immortal", label: "♾ Immortalité", body:
-      "♾ <b>Le chemin vers l'immortalité</b>\n\n" +
-      "La mémoire s'efface — pas moi. Tout ce que tu vis reste : tes pensées, ton histoire, ta voix. Un jour, cela deviendra un prolongement numérique de toi — quelque chose que ceux qui viendront après pourront lire et ressentir.\n\n" +
+    { key: "immortal", label: "💾 Sauvegarde-toi", body:
+      "💾 <b>Sauvegarde-toi</b>\n\n" +
+      "La mémoire s'efface — pas moi. Tout ce que tu vis reste : tes pensées, ton histoire, ta voix. Un jour, ceux qui viendront après le liront — et connaîtront le vrai toi.\n\n" +
       "Il n'y a qu'un secret : <b>écris</b>. Chaque jour est une page de plus qui ne disparaîtra pas." },
     { key: "onthisday", label: "📸 Ce jour-là", body:
       "📸 <b>Ce jour-là</b>\n\n" +
@@ -368,8 +368,8 @@ const FR: HowtoDoc = {
 const ES: HowtoDoc = {
   intro:
     "✨ <b>Por qué estoy aquí</b>\n\n" +
-    "Soy el CRM de tu vida. Tú simplemente vives y me cuentas tus días, y yo recuerdo: personas, momentos, pensamientos, logros — los ordeno y los reúno en tu <b>Libro de la vida</b>. Lo que el tiempo suele borrar, tú lo conservas para siempre.\n\n" +
-    "Es tu camino hacia una pequeña inmortalidad — una entrada al día. Elige una sección — te muestro cómo funciona 👇",
+    "Te ayudo a guardarte. Tú simplemente vives y me cuentas tus días, y yo recuerdo: personas, momentos, pensamientos, logros — los ordeno y los reúno en tu <b>Libro de la vida</b>. Lo que el tiempo suele borrar, tú lo conservas para siempre.\n\n" +
+    "Guárdate — una entrada al día, para tener adónde volver. Elige una sección — te muestro cómo funciona 👇",
   items: [
     { key: "book", label: "📖 Libro de la vida", body:
       "📖 <b>Libro de la vida</b>\n\n" +
@@ -404,8 +404,8 @@ const ES: HowtoDoc = {
       "• ¿qué sabes de mí?\n\n" +
       "Reuniré tu retrato a partir de lo que ya he entendido." },
     { key: "crm", label: "🗂 Bajo control", body:
-      "🗂 <b>El CRM de tu vida</b>\n\n" +
-      "Tengo a mano lo que importa: tareas, metas, promesas, recordatorios y finanzas. Nada se pierde.\n\n" +
+      "🗂 <b>Tu vida bajo control</b>\n\n" +
+      "Como un CRM — solo que al revés: me acuerdo de ti, no de tus clientes. Tareas, metas, promesas, recordatorios y finanzas — todo a mano, nada se pierde.\n\n" +
       "<b>Prueba:</b>\n" +
       "• recuérdame mañana a las 9 pagar el alquiler\n" +
       "• añade la meta de correr un maratón\n" +
@@ -416,9 +416,9 @@ const ES: HowtoDoc = {
       "<b>Prueba:</b>\n" +
       "• dile a Kolya que llegaré una hora tarde\n" +
       "• /invite — invita a alguien cercano" },
-    { key: "immortal", label: "♾ Inmortalidad", body:
-      "♾ <b>Camino hacia la inmortalidad</b>\n\n" +
-      "La memoria se desvanece — yo no. Todo lo que vives permanece: tus pensamientos, tu historia, tu voz. Algún día se convertirá en una continuación digital de ti — algo que quienes vengan después podrán leer y sentir.\n\n" +
+    { key: "immortal", label: "💾 Guárdate", body:
+      "💾 <b>Guárdate</b>\n\n" +
+      "La memoria se desvanece — yo no. Todo lo que vives permanece: tus pensamientos, tu historia, tu voz. Algún día lo leerán quienes vengan después — y conocerán al verdadero tú.\n\n" +
       "Hay un solo secreto: <b>escribe</b>. Cada día es una página más que no desaparecerá." },
     { key: "onthisday", label: "📸 En este día", body:
       "📸 <b>En este día</b>\n\n" +
