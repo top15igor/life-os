@@ -9,6 +9,7 @@ import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { saveChat } from "@/lib/biographer";
 import { morningQuestion } from "@/lib/dailyQuestions";
+import { getGoodNews, goodNewsLine, type NewsLang } from "@/lib/goodNews";
 
 // Метка утреннего пуша в истории диалога — чтобы ассистент потом связывал
 // уточняющие вопросы пользователя с тем, что сам прислал утром.
@@ -71,6 +72,9 @@ export async function GET(req: NextRequest) {
       } catch { /* нет такого юзера — уйдёт статичная фраза */ }
       const personalized = !!text;
       text = text || morningMessage(lang, doy);
+      // «Добрая новость дня» — в самотесте генерим всегда, чтобы увидеть результат.
+      const news = await getGoodNews(lang as NewsLang, now.toISOString().slice(0, 10), true);
+      if (news) text = text + "\n\n" + goodNewsLine(news);
       text = text + "\n\n" + morningQuestion(lang, doy); // короткий вопрос — чтобы человек сразу ответил
       await sendMessage(Number(chat), text, { reply_markup: mainKeyboard(lang) });
       if (uid) saveChat(uid, MORNING_TAG, text).catch(() => {});
@@ -137,6 +141,12 @@ export async function GET(req: NextRequest) {
           if (text) personalized++;
         }
         if (!text) text = morningMessage(lang, doy); // мало данных / лимит времени / ошибка
+        // «Добрая новость дня»: из кэша мгновенно; генерация — только пока есть запас времени
+        // (первый пользователь языка за день платит ~10с, остальные берут из кэша).
+        if (prefs.worldNews) {
+          const news = await getGoodNews(lang as NewsLang, due.todayKey, Date.now() < deadline - 15_000).catch(() => null);
+          if (news) text = text + "\n\n" + goodNewsLine(news);
+        }
         text = text + "\n\n" + morningQuestion(lang, doy); // короткий вопрос — чтобы человек сразу ответил
         await sendMessage(u.chat_id, text, { reply_markup: mainKeyboard(lang) });
         saveChat(u.id, MORNING_TAG, text).catch(() => {}); // в историю, не тормозя рассылку

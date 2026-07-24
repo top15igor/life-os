@@ -10,6 +10,7 @@ type L = {
   mTitle: string; mSub: string; mOn: string; toneLabel: string; topicsLabel: string; lengthLabel: string;
   addressLabel: string; addressPh: string; weekday: string; weekend: string; same: string; def: string; tzNote: (tz: string) => string;
   styleLabel: string; stylePh: string; off: string;
+  worldOn: string; worldDesc: string;
   eTitle: string; eSub: string; eOn: string; eAi: string; themesLabel: string; allThemes: string;
   customLabel: string; customPh: string; add: string;
   schedTitle: string; quietLabel: string; quietHint: string; weeklyOn: string; weeklyDay: string; weeklyDesc: string;
@@ -29,6 +30,7 @@ const STR: Record<string, L> = {
     weekday: "Время (будни)", weekend: "Время (выходные)", same: "Как в будни", def: "По умолчанию (~08:00)", tzNote: (tz) => `Твой пояс: ${tz}`,
     styleLabel: "Свой стиль (необязательно)", stylePh: "Напр.: коротко, без эмодзи",
     off: "Темы выключены — придёт короткое тёплое приветствие.",
+    worldOn: "🌍 Добрая новость дня", worldDesc: "Одна реальная позитивная новость из мира — с источником. Противовес плохим новостям.",
     eTitle: "Вечерние вопросы для книги", eSub: "Тёплый наводящий вопрос вечером, чтобы наполнять твою Книгу жизни.",
     eOn: "Отправлять вечером", eAi: "Умные вопросы (AI)", themesLabel: "Темы вопросов", allThemes: "Ничего не выбрано = все темы.",
     customLabel: "Свои подсказки", customPh: "Напиши свой вопрос или тему…", add: "Добавить",
@@ -54,6 +56,7 @@ const STR: Record<string, L> = {
     weekday: "Time (weekdays)", weekend: "Time (weekend)", same: "Same as weekdays", def: "Default (~08:00)", tzNote: (tz) => `Your zone: ${tz}`,
     styleLabel: "Your style (optional)", stylePh: "E.g.: short, no emoji",
     off: "Topics off — you'll get a short warm greeting.",
+    worldOn: "🌍 Good news of the day", worldDesc: "One real positive world story with a source. A counterweight to bad news.",
     eTitle: "Evening book questions", eSub: "A warm prompt in the evening to fill your Book of Life.",
     eOn: "Send in the evening", eAi: "Smart questions (AI)", themesLabel: "Question themes", allThemes: "Nothing selected = all themes.",
     customLabel: "Your own prompts", customPh: "Write your own question or topic…", add: "Add",
@@ -79,6 +82,7 @@ const STR: Record<string, L> = {
     weekday: "Час (будні)", weekend: "Час (вихідні)", same: "Як у будні", def: "За замовчуванням (~08:00)", tzNote: (tz) => `Твій пояс: ${tz}`,
     styleLabel: "Свій стиль (необов'язково)", stylePh: "Напр.: коротко, без емодзі",
     off: "Теми вимкнені — прийде коротке тепле привітання.",
+    worldOn: "🌍 Добра новина дня", worldDesc: "Одна реальна позитивна новина зі світу — з джерелом. Противага поганим новинам.",
     eTitle: "Вечірні питання для книги", eSub: "Тепле навідне питання ввечері, щоб наповнювати твою Книгу життя.",
     eOn: "Надсилати ввечері", eAi: "Розумні питання (AI)", themesLabel: "Теми питань", allThemes: "Нічого не обрано = усі теми.",
     customLabel: "Свої підказки", customPh: "Напиши своє питання чи тему…", add: "Додати",
@@ -104,6 +108,7 @@ const STR: Record<string, L> = {
     weekday: "Heure (semaine)", weekend: "Heure (week-end)", same: "Comme en semaine", def: "Par défaut (~08:00)", tzNote: (tz) => `Ton fuseau : ${tz}`,
     styleLabel: "Ton style (facultatif)", stylePh: "Ex. : court, sans emoji",
     off: "Thèmes désactivés — tu recevras un petit mot chaleureux.",
+    worldOn: "🌍 Bonne nouvelle du jour", worldDesc: "Une vraie nouvelle positive du monde, avec sa source. Un contrepoids aux mauvaises nouvelles.",
     eTitle: "Questions du soir", eSub: "Une question chaleureuse le soir pour remplir ton Livre de vie.",
     eOn: "Envoyer le soir", eAi: "Questions intelligentes (IA)", themesLabel: "Thèmes des questions", allThemes: "Rien de sélectionné = tous les thèmes.",
     customLabel: "Tes propres questions", customPh: "Écris ta question ou ton thème…", add: "Ajouter",
@@ -129,6 +134,7 @@ const STR: Record<string, L> = {
     weekday: "Hora (días laborables)", weekend: "Hora (fin de semana)", same: "Igual que los días laborables", def: "Por defecto (~08:00)", tzNote: (tz) => `Tu zona horaria: ${tz}`,
     styleLabel: "Tu estilo (opcional)", stylePh: "Ej.: corto, sin emojis",
     off: "Temas desactivados — recibirás un saludo cálido y breve.",
+    worldOn: "🌍 Buena noticia del día", worldDesc: "Una noticia positiva real del mundo, con fuente. Un contrapeso a las malas noticias.",
     eTitle: "Preguntas nocturnas para el libro", eSub: "Una pregunta cálida por la noche para llenar tu Libro de la vida.",
     eOn: "Enviar por la noche", eAi: "Preguntas inteligentes (IA)", themesLabel: "Temas de las preguntas", allThemes: "Nada seleccionado = todos los temas.",
     customLabel: "Tus propias preguntas", customPh: "Escribe tu propia pregunta o tema…", add: "Añadir",
@@ -274,6 +280,9 @@ export default function PushSettings({ locale, initial }: { locale: string; init
                 p.topics.includes(t) ? "ti-check" : "ti-plus"))}
             </div>
             {p.topics.length === 0 && <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 15, lineHeight: 1.45 }}>{s.off}</div>}
+
+            <Toggle on={p.worldNews !== false} onChange={() => set({ worldNews: p.worldNews === false })} label={s.worldOn} />
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", margin: "-6px 0 15px", lineHeight: 1.45 }}>{s.worldDesc}</div>
 
             <div style={{ display: "flex", gap: 10, marginBottom: 6 }}>
               <div style={{ flex: 1, minWidth: 0 }}>

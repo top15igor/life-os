@@ -38,6 +38,7 @@ export interface MorningPrefs {
   hourWeekend: number | null; // час в выходные; null = как в будни
   tz: string | null;          // IANA-таймзона пользователя
   customStyle: string;        // свободное описание стиля (дополняет тон)
+  worldNews: boolean;         // «добрая новость дня» в утреннем пуше (реальный позитивный факт из мира)
   morningEnabled: boolean;    // утренний пуш вкл/выкл
   quietDays: number[];        // дни недели без пушей вообще (0=Вс … 6=Сб)
   weekly: WeeklyPrefs;        // недельный итог
@@ -64,7 +65,7 @@ export const DEFAULT_WEEKLY_PREFS: WeeklyPrefs = { enabled: true, day: 0 };
 
 export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, topics: [...MORNING_TOPICS], length: "normal", address: "",
-  hour: null, hourWeekend: null, tz: null, customStyle: "", morningEnabled: true,
+  hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
   remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, taskHorizons: {},
 };
@@ -122,6 +123,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   return {
     tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, topics, length, address, tz, customStyle,
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
+    worldNews: raw.worldNews !== false,
     morningEnabled: raw.morningEnabled !== false, quietDays, weekly,
     evening: normalizeEvening(raw.evening),
     remindersEnabled: raw.remindersEnabled !== false,

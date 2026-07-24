@@ -5,6 +5,7 @@ import { DREAM_SPHERES } from "./ai";
 import { createReminder, localToISO } from "./reminders";
 import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
+import { normalizeMorningPrefs } from "./morningPrefs";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -65,6 +66,12 @@ export const ACTION_TOOLS: any[] = [
       "Пользователь исправляет ИМЯ человека: «её зовут X (а не Y)», «настоящее имя — X», «переименуй Y в X», «исправь имя», «это не Y, это X», «запиши, что её зовут X». Переименовывает человека в базе людей и исправляет его имя во всех сохранённых инсайтах — выбирай это, а НЕ save_entry, когда суть сообщения = поправить имя. from — имя, как записано сейчас (неправильное), to — правильное; оба в именительном падеже.",
     input_schema: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } }, required: ["from", "to"] },
   },
+  {
+    name: "set_style",
+    description:
+      "Пользователь просит ИЗМЕНИТЬ МАНЕРУ ОБЩЕНИЯ бота или содержание его сообщений: «пиши короче», «меньше эмодзи», «без пафоса», «обращайся на вы», «не называй меня…», «не пиши мне про…», «хватит спрашивать про…», «пиши по-украински». Пожелание СОХРАНЯЕТСЯ и реально влияет на будущие сообщения (утренние и чат). wish — суть пожелания одной короткой фразой-инструкцией.",
+    input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
+  },
   { name: "delete_last_entry", description: "Удалить ПОСЛЕДНЮЮ запись дневника. ТОЛЬКО при явной команде удаления, где прямо сказано «удали/убери/сотри» + «(последнюю) запись»: «удали последнюю запись», «убери предыдущую запись», «сотри последнее». НЕ выбирай на фразы-поправки и недовольство («не то записал», «не надо было это добавлять», «надо было иначе», «неправильно», «зачем ты…») — это НЕ команда удаления, для них save_entry.", input_schema: { type: "object", properties: {} } },
   { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать — ИЛИ возмущается/уточняет по поводу уже записанного («почему трату не учёл?», «где сегодняшний расход?», «чего не показал?»). Это НЕ новая запись, повторно данные (в т.ч. траты) записывать не нужно.", input_schema: { type: "object", properties: {} } },
   { name: "save_entry", description: "Обычная дневниковая запись: рассказ о дне, мысли, чувства, событие, идея. ПО УМОЛЧАНИЮ выбирай это.", input_schema: { type: "object", properties: {} } },
@@ -80,6 +87,7 @@ const SYS =
   "ВАЖНО: фразы-поправки, недовольство и уточнения («не так записал», «не надо было это добавлять», «надо было иначе», «зачем ты…», «неправильно понял») — это НЕ команда действия и тем более НЕ удаление; по умолчанию save_entry. " +
   "ИСКЛЮЧЕНИЕ: если поправка — про ИМЯ человека («её зовут X», «настоящее имя — X», «переименуй Y в X», «исправь имя», «запиши у себя и измени: её зовут X») → rename_person, чтобы имя исправилось во всей базе, а не легло новой записью. " +
   "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
+  "Просьбы к БОТУ изменить манеру или содержание его сообщений («пиши короче», «меньше эмодзи», «не пиши мне про…», «обращайся иначе», «не называй меня…») → set_style, а НЕ save_entry: пожелание должно сохраниться и влиять. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
   "«а почему трату не учёл?», «где сегодняшний расход?», «чего не показал?», «ты не записал…?» — это ask_question, " +
@@ -155,6 +163,7 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Отметил мечту сбывшейся: «${t}»!`,
     dreamNone: "Не нашёл такую мечту. Скажи точнее?",
     deed: (t: string) => `💛 Записал доброе дело: «${t}».`,
+    style: (t: string) => `🎨 Запомнил: «${t}». Буду учитывать — и в утренних сообщениях, и в чате.`,
     delAsk: (t: string) => `🗑 Удалить последнюю запись${t ? `: «${t}»` : ""}? Это действие нельзя отменить.`,
     delLast: (t: string) => `🗑 Удалил последнюю запись${t ? `: «${t}»` : ""}.`,
     delKept: "Ок, оставил запись.",
@@ -178,6 +187,7 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Marked dream as come true: “${t}”!`,
     dreamNone: "Couldn't find that dream. Be more specific?",
     deed: (t: string) => `💛 Logged a good deed: “${t}”.`,
+    style: (t: string) => `🎨 Got it: “${t}”. I'll keep it in mind — in morning messages and in chat.`,
     delAsk: (t: string) => `🗑 Delete the last entry${t ? `: “${t}”` : ""}? This can't be undone.`,
     delLast: (t: string) => `🗑 Deleted the last entry${t ? `: “${t}”` : ""}.`,
     delKept: "Ok, kept the entry.",
@@ -201,6 +211,7 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Позначив мрію здійсненою: «${t}»!`,
     dreamNone: "Не знайшов таку мрію. Скажи точніше?",
     deed: (t: string) => `💛 Записав добру справу: «${t}».`,
+    style: (t: string) => `🎨 Запам'ятав: «${t}». Враховуватиму — і в ранкових повідомленнях, і в чаті.`,
     delAsk: (t: string) => `🗑 Видалити останній запис${t ? `: «${t}»` : ""}? Цю дію не можна скасувати.`,
     delLast: (t: string) => `🗑 Видалив останній запис${t ? `: «${t}»` : ""}.`,
     delKept: "Ок, залишив запис.",
@@ -224,6 +235,7 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Rêve marqué comme réalisé : « ${t} » !`,
     dreamNone: "Je n'ai pas trouvé ce rêve. Précise ?",
     deed: (t: string) => `💛 Bonne action enregistrée : « ${t} ».`,
+    style: (t: string) => `🎨 C'est noté : « ${t} ». J'en tiendrai compte — le matin et dans le chat.`,
     delAsk: (t: string) => `🗑 Supprimer la dernière entrée${t ? ` : « ${t} »` : ""} ? Action irréversible.`,
     delLast: (t: string) => `🗑 Dernière entrée supprimée${t ? ` : « ${t} »` : ""}.`,
     delKept: "Ok, entrée conservée.",
@@ -247,6 +259,7 @@ const M: Record<Lang, any> = {
     dreamDone: (t: string) => `🌟 Marqué el sueño como cumplido: «${t}»!`,
     dreamNone: "No encontré ese sueño. ¿Puedes ser más específico?",
     deed: (t: string) => `💛 Registré una buena acción: «${t}».`,
+    style: (t: string) => `🎨 Anotado: «${t}». Lo tendré en cuenta — por la mañana y en el chat.`,
     delAsk: (t: string) => `🗑 ¿Eliminar la última entrada${t ? `: «${t}»` : ""}? Esta acción no se puede deshacer.`,
     delLast: (t: string) => `🗑 Eliminé la última entrada${t ? `: «${t}»` : ""}.`,
     delKept: "Ok, dejé la entrada.",
@@ -402,6 +415,23 @@ export async function runAction(userId: string, name: string, input: any, lang: 
 
       if (!renamed && !fixed) return { text: s.renameNone(from) };
       return { text: s.rename(from, to), openNext: "/people" };
+    }
+    if (name === "set_style") {
+      const wish = String(input?.wish || "").trim().slice(0, 200);
+      if (!wish) return { text: s.fail };
+      const { data } = await db.from("users").select("morning_prefs").eq("id", userId).maybeSingle();
+      const prefs = normalizeMorningPrefs((data as any)?.morning_prefs);
+      // Копим пожелания списком через «; », новые вытесняют самые старые (лимит поля 300).
+      const appendWish = (cur: string): string => {
+        const parts = cur ? cur.split("; ").filter(Boolean) : [];
+        if (!parts.some((x) => x.toLowerCase() === wish.toLowerCase())) parts.push(wish);
+        while (parts.join("; ").length > 300 && parts.length > 1) parts.shift();
+        return parts.join("; ").slice(0, 300);
+      };
+      prefs.customStyle = appendWish(prefs.customStyle); // утренние сообщения
+      prefs.chatStyle = appendWish(prefs.chatStyle);     // AI-друг в чате
+      await db.from("users").update({ morning_prefs: prefs }).eq("id", userId);
+      return { text: s.style(wish) };
     }
     if (name === "delete_last_entry") {
       // Не удаляем сразу — спрашиваем подтверждение (защита от случайной потери записи).
