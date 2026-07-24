@@ -182,6 +182,15 @@ export default async function AdminPage() {
             <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
           </Link>
 
+          <Link href="/admin/copy" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+            <i className="ti ti-writing" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Тексты для лендинга и постов</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Готовые посты, таглайны, hero и призывы — копируй и вставляй</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
+          </Link>
+
           <Link href="/admin/tasks" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
             <i className="ti ti-clock-pause" style={{ fontSize: 24, color: "var(--accent)" }} />
             <div style={{ flex: 1 }}>

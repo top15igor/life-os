@@ -205,6 +205,10 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
             <button key={i} onClick={() => setTab(i)} style={{ fontSize: 13.5, fontWeight: 500, padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", background: tab === i ? "var(--surface)" : "transparent", color: tab === i ? "var(--text)" : "var(--text-2)" }}>{label}</button>
           ))}
         </div>
+        <a href="/features" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 99, padding: "7px 13px", whiteSpace: "nowrap" }}>
+          <i className="ti ti-list-details" style={{ fontSize: 15, color: "var(--accent)" }} />
+          {{ ru: "Все возможности", en: "All features", uk: "Усі можливості", fr: "Toutes les fonctions", es: "Todas las funciones" }[locale] || "Все возможности"}
+        </a>
       </div>
 
       {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
