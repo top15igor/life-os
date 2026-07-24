@@ -200,8 +200,14 @@ export default function HomeTabs({ data, locale, nav, metricsLabels, qa, design,
       </div>
 
       {/* Строка-переключатель «Сегодня / Путь / Наследие» скрыта — главная показывает
-          только «Сегодня». Цели/проекты/книга/биограф доступны через нижнее меню и разделы. */}
-      <div style={{ height: 4 }} />
+          только «Сегодня». Цели/проекты/книга/биограф доступны через нижнее меню и разделы.
+          Справа — тихая ссылка на полный каталог возможностей. */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <a href="/features" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--text-2)", textDecoration: "none", border: "1px solid var(--border)", borderRadius: 99, padding: "7px 13px", whiteSpace: "nowrap" }}>
+          <i className="ti ti-list-details" style={{ fontSize: 15, color: "var(--accent)" }} />
+          {{ ru: "Все возможности", en: "All features", uk: "Усі можливості", fr: "Toutes les fonctions", es: "Todas las funciones" }[locale] || "Все возможности"}
+        </a>
+      </div>
 
       {editOpen && <HomeEditor locale={locale} preset={curPreset} blocks={curBlocks} onPreset={choosePreset} onToggleBlock={toggleBlock} onClose={() => setEditOpen(false)} />}
 
