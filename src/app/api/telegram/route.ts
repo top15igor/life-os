@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
+import { archiveVoice } from "@/lib/voiceArchive";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction } from "@/lib/botActions";
@@ -516,7 +517,7 @@ const CAPSULE: Record<string, { help: string; when: string; past: string; saved:
   },
 };
 
-// «🪷 CRM твоей жизни» — краткое описание + переход на портал (главный вход).
+// «💾 Сохранённое» — краткое описание твоей сохранённой жизни + переход на портал.
 const CRM_INTRO: Record<string, string> = {
   ru: "💾 <b>Твоя сохранённая жизнь</b>\n\nВсё, что ты рассказал, я сохранил и разложил по полочкам: записи, люди, цели, здоровье, память и Книга жизни. Открой — и увидишь свою жизнь целиком.",
   en: "💾 <b>Your saved life</b>\n\nEverything you've told me is saved and sorted: entries, people, goals, health, memory and your Book of Life. Open it — and see your whole life at once.",
@@ -1486,11 +1487,13 @@ export async function POST(req: NextRequest) {
 
     let text: string | undefined = msg.text;
     const isVoice = Boolean(msg.voice || msg.audio);
+    let voiceFileUrl: string | null = null; // 🎙 для «Голос навсегда» — сохраним оригинал после записи
 
     if (isVoice) {
       await sendMessage(chatId, "🎧 Распознаю голос…");
       const fileId = (msg.voice || msg.audio).file_id;
       const url = await getFileUrl(fileId);
+      voiceFileUrl = url;
       text = await transcribe(url);
       logUsage(user.id, "transcribe", 0, 0, 0.5);
     }
@@ -1726,6 +1729,10 @@ export async function POST(req: NextRequest) {
       source: isVoice ? "telegram_voice" : "telegram_text",
       analysis,
     });
+    // 🎙 «Голос навсегда»: сохраняем оригинальное голосовое в фоне (не задерживая ответ).
+    if (isVoice && voiceFileUrl && entry?.id) {
+      archiveVoice(user.id, entry.id, voiceFileUrl).catch(() => {});
+    }
     const lang = langOf(user, msg);
     // «Реакция друга» генерим параллельно с остальным — почти без доп. задержки.
     const reactionP = friendReaction(user.id, text, lang);
