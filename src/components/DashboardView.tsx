@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { bandOf, bandMeta } from "@/lib/mood";
+import LifeBalance from "./LifeBalance";
 
 type TL = { date: string; mood: number | null; steps: number | null; sleep_hours: number | null; hr_resting: number | null; active_kcal: number | null; hrv: number | null; azm: number | null };
 type LatestHealth = { sleep_hours?: number | null; sleep_deep_min?: number | null; sleep_rem_min?: number | null; sleep_light_min?: number | null } | null;
@@ -171,7 +172,7 @@ function MetricDetail({ def, tl, onClose }: { def: MetricDef; tl: TL[]; onClose:
   );
 }
 
-export default function DashboardView() {
+export default function DashboardView({ locale = "ru" }: { locale?: string }) {
   const [d, setD] = useState<Dash | null>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<string | null>(null);
@@ -299,6 +300,11 @@ export default function DashboardView() {
           </div>
         </div>
       ))}
+
+      {/* Жизненный баланс: что растёт, что забыто, куда всё движется (переехал с главной). */}
+      <div style={{ ...card, marginTop: 14 }} className="card">
+        <LifeBalance locale={locale} />
+      </div>
 
       {open && (() => {
         const def = METRICS.find((m) => m.key === open);

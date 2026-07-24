@@ -159,7 +159,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
         <PageHead icon="ti-heartbeat" color="#ef4444" title={t.nav.wellness} hint={h.wellness} />
         <SubTabs base="/health" active={tab} tabs={tabs} />
 
-        {tab === "dashboard" && <DashboardView />}
+        {tab === "dashboard" && <DashboardView locale={locale} />}
 
         {tab === "settings" && metrics && (
           <HealthSync days={metrics.days} token={healthToken} locale={locale} fitbitConnected={fbConnected} fitbitConfigured={googleHealthConfigured()} fitbitMsg={sp.fitbit} appleConnected={appleConnected} healthSource={healthSource} />
