@@ -2,6 +2,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
+import DesignSwitch from "@/components/about/DesignSwitch";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
 
@@ -490,9 +491,9 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Какой дизайн показывать: B (новый) или A (классический, по умолчанию).
   const design = sp.d === "b" ? "b" : "a";
 
-  // Новый дизайн (Дизайн B) — доступен по ?d=b (переключатель убран, основной — A).
+  // Новый дизайн (Дизайн B) — основной остаётся A, переключатель-пилюля внизу справа.
   if (design === "b") {
-    return <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} />;
+    return <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} refCode={ref} />;
   }
 
   const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
@@ -807,6 +808,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
       </div>
+
+      <DesignSwitch locale={locale} current="a" refCode={ref} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n";
 import LangMenu from "@/components/LangMenu";
+import DesignSwitch from "@/components/about/DesignSwitch";
 
 /* ============== палитра/анимации (scoped под .life-modern) ============== */
 const CSS = `
@@ -266,7 +267,7 @@ const D: Record<Locale, Dict> = {
 
 type MicState = "idle" | "recording" | "recognizing" | "sorted";
 
-export default function AboutModern({ locale, intl, isAuthed, loginHref }: { locale: Locale; intl: string; isAuthed: boolean; loginHref: string }) {
+export default function AboutModern({ locale, intl, isAuthed, loginHref, refCode }: { locale: Locale; intl: string; isAuthed: boolean; loginHref: string; refCode?: string }) {
   const t = D[locale] || D.ru;
   const homeHref = isAuthed ? "/" : loginHref;
   const startHref = isAuthed ? "/" : loginHref;
@@ -557,6 +558,8 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref }: { loc
           <span style={{ font: "400 13px 'Onest'", color: "var(--faint)", width: "100%", marginTop: 8 }}>{t.copyright}</span>
         </div>
       </footer>
+
+      <DesignSwitch locale={locale} current="b" refCode={refCode} />
     </div>
   );
 }
