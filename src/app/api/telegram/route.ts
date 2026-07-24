@@ -518,14 +518,14 @@ const CAPSULE: Record<string, { help: string; when: string; past: string; saved:
 
 // «🪷 CRM твоей жизни» — краткое описание + переход на портал (главный вход).
 const CRM_INTRO: Record<string, string> = {
-  ru: "🪷 <b>CRM твоей жизни</b>\n\nLIFE OS — это CRM для управления твоей жизнью. Всё о тебе в одном месте: записи, люди, цели и задачи, финансы, память и Книга жизни. Я собираю и раскладываю по полочкам, чтобы ты видел свою жизнь целиком и вёл её осознанно.",
-  en: "🪷 <b>Your Life CRM</b>\n\nLIFE OS is a CRM for running your life. Everything about you in one place: entries, people, goals and tasks, finances, memory and your Book of Life. I gather it and sort it out so you see your whole life and run it consciously.",
-  uk: "🪷 <b>CRM твого життя</b>\n\nLIFE OS — це CRM для управління твоїм життям. Усе про тебе в одному місці: записи, люди, цілі й завдання, фінанси, пам'ять і Книга життя. Я збираю й розкладаю по поличках, щоб ти бачив своє життя цілком і вів його усвідомлено.",
-  fr: "🪷 <b>Ton CRM de vie</b>\n\nLIFE OS est un CRM pour piloter ta vie. Tout sur toi au même endroit : entrées, personnes, objectifs et tâches, finances, mémoire et ton Livre de vie. Je rassemble et je range pour que tu voies ta vie en entier et la mènes en conscience.",
-  es: "🪷 <b>Tu CRM de vida</b>\n\nLIFE OS es un CRM para gestionar tu vida. Todo sobre ti en un solo lugar: entradas, personas, metas y tareas, finanzas, memoria y tu Libro de la vida. Lo reúno y lo ordeno para que veas tu vida entera y la lleves con conciencia.",
+  ru: "💾 <b>Твоя сохранённая жизнь</b>\n\nВсё, что ты рассказал, я сохранил и разложил по полочкам: записи, люди, цели, здоровье, память и Книга жизни. Открой — и увидишь свою жизнь целиком.",
+  en: "💾 <b>Your saved life</b>\n\nEverything you've told me is saved and sorted: entries, people, goals, health, memory and your Book of Life. Open it — and see your whole life at once.",
+  uk: "💾 <b>Твоє збережене життя</b>\n\nУсе, що ти розповів, я зберіг і розклав по поличках: записи, люди, цілі, здоров'я, пам'ять і Книга життя. Відкрий — і побачиш своє життя цілком.",
+  fr: "💾 <b>Ta vie sauvegardée</b>\n\nTout ce que tu m'as raconté est sauvegardé et rangé : entrées, personnes, objectifs, santé, mémoire et ton Livre de vie. Ouvre — et vois toute ta vie d'un coup.",
+  es: "💾 <b>Tu vida guardada</b>\n\nTodo lo que me contaste está guardado y ordenado: entradas, personas, metas, salud, memoria y tu Libro de la vida. Ábrelo — y verás tu vida entera de una vez.",
 };
 const CRM_OPEN: Record<string, string> = {
-  ru: "🪷 Открыть CRM моей жизни", en: "🪷 Open my Life CRM", uk: "🪷 Відкрити CRM мого життя", fr: "🪷 Ouvrir mon CRM de vie", es: "🪷 Abrir mi CRM de vida",
+  ru: "💾 Открыть сохранённое", en: "💾 Open my saved life", uk: "💾 Відкрити збережене", fr: "💾 Ouvrir ma vie sauvegardée", es: "💾 Abrir lo guardado",
 };
 const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent", es: "💰 Abrir Dinero" };
 
