@@ -14,6 +14,7 @@ import { eveningQuestion } from "@/lib/dailyQuestions";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
+import { autoReleaseInactive } from "@/lib/heirs";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -279,7 +280,10 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0 };
+
+  // 👨‍👩‍👧 Наследники: авто-раскрытие «по долгому молчанию» (dead-man's switch) — глобально, раз за прогон.
+  try { stats.heirsReleased = await autoReleaseInactive(); } catch { /* нет таблицы heirs — пропускаем */ }
 
   for (const u of users || []) {
     try {

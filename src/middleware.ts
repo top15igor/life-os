@@ -25,5 +25,5 @@ export const config = {
   // /i/* (приглашение), /p/* (публичная книга-витрина), /w/* (публичный вишлист), /b/* (публичная библиотека),
   // /path/* (публичный путь), /voice-live (вебвью приложения, авторизуется сама по токену ?k=), /api/* и статики.
   // Слэш в p/, w/, b/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /wishlist, /books, /biographer, /paths, /insights.
-  matcher: ["/((?!welcome|login|about|privacy|tester|u|m/|api|p/|w/|b/|path/|i/|voice-live|auth/app-done|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!welcome|login|about|privacy|tester|features|heir/|u|m/|api|p/|w/|b/|path/|i/|voice-live|auth/app-done|_next/static|_next/image|favicon.ico).*)"],
 };
