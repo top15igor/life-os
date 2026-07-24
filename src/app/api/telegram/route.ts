@@ -517,16 +517,16 @@ const CAPSULE: Record<string, { help: string; when: string; past: string; saved:
   },
 };
 
-// «💾 Сохранённое» — краткое описание твоей сохранённой жизни + переход на портал.
+// «📔 Сохранённое» — краткое описание твоей сохранённой жизни + переход на портал.
 const CRM_INTRO: Record<string, string> = {
-  ru: "💾 <b>Твоя сохранённая жизнь</b>\n\nВсё, что ты рассказал, я сохранил и разложил по полочкам: записи, люди, цели, здоровье, память и Книга жизни. Открой — и увидишь свою жизнь целиком.",
-  en: "💾 <b>Your saved life</b>\n\nEverything you've told me is saved and sorted: entries, people, goals, health, memory and your Book of Life. Open it — and see your whole life at once.",
-  uk: "💾 <b>Твоє збережене життя</b>\n\nУсе, що ти розповів, я зберіг і розклав по поличках: записи, люди, цілі, здоров'я, пам'ять і Книга життя. Відкрий — і побачиш своє життя цілком.",
-  fr: "💾 <b>Ta vie sauvegardée</b>\n\nTout ce que tu m'as raconté est sauvegardé et rangé : entrées, personnes, objectifs, santé, mémoire et ton Livre de vie. Ouvre — et vois toute ta vie d'un coup.",
-  es: "💾 <b>Tu vida guardada</b>\n\nTodo lo que me contaste está guardado y ordenado: entradas, personas, metas, salud, memoria y tu Libro de la vida. Ábrelo — y verás tu vida entera de una vez.",
+  ru: "📔 <b>Твоя сохранённая жизнь</b>\n\nВсё, что ты рассказал, я сохранил и разложил по полочкам: записи, люди, цели, здоровье, память и Книга жизни. Открой — и увидишь свою жизнь целиком.",
+  en: "📔 <b>Your saved life</b>\n\nEverything you've told me is saved and sorted: entries, people, goals, health, memory and your Book of Life. Open it — and see your whole life at once.",
+  uk: "📔 <b>Твоє збережене життя</b>\n\nУсе, що ти розповів, я зберіг і розклав по поличках: записи, люди, цілі, здоров'я, пам'ять і Книга життя. Відкрий — і побачиш своє життя цілком.",
+  fr: "📔 <b>Ta vie sauvegardée</b>\n\nTout ce que tu m'as raconté est sauvegardé et rangé : entrées, personnes, objectifs, santé, mémoire et ton Livre de vie. Ouvre — et vois toute ta vie d'un coup.",
+  es: "📔 <b>Tu vida guardada</b>\n\nTodo lo que me contaste está guardado y ordenado: entradas, personas, metas, salud, memoria y tu Libro de la vida. Ábrelo — y verás tu vida entera de una vez.",
 };
 const CRM_OPEN: Record<string, string> = {
-  ru: "💾 Открыть сохранённое", en: "💾 Open my saved life", uk: "💾 Відкрити збережене", fr: "💾 Ouvrir ma vie sauvegardée", es: "💾 Abrir lo guardado",
+  ru: "📔 Открыть сохранённое", en: "📔 Open my saved life", uk: "📔 Відкрити збережене", fr: "📔 Ouvrir ma vie sauvegardée", es: "📔 Abrir lo guardado",
 };
 const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent", es: "💰 Abrir Dinero" };
 
@@ -1345,7 +1345,7 @@ export async function POST(req: NextRequest) {
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
     else if (ba === "diary") {
-      // «💾 Сохранённое»: открыть свою сохранённую жизнь. Кнопка — WEB_APP: открывается
+      // «📔 Сохранённое»: открыть свою сохранённую жизнь. Кнопка — WEB_APP: открывается
       // СРАЗУ во встроенном браузере Telegram (без попапа «Открыть ссылку?») и логинит
       // владельца по одноразовой ссылке /u/<token>. Пересылки не боимся: инлайн-кнопки
       // при форварде отбрасываются, а сам код входа — одноразовый.
