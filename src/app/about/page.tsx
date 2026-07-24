@@ -31,6 +31,12 @@ const C = {
     crm_title: "Ты помнишь про клиентов лучше, чем про свою жизнь",
     crm_p1: "У тебя есть CRM, заметки, таблицы — целая система, чтобы не забыть про работу и клиентов. А своя жизнь — мысли, здоровье, близкие, решения — нигде. Она просто утекает.",
     crm_p2: "LIFE OS — это CRM наоборот: система, которая помнит не клиентов, а тебя. И вести её не надо — просто говори, остальное сделает AI.",
+    crm_histT: "Так делали те, кто добился большего",
+    crm_hist: [
+      { n: "Бенджамин Франклин", d: "вёл записи о людях, встречах и договорённостях — и считал круг знакомств одним из главных своих активов." },
+      { n: "Эндрю Карнеги", d: "его секретари вели картотеки о партнёрах и клиентах: кто, о чём договаривались, что важно помнить." },
+      { n: "Джон Рокфеллер", d: "вёл детальные журналы встреч и договорённостей, придавая огромное значение людям и репутации." },
+    ],
 
     how_kicker: "Как это работает",
     how: [
@@ -114,6 +120,12 @@ const C = {
     crm_title: "You remember your customers better than your own life",
     crm_p1: "You've got a CRM, notes, spreadsheets — a whole system so you never forget work and clients. But your own life — thoughts, health, the people you love, decisions — lives nowhere. It just slips away.",
     crm_p2: "LIFE OS is a CRM in reverse: a system that remembers you, not your customers. And you don't manage it — you just talk, AI does the rest.",
+    crm_histT: "The people who achieved more did exactly this",
+    crm_hist: [
+      { n: "Benjamin Franklin", d: "kept records of people, meetings and agreements — and saw his network as one of his key assets." },
+      { n: "Andrew Carnegie", d: "had secretaries keep card files on partners and clients: who, what was agreed, what to remember." },
+      { n: "John D. Rockefeller", d: "kept detailed journals of meetings and agreements, valuing people and reputation immensely." },
+    ],
 
     how_kicker: "How it works",
     how: [
@@ -197,6 +209,12 @@ const C = {
     crm_title: "Ти пам'ятаєш про клієнтів краще, ніж про власне життя",
     crm_p1: "У тебе є CRM, нотатки, таблиці — ціла система, щоб не забути про роботу й клієнтів. А власне життя — думки, здоров'я, близькі, рішення — ніде. Воно просто витікає.",
     crm_p2: "LIFE OS — це CRM навпаки: система, що пам'ятає не клієнтів, а тебе. І вести її не треба — просто говори, решту зробить AI.",
+    crm_histT: "Так робили ті, хто досяг більшого",
+    crm_hist: [
+      { n: "Бенджамін Франклін", d: "вів записи про людей, зустрічі й домовленості — і вважав коло знайомств одним із головних активів." },
+      { n: "Ендрю Карнегі", d: "його секретарі вели картотеки про партнерів і клієнтів: хто, про що домовлялися, що важливо." },
+      { n: "Джон Рокфеллер", d: "вів детальні журнали зустрічей і домовленостей, надаючи величезне значення людям і репутації." },
+    ],
 
     how_kicker: "Як це працює",
     how: [
@@ -279,6 +297,12 @@ const C = {
     crm_title: "Tu te souviens mieux de tes clients que de ta propre vie",
     crm_p1: "Tu as un CRM, des notes, des tableurs — tout un système pour ne rien oublier du travail et des clients. Mais ta propre vie — pensées, santé, proches, décisions — n'existe nulle part. Elle file, tout simplement.",
     crm_p2: "LIFE OS, c'est un CRM à l'envers : un système qui se souvient de toi, pas de tes clients. Et tu n'as rien à gérer — parle, l'IA fait le reste.",
+    crm_histT: "Ceux qui ont réussi le plus faisaient exactement ça",
+    crm_hist: [
+      { n: "Benjamin Franklin", d: "tenait des notes sur les gens, les rencontres et les accords — et voyait son réseau comme l'un de ses principaux atouts." },
+      { n: "Andrew Carnegie", d: "ses secrétaires tenaient des fichiers sur partenaires et clients : qui, quoi, ce qui avait été convenu." },
+      { n: "John D. Rockefeller", d: "tenait des journaux détaillés de ses rencontres et accords, accordant une immense valeur aux gens et à la réputation." },
+    ],
 
     how_kicker: "Comment ça marche",
     how: [
@@ -361,6 +385,12 @@ const C = {
     crm_title: "Recuerdas a tus clientes mejor que tu propia vida",
     crm_p1: "Tienes un CRM, notas, hojas de cálculo — todo un sistema para no olvidar el trabajo y los clientes. Pero tu propia vida — pensamientos, salud, seres queridos, decisiones — no está en ningún lado. Simplemente se escapa.",
     crm_p2: "LIFE OS es un CRM al revés: un sistema que te recuerda a ti, no a tus clientes. Y no hay que gestionarlo — solo habla, la IA hace el resto.",
+    crm_histT: "Los que lograron más hacían exactamente esto",
+    crm_hist: [
+      { n: "Benjamin Franklin", d: "llevaba registros de personas, reuniones y acuerdos — y veía su red de contactos como uno de sus principales activos." },
+      { n: "Andrew Carnegie", d: "sus secretarios llevaban fichas de socios y clientes: quién, qué se acordó, qué recordar." },
+      { n: "John D. Rockefeller", d: "llevaba diarios detallados de reuniones y acuerdos, dando enorme valor a las personas y la reputación." },
+    ],
 
     how_kicker: "Cómo funciona",
     how: [
@@ -556,6 +586,21 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             <h2 className="lp-h2" style={{ margin: "0 0 14px", fontSize: "clamp(22px, 3vw, 30px)", maxWidth: 720 }}>{(t as any).crm_title}</h2>
             <p style={{ fontSize: 16.5, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 12px", maxWidth: 720 }}>{(t as any).crm_p1}</p>
             <p style={{ fontSize: 16.5, color: "var(--text)", fontWeight: 500, lineHeight: 1.6, margin: 0, maxWidth: 720 }}>{(t as any).crm_p2}</p>
+            {(t as any).crm_hist && (
+              <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--border)" }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)", marginBottom: 12 }}>{(t as any).crm_histT}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                  {(t as any).crm_hist.map((it: any, i: number) => (
+                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <i className="ti ti-user-check" style={{ fontSize: 17, color: "var(--accent)", flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 700 }}>
+                        <b style={{ color: "var(--text)" }}>{it.n}</b> {it.d}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

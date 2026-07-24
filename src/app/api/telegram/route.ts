@@ -1341,12 +1341,12 @@ export async function POST(req: NextRequest) {
     }
     else if (ba === "invite") await sendInvite(chatId, lang, origin, user.id);
     else if (ba === "diary") {
-      // «🪷 CRM твоей жизни»: это ОПИСАНИЕ, которое часто пересылают друзьям.
-      // Кнопка ведёт на ПУБЛИЧНУЮ ссылку-приглашение /i/<username>, а НЕ на личный
-      // вход /u/<token>: иначе переслал сообщение = отдал доступ к своему дневнику.
-      // Владелец (уже вошёл) по ней попадёт на свою ленту, друг — на приглашение.
-      const crmLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
-      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, url: crmLink }]] } });
+      // «💾 Сохранённое»: открыть свою сохранённую жизнь. Кнопка — WEB_APP: открывается
+      // СРАЗУ во встроенном браузере Telegram (без попапа «Открыть ссылку?») и логинит
+      // владельца по одноразовой ссылке /u/<token>. Пересылки не боимся: инлайн-кнопки
+      // при форварде отбрасываются, а сам код входа — одноразовый.
+      const openUrl = `${origin}/u/${user.token}?next=/`;
+      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, web_app: { url: openUrl } }]] } });
     }
     else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
     return NextResponse.json({ ok: true });
