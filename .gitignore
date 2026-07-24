@@ -10,4 +10,7 @@ out/
 
 # TS incremental build cache
 *.tsbuildinfo
+
+# Хэндофф между сессиями Claude — локальный, не для публичного репо
+SESSION_HANDOFF.md
 .env*
