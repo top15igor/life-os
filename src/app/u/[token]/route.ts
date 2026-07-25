@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { setThemeCookie } from "@/lib/authCookie";
+import { sendMessage } from "@/lib/telegram";
+
+// Предупреждение владельцу, когда его ссылку входа открыл кто-то другой.
+const LEAK_WARN: Record<string, string> = {
+  ru: "⚠️ Твою ссылку входа только что открыл кто-то другой — обычно так бывает, когда пересылают сообщение бота с кнопкой. Я погасил ссылку: по ней никто не вошёл, твои данные в порядке. Свежую ссылку даст команда /link.",
+  en: "⚠️ Someone else just opened your sign-in link — this usually happens when a bot message with a button gets forwarded. I've burned the link: nobody got in, your data is safe. Get a fresh one with /link.",
+  uk: "⚠️ Твоє посилання входу щойно відкрив хтось інший — зазвичай так буває, коли пересилають повідомлення бота з кнопкою. Я погасив посилання: ніхто не увійшов, твої дані в порядку. Свіже посилання дасть команда /link.",
+  fr: "⚠️ Quelqu'un d'autre vient d'ouvrir ton lien de connexion — cela arrive souvent quand un message du bot avec un bouton est transféré. J'ai désactivé le lien : personne n'est entré, tes données sont en sécurité. Obtiens-en un nouveau avec /link.",
+  es: "⚠️ Alguien más acaba de abrir tu enlace de acceso — suele pasar cuando se reenvía un mensaje del bot con un botón. He anulado el enlace: nadie entró, tus datos están a salvo. Consigue uno nuevo con /link.",
+};
 
 export const runtime = "nodejs";
 
@@ -34,7 +44,7 @@ async function sessionUserId(req: NextRequest): Promise<string | null> {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const db = supabaseAdmin();
-  const { data: user } = await db.from("users").select("id, token, session_secret").eq("token", token).maybeSingle();
+  const { data: user } = await db.from("users").select("id, token, session_secret, name, chat_id, lang").eq("token", token).maybeSingle();
 
   // id текущей сессии в браузере (нужно и для guard'а, и для ветки «токен сгорел»).
   const curId = await sessionUserId(req);
@@ -48,12 +58,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     return NextResponse.redirect(new URL("/login?e=link", req.url));
   }
 
-  // Защита от «переслал ссылку — чужой молча зашёл в твой аккаунт»: если в браузере
-  // уже есть сессия ДРУГОГО пользователя, не переключаем тихо — просим подтвердить.
-  // (?sw=1 приходит со страницы подтверждения — тогда переключаем.)
-  const confirmed = req.nextUrl.searchParams.get("sw") === "1";
-  if (curId && curId !== user.id && !confirmed) {
-    return NextResponse.redirect(new URL(`/switch?t=${encodeURIComponent(token)}`, req.url));
+  // Защита от «переслал ссылку — чужой зашёл в твой аккаунт»: если в браузере уже
+  // есть сессия ДРУГОГО пользователя — значит, ссылка ушла из рук владельца
+  // (обычно переслали сообщение бота с кнопкой). Раньше здесь была страница с
+  // кнопкой «всё равно войти» — теперь входа нет вовсе: ссылку СЖИГАЕМ на месте,
+  // владельца предупреждаем в боте, открывшего оставляем в его аккаунте.
+  if (curId && curId !== user.id) {
+    // Ротация токена безопасна, только если сессии живут на session_secret
+    // (иначе legacy-cookie владельца = token, и ротация разлогинит его самого).
+    if ((user as any).session_secret) {
+      try { await db.from("users").update({ token: randomUUID() }).eq("id", user.id); } catch {}
+    }
+    if ((user as any).chat_id) {
+      const warn = LEAK_WARN[(user as any).lang] || LEAK_WARN.ru;
+      sendMessage(Number((user as any).chat_id), warn).catch(() => {});
+    }
+    const who = encodeURIComponent(String((user as any).name || ""));
+    return NextResponse.redirect(new URL(`/switch?burned=1&who=${who}`, req.url));
   }
 
   // Cookie = session_secret (стабильный ключ сессии). Если колонки нет (миграция не запущена) —
