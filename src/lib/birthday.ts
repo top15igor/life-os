@@ -43,6 +43,44 @@ export function birthdayAge(birthday: string, localDateKey: string): number | nu
   return age > 0 && age < 130 ? age : null;
 }
 
+// Дата рождения из профиля Telegram (getChat → birthdate). Бот видит её, только
+// если пользователь заполнил ДР в Telegram И открыл в приватности («Кто видит
+// дату рождения» = Все). Поэтому это лишь фолбэк с частичным покрытием.
+export async function tgProfileBirthday(chatId: number): Promise<{ day: number; month: number; year?: number } | null> {
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getChat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId }),
+    });
+    const j = await r.json().catch(() => null);
+    const b = j?.result?.birthdate;
+    if (!b || !b.day || !b.month) return null;
+    return { day: Number(b.day), month: Number(b.month), year: b.year ? Number(b.year) : undefined };
+  } catch {
+    return null;
+  }
+}
+
+// Тихо заполняет users.birthday из Telegram-профиля — ТОЛЬКО если поле пустое
+// (дата, названная пользователем, всегда главнее и не перезаписывается).
+// Возвращает записанную дату YYYY-MM-DD или null (нет даты / колонки / уже задана).
+export async function autoFillBirthdayFromTelegram(userId: string, chatId: number): Promise<string | null> {
+  try {
+    const db = supabaseAdmin();
+    const { data, error } = await db.from("users").select("birthday").eq("id", userId).maybeSingle();
+    if (error || (data as any)?.birthday) return null; // колонки нет (birthday.sql) или дата уже есть
+    const b = await tgProfileBirthday(chatId);
+    if (!b) return null;
+    const iso = birthdayISO(b.day, b.month, b.year || null);
+    if (!iso) return null;
+    const { error: e2 } = await db.from("users").update({ birthday: iso }).eq("id", userId);
+    return e2 ? null : iso;
+  } catch {
+    return null;
+  }
+}
+
 const GREET_LANG: Record<Lang, string> = {
   ru: "русском", en: "English", uk: "українській", fr: "français", es: "español",
 };

@@ -16,7 +16,7 @@ import { peopleDigestMessage } from "@/lib/peopleCrm";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { autoReleaseInactive } from "@/lib/heirs";
-import { birthdayGreeting, isBirthdayToday } from "@/lib/birthday";
+import { birthdayGreeting, isBirthdayToday, autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -341,6 +341,16 @@ export async function GET(req: NextRequest) {
           stats.capsules++;
         }
       } catch { /* таблицы капсул может не быть — мягко пропускаем */ }
+
+      // 🎁 Автоподхват ДР из Telegram-профиля — по понедельникам для тех, у кого
+      // дата пуста (видна боту, только если открыта в приватности Telegram).
+      // Своя названная дата главнее: заполняем только пустое поле.
+      if (!u.birthday && lp.weekday === 1) {
+        try {
+          const iso = await autoFillBirthdayFromTelegram(u.id, u.chat_id);
+          if (iso) { u.birthday = iso; (stats as any).bdayAutofilled = ((stats as any).bdayAutofilled || 0) + 1; }
+        } catch { /* тихо: нет колонки или приватность закрыта */ }
+      }
 
       // 🎂 День рождения пользователя — поздравляем раз в год, поверх «тихих дней»
       // (это подарок, а не напоминание). После поздравления вечер оставляем ему:

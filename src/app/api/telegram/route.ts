@@ -22,6 +22,7 @@ import { parseCapsule, createCapsule, listCapsules } from "@/lib/timeCapsule";
 import { askLife, saveChat } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
+import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY, GUIDE_LABEL_LEGACY, DIARY_LABEL_LEGACY } from "@/lib/botKeyboard";
@@ -1018,6 +1019,9 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
     const lang = langOf(user, msg);
+    // 🎂 Тихо подхватываем ДР из Telegram-профиля (если открыт и своя дата не задана) —
+    // fire-and-forget, чтобы не задерживать приветствие.
+    autoFillBirthdayFromTelegram(user.id, chatId).catch(() => {});
     // Deep-link из приложения (карточка на «Сегодня»): /start acquaint → сразу знакомство.
     if (typeof msg.text === "string" && msg.text.slice(7).trim() === "acquaint") {
       await sendChatAction(chatId, "typing");
