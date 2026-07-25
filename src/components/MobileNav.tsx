@@ -11,6 +11,8 @@ import Feedback from "./Feedback";
 import type { Locale } from "@/lib/i18n";
 
 const MENU: Record<string, string> = { ru: "Меню", en: "Menu", uk: "Меню", fr: "Menu", es: "Menú" };
+// Мост из приложения на публичный сайт (лендинг) — иначе с телефона на него не попасть.
+const ABOUT: Record<string, string> = { ru: "О проекте · сайт", en: "About · website", uk: "Про проєкт · сайт", fr: "À propos · site", es: "Acerca de · sitio" };
 
 export default function MobileNav({ navLabels, locale, isOwner, inviteLink, homeHref }: { navLabels: Record<string, string>; locale: Locale; isOwner?: boolean; inviteLink?: string; homeHref?: string }) {
   const path = usePathname();
@@ -51,6 +53,10 @@ export default function MobileNav({ navLabels, locale, isOwner, inviteLink, home
                 <span style={{ fontSize: 13.5, fontWeight: 500 }}>Admin</span>
               </Link>
             )}
+            <Link href="/about" onClick={() => setOpen(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 10, background: "var(--surface-2)", color: "var(--text)", marginBottom: 14 }}>
+              <i className="ti ti-flower" style={{ fontSize: 19, color: "var(--accent)" }} />
+              <span style={{ fontSize: 13.5 }}>{ABOUT[locale] || ABOUT.ru}</span>
+            </Link>
             <LangSwitcher current={locale} />
           </div>
         </div>
