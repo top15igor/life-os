@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -167,60 +168,68 @@ const EN: Dict = {
   ],
 };
 
+/* Единый стиль с лендингом («Классика»): системный санс, жирные плотные
+   заголовки, шапка-стекло, градиентные кнопки. Serif остался только как
+   курсивный акцент в подписи — так же, как на лендинге. */
 const STYLE = `
+.fx-shell{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.011em;min-height:100vh;background:radial-gradient(820px 460px at 86% -4%, rgba(91,91,245,0.10), transparent 60%),#f7f8fc}
 .fx-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.fx-top{display:flex;align-items:center;justify-content:space-between;padding:16px 0;position:sticky;top:0;z-index:50;background:var(--bg,#fff);border-bottom:1px solid var(--border)}
-.fx-brand{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15px;color:var(--text)}
-.fx-brand .m{font-size:20px}
-.fx-nav{display:flex;gap:10px}
-.fx-nav a{font-size:13.5px;text-decoration:none;color:var(--text-2);border:1px solid var(--border);border-radius:999px;padding:7px 15px}
-.fx-nav a.pri{color:#fff;background:var(--accent);border-color:transparent}
+.fx-top{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,15,40,.06)}
+.fx-top-in{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 24px}
+.fx-brand{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:18px;color:var(--text);text-decoration:none}
+.fx-nav{display:flex;align-items:center;gap:10px}
+.fx-nav a{font-size:14px;font-weight:500;text-decoration:none;color:var(--text-2);padding:8px 14px;border-radius:11px}
+.fx-nav a:hover{color:var(--text)}
+.fx-nav a.pri{color:#fff;font-weight:600;background:linear-gradient(135deg,#6d6bf6,#8b5cf6);box-shadow:0 12px 28px -12px rgba(91,91,245,.55)}
 .fx-hero{padding:56px 0 40px;border-bottom:1px solid var(--border)}
-.fx-badge{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-.fx-hero h1{font-family:var(--font-serif,Georgia,serif);font-weight:600;font-size:clamp(32px,5.5vw,56px);line-height:1.05;letter-spacing:-.015em;margin:14px 0 20px;max-width:17ch;text-wrap:balance}
-.fx-lead{font-size:clamp(16px,2.1vw,20px);color:var(--text-2);max-width:62ch;margin:0 0 26px}
+.fx-badge{font-size:12.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+.fx-hero h1{font-weight:800;font-size:clamp(30px,5vw,52px);line-height:1.06;letter-spacing:-.03em;margin:14px 0 20px;max-width:19ch;text-wrap:balance}
+.fx-lead{font-size:clamp(16px,2.1vw,19px);color:var(--text-2);line-height:1.6;max-width:62ch;margin:0 0 26px}
 .fx-meta{display:flex;flex-wrap:wrap;gap:8px}
-.fx-tag{font-size:13px;color:var(--text-2);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px}
+.fx-tag{font-size:13px;color:var(--text-2);background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px}
 .fx-cat{padding:48px 0 4px}
-.fx-cat .k{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-.fx-cat h2{font-family:var(--font-serif,Georgia,serif);font-weight:600;font-size:clamp(22px,3.3vw,29px);letter-spacing:-.01em;margin:6px 0 6px}
-.fx-cat .cl{color:var(--text-2);font-size:15px;max-width:64ch;margin:0 0 22px}
+.fx-cat .k{font-size:12.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+.fx-cat h2{font-weight:800;font-size:clamp(22px,3.2vw,30px);letter-spacing:-.025em;margin:8px 0 6px;text-wrap:balance}
+.fx-cat .cl{color:var(--text-2);font-size:15px;line-height:1.6;max-width:64ch;margin:0 0 22px}
 .fx-rule{height:1px;background:linear-gradient(90deg,var(--border),transparent);margin:0 0 22px}
 .fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:13px}
-.fx-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:17px 17px 16px;overflow:hidden}
+.fx-card{position:relative;background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px 18px 17px;overflow:hidden}
 .fx-card::before{content:"";position:absolute;left:0;top:15px;bottom:15px;width:3px;border-radius:0 3px 3px 0;background:var(--edge,var(--accent));opacity:0;transition:opacity .18s}
 .fx-card:hover::before{opacity:.9}
-.fx-card h3{font-size:15.5px;font-weight:650;margin:0 0 6px}
+.fx-card h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em;margin:0 0 6px}
 .fx-card p{font-size:13.6px;color:var(--text-2);margin:0;line-height:1.5}
 .fx-soon{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#a9812a;border:1px solid rgba(169,129,42,.5);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:middle}
-.fx-close{margin:56px 0 40px;padding:38px;border:1px solid var(--border);border-radius:20px;background:var(--surface)}
-.fx-close h2{font-family:var(--font-serif,Georgia,serif);font-weight:600;font-size:clamp(22px,3.5vw,31px);margin:8px 0 12px;letter-spacing:-.01em}
-.fx-close p{color:var(--text-2);font-size:16px;margin:0;max-width:58ch}
-.fx-sign{margin-top:18px;font-family:var(--font-serif,Georgia,serif);font-style:italic;color:var(--text);font-size:17px}
-.fx-final{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:0 0 70px;padding:28px 32px;border:1px solid var(--border);border-radius:16px;background:var(--accent-bg,var(--surface))}
-.fx-final .ft{font-family:var(--font-serif,Georgia,serif);font-size:19px;font-weight:600;flex:1;min-width:220px}
-.fx-final a{text-decoration:none;color:#fff;background:var(--accent);border-radius:11px;padding:11px 22px;font-size:14.5px;font-weight:600;white-space:nowrap}
+.fx-close{margin:56px 0 40px;padding:38px;border:1px solid var(--border);border-radius:20px;background:#fff}
+.fx-close h2{font-weight:800;font-size:clamp(22px,3.4vw,30px);margin:8px 0 12px;letter-spacing:-.025em;text-wrap:balance}
+.fx-close p{color:var(--text-2);font-size:16px;line-height:1.6;margin:0;max-width:58ch}
+.fx-sign{margin-top:18px;font-family:var(--font-serif,Georgia,serif);font-style:italic;color:var(--text-2);font-size:16px}
+.fx-final{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:0 0 70px;padding:28px 32px;border:1px solid var(--accent);border-radius:20px;background:var(--accent-bg,#eeeafd)}
+.fx-final .ft{font-size:19px;font-weight:700;letter-spacing:-.015em;flex:1;min-width:220px}
+.fx-final a{text-decoration:none;color:#fff;background:linear-gradient(135deg,#6d6bf6,#8b5cf6);box-shadow:0 12px 28px -12px rgba(91,91,245,.55);border-radius:12px;padding:12px 24px;font-size:14.5px;font-weight:600;white-space:nowrap}
 .fx-foot{border-top:1px solid var(--border);color:var(--text-3);font-size:13px;padding:20px 0 60px}
-@media(max-width:520px){.fx-grid{grid-template-columns:1fr}.fx-hero{padding:40px 0 28px}}
+@media(max-width:640px){.fx-grid{grid-template-columns:1fr}.fx-hero{padding:40px 0 28px}.fx-nav a:not(.pri){padding:8px 8px}}
 `;
 
 export default async function FeaturesPage() {
   const locale = await getLocale();
   const s: Dict = locale === "en" ? EN : RU;
+  // Как на лендинге: гостю — «Войти», вошедшему — «В приложение» (не обе сразу).
+  const isAuthed = !!(await getCurrentUser());
   return (
-    <div>
+    <div className="fx-shell">
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
-      <div className="fx-wrap">
-        <div className="fx-top">
+      <div className="fx-top">
+        <div className="fx-wrap fx-top-in">
           <Link href="/about" className="fx-brand" title={s.backHome}>
-            <i className="ti ti-flower" style={{ fontSize: 21, color: "var(--accent)" }} /> LIFE OS
+            <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} /> LIFE OS
           </Link>
           <nav className="fx-nav">
             <Link href="/about">← {s.backHome}</Link>
-            <Link href="/login">{s.login}</Link>
-            <Link href="/" className="pri">{s.app}</Link>
+            <Link href={isAuthed ? "/" : "/login"} className="pri">{isAuthed ? s.app : s.login}</Link>
           </nav>
         </div>
+      </div>
+      <div className="fx-wrap">
 
         <header className="fx-hero">
           <div className="fx-badge">{s.badge}</div>
@@ -260,7 +269,7 @@ export default async function FeaturesPage() {
 
           <div className="fx-final">
             <div className="ft">{s.final}</div>
-            <Link href="/login">{s.finalCta}</Link>
+            <Link href={isAuthed ? "/" : "/login"}>{isAuthed ? s.app : s.finalCta}</Link>
           </div>
         </main>
 
