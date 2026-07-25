@@ -1615,6 +1615,22 @@ export async function POST(req: NextRequest) {
           }
           return NextResponse.json({ ok: true });
         }
+        // Прямой вопрос или команда посреди знакомства (баг Коли: «на какую почту
+        // зарегистрирован аккаунт?» три раза подряд игнорировался сценарием) —
+        // сначала отвечаем по существу, и только обычные ответы идут в знакомство.
+        const lng0 = langOf(user, msg);
+        const route = await routeMessage(text, user.id, (user as any).tz_offset);
+        if (route.kind === "action") {
+          const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
+          await sendMessage(chatId, res.text, acqMarkup(lng0));
+          return NextResponse.json({ ok: true });
+        }
+        if (route.kind === "question") {
+          const ans = await askLife(user.id, text, lng0);
+          await saveChat(user.id, text, ans);
+          await sendMessage(chatId, mdToTelegram(ans) || "—", acqMarkup(lng0));
+          return NextResponse.json({ ok: true });
+        }
         const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
         // Пока знакомство активно — чипы + «Пропустить»/«Пауза»; на «первой странице»/финале —
         // обычная клавиатура с обновлённым процентом знакомства на кнопке.
@@ -1684,8 +1700,9 @@ export async function POST(req: NextRequest) {
     }
 
     // По смыслу: ДЕЙСТВИЕ (бот выполняет вместо пользователя), вопрос к ассистенту или запись?
-    // (длинные голосовые > 160 символов всегда считаем записью, чтобы не потерять мысль)
-    if (!forceSave && (!isVoice || text.length < 160)) {
+    // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
+    // порог был 160 — из-за этого голосовой ВОПРОС на ~190 символов молча уходил в дневник)
+    if (!forceSave && (!isVoice || text.length < 400)) {
       const route = await routeMessage(text, user.id, (user as any).tz_offset);
       if (route.kind === "action") {
         const lang = langOf(user, msg);
