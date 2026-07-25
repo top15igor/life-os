@@ -6,6 +6,7 @@ import { createReminder, localToISO } from "./reminders";
 import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
+import { askKnowledge } from "./knowledge";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -67,6 +68,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } }, required: ["from", "to"] },
   },
   {
+    name: "ask_knowledge",
+    description:
+      "Просьба ДАТЬ или НАЙТИ что-то из СОХРАНЁННЫХ материалов пользователя (База знаний: рилсы, посты, ссылки — рецепты, тренировки, советы): «дай рецепт…», «найди рецепт…», «что я сохранял про…», «найди тот рилс/видео про…», «покажи из сохранёнок…». Это ЗАПРОС ответа, а не рассказ о дне — НЕ save_entry. query — сам вопрос своими словами.",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+  },
+  {
     name: "account_info",
     description:
       "Вопросы про СВОЙ АККАУНТ и вход в LIFE OS: «на какую почту зарегистрирован аккаунт», «какая у меня почта», «как я вошёл», «куда привязан аккаунт», «какой у меня логин/юзернейм». Это НЕ вопрос о содержимом дневника.",
@@ -95,6 +102,7 @@ const SYS =
   "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
   "Просьбы к БОТУ изменить манеру или содержание его сообщений («пиши короче», «меньше эмодзи», «не пиши мне про…», «обращайся иначе», «не называй меня…») → set_style, а НЕ save_entry: пожелание должно сохраниться и влиять. " +
   "Вопросы про свой АККАУНТ и вход («на какую почту зарегистрирован», «какая у меня почта», «как я вошёл») → account_info, а НЕ save_entry и НЕ ask_question. " +
+  "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
   "«а почему трату не учёл?», «где сегодняшний расход?», «чего не показал?», «ты не записал…?» — это ask_question, " +
@@ -427,6 +435,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
 
       if (!renamed && !fixed) return { text: s.renameNone(from) };
       return { text: s.rename(from, to), openNext: "/people" };
+    }
+    if (name === "ask_knowledge") {
+      const q = String(input?.query || "").trim();
+      if (!q) return { text: s.fail };
+      const ans = await askKnowledge(userId, q, lang);
+      return { text: ans, openNext: "/knowledge" };
     }
     if (name === "account_info") {
       const { data } = await db.from("users").select("email, tg_username").eq("id", userId).maybeSingle();

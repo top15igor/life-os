@@ -1622,7 +1622,7 @@ export async function POST(req: NextRequest) {
         const route = await routeMessage(text, user.id, (user as any).tz_offset);
         if (route.kind === "action") {
           const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
-          await sendMessage(chatId, res.text, acqMarkup(lng0));
+          await sendMessage(chatId, mdToTelegram(res.text) || res.text, acqMarkup(lng0));
           return NextResponse.json({ ok: true });
         }
         if (route.kind === "question") {
@@ -1718,7 +1718,8 @@ export async function POST(req: NextRequest) {
             { text: D.no, callback_data: "delno" },
           ]] } };
         }
-        await sendMessage(chatId, res.text, extra);
+        // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
+        await sendMessage(chatId, mdToTelegram(res.text) || res.text, extra);
         return NextResponse.json({ ok: true });
       }
       if (route.kind === "question") {
