@@ -77,10 +77,17 @@ function ladderLabel(lang: string, pct: number): string {
   return label;
 }
 
-// Подпись кнопки знакомства: ступень близости + прогресс «· 24%» (в процессе 1..99).
+// С 50% знакомство переходит в фазу «Дополнить книгу»: кнопка меняет подпись,
+// а вопросы (в acquaint.ts) начинают целиться в недозаполненные главы книги.
+const BOOK_PHASE_PCT = 50;
+const BOOK_LABEL: Record<string, string> = {
+  ru: "📖 Дополнить книгу", en: "📖 Fill your book", uk: "📖 Доповнити книгу", fr: "📖 Compléter ton livre", es: "📖 Completa tu libro",
+};
+
+// Подпись кнопки: до 50% — ступень близости; с 50% — «Дополнить книгу». Всё с «· 24%».
 export function acquaintLabel(lang: string, pct?: number) {
   const p = typeof pct === "number" ? Math.max(0, Math.min(100, Math.floor(pct))) : 0;
-  const base = ladderLabel(lang, p);
+  const base = p >= BOOK_PHASE_PCT ? (BOOK_LABEL[lang] || BOOK_LABEL.ru) : ladderLabel(lang, p);
   return p > 0 && p < 100 ? `${base} · ${p}%` : base;
 }
 
@@ -88,11 +95,12 @@ export function acquaintLabel(lang: string, pct?: number) {
 // нажатия по ним должны распознаваться и после переименования.
 const ACQ_LEGACY = new Set(["🤫 Пошушукаемся", "🤫 Let's whisper", "🤫 Пошепочемось", "🤫 Chuchotons", "🤫 Cuchicheemos"]);
 
-// Распознать нажатие кнопки знакомства при ЛЮБОЙ ступени/проценте (для buttonAction).
+// Распознать нажатие кнопки знакомства при ЛЮБОЙ ступени/проценте/фазе (для buttonAction).
 export function isAcquaintLabel(text?: string): boolean {
   if (!text) return false;
   const base = text.split(" · ")[0];
   if (ACQ_LEGACY.has(base)) return true;
+  if (Object.values(BOOK_LABEL).includes(base)) return true;
   for (const lang of Object.keys(ACQ_LADDER)) {
     if ((ACQ_LADDER[lang] || []).some((r) => r.label === base)) return true;
   }

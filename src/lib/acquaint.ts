@@ -6,6 +6,7 @@ import { saveEntry } from "./saveEntry";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { normalizeMorningPrefs } from "./morningPrefs";
 import { recallContext } from "./semanticMemory";
+import { getBookPrompt } from "./bookPrompts";
 
 // «Давай познакомимся»: тёплый онбординг-диалог, снимающий страх чистого листа.
 // Хитрость: человек не «ведёт дневник» — он просто отвечает другу на вопросы, а
@@ -21,6 +22,7 @@ const REVEAL_PCT = 5;        // после ~5 ответов один раз п�
 const ACQ_CAP = 99;          // потолок: знакомство НЕ заканчивается, 100% не бывает — всегда есть куда расти
 const DEEP_PCT = 90;         // тёплая «глубокая» отметка (однократно), но без финала
 const SAVE_MIN = 15;         // ответ короче — не заводим отдельную запись (чипы «сова»/«кофе» и т.п.)
+const BOOK_PHASE = 50;       // с этого % знакомство переходит в «Дополнить книгу»: вопросы целятся в недозаполненные главы
 
 // Пользы/фишки LIFE OS — бот делится по одной перед своим вопросом (взаимность),
 // показывая КОНКРЕТНУЮ ВЫГОДУ для человека: зачем ему всё это. Модель берёт
@@ -238,10 +240,16 @@ async function knownAbout(userId: string, query: string): Promise<string> {
 
 // Ход бота: короткая живая реакция + одна ПОЛЬЗА/фишка LIFE OS + следующий вопрос.
 // last = последний ответ пользователя (для реакции) или null (просто продолжить/начать тему).
-async function genTurn(userId: string, name: string | null, lang: string, last: string | null): Promise<string> {
+async function genTurn(userId: string, name: string | null, lang: string, last: string | null, pct = 0): Promise<string> {
   const { tone, style } = await getChatVoice(userId);
   const who = name || "пользователь";
   const [history, known] = await Promise.all([historyText(userId, 30), knownAbout(userId, last || who)]);
+  // Фаза книги (≥50%): смещаем фокус на заполнение самой тонкой главы Книги жизни.
+  let bookLine = "";
+  if (pct >= BOOK_PHASE) {
+    const thin = await getBookPrompt(userId, lang, Math.floor(Date.now() / 86400000)).catch(() => null);
+    bookLine = `\n\nФАЗА КНИГИ (важно): человек уже хорошо знаком — теперь ваша цель ДОПОЛНИТЬ его «Книгу жизни» в недозаполненных главах. Мягко веди разговор к самой тонкой сейчас главе${thin?.title ? ` — «${thin.title}»` : ""} и задавай тёплые конкретные вопросы, раскрывающие именно её: люди, моменты, чувства, поворотные точки, чему это научило. Пункт про «пользу/фишку LIFE OS» на этой фазе можно опускать — достаточно тёплой реакции и глубокого вопроса по главе.`;
+  }
   const prompt = `Ты — LIFE OS, личный дневник с ИИ. Тёплый, живой, любопытный, но говоришь по делу. Идёт знакомство с пользователем (${who}). Это переписка с другом, НЕ анкета и НЕ допрос.
 
 ФОРМАТ ТВОЕЙ РЕПЛИКИ (слитным живым текстом, без нумерации, markdown, списков и кавычек):
@@ -249,7 +257,7 @@ ${last ? "1) короткая живая реакция на его послед
 2) вплети ОДНУ пользу/фишку LIFE OS (возьми неиспользованную из списка) — покажи КОНКРЕТНУЮ ВЫГОДУ для человека, зачем ему это, живым языком, не рекламно и не дословно;
 3) задай ОДИН новый вопрос О ПОЛЬЗОВАТЕЛЕ. Первые вопросы — совсем лёгкие, на которые нельзя не ответить.
 
-АДАПТИВНОСТЬ ВОПРОСА (главное): не иди тупо по списку тем. Если в последнем ответе человек ОТКРЫЛ конкретную ниточку — упомянул детей, партнёра, работу/дело, город, спорт, увлечение, мечту, — задай следующий вопрос ИМЕННО ПРО ЭТО, углубись на шаг («а как зовут?», «давно этим занимаешься?», «что в этом самое любимое?»). Ветвись за человеком, а не за анкетой. И только если ниточки нет — бери следующую неиспользованную тему из списка ниже (по лестнице глубины: факты → вкусы → чувства). Не повторяйся.
+АДАПТИВНОСТЬ ВОПРОСА (главное): не иди тупо по списку тем. Если в последнем ответе человек ОТКРЫЛ конкретную ниточку — упомянул детей, партнёра, работу/дело, город, спорт, увлечение, мечту, — задай следующий вопрос ИМЕННО ПРО ЭТО, углубись на шаг («а как зовут?», «давно этим занимаешься?», «что в этом самое любимое?»). Ветвись за человеком, а не за анкетой. И только если ниточки нет — бери следующую неиспользованную тему из списка ниже (по лестнице глубины: факты → вкусы → чувства). Не повторяйся.${bookLine}
 
 ВАЖНО: своим ответом ты задаёшь формат — отвечай в 1–2 тёплых предложения, чтобы человек бессознательно скопировал длину и не отделался словом «норм». Без давления. Не рассказывай о себе как о персонаже («живу в телефоне», «скучаю») — говори о том, что ТЫ ДАЁШЬ пользователю. Не пиши проценты, не благодари «за ответы».
 ПАМЯТЬ И ЗНАНИЕ (КРИТИЧЕСКИ ВАЖНО): ниже блок «ЧТО Я УЖЕ ЗНАЮ О ЧЕЛОВЕКЕ» — это его дневник и люди, которых он уже называл. ОБЯЗАТЕЛЬНО сверься с ним ПЕРЕД тем, как что-то спросить. НИКОГДА не переспрашивай то, что уже известно (например, кто такой Вовчик, кем работает, где живёт, как зовут жену/детей) — если факт уже есть, показывай, что помнишь его, и иди ГЛУБЖЕ или ДАЛЬШЕ, а не по кругу. Опирайся на конкретику из дневника и по-доброму связывай её с новым («ты говорил, Вовчик обожает деда — а как он сам растёт?»). Именно это ощущение «он меня правда знает» цепляет сильнее всего. Если чего-то в знании нет — тогда спрашивай.
@@ -424,7 +432,7 @@ export async function acquaintNextQ(userId: string, name: string | null, lang = 
     const text = turns[turns.length - 1 - newNav] || "";
     return { text, hasPrev: turns.length > 1 };
   }
-  const next = await genTurn(userId, name, lang, null);
+  const next = await genTurn(userId, name, lang, null, prefs.acquaintPct || 0);
   const text = `${NEXT_LEAD[lang] || NEXT_LEAD.ru} ${next}`;
   await append(userId, "assistant", text);
   await writeState(userId, prefs, { nav: 0 });
@@ -488,7 +496,7 @@ export async function startAcquaint(userId: string, name: string | null, lang = 
     return opening;
   }
   // Возврат: тёплое «продолжим» + следующий вопрос (без реакции — нового ответа ещё нет).
-  const next = await genTurn(userId, name, lang, null);
+  const next = await genTurn(userId, name, lang, null, pct);
   const text = `${RETURN_LEAD[lang] || RETURN_LEAD.ru}\n\n${next}`;
   await append(userId, "assistant", text);
   return text;
@@ -521,7 +529,7 @@ export async function acquaintReply(userId: string, name: string | null, userTex
   if (crossedReveal) {
     const page = await buildFirstPage(userId, lang);
     if (page) {
-      const next = await genTurn(userId, name, lang, null);
+      const next = await genTurn(userId, name, lang, null, pct);
       const text = `${PAGE_LEAD[lang] || PAGE_LEAD.ru}\n\n«${page}»${PAGE_OUTRO[lang] || PAGE_OUTRO.ru}\n\n${next}`;
       await writeState(userId, st.prefs, { pct });
       await append(userId, "assistant", text);
@@ -543,7 +551,7 @@ export async function acquaintReply(userId: string, name: string | null, userTex
 
   // Обычный ход: реакция + польза/фишка + следующий вопрос. Знакомство НЕ заканчивается —
   // прогресс упирается в 99%, а разговор (и наполнение книги) продолжается сколько угодно.
-  let text = await genTurn(userId, name, lang, answer);
+  let text = await genTurn(userId, name, lang, answer, pct);
   if (crossedDeep) text += DEEP[lang] || DEEP.ru;
   await writeState(userId, st.prefs, { pct });
   await append(userId, "assistant", text);
