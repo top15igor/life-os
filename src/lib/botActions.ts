@@ -93,7 +93,7 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   { name: "delete_last_entry", description: "Удалить ПОСЛЕДНЮЮ запись дневника. ТОЛЬКО при явной команде удаления, где прямо сказано «удали/убери/сотри» + «(последнюю) запись»: «удали последнюю запись», «убери предыдущую запись», «сотри последнее». НЕ выбирай на фразы-поправки и недовольство («не то записал», «не надо было это добавлять», «надо было иначе», «неправильно», «зачем ты…») — это НЕ команда удаления, для них save_entry.", input_schema: { type: "object", properties: {} } },
-  { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать — ИЛИ возмущается/уточняет по поводу уже записанного («почему трату не учёл?», «где сегодняшний расход?», «чего не показал?»). Это НЕ новая запись, повторно данные (в т.ч. траты) записывать не нужно.", input_schema: { type: "object", properties: {} } },
+  { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать — ИЛИ возмущается/уточняет по поводу уже записанного («почему трату не учёл?», «где сегодняшний расход?», «чего не показал?»). Сюда же: вопросы про СВОИ ЦИФРЫ И СТАТИСТИКУ («сколько у меня записей/голосовых сообщений», «сколько слов я написал за всё время», «когда я зарегистрировался») и вопросы ПРО ПРИЛОЖЕНИЕ («как зайти в приложение», «как работает…», «где найти…», «что ты умеешь») — у ассистента есть эти данные и инструкция. Это НЕ новая запись, повторно данные (в т.ч. траты) записывать не нужно.", input_schema: { type: "object", properties: {} } },
   { name: "save_entry", description: "Обычная дневниковая запись: рассказ о дне, мысли, чувства, событие, идея. ПО УМОЛЧАНИЮ выбирай это.", input_schema: { type: "object", properties: {} } },
 ];
 
@@ -109,6 +109,7 @@ const SYS =
   "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
   "Просьбы к БОТУ изменить манеру или содержание его сообщений («пиши короче», «меньше эмодзи», «не пиши мне про…», «обращайся иначе», «не называй меня…») → set_style, а НЕ save_entry: пожелание должно сохраниться и влиять. " +
   "Вопросы про свой АККАУНТ и вход («на какую почту зарегистрирован», «какая у меня почта», «как я вошёл») → account_info, а НЕ save_entry и НЕ ask_question. " +
+  "Вопросы про свои ЦИФРЫ/СТАТИСТИКУ («сколько у меня записей/голосовых», «сколько слов/букв за всё время», «когда я зарегистрировался») и про ПРИЛОЖЕНИЕ («как зайти в приложение», «как работает…», «где найти…», «что ты умеешь») → ask_question: у ассистента есть точные данные и инструкция. ЛЮБОЙ вопрос боту — это ask_question, а НЕ save_entry, даже если ты не уверен, что ассистент знает ответ: лучше честное «не умею», чем молчаливая запись в дневник. " +
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы о своей жизни → ask_question. " +
@@ -188,7 +189,7 @@ const M: Record<Lang, any> = {
     deed: (t: string) => `💛 Записал доброе дело: «${t}».`,
     style: (t: string) => `🎨 Запомнил: «${t}». Буду учитывать — и в утренних сообщениях, и в чате.`,
     bday: (d: string) => `🎂 Запомнил: твой день рождения — ${d}. Жди в этот день кое-что приятное — я такие даты не пропускаю 😉`,
-    account: (email: string | null, tg: string | null) => `🔐 Твой аккаунт:\n${email ? `📧 Почта: ${email}` : "📧 Почта не привязана — ты входишь через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nПривязать или сменить почту можно в Профиле → Аккаунт и вход.`,
+    account: (email: string | null, tg: string | null, since?: string | null) => `🔐 Твой аккаунт:\n${email ? `📧 Почта: ${email}` : "📧 Почта не привязана — ты входишь через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}${since ? `\n📅 В LIFE OS с ${since}` : ""}\n\nПривязать или сменить почту можно в Профиле → Аккаунт и вход.`,
     delAsk: (t: string) => `🗑 Удалить последнюю запись${t ? `: «${t}»` : ""}? Это действие нельзя отменить.`,
     delLast: (t: string) => `🗑 Удалил последнюю запись${t ? `: «${t}»` : ""}.`,
     delKept: "Ок, оставил запись.",
@@ -214,7 +215,7 @@ const M: Record<Lang, any> = {
     deed: (t: string) => `💛 Logged a good deed: “${t}”.`,
     style: (t: string) => `🎨 Got it: “${t}”. I'll keep it in mind — in morning messages and in chat.`,
     bday: (d: string) => `🎂 Got it: your birthday is ${d}. Expect something nice that day — I never miss dates like this 😉`,
-    account: (email: string | null, tg: string | null) => `🔐 Your account:\n${email ? `📧 Email: ${email}` : "📧 No email linked — you sign in via Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nYou can link or change email in Profile → Account.`,
+    account: (email: string | null, tg: string | null, since?: string | null) => `🔐 Your account:\n${email ? `📧 Email: ${email}` : "📧 No email linked — you sign in via Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}${since ? `\n📅 With LIFE OS since ${since}` : ""}\n\nYou can link or change email in Profile → Account.`,
     delAsk: (t: string) => `🗑 Delete the last entry${t ? `: “${t}”` : ""}? This can't be undone.`,
     delLast: (t: string) => `🗑 Deleted the last entry${t ? `: “${t}”` : ""}.`,
     delKept: "Ok, kept the entry.",
@@ -240,7 +241,7 @@ const M: Record<Lang, any> = {
     deed: (t: string) => `💛 Записав добру справу: «${t}».`,
     style: (t: string) => `🎨 Запам'ятав: «${t}». Враховуватиму — і в ранкових повідомленнях, і в чаті.`,
     bday: (d: string) => `🎂 Запам'ятав: твій день народження — ${d}. Чекай того дня дещо приємне — такі дати я не пропускаю 😉`,
-    account: (email: string | null, tg: string | null) => `🔐 Твій акаунт:\n${email ? `📧 Пошта: ${email}` : "📧 Пошта не прив'язана — ти входиш через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nПрив'язати або змінити пошту можна в Профілі → Акаунт і вхід.`,
+    account: (email: string | null, tg: string | null, since?: string | null) => `🔐 Твій акаунт:\n${email ? `📧 Пошта: ${email}` : "📧 Пошта не прив'язана — ти входиш через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}${since ? `\n📅 У LIFE OS з ${since}` : ""}\n\nПрив'язати або змінити пошту можна в Профілі → Акаунт і вхід.`,
     delAsk: (t: string) => `🗑 Видалити останній запис${t ? `: «${t}»` : ""}? Цю дію не можна скасувати.`,
     delLast: (t: string) => `🗑 Видалив останній запис${t ? `: «${t}»` : ""}.`,
     delKept: "Ок, залишив запис.",
@@ -266,7 +267,7 @@ const M: Record<Lang, any> = {
     deed: (t: string) => `💛 Bonne action enregistrée : « ${t} ».`,
     style: (t: string) => `🎨 C'est noté : « ${t} ». J'en tiendrai compte — le matin et dans le chat.`,
     bday: (d: string) => `🎂 C'est noté : ton anniversaire, c'est le ${d}. Attends-toi à une surprise ce jour-là — je ne rate jamais ces dates 😉`,
-    account: (email: string | null, tg: string | null) => `🔐 Ton compte :\n${email ? `📧 E-mail : ${email}` : "📧 Pas d'e-mail lié — tu te connectes via Telegram"}${tg ? `\n✈️ Telegram : @${tg}` : ""}\n\nTu peux lier ou changer l'e-mail dans Profil → Compte.`,
+    account: (email: string | null, tg: string | null, since?: string | null) => `🔐 Ton compte :\n${email ? `📧 E-mail : ${email}` : "📧 Pas d'e-mail lié — tu te connectes via Telegram"}${tg ? `\n✈️ Telegram : @${tg}` : ""}${since ? `\n📅 Sur LIFE OS depuis le ${since}` : ""}\n\nTu peux lier ou changer l'e-mail dans Profil → Compte.`,
     delAsk: (t: string) => `🗑 Supprimer la dernière entrée${t ? ` : « ${t} »` : ""} ? Action irréversible.`,
     delLast: (t: string) => `🗑 Dernière entrée supprimée${t ? ` : « ${t} »` : ""}.`,
     delKept: "Ok, entrée conservée.",
@@ -292,7 +293,7 @@ const M: Record<Lang, any> = {
     deed: (t: string) => `💛 Registré una buena acción: «${t}».`,
     style: (t: string) => `🎨 Anotado: «${t}». Lo tendré en cuenta — por la mañana y en el chat.`,
     bday: (d: string) => `🎂 Anotado: tu cumpleaños es el ${d}. Espera algo lindo ese día — nunca me pierdo estas fechas 😉`,
-    account: (email: string | null, tg: string | null) => `🔐 Tu cuenta:\n${email ? `📧 Correo: ${email}` : "📧 Sin correo vinculado — entras por Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nPuedes vincular o cambiar el correo en Perfil → Cuenta.`,
+    account: (email: string | null, tg: string | null, since?: string | null) => `🔐 Tu cuenta:\n${email ? `📧 Correo: ${email}` : "📧 Sin correo vinculado — entras por Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}${since ? `\n📅 En LIFE OS desde ${since}` : ""}\n\nPuedes vincular o cambiar el correo en Perfil → Cuenta.`,
     delAsk: (t: string) => `🗑 ¿Eliminar la última entrada${t ? `: «${t}»` : ""}? Esta acción no se puede deshacer.`,
     delLast: (t: string) => `🗑 Eliminé la última entrada${t ? `: «${t}»` : ""}.`,
     delKept: "Ok, dejé la entrada.",
@@ -465,8 +466,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       return { text: s.bday(label) };
     }
     if (name === "account_info") {
-      const { data } = await db.from("users").select("email, tg_username").eq("id", userId).maybeSingle();
-      return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null), openNext: "/profile" };
+      const { data } = await db.from("users").select("email, tg_username, created_at").eq("id", userId).maybeSingle();
+      // Дата регистрации в формате dd.mm.yyyy — Коля спрашивал «когда я зарегистрировался»,
+      // а бот отвечал только про почту.
+      const created = (data as any)?.created_at ? String((data as any).created_at).slice(0, 10) : null;
+      const since = created ? created.split("-").reverse().join(".") : null;
+      return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
     }
     if (name === "set_style") {
       const wish = String(input?.wish || "").trim().slice(0, 200);
