@@ -32,7 +32,7 @@ export default function DesignSwitch({ locale, current, refCode }: { locale: str
     <div
       title={s.title}
       style={{
-        position: "fixed", right: 14, bottom: 14, zIndex: 60,
+        position: "fixed", right: 14, bottom: "var(--dswitch-bottom, 14px)" as any, zIndex: 60,
         display: "flex", alignItems: "center", gap: 2, padding: 3,
         borderRadius: 999, border: "1px solid rgba(0,0,0,.08)",
         background: "rgba(240,240,238,.88)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",

@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
 import DesignSwitch from "@/components/about/DesignSwitch";
+import ProductPeek from "@/components/about/ProductPeek";
+import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
 
@@ -495,7 +497,24 @@ const LP_CSS = `
 .lp .lp-nav{ display:flex; align-items:center; gap:26px; }
 .lp .lp-nav a{ font-size:14px; font-weight:500; color:var(--text-2); transition:color .15s; }
 .lp .lp-nav a:hover{ color:var(--text); }
-@media (max-width:900px){ .lp .lp-nav{ display:none; } }
+.lp .lp-nav a.active{ color:var(--accent); font-weight:600; }
+.lp .lp-burger{ display:none; background:none; border:none; padding:6px; cursor:pointer; color:var(--text); }
+@media (max-width:900px){ .lp .lp-nav{ display:none; } .lp .lp-burger{ display:inline-flex; } }
+/* Панель меню и мобильная CTA рендерятся порталом в body (fixed внутри
+   .lp-topbar ломается из-за backdrop-filter) — поэтому селекторы без .lp */
+.lp-drawer{ position:fixed; inset:0; z-index:70; background:rgba(15,15,40,.35); backdrop-filter:blur(2px); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; }
+.lp-drawer-panel{ position:absolute; top:0; right:0; width:min(320px, 86vw); height:100%; background:#fff; padding:76px 26px 26px; display:flex; flex-direction:column; gap:4px; box-shadow:-18px 0 44px rgba(15,15,40,.18); }
+.lp-drawer-panel a{ text-decoration:none; }
+.lp-drawer-panel > a:not(.lp-cta-btn){ font-size:17px; font-weight:600; color:var(--text); padding:12px 4px; border-bottom:1px solid rgba(15,15,40,.06); }
+.lp-drawer-panel > a.active:not(.lp-cta-btn){ color:var(--accent); }
+.lp-cta-btn{ background:linear-gradient(135deg,#6d6bf6,#8b5cf6); color:#fff !important; box-shadow:0 12px 28px -12px rgba(91,91,245,.55); }
+.lp-mcta{ display:none; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; }
+.lp-mcta a{ text-decoration:none; }
+@media (max-width:640px){
+  .lp{ --dswitch-bottom: 80px; }
+  .lp-mcta{ display:block; position:fixed; left:14px; right:14px; bottom:14px; z-index:60; opacity:0; transform:translateY(16px); pointer-events:none; transition:opacity .25s, transform .25s; padding-bottom:env(safe-area-inset-bottom); }
+  .lp-mcta.on{ opacity:1; transform:none; pointer-events:auto; }
+}
 .lp .lp-kicker{ font-size:12.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
 .lp .lp-h1{ font-size:clamp(34px,6.4vw,60px); font-weight:800; line-height:1.06; letter-spacing:-.03em; margin:0 0 20px; text-wrap:balance; }
 .lp .lp-h2{ font-size:clamp(25px,4vw,36px); font-weight:800; letter-spacing:-.025em; margin:0; text-wrap:balance; }
@@ -578,12 +597,16 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
             <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
           </a>
-          <nav className="lp-nav">
-            <a href="#why">{(t as any).nav_why}</a>
-            <a href="#how">{(t as any).nav_how}</a>
-            <a href="#inside">{(t as any).nav_feat}</a>
-            <a href="#reviews">{(t as any).nav_rev}</a>
-          </nav>
+          <LandingNav
+            links={[
+              { href: "#why", label: (t as any).nav_why },
+              { href: "#how", label: (t as any).nav_how },
+              { href: "#inside", label: (t as any).nav_feat },
+              { href: "#reviews", label: (t as any).nav_rev },
+            ]}
+            ctaLabel={t.cta_create}
+            ctaHref={isAuthed ? "/" : loginHref}
+          />
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LangMenu current={locale} align="right" />
             <a
@@ -614,6 +637,9 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
         {(t as any).hero_note && <div style={{ fontSize: 14, color: "var(--text-2)", fontStyle: "italic", marginTop: 13, fontFamily: "var(--font-serif, Georgia, serif)" }}>— {(t as any).hero_note}</div>}
         {!isAuthed && <div style={{ fontSize: 13, color: "var(--text-3)", marginTop: 10 }}>{t.cta_hint}</div>}
+
+        {/* Живой показ продукта: голосовое → разбор → карточка записи */}
+        <ProductPeek locale={locale} />
       </div>
 
       {/* Idea */}
