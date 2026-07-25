@@ -59,6 +59,11 @@ const C = {
       { i: "ti-books", t: "Книги и чтение", d: "Что читаешь и прочитал, оценки и цитаты, цель года и AI-советы." },
     ],
 
+    feat_more_n: "50+",
+    feat_more_t: "возможностей уже внутри",
+    feat_more_d: "И каждую неделю появляются новые. Загляни в полный каталог — там точно есть то, чего ты не ждёшь от дневника.",
+    feat_more_cta: "Смотреть все возможности",
+
     founder_kicker: "Об основателе",
     founder_title: "Почему я создаю LIFE OS",
     founder_paras: [
@@ -147,6 +152,11 @@ const C = {
       { i: "ti-camera", t: "Memory in photos", d: "Receipts, warranties, moments — AI understands photos and files them for you." },
       { i: "ti-books", t: "Books & reading", d: "What you read and finished, ratings and quotes, a year goal and AI picks." },
     ],
+
+    feat_more_n: "50+",
+    feat_more_t: "features already inside",
+    feat_more_d: "And new ones ship every week. Browse the full catalog — there's definitely something you don't expect from a diary.",
+    feat_more_cta: "See all features",
 
     founder_kicker: "About the founder",
     founder_title: "Why I'm building LIFE OS",
@@ -237,6 +247,11 @@ const C = {
       { i: "ti-books", t: "Книги та читання", d: "Що читаєш і прочитав, оцінки й цитати, ціль року та AI-поради." },
     ],
 
+    feat_more_n: "50+",
+    feat_more_t: "можливостей уже всередині",
+    feat_more_d: "І щотижня з'являються нові. Зазирни в повний каталог — там точно є те, чого не чекаєш від щоденника.",
+    feat_more_cta: "Дивитися всі можливості",
+
     founder_kicker: "Про засновника",
     founder_title: "Чому я створюю LIFE OS",
     founder_paras: [
@@ -325,6 +340,11 @@ const C = {
       { i: "ti-books", t: "Livres & lecture", d: "Ce que tu lis et as lu, notes et citations, objectif de l'année et suggestions IA." },
     ],
 
+    feat_more_n: "50+",
+    feat_more_t: "fonctionnalités déjà là",
+    feat_more_d: "Et de nouvelles arrivent chaque semaine. Parcours le catalogue complet — il y a sûrement ce que tu n'attends pas d'un journal.",
+    feat_more_cta: "Voir toutes les fonctionnalités",
+
     founder_kicker: "À propos du fondateur",
     founder_title: "Pourquoi je crée LIFE OS",
     founder_paras: [
@@ -412,6 +432,11 @@ const C = {
       { i: "ti-camera", t: "Memoria en fotos", d: "Recibos, garantías, momentos — la IA entiende las fotos y las organiza por ti." },
       { i: "ti-books", t: "Libros y lectura", d: "Qué lees y terminaste, valoraciones y citas, meta del año y recomendaciones de la IA." },
     ],
+
+    feat_more_n: "50+",
+    feat_more_t: "funciones ya dentro",
+    feat_more_d: "Y cada semana llegan nuevas. Mira el catálogo completo — seguro hay algo que no esperas de un diario.",
+    feat_more_cta: "Ver todas las funciones",
 
     founder_kicker: "Sobre el fundador",
     founder_title: "Por qué estoy creando LIFE OS",
@@ -638,6 +663,35 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             </div>
           ))}
         </div>
+
+        {/* «50+ возможностей» — мост в полный каталог /features */}
+        <a
+          href="/features"
+          className="lp-card"
+          style={{
+            display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap",
+            marginTop: 16, padding: "26px 28px", textDecoration: "none",
+            border: "1px solid var(--accent)", background: "var(--accent-bg)",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "clamp(44px, 7vw, 64px)", fontWeight: 600, lineHeight: 1, color: "var(--accent)", letterSpacing: "-0.02em" }}>
+            {t.feat_more_n}
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ fontSize: 19, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 5 }}>{t.feat_more_t}</div>
+            <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 520 }}>{t.feat_more_d}</div>
+          </div>
+          <span
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "12px 20px", borderRadius: 12, background: "var(--accent)",
+              color: "#fff", fontSize: 14.5, fontWeight: 600, whiteSpace: "nowrap",
+            }}
+          >
+            {t.feat_more_cta}
+            <i className="ti ti-arrow-right" style={{ fontSize: 17 }} />
+          </span>
+        </a>
       </div>
 
       {/* Capabilities — how to use / full feature list (expandable) */}

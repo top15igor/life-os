@@ -89,7 +89,7 @@ type Dict = {
   catName: Record<CatKey, string>;
   initial: Entry[]; queue: { text: string; cat: CatKey }[];
   howKicker: string; howTitle: string; howSub: string; steps: Step[];
-  featKicker: string; featTitle: string; featSub: string; categories: Cat[];
+  featKicker: string; featTitle: string; featSub: string; featMore: string; categories: Cat[];
   bookBadge: string; bookPre: string; bookItalic: string; bookPost: string; bookP: string; bookPoints: string[];
   chapterLabel: string; chapterTitle: string; aiLines: string[]; bookStats: { value: string; label: string }[];
   storiesKicker: string; storiesTitle: string; testimonials: Testi[];
@@ -116,7 +116,7 @@ const D: Record<Locale, Dict> = {
     queue: [{ text: "Выпил большой стакан воды", cat: "food" }, { text: "Сделал 20 минут растяжки", cat: "sport" }, { text: "Чувствую прилив сил после прогулки", cat: "health" }, { text: "Встретился с Андреем, обсудили проект", cat: "events" }, { text: "Появилась идея для нового продукта", cat: "thoughts" }],
     howKicker: "Как это работает", howTitle: "Просто говори о жизни — остальное сделает AI", howSub: "Никаких форм, тегов и таблиц. Ты рассказываешь — LIFE OS понимает, раскладывает и сохраняет.",
     steps: [{ title: "Расскажи", desc: "Голосом, текстом или фото — как удобно прямо сейчас." }, { title: "AI поймёт", desc: "Определит, о чём речь: еда, спорт, эмоции, событие или мысль." }, { title: "Разложит", desc: "Сохранит запись в нужный раздел и свяжет с прошлым." }, { title: "Создаст книгу", desc: "Соберёт всё в спокойную хронику и историю твоей жизни." }],
-    featKicker: "Что внутри", featTitle: "Вся жизнь — в одном месте", featSub: "Скажи фразу — и она сама окажется в нужном разделе. Вот что LIFE OS понимает с ходу.",
+    featKicker: "Что внутри", featTitle: "Вся жизнь — в одном месте", featSub: "Скажи фразу — и она сама окажется в нужном разделе. Вот что LIFE OS понимает с ходу.", featMore: "Все 50+ возможностей",
     categories: catList(
       { food: "Питание", sport: "Спорт", health: "Самочувствие", emotions: "Эмоции", events: "События", thoughts: "Мысли" },
       { food: "Еда, вода, витамины", sport: "Тренировки, бег, шаги", health: "Энергия, сон, здоровье", emotions: "Настроение, чувства, стресс", events: "Встречи, поездки, моменты", thoughts: "Идеи, решения, инсайты" },
@@ -148,7 +148,7 @@ const D: Record<Locale, Dict> = {
     queue: [{ text: "Drank a big glass of water", cat: "food" }, { text: "Did 20 minutes of stretching", cat: "sport" }, { text: "Feeling energized after a walk", cat: "health" }, { text: "Met with Andrew, discussed the project", cat: "events" }, { text: "Got an idea for a new product", cat: "thoughts" }],
     howKicker: "How it works", howTitle: "Just talk about your life — AI does the rest", howSub: "No forms, tags or tables. You talk — LIFE OS understands, sorts and saves.",
     steps: [{ title: "Tell it", desc: "By voice, text or photo — however suits you right now." }, { title: "AI understands", desc: "It detects the topic: food, sport, emotions, an event or a thought." }, { title: "It sorts", desc: "Saves the entry to the right section and links it to the past." }, { title: "Builds your book", desc: "Gathers it all into a calm chronicle and the story of your life." }],
-    featKicker: "What's inside", featTitle: "Your whole life in one place", featSub: "Say a phrase — and it lands in the right section by itself. Here's what LIFE OS gets right away.",
+    featKicker: "What's inside", featTitle: "Your whole life in one place", featSub: "Say a phrase — and it lands in the right section by itself. Here's what LIFE OS gets right away.", featMore: "All 50+ features",
     categories: catList(
       { food: "Food", sport: "Sport", health: "Wellbeing", emotions: "Emotions", events: "Events", thoughts: "Thoughts" },
       { food: "Meals, water, vitamins", sport: "Workouts, running, steps", health: "Energy, sleep, health", emotions: "Mood, feelings, stress", events: "Meetings, trips, moments", thoughts: "Ideas, decisions, insights" },
@@ -180,7 +180,7 @@ const D: Record<Locale, Dict> = {
     queue: [{ text: "Випив велику склянку води", cat: "food" }, { text: "Зробив 20 хвилин розтяжки", cat: "sport" }, { text: "Відчуваю приплив сил після прогулянки", cat: "health" }, { text: "Зустрівся з Андрієм, обговорили проєкт", cat: "events" }, { text: "З'явилася ідея для нового продукту", cat: "thoughts" }],
     howKicker: "Як це працює", howTitle: "Просто говори про життя — решту зробить AI", howSub: "Жодних форм, тегів і таблиць. Ти розповідаєш — LIFE OS розуміє, розкладає і зберігає.",
     steps: [{ title: "Розкажи", desc: "Голосом, текстом або фото — як зручно зараз." }, { title: "AI зрозуміє", desc: "Визначить, про що мова: їжа, спорт, емоції, подія чи думка." }, { title: "Розкладе", desc: "Збереже запис у потрібний розділ і зв'яже з минулим." }, { title: "Створить книгу", desc: "Збере все у спокійну хроніку та історію твого життя." }],
-    featKicker: "Що всередині", featTitle: "Усе життя — в одному місці", featSub: "Скажи фразу — і вона сама опиниться в потрібному розділі. Ось що LIFE OS розуміє одразу.",
+    featKicker: "Що всередині", featTitle: "Усе життя — в одному місці", featSub: "Скажи фразу — і вона сама опиниться в потрібному розділі. Ось що LIFE OS розуміє одразу.", featMore: "Усі 50+ можливостей",
     categories: catList(
       { food: "Харчування", sport: "Спорт", health: "Самопочуття", emotions: "Емоції", events: "Події", thoughts: "Думки" },
       { food: "Їжа, вода, вітаміни", sport: "Тренування, біг, кроки", health: "Енергія, сон, здоров'я", emotions: "Настрій, почуття, стрес", events: "Зустрічі, поїздки, моменти", thoughts: "Ідеї, рішення, інсайти" },
@@ -212,7 +212,7 @@ const D: Record<Locale, Dict> = {
     queue: [{ text: "Bu un grand verre d'eau", cat: "food" }, { text: "Fait 20 minutes d'étirements", cat: "sport" }, { text: "Je me sens plein d'énergie après une promenade", cat: "health" }, { text: "Rencontré André, parlé du projet", cat: "events" }, { text: "Eu une idée de nouveau produit", cat: "thoughts" }],
     howKicker: "Comment ça marche", howTitle: "Raconte ta vie — l'IA fait le reste", howSub: "Ni formulaires, ni tags, ni tableaux. Tu parles — LIFE OS comprend, trie et enregistre.",
     steps: [{ title: "Raconte", desc: "À la voix, au texte ou en photo — comme tu veux." }, { title: "L'IA comprend", desc: "Elle détecte le sujet : repas, sport, émotions, événement ou pensée." }, { title: "Elle trie", desc: "Range l'entrée dans la bonne section et la relie au passé." }, { title: "Crée ton livre", desc: "Rassemble tout en une chronique paisible, l'histoire de ta vie." }],
-    featKicker: "Ce qu'il y a dedans", featTitle: "Toute ta vie au même endroit", featSub: "Dis une phrase — elle se range toute seule au bon endroit. Voici ce que LIFE OS comprend d'emblée.",
+    featKicker: "Ce qu'il y a dedans", featTitle: "Toute ta vie au même endroit", featSub: "Dis une phrase — elle se range toute seule au bon endroit. Voici ce que LIFE OS comprend d'emblée.", featMore: "Les 50+ fonctionnalités",
     categories: catList(
       { food: "Alimentation", sport: "Sport", health: "Bien-être", emotions: "Émotions", events: "Événements", thoughts: "Pensées" },
       { food: "Repas, eau, vitamines", sport: "Entraînements, course, pas", health: "Énergie, sommeil, santé", emotions: "Humeur, ressentis, stress", events: "Rencontres, voyages, moments", thoughts: "Idées, décisions, insights" },
@@ -244,7 +244,7 @@ const D: Record<Locale, Dict> = {
     queue: [{ text: "Bebí un vaso grande de agua", cat: "food" }, { text: "Hice 20 minutos de estiramientos", cat: "sport" }, { text: "Me siento con energía después de caminar", cat: "health" }, { text: "Quedé con Andrés, hablamos del proyecto", cat: "events" }, { text: "Se me ocurrió una idea para un producto nuevo", cat: "thoughts" }],
     howKicker: "Cómo funciona", howTitle: "Solo habla de tu vida — la IA hace el resto", howSub: "Nada de formularios, etiquetas ni tablas. Tú hablas — LIFE OS entiende, ordena y guarda.",
     steps: [{ title: "Cuéntaselo", desc: "Por voz, texto o foto — como te venga bien ahora mismo." }, { title: "La IA entiende", desc: "Detecta de qué se trata: comida, deporte, emociones, un evento o un pensamiento." }, { title: "Lo ordena", desc: "Guarda la entrada en la sección correcta y la conecta con el pasado." }, { title: "Crea tu libro", desc: "Reúne todo en una crónica tranquila y en la historia de tu vida." }],
-    featKicker: "Qué hay dentro", featTitle: "Toda tu vida en un solo lugar", featSub: "Di una frase — y ella sola aterriza en la sección correcta. Esto es lo que LIFE OS entiende de inmediato.",
+    featKicker: "Qué hay dentro", featTitle: "Toda tu vida en un solo lugar", featSub: "Di una frase — y ella sola aterriza en la sección correcta. Esto es lo que LIFE OS entiende de inmediato.", featMore: "Las 50+ funciones",
     categories: catList(
       { food: "Comida", sport: "Deporte", health: "Bienestar", emotions: "Emociones", events: "Eventos", thoughts: "Pensamientos" },
       { food: "Comidas, agua, vitaminas", sport: "Entrenamientos, running, pasos", health: "Energía, sueño, salud", emotions: "Ánimo, sentimientos, estrés", events: "Encuentros, viajes, momentos", thoughts: "Ideas, decisiones, hallazgos" },
@@ -465,6 +465,21 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref, refCode
                 </div>
               </div>
             ))}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 34 }}>
+            <a
+              href="/features"
+              className="lm-nav"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 9,
+                padding: "13px 24px", borderRadius: 100,
+                border: "1.5px solid var(--accent-d)", color: "var(--accent-d)",
+                font: "600 15px 'Onest'", textDecoration: "none", background: "var(--paper)",
+              }}
+            >
+              {t.featMore} →
+            </a>
           </div>
         </div>
       </section>
