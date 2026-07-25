@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { sendDocument } from "./telegram";
 
 // ===== Еженедельный автодамп ВСЕЙ базы (все пользователи, все таблицы). =====
 // Зачем: в коде нет автобэкапов БД, а на бесплатном тарифе Supabase их нет и
@@ -62,4 +63,19 @@ export async function buildDbDumpZip(): Promise<DbDumpResult> {
 
   const buf = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
   return { zip: buf, tables, rows, skipped, truncated };
+}
+
+// Собрать дамп и отправить владельцу в Telegram. Используется кроном (воскресенье),
+// самотестом /api/cron?dbdump=<секрет> и owner-эндпоинтом /api/admin/dbdump.
+export async function sendDbDumpToOwner(): Promise<{ sent: boolean; tables: number; rows: number; bytes: number; skipped: string[] }> {
+  const chat = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
+  if (!chat) return { sent: false, tables: 0, rows: 0, bytes: 0, skipped: [] };
+  const dump = await buildDbDumpZip();
+  const fname = `LIFE_OS_DB_${new Date().toISOString().slice(0, 10)}.zip`;
+  const caption =
+    `🗄 <b>Резервная копия всей базы LIFE OS</b>\n` +
+    `Таблиц: ${dump.tables} · строк: ${dump.rows}. Внутри — JSON-файл на каждую таблицу (все пользователи).\n` +
+    `Сохрани архив: это независимая от Supabase копия данных. Приходит каждое воскресенье.`;
+  const sent = await sendDocument(chat, dump.zip, fname, { caption, parse_mode: "HTML" });
+  return { sent, tables: dump.tables, rows: dump.rows, bytes: dump.zip.length, skipped: dump.skipped };
 }

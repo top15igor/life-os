@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { buildObsidianZip } from "@/lib/obsidian";
-import { buildDbDumpZip } from "@/lib/dbDump";
+import { sendDbDumpToOwner } from "@/lib/dbDump";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
@@ -130,22 +130,6 @@ const RECUR_HEAD: Record<Lang, string> = {
   fr: "📅 <b>Paiements récurrents du jour</b>\nUn rappel — enregistre chacun en touchant la commande ci-dessous :",
   es: "📅 <b>Pagos recurrentes de hoy</b>\nUn recordatorio — registra cada uno tocando el comando de abajo:",
 };
-
-// Еженедельный дамп всей базы → владельцу в Telegram (данные людей не должны
-// зависеть от одного сервиса: в коде автобэкапов БД нет, на бесплатном тарифе
-// Supabase их нет и у провайдера). Восстановление — insert JSON-файлов обратно.
-async function sendDbDumpToOwner(): Promise<{ sent: boolean; tables: number; rows: number; bytes: number; skipped: string[] }> {
-  const chat = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
-  if (!chat) return { sent: false, tables: 0, rows: 0, bytes: 0, skipped: [] };
-  const dump = await buildDbDumpZip();
-  const fname = `LIFE_OS_DB_${new Date().toISOString().slice(0, 10)}.zip`;
-  const caption =
-    `🗄 <b>Резервная копия всей базы LIFE OS</b>\n` +
-    `Таблиц: ${dump.tables} · строк: ${dump.rows}. Внутри — JSON-файл на каждую таблицу (все пользователи).\n` +
-    `Сохрани архив: это независимая от Supabase копия данных. Приходит каждое воскресенье.`;
-  const sent = await sendDocument(chat, dump.zip, fname, { caption, parse_mode: "HTML" });
-  return { sent, tables: dump.tables, rows: dump.rows, bytes: dump.zip.length, skipped: dump.skipped };
-}
 
 async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> {
   const db = supabaseAdmin();
