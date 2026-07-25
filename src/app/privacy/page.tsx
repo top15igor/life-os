@@ -30,6 +30,16 @@ export default async function PrivacyPage() {
       "#f7f8fc",
   } as React.CSSProperties;
 
+  // Локальная «карточка» вместо глобального .card: тот класс в тёмной теме
+  // красится жёстко (html[data-theme=dark] .card), а эта страница всегда светлая.
+  const card: React.CSSProperties = {
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: 14,
+    padding: "15px 17px",
+    boxShadow: "var(--shadow)",
+  };
+
   return (
     <div style={shell}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "40px 22px 60px" }}>
@@ -41,7 +51,7 @@ export default async function PrivacyPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 22 }}>
         {p.points.map((pt, i) => (
-          <div key={i} className="card" style={{ display: "flex", gap: 13 }}>
+          <div key={i} style={{ ...card, display: "flex", gap: 13 }}>
             <i className={`ti ${pt.icon}`} style={{ fontSize: 22, color: "var(--accent)", flexShrink: 0, marginTop: 2 }} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{pt.title}</div>
@@ -51,7 +61,7 @@ export default async function PrivacyPage() {
         ))}
       </div>
 
-      <div className="card" style={{ background: "var(--surface-2)", border: "none", fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 24, display: "flex", gap: 9 }}>
+      <div style={{ ...card, background: "var(--surface-2)", border: "none", fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 24, display: "flex", gap: 9 }}>
         <i className="ti ti-info-circle" style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }} />
         <span>{p.note}</span>
       </div>
@@ -62,7 +72,9 @@ export default async function PrivacyPage() {
         <i className="ti ti-external-link" style={{ fontSize: 16, color: "var(--text-3)" }} />
       </a>
 
-      <Link href="/" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {p.back}</Link>
+      {/* «На главную» = лендинг-презентация, а не приложение: залогиненный
+          пользователь со страницы «Приватность» не должен внезапно попадать в аккаунт. */}
+      <Link href="/about" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {p.back}</Link>
       </div>
     </div>
   );
