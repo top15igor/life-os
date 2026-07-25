@@ -498,7 +498,13 @@ const LP_CSS = `
 .lp .lp-nav a:hover{ color:var(--text); }
 .lp .lp-nav a.active{ color:var(--accent); font-weight:600; }
 .lp .lp-burger{ display:none; background:none; border:none; padding:6px; cursor:pointer; color:var(--text); }
+.lp .lp-topbar a{ white-space:nowrap; }
 @media (max-width:900px){ .lp .lp-nav{ display:none; } .lp .lp-burger{ display:inline-flex; } }
+@media (max-width:640px){
+  .lp .lp-topbar-in{ gap:8px !important; padding:12px 14px !important; }
+  .lp .lp-topbar-in > a > span{ font-size:16px !important; }
+  .lp .lp-topbar .lp-btn{ padding:8px 12px !important; font-size:13px !important; }
+}
 /* Панель меню и мобильная CTA рендерятся порталом в body (fixed внутри
    .lp-topbar ломается из-за backdrop-filter) — поэтому селекторы без .lp */
 .lp-drawer{ position:fixed; inset:0; z-index:70; background:rgba(15,15,40,.35); backdrop-filter:blur(2px); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; }
@@ -590,8 +596,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       <style dangerouslySetInnerHTML={{ __html: LP_CSS }} />
       {/* Top bar — липкая шапка с якорной навигацией */}
       <div className="lp-topbar">
-        <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 22px" }}>
-          <a href="#top" style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        <div className="lp-topbar-in" style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 22px" }}>
+          <a href="#top" style={{ display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap" }}>
             <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
             <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
           </a>
