@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { buildObsidianZip } from "@/lib/obsidian";
+import { buildDbDumpZip } from "@/lib/dbDump";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
@@ -130,6 +131,22 @@ const RECUR_HEAD: Record<Lang, string> = {
   es: "📅 <b>Pagos recurrentes de hoy</b>\nUn recordatorio — registra cada uno tocando el comando de abajo:",
 };
 
+// Еженедельный дамп всей базы → владельцу в Telegram (данные людей не должны
+// зависеть от одного сервиса: в коде автобэкапов БД нет, на бесплатном тарифе
+// Supabase их нет и у провайдера). Восстановление — insert JSON-файлов обратно.
+async function sendDbDumpToOwner(): Promise<{ sent: boolean; tables: number; rows: number; bytes: number; skipped: string[] }> {
+  const chat = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
+  if (!chat) return { sent: false, tables: 0, rows: 0, bytes: 0, skipped: [] };
+  const dump = await buildDbDumpZip();
+  const fname = `LIFE_OS_DB_${new Date().toISOString().slice(0, 10)}.zip`;
+  const caption =
+    `🗄 <b>Резервная копия всей базы LIFE OS</b>\n` +
+    `Таблиц: ${dump.tables} · строк: ${dump.rows}. Внутри — JSON-файл на каждую таблицу (все пользователи).\n` +
+    `Сохрани архив: это независимая от Supabase копия данных. Приходит каждое воскресенье.`;
+  const sent = await sendDocument(chat, dump.zip, fname, { caption, parse_mode: "HTML" });
+  return { sent, tables: dump.tables, rows: dump.rows, bytes: dump.zip.length, skipped: dump.skipped };
+}
+
 async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> {
   const db = supabaseAdmin();
   const weekAgo = isoOf(Date.now() - 7 * dayMs);
@@ -228,6 +245,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Самотест еженедельного дампа ВСЕЙ базы: /api/cron?dbdump=<secret> — собирает и шлёт .zip владельцу.
+  const dbd = req.nextUrl.searchParams.get("dbdump");
+  if (dbd !== null) {
+    const okKey = dbd === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.BACKUP_KEY && dbd === process.env.BACKUP_KEY);
+    if (!okKey) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    try {
+      const r = await sendDbDumpToOwner();
+      return NextResponse.json({ ok: r.sent, dbdump: true, tables: r.tables, rows: r.rows, bytes: r.bytes, skipped: r.skipped });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, dbdump: true, error: String(e?.message || e) });
+    }
+  }
+
   // Самотест дайджеста «Повод написать»: /api/cron?people=<secret> — шлёт владельцу
   // (или отвечает, что давно не упоминавшихся близких нет), без массовой рассылки.
   const ppl = req.nextUrl.searchParams.get("people");
@@ -317,7 +347,12 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0, birthdays: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0, birthdays: 0, dbDump: false };
+
+  // 🗄 Воскресенье — еженедельный дамп всей базы владельцу (не зависит от пользовательского цикла).
+  if (isSunday) {
+    try { stats.dbDump = (await sendDbDumpToOwner()).sent; } catch (e) { console.error("db dump", e); }
+  }
 
   // 👨‍👩‍👧 Наследники: авто-раскрытие «по долгому молчанию» (dead-man's switch) — глобально, раз за прогон.
   try { stats.heirsReleased = await autoReleaseInactive(); } catch { /* нет таблицы heirs — пропускаем */ }

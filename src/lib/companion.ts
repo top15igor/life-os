@@ -7,6 +7,7 @@ import { recallContext } from "./semanticMemory";
 import { TONE_PROMPT } from "./morningPrefs";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
+import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
 // Берём из общего набора бота, исключая роутер-заглушки и опасное удаление.
@@ -138,7 +139,7 @@ ${saved}
 ${finance || "ФИНАНСЫ: операций пока нет."}
 
 АККАУНТ И СТАТИСТИКА (профиль и точные цифры по данным собеседника — вопросы «когда я зарегистрировался», «сколько у меня записей/голосовых/слов», «какая у меня почта», «какой тариф» закрывай именно этим, не оценивай на глаз):
-${facts}`;
+${facts}${isOwner(userId) ? "\n\n" + architectureFacts() : ""}`;
 }
 
 function nowLocal(off?: number | null): string {

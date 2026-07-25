@@ -6,6 +6,7 @@ import { getBiographerHistory } from "./queries";
 import { recallContext } from "./semanticMemory";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
+import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
 const ASK_LANG: Record<string, string> = { ru: "русском", en: "английском (English)", uk: "українській", fr: "французском (français)", es: "испанском (español)" };
@@ -130,7 +131,7 @@ ${facts}
 ПРИЛОЖЕНИЕ LIFE OS (что умеет и как пользоваться):
 ${appCheatsheet((lang as any) || "ru")}
 
-НЕДАВНИЙ ДИАЛОГ (последние сообщения, новые внизу; «Ты» — это твои же прошлые сообщения, включая утренние пуши):
+${isOwner(userId) ? architectureFacts() + "\n\n" : ""}НЕДАВНИЙ ДИАЛОГ (последние сообщения, новые внизу; «Ты» — это твои же прошлые сообщения, включая утренние пуши):
 ${convo}
 
 ВОПРОС: ${question}`;
