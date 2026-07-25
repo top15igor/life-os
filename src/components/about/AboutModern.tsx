@@ -357,7 +357,7 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref, refCode
             <p className="lm-pretty" style={{ margin: "0 0 32px", font: "400 19px/1.6 'Onest'", color: "var(--ink2)", maxWidth: 520 }}>{t.heroP}</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
               <a href={startHref} className="lm-dark" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 26px", borderRadius: 14, background: "var(--ink)", color: "#fff", font: "600 16px 'Onest'", boxShadow: "0 14px 30px -14px rgba(44,42,38,.5)" }}>
-                {isAuthed ? t.inApp : t.nav.start}
+                {t.nav.start}
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               </a>
               <a href="#how" className="lm-soft" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 24px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--line)", color: "var(--ink)", font: "600 16px 'Onest'" }}>
@@ -548,7 +548,7 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref, refCode
             <p style={{ margin: "0 0 30px", font: "400 18px/1.6 'Onest'", color: "rgba(255,255,255,.85)" }}>{t.ctaP}</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "center" }}>
               <a href={startHref} className="lm-light" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "16px 28px", borderRadius: 14, background: "#fff", color: "var(--accent-d)", font: "600 16px 'Onest'", transition: "transform .2s" }}>
-                {isAuthed ? t.inApp : t.nav.start}
+                {t.nav.start}
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               </a>
               <div style={{ display: "flex", alignItems: "center", gap: 22, marginLeft: 6, flexWrap: "wrap" }}>

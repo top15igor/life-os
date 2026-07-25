@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const C = {
   ru: {
     nav_login: "Войти",
+    nav_why: "Зачем это", nav_how: "Как работает", nav_feat: "Возможности", nav_rev: "Отзывы",
     back_to_app: "В приложение",
     hero_badge: "Фотографии хранят, как ты выглядел. LIFE OS — каким ты был.",
     hero_title: "Сохранись.",
@@ -105,6 +106,7 @@ const C = {
   },
   en: {
     nav_login: "Sign in",
+    nav_why: "Why", nav_how: "How it works", nav_feat: "Features", nav_rev: "Stories",
     back_to_app: "Back to app",
     hero_badge: "Photos keep how you looked. LIFE OS keeps who you were.",
     hero_title: "Save yourself.",
@@ -199,6 +201,7 @@ const C = {
   },
   uk: {
     nav_login: "Увійти",
+    nav_why: "Навіщо це", nav_how: "Як працює", nav_feat: "Можливості", nav_rev: "Відгуки",
     back_to_app: "До застосунку",
     hero_badge: "Фото зберігають, який ти був на вигляд. LIFE OS — яким ти був.",
     hero_title: "Збережися.",
@@ -292,6 +295,7 @@ const C = {
   },
   fr: {
     nav_login: "Se connecter",
+    nav_why: "Pourquoi", nav_how: "Comment ça marche", nav_feat: "Fonctions", nav_rev: "Témoignages",
     back_to_app: "Vers l'app",
     hero_badge: "Les photos gardent ton apparence. LIFE OS garde qui tu étais.",
     hero_title: "Sauvegarde-toi.",
@@ -385,6 +389,7 @@ const C = {
   },
   es: {
     nav_login: "Iniciar sesión",
+    nav_why: "Por qué", nav_how: "Cómo funciona", nav_feat: "Funciones", nav_rev: "Opiniones",
     back_to_app: "Volver a la app",
     hero_badge: "Las fotos guardan cómo te veías. LIFE OS guarda quién eras.",
     hero_title: "Guárdate.",
@@ -481,9 +486,16 @@ const C = {
 
 // Премиальный светлый лендинг: ховеры, градиенты, мягкие тени, типографика.
 const LP_CSS = `
+@media (prefers-reduced-motion: no-preference){ html{ scroll-behavior:smooth; } }
 .lp{ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; letter-spacing:-.011em; }
 .lp *{ box-sizing:border-box; }
 .lp a{ text-decoration:none; color:inherit; }
+.lp [id]{ scroll-margin-top:78px; }
+.lp .lp-topbar{ position:sticky; top:0; z-index:50; background:rgba(247,248,252,.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid rgba(15,15,40,.06); }
+.lp .lp-nav{ display:flex; align-items:center; gap:26px; }
+.lp .lp-nav a{ font-size:14px; font-weight:500; color:var(--text-2); transition:color .15s; }
+.lp .lp-nav a:hover{ color:var(--text); }
+@media (max-width:900px){ .lp .lp-nav{ display:none; } }
 .lp .lp-kicker{ font-size:12.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
 .lp .lp-h1{ font-size:clamp(34px,6.4vw,60px); font-weight:800; line-height:1.06; letter-spacing:-.03em; margin:0 0 20px; text-wrap:balance; }
 .lp .lp-h2{ font-size:clamp(25px,4vw,36px); font-weight:800; letter-spacing:-.025em; margin:0; text-wrap:balance; }
@@ -557,23 +569,31 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   } as React.CSSProperties;
 
   return (
-    <div style={shell} className="lp">
+    <div style={shell} className="lp" id="top">
       <style dangerouslySetInnerHTML={{ __html: LP_CSS }} />
-      {/* Top bar */}
-      <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
-          <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LangMenu current={locale} align="right" />
-          <a
-            href={isAuthed ? "/" : loginHref}
-            className="lp-btn"
-            style={{ padding: "9px 17px", borderRadius: 11, fontSize: 14, fontWeight: 600 }}
-          >
-            {isAuthed ? t.back_to_app : t.nav_login}
+      {/* Top bar — липкая шапка с якорной навигацией */}
+      <div className="lp-topbar">
+        <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 22px" }}>
+          <a href="#top" style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} />
+            <span style={{ fontSize: 18, fontWeight: 600 }}>LIFE OS</span>
           </a>
+          <nav className="lp-nav">
+            <a href="#why">{(t as any).nav_why}</a>
+            <a href="#how">{(t as any).nav_how}</a>
+            <a href="#inside">{(t as any).nav_feat}</a>
+            <a href="#reviews">{(t as any).nav_rev}</a>
+          </nav>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <LangMenu current={locale} align="right" />
+            <a
+              href={isAuthed ? "/" : loginHref}
+              className="lp-btn"
+              style={{ padding: "9px 17px", borderRadius: 11, fontSize: 14, fontWeight: 600 }}
+            >
+              {isAuthed ? t.back_to_app : t.nav_login}
+            </a>
+          </div>
         </div>
       </div>
 
@@ -588,7 +608,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <a href={isAuthed ? "/" : loginHref} className="lp-btn" style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "15px 30px", borderRadius: 14, fontSize: 16, fontWeight: 600 }}>
-            {isAuthed ? t.back_to_app : t.cta_create}
+            {t.cta_create}
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>
         </div>
@@ -597,7 +617,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Idea */}
-      <div style={{ ...section, padding: "56px 22px" }}>
+      <div id="why" style={{ ...section, padding: "56px 22px" }}>
         <div className="lp-kicker">{t.idea_kicker}</div>
         <h2 className="lp-h2" style={{ margin: "10px 0 18px" }}>{t.idea_title}</h2>
         <p style={{ fontSize: 17, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 14px", maxWidth: 700 }}>{t.idea_p1}</p>
@@ -632,7 +652,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       )}
 
       {/* How */}
-      <div className="lp-band" style={{ padding: "60px 0" }}>
+      <div id="how" className="lp-band" style={{ padding: "60px 0" }}>
         <div style={section}>
           <div className="lp-kicker">{t.how_kicker}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 18 }}>
@@ -650,7 +670,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Features */}
-      <div style={{ ...section, padding: "60px 22px" }}>
+      <div id="inside" style={{ ...section, padding: "60px 22px" }}>
         <div className="lp-kicker" style={{ marginBottom: 22 }}>{t.feat_kicker}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
           {t.feats.map((f) => (
@@ -778,7 +798,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Testimonials */}
-      <div className="lp-band" style={{ padding: "60px 0" }}>
+      <div id="reviews" className="lp-band" style={{ padding: "60px 0" }}>
         <div style={section}>
         <div className="lp-kicker">{t.testi_kicker}</div>
         <h2 className="lp-h2" style={{ margin: "10px 0 26px" }}>{t.testi_title}</h2>
@@ -830,7 +850,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <h2 style={{ position: "relative", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.025em", margin: "0 0 12px", textWrap: "balance" }}>{t.final_title}</h2>
           {!isAuthed && <p style={{ position: "relative", fontSize: 16.5, color: "rgba(255,255,255,.9)", margin: "0 0 26px" }}>{t.final_sub}</p>}
           <a href={isAuthed ? "/" : loginHref} className="lp-ghost" style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 9, marginTop: isAuthed ? 12 : 0, padding: "15px 34px", borderRadius: 14, background: "#fff", color: "#5b3ef5", border: "none", fontSize: 16.5, fontWeight: 700, boxShadow: "0 14px 30px -12px rgba(0,0,0,.35)" }}>
-            {isAuthed ? t.back_to_app : t.cta_create}
+            {t.cta_create}
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>
         </div>
