@@ -16,6 +16,7 @@ import { peopleDigestMessage } from "@/lib/peopleCrm";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { autoReleaseInactive } from "@/lib/heirs";
+import { birthdayGreeting, isBirthdayToday } from "@/lib/birthday";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
@@ -242,6 +243,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, people: true, sent: !!msg });
   }
 
+  // Самотест поздравления с ДР: /api/cron?bday=<secret> — шлёт владельцу тестовое
+  // поздравление (как будто сегодня его день рождения), без записи в БД.
+  const bd = req.nextUrl.searchParams.get("bday");
+  if (bd !== null) {
+    if (bd !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const db3 = supabaseAdmin();
+    const { data: u } = await db3.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
+    const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    const text = await birthdayGreeting((u as any).id, lang, (u as any).name || null, null);
+    await sendMessage(Number(chat), text);
+    return NextResponse.json({ ok: true, bday: true });
+  }
+
   const test = req.nextUrl.searchParams.get("test");
   if (test !== null) {
     if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -279,11 +295,16 @@ export async function GET(req: NextRequest) {
   // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
   let users: any[] | null = null;
   {
-    const r = await db.from("users").select("id, chat_id, lang, name, created_at, push_enabled, morning_prefs").not("chat_id", "is", null);
-    if (r.error) {
-      const r2 = await db.from("users").select("id, chat_id, lang, name, created_at").not("chat_id", "is", null);
-      users = r2.data as any;
-    } else users = r.data as any;
+    // birthday/bday_wished_on могут ещё не существовать (birthday.sql не применён) — каскад фолбэков.
+    const r0 = await db.from("users").select("id, chat_id, lang, name, created_at, push_enabled, morning_prefs, birthday, bday_wished_on").not("chat_id", "is", null);
+    if (!r0.error) users = r0.data as any;
+    else {
+      const r = await db.from("users").select("id, chat_id, lang, name, created_at, push_enabled, morning_prefs").not("chat_id", "is", null);
+      if (r.error) {
+        const r2 = await db.from("users").select("id, chat_id, lang, name, created_at").not("chat_id", "is", null);
+        users = r2.data as any;
+      } else users = r.data as any;
+    }
   }
   const todayT = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z").getTime();
   const today = isoOf(todayT);
@@ -296,7 +317,7 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0 };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0, birthdays: 0 };
 
   // 👨‍👩‍👧 Наследники: авто-раскрытие «по долгому молчанию» (dead-man's switch) — глобально, раз за прогон.
   try { stats.heirsReleased = await autoReleaseInactive(); } catch { /* нет таблицы heirs — пропускаем */ }
@@ -320,6 +341,21 @@ export async function GET(req: NextRequest) {
           stats.capsules++;
         }
       } catch { /* таблицы капсул может не быть — мягко пропускаем */ }
+
+      // 🎂 День рождения пользователя — поздравляем раз в год, поверх «тихих дней»
+      // (это подарок, а не напоминание). После поздравления вечер оставляем ему:
+      // никаких других пушей в этот прогон.
+      try {
+        if (u.birthday && isBirthdayToday(String(u.birthday), lp.dateKey)
+            && String(u.bday_wished_on || "").slice(0, 4) !== lp.dateKey.slice(0, 4)) {
+          const text = await birthdayGreeting(u.id, lang, u.name || null, String(u.birthday), lp.dateKey);
+          await sendMessage(u.chat_id, text);
+          await db.from("users").update({ bday_wished_on: lp.dateKey }).eq("id", u.id);
+          logPush(u.id, "birthday").catch(() => {});
+          stats.birthdays++;
+          continue;
+        }
+      } catch (e) { console.error("birthday", u.id, e); }
 
       if (prefs.quietDays.includes(lp.weekday)) continue; // тихий день — никаких пушей
       const ev = prefs.evening;

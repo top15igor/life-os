@@ -7,6 +7,7 @@ import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
 import { askKnowledge } from "./knowledge";
+import { birthdayISO, BDAY_UNKNOWN_YEAR } from "./birthday";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -74,6 +75,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
   },
   {
+    name: "set_birthday",
+    description:
+      "Пользователь сообщает СВОЙ день рождения или просит его запомнить: «мой день рождения 15 марта», «я родился 07.03.1990», «запомни, у меня др 1 января». ТОЛЬКО про самого пользователя — дни рождения ДРУГИХ людей (мамы, друга) сюда не относятся (для «напомни про др мамы» — set_reminder). year указывай только если год прямо назван.",
+    input_schema: { type: "object", properties: { day: { type: "number", description: "день месяца 1–31" }, month: { type: "number", description: "месяц 1–12" }, year: { type: "number", description: "год рождения, только если назван" } }, required: ["day", "month"] },
+  },
+  {
     name: "account_info",
     description:
       "Вопросы про СВОЙ АККАУНТ и вход в LIFE OS: «на какую почту зарегистрирован аккаунт», «какая у меня почта», «как я вошёл», «куда привязан аккаунт», «какой у меня логин/юзернейм». Это НЕ вопрос о содержимом дневника.",
@@ -102,6 +109,7 @@ const SYS =
   "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
   "Просьбы к БОТУ изменить манеру или содержание его сообщений («пиши короче», «меньше эмодзи», «не пиши мне про…», «обращайся иначе», «не называй меня…») → set_style, а НЕ save_entry: пожелание должно сохраниться и влиять. " +
   "Вопросы про свой АККАУНТ и вход («на какую почту зарегистрирован», «какая у меня почта», «как я вошёл») → account_info, а НЕ save_entry и НЕ ask_question. " +
+  "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
@@ -179,6 +187,7 @@ const M: Record<Lang, any> = {
     dreamNone: "Не нашёл такую мечту. Скажи точнее?",
     deed: (t: string) => `💛 Записал доброе дело: «${t}».`,
     style: (t: string) => `🎨 Запомнил: «${t}». Буду учитывать — и в утренних сообщениях, и в чате.`,
+    bday: (d: string) => `🎂 Запомнил: твой день рождения — ${d}. Жди в этот день кое-что приятное — я такие даты не пропускаю 😉`,
     account: (email: string | null, tg: string | null) => `🔐 Твой аккаунт:\n${email ? `📧 Почта: ${email}` : "📧 Почта не привязана — ты входишь через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nПривязать или сменить почту можно в Профиле → Аккаунт и вход.`,
     delAsk: (t: string) => `🗑 Удалить последнюю запись${t ? `: «${t}»` : ""}? Это действие нельзя отменить.`,
     delLast: (t: string) => `🗑 Удалил последнюю запись${t ? `: «${t}»` : ""}.`,
@@ -204,6 +213,7 @@ const M: Record<Lang, any> = {
     dreamNone: "Couldn't find that dream. Be more specific?",
     deed: (t: string) => `💛 Logged a good deed: “${t}”.`,
     style: (t: string) => `🎨 Got it: “${t}”. I'll keep it in mind — in morning messages and in chat.`,
+    bday: (d: string) => `🎂 Got it: your birthday is ${d}. Expect something nice that day — I never miss dates like this 😉`,
     account: (email: string | null, tg: string | null) => `🔐 Your account:\n${email ? `📧 Email: ${email}` : "📧 No email linked — you sign in via Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nYou can link or change email in Profile → Account.`,
     delAsk: (t: string) => `🗑 Delete the last entry${t ? `: “${t}”` : ""}? This can't be undone.`,
     delLast: (t: string) => `🗑 Deleted the last entry${t ? `: “${t}”` : ""}.`,
@@ -229,6 +239,7 @@ const M: Record<Lang, any> = {
     dreamNone: "Не знайшов таку мрію. Скажи точніше?",
     deed: (t: string) => `💛 Записав добру справу: «${t}».`,
     style: (t: string) => `🎨 Запам'ятав: «${t}». Враховуватиму — і в ранкових повідомленнях, і в чаті.`,
+    bday: (d: string) => `🎂 Запам'ятав: твій день народження — ${d}. Чекай того дня дещо приємне — такі дати я не пропускаю 😉`,
     account: (email: string | null, tg: string | null) => `🔐 Твій акаунт:\n${email ? `📧 Пошта: ${email}` : "📧 Пошта не прив'язана — ти входиш через Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nПрив'язати або змінити пошту можна в Профілі → Акаунт і вхід.`,
     delAsk: (t: string) => `🗑 Видалити останній запис${t ? `: «${t}»` : ""}? Цю дію не можна скасувати.`,
     delLast: (t: string) => `🗑 Видалив останній запис${t ? `: «${t}»` : ""}.`,
@@ -254,6 +265,7 @@ const M: Record<Lang, any> = {
     dreamNone: "Je n'ai pas trouvé ce rêve. Précise ?",
     deed: (t: string) => `💛 Bonne action enregistrée : « ${t} ».`,
     style: (t: string) => `🎨 C'est noté : « ${t} ». J'en tiendrai compte — le matin et dans le chat.`,
+    bday: (d: string) => `🎂 C'est noté : ton anniversaire, c'est le ${d}. Attends-toi à une surprise ce jour-là — je ne rate jamais ces dates 😉`,
     account: (email: string | null, tg: string | null) => `🔐 Ton compte :\n${email ? `📧 E-mail : ${email}` : "📧 Pas d'e-mail lié — tu te connectes via Telegram"}${tg ? `\n✈️ Telegram : @${tg}` : ""}\n\nTu peux lier ou changer l'e-mail dans Profil → Compte.`,
     delAsk: (t: string) => `🗑 Supprimer la dernière entrée${t ? ` : « ${t} »` : ""} ? Action irréversible.`,
     delLast: (t: string) => `🗑 Dernière entrée supprimée${t ? ` : « ${t} »` : ""}.`,
@@ -279,6 +291,7 @@ const M: Record<Lang, any> = {
     dreamNone: "No encontré ese sueño. ¿Puedes ser más específico?",
     deed: (t: string) => `💛 Registré una buena acción: «${t}».`,
     style: (t: string) => `🎨 Anotado: «${t}». Lo tendré en cuenta — por la mañana y en el chat.`,
+    bday: (d: string) => `🎂 Anotado: tu cumpleaños es el ${d}. Espera algo lindo ese día — nunca me pierdo estas fechas 😉`,
     account: (email: string | null, tg: string | null) => `🔐 Tu cuenta:\n${email ? `📧 Correo: ${email}` : "📧 Sin correo vinculado — entras por Telegram"}${tg ? `\n✈️ Telegram: @${tg}` : ""}\n\nPuedes vincular o cambiar el correo en Perfil → Cuenta.`,
     delAsk: (t: string) => `🗑 ¿Eliminar la última entrada${t ? `: «${t}»` : ""}? Esta acción no se puede deshacer.`,
     delLast: (t: string) => `🗑 Eliminé la última entrada${t ? `: «${t}»` : ""}.`,
@@ -441,6 +454,15 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!q) return { text: s.fail };
       const ans = await askKnowledge(userId, q, lang);
       return { text: ans, openNext: "/knowledge" };
+    }
+    if (name === "set_birthday") {
+      const iso = birthdayISO(Number(input?.day), Number(input?.month), input?.year ? Number(input.year) : null);
+      if (!iso) return { text: s.fail };
+      const { error } = await db.from("users").update({ birthday: iso }).eq("id", userId);
+      if (error) { console.error("set_birthday (birthday.sql applied?)", error); return { text: s.fail }; }
+      const [y, mo, d] = iso.split("-");
+      const label = Number(y) > BDAY_UNKNOWN_YEAR ? `${d}.${mo}.${y}` : `${d}.${mo}`;
+      return { text: s.bday(label) };
     }
     if (name === "account_info") {
       const { data } = await db.from("users").select("email, tg_username").eq("id", userId).maybeSingle();
