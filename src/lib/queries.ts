@@ -30,6 +30,19 @@ export async function getEntries(userId: string, limit = 100): Promise<Entry[]> 
   return data || [];
 }
 
+// Постраничная выборка для полного экспорта: Supabase отдаёт максимум
+// ~1000 строк за запрос, поэтому экспорт листает записи через range().
+export async function getEntriesPage(userId: string, from: number, to: number): Promise<Entry[]> {
+  const { data } = await supabaseAdmin()
+    .from("entries")
+    .select(LIST_SELECT)
+    .eq("user_id", userId)
+    .order("entry_date", { ascending: false })
+    .order("entry_time", { ascending: false })
+    .range(from, to);
+  return data || [];
+}
+
 export async function getEntry(id: string, userId: string): Promise<Entry | null> {
   const { data } = await supabaseAdmin()
     .from("entries")

@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const STR: Record<string, any> = {
-  ru: { copy: "Копировать", copied: "Скопировано", logout: "Выйти", delete: "Удалить аккаунт", confirm1: "Удалить аккаунт и ВСЕ записи без возможности восстановления?", confirm2: "Точно? Это необратимо.", deleting: "Удаляю…" },
-  en: { copy: "Copy", copied: "Copied", logout: "Log out", delete: "Delete account", confirm1: "Delete account and ALL entries permanently?", confirm2: "Are you sure? This is irreversible.", deleting: "Deleting…" },
-  uk: { copy: "Копіювати", copied: "Скопійовано", logout: "Вийти", delete: "Видалити акаунт", confirm1: "Видалити акаунт і ВСІ записи без можливості відновлення?", confirm2: "Точно? Це незворотно.", deleting: "Видаляю…" },
-  fr: { copy: "Copier", copied: "Copié", logout: "Se déconnecter", delete: "Supprimer le compte", confirm1: "Supprimer le compte et TOUTES les entrées définitivement ?", confirm2: "Sûr ? C'est irréversible.", deleting: "Suppression…" },
-  es: { copy: "Copiar", copied: "Copiado", logout: "Cerrar sesión", delete: "Eliminar cuenta", confirm1: "¿Eliminar la cuenta y TODAS las entradas sin posibilidad de recuperarlas?", confirm2: "¿Seguro? Esto es irreversible.", deleting: "Eliminando…" },
+  ru: { copy: "Копировать", copied: "Скопировано", logout: "Выйти", delete: "Удалить аккаунт", confirm1: "Удалить аккаунт и ВСЕ записи без возможности восстановления?", confirm2: "Точно? Это необратимо.", deleting: "Удаляю…", dangerTitle: "Право уйти", dangerText: "Твои данные — твои. Одна кнопка стирает аккаунт целиком: записи, финансы, книги, фото, здоровье — с наших серверов, безвозвратно. Если нужна копия — сначала скачай архив выше." },
+  en: { copy: "Copy", copied: "Copied", logout: "Log out", delete: "Delete account", confirm1: "Delete account and ALL entries permanently?", confirm2: "Are you sure? This is irreversible.", deleting: "Deleting…", dangerTitle: "The right to leave", dangerText: "Your data is yours. One button erases the whole account — entries, finance, books, photos, health — from our servers, permanently. Download the archive above first if you want a copy." },
+  uk: { copy: "Копіювати", copied: "Скопійовано", logout: "Вийти", delete: "Видалити акаунт", confirm1: "Видалити акаунт і ВСІ записи без можливості відновлення?", confirm2: "Точно? Це незворотно.", deleting: "Видаляю…", dangerTitle: "Право піти", dangerText: "Твої дані — твої. Одна кнопка стирає акаунт повністю: записи, фінанси, книги, фото, здоров'я — з наших серверів, безповоротно. Якщо потрібна копія — спершу завантаж архів вище." },
+  fr: { copy: "Copier", copied: "Copié", logout: "Se déconnecter", delete: "Supprimer le compte", confirm1: "Supprimer le compte et TOUTES les entrées définitivement ?", confirm2: "Sûr ? C'est irréversible.", deleting: "Suppression…", dangerTitle: "Le droit de partir", dangerText: "Tes données t'appartiennent. Un bouton efface tout le compte — entrées, finances, livres, photos, santé — de nos serveurs, définitivement. Télécharge d'abord l'archive ci-dessus si tu veux une copie." },
+  es: { copy: "Copiar", copied: "Copiado", logout: "Cerrar sesión", delete: "Eliminar cuenta", confirm1: "¿Eliminar la cuenta y TODAS las entradas sin posibilidad de recuperarlas?", confirm2: "¿Seguro? Esto es irreversible.", deleting: "Eliminando…", dangerTitle: "El derecho a irte", dangerText: "Tus datos son tuyos. Un botón borra toda la cuenta — entradas, finanzas, libros, fotos, salud — de nuestros servidores, para siempre. Descarga antes el archivo de arriba si quieres una copia." },
 };
 
 export function CopyLink({ link, locale }: { link: string; locale: string }) {
@@ -46,6 +46,32 @@ export function ProfileButtons({ locale }: { locale: string }) {
       </a>
       <button onClick={del} disabled={busy} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 11, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 14, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
         <i className="ti ti-trash" style={{ fontSize: 17 }} />{busy ? s.deleting : s.delete}
+      </button>
+    </div>
+  );
+}
+
+// «Право уйти» — карточка удаления всех данных на странице «Твои данные».
+export function DeleteAllData({ locale }: { locale: string }) {
+  const s = STR[locale] || STR.ru;
+  const [busy, setBusy] = useState(false);
+
+  async function del() {
+    if (!confirm(s.confirm1)) return;
+    if (!confirm(s.confirm2)) return;
+    setBusy(true);
+    await fetch("/api/account", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "delete" }) }).catch(() => {});
+    window.location.href = "/api/logout";
+  }
+
+  return (
+    <div className="card" style={{ marginTop: 14, border: "1px solid rgba(239,68,68,0.35)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+        <i className="ti ti-shield-lock" style={{ fontSize: 17, color: "#ef4444" }} />{s.dangerTitle}
+      </div>
+      <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 11 }}>{s.dangerText}</div>
+      <button onClick={del} disabled={busy} style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 11, border: "1px solid #ef4444", background: "transparent", color: "#ef4444", fontSize: 13.5, fontWeight: 500, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+        <i className="ti ti-trash" style={{ fontSize: 16 }} />{busy ? s.deleting : s.delete}
       </button>
     </div>
   );
