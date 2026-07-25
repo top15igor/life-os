@@ -5,14 +5,14 @@ export const dynamic = "force-dynamic";
 
 type Item = { t: string; d: string; soon?: boolean };
 type Cat = { kicker: string; title: string; lead: string; edge?: string; items: Item[] };
-type Dict = { badge: string; title: string; lead: string; metaCount: string; metaA: string; metaB: string; login: string; app: string; cats: Cat[]; closeKicker: string; closeTitle: string; closeText: string; sign: string; foot: string; final: string; finalCta: string };
+type Dict = { badge: string; title: string; lead: string; metaCount: string; metaA: string; metaB: string; login: string; app: string; backHome: string; cats: Cat[]; closeKicker: string; closeTitle: string; closeText: string; sign: string; foot: string; final: string; finalCta: string };
 
 const RU: Dict = {
   badge: "Каталог возможностей",
   title: "Твоя жизнь, собранная в одном месте — и сохранённая навсегда",
   lead: "Сохранись. Ты просто живёшь и рассказываешь о днях — а LIFE OS запоминает, понимает и пишет твою Книгу жизни. По одной записи в день — чтобы было куда вернуться.",
   metaCount: "50+ возможностей", metaA: "Telegram-бот + веб", metaB: "5 языков",
-  login: "Войти", app: "В приложение",
+  login: "Войти", app: "В приложение", backHome: "На главную",
   closeKicker: "Одна идея", closeTitle: "Ты просто живёшь. Остальное — на мне.",
   closeText: "Каждый день — ещё одна страница, которая не исчезнет. Через год это уже история, которую приятно перечитывать. Через жизнь — то, что останется.",
   sign: "💾 LIFE OS — Сохранись.",
@@ -92,7 +92,7 @@ const EN: Dict = {
   title: "Your life, gathered in one place — and kept forever",
   lead: "Save yourself. You just live and tell it about your days — and LIFE OS remembers, understands and writes your Book of Life. One entry a day — so you have somewhere to return.",
   metaCount: "50+ features", metaA: "Telegram bot + web", metaB: "5 languages",
-  login: "Log in", app: "Open app",
+  login: "Log in", app: "Open app", backHome: "Home",
   closeKicker: "One idea", closeTitle: "You just live. I'll handle the rest.",
   closeText: "Every day is one more page that won't disappear. In a year it's a story worth rereading. In a lifetime — what remains.",
   sign: "💾 LIFE OS — Save yourself.",
@@ -169,7 +169,7 @@ const EN: Dict = {
 
 const STYLE = `
 .fx-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-.fx-top{display:flex;align-items:center;justify-content:space-between;padding:20px 0}
+.fx-top{display:flex;align-items:center;justify-content:space-between;padding:16px 0;position:sticky;top:0;z-index:50;background:var(--bg,#fff);border-bottom:1px solid var(--border)}
 .fx-brand{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:15px;color:var(--text)}
 .fx-brand .m{font-size:20px}
 .fx-nav{display:flex;gap:10px}
@@ -212,8 +212,11 @@ export default async function FeaturesPage() {
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
       <div className="fx-wrap">
         <div className="fx-top">
-          <span className="fx-brand"><span className="m">🪷</span> LIFE OS</span>
+          <Link href="/about" className="fx-brand" title={s.backHome}>
+            <i className="ti ti-flower" style={{ fontSize: 21, color: "var(--accent)" }} /> LIFE OS
+          </Link>
           <nav className="fx-nav">
+            <Link href="/about">← {s.backHome}</Link>
             <Link href="/login">{s.login}</Link>
             <Link href="/" className="pri">{s.app}</Link>
           </nav>

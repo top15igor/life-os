@@ -2,7 +2,6 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import { intlOf } from "@/lib/i18n";
 import AboutModern from "@/components/about/AboutModern";
-import DesignSwitch from "@/components/about/DesignSwitch";
 import ProductPeek from "@/components/about/ProductPeek";
 import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
@@ -511,8 +510,7 @@ const LP_CSS = `
 .lp-mcta{ display:none; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif; }
 .lp-mcta a{ text-decoration:none; }
 @media (max-width:640px){
-  .lp{ --dswitch-bottom: 80px; }
-  .lp-mcta{ display:block; position:fixed; left:14px; right:14px; bottom:14px; z-index:60; opacity:0; transform:translateY(16px); pointer-events:none; transition:opacity .25s, transform .25s; padding-bottom:env(safe-area-inset-bottom); }
+  .lp-mcta{ display:block; position:fixed; left:14px; right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:60; opacity:0; transform:translateY(16px); pointer-events:none; transition:opacity .25s, transform .25s; }
   .lp-mcta.on{ opacity:1; transform:none; pointer-events:auto; }
 }
 .lp .lp-kicker{ font-size:12.5px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
@@ -869,8 +867,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      {/* Final CTA */}
-      <div style={{ ...section, padding: "10px 22px 72px" }}>
+      {/* Final CTA (id=start: рядом с ним мобильная липкая CTA прячется) */}
+      <div id="start" style={{ ...section, padding: "10px 22px 72px" }}>
         <div style={{ position: "relative", overflow: "hidden", borderRadius: 26, padding: "56px 40px", textAlign: "center", color: "#fff", background: "linear-gradient(135deg,#5b5bf5,#8b5cf6 55%,#a855f7)", boxShadow: "0 30px 70px -30px rgba(91,91,245,.7)" }}>
           <div style={{ position: "absolute", top: -80, right: -40, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.22),transparent 70%)", pointerEvents: "none" }} />
           <h2 style={{ position: "relative", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.025em", margin: "0 0 12px", textWrap: "balance" }}>{t.final_title}</h2>
@@ -908,8 +906,6 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </div>
         </div>
       </div>
-
-      <DesignSwitch locale={locale} current="a" refCode={ref} />
     </div>
   );
 }

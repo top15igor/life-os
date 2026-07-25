@@ -42,6 +42,19 @@ export default function LandingNav({ links, ctaLabel, ctaHref }: { links: NavLin
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // У финального призыва и подвала липкую CTA прячем: там есть большая кнопка,
+  // а плавающая перекрывала бы ссылки подвала (их нельзя было нажать на айфоне).
+  const [nearEnd, setNearEnd] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById("start");
+    if (!el) return;
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) setNearEnd(e.isIntersecting);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // Открытое меню не даёт странице скроллиться под ним.
   useEffect(() => {
     document.documentElement.style.overflow = open ? "hidden" : "";
@@ -78,7 +91,7 @@ export default function LandingNav({ links, ctaLabel, ctaHref }: { links: NavLin
               </div>
             </div>
           )}
-          <div className={`lp-mcta${showCta && !open ? " on" : ""}`}>
+          <div className={`lp-mcta${showCta && !open && !nearEnd ? " on" : ""}`}>
             <a href={ctaHref} className="lp-cta-btn" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px 18px", borderRadius: 13, fontSize: 15.5, fontWeight: 600 }}>
               {ctaLabel}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
