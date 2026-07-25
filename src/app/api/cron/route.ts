@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { buildObsidianZip } from "@/lib/obsidian";
+import { buildFullExport } from "@/lib/fullExport";
 import { sendDbDumpToOwner } from "@/lib/dbDump";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
@@ -123,6 +124,15 @@ const BACKUP_CAPTION: Record<Lang, string> = {
   es: "📦 <b>Tu diario del mes — copia de seguridad</b>\nTodas las entradas en archivos Markdown (un vault de Obsidian). Descarga y descomprime — tus datos se quedan contigo para siempre, sin depender de ningún servicio.",
 };
 
+// Еженедельная полная копия ВСЕХ данных (.json) — опция «Копия всех данных раз в неделю».
+const FULLBKP_CAPTION: Record<Lang, string> = {
+  ru: "🗄 <b>Полная копия всех твоих данных</b>\nЗаписи, финансы, книги, здоровье, путешествия, память — всё в одном файле. Сохрани у себя: данные принадлежат тебе, а это — твой еженедельный экземпляр.",
+  en: "🗄 <b>A full copy of all your data</b>\nEntries, finance, books, health, trips, memories — everything in one file. Keep it with you: your data belongs to you, and this is your weekly copy.",
+  uk: "🗄 <b>Повна копія всіх твоїх даних</b>\nЗаписи, фінанси, книги, здоров'я, подорожі, пам'ять — усе в одному файлі. Збережи в себе: дані належать тобі, а це — твій щотижневий екземпляр.",
+  fr: "🗄 <b>Une copie complète de toutes tes données</b>\nEntrées, finances, livres, santé, voyages, souvenirs — tout dans un fichier. Garde-la chez toi : tes données t'appartiennent, et voici ton exemplaire hebdomadaire.",
+  es: "🗄 <b>Una copia completa de todos tus datos</b>\nEntradas, finanzas, libros, salud, viajes, recuerdos — todo en un archivo. Guárdala contigo: tus datos te pertenecen, y esta es tu copia semanal.",
+};
+
 const RECUR_HEAD: Record<Lang, string> = {
   ru: "📅 <b>Регулярные платежи на сегодня</b>\nНапоминаю — записать можно одним нажатием на команду ниже:",
   en: "📅 <b>Recurring payments due today</b>\nA reminder — log each by tapping the command below:",
@@ -229,6 +239,27 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Самотест еженедельной полной копии данных: /api/cron?fullbackup=<secret> — собирает и шлёт .json владельцу.
+  const fbk = req.nextUrl.searchParams.get("fullbackup");
+  if (fbk !== null) {
+    const okKey = fbk === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.BACKUP_KEY && fbk === process.env.BACKUP_KEY);
+    if (!okKey) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
+    const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    try {
+      const { data, counts } = await buildFullExport((u as any).id, (u as any).name);
+      const buf = Buffer.from(JSON.stringify(data, null, 2), "utf8");
+      const fname = `LIFE_OS_export_${new Date().toISOString().slice(0, 10)}.json`;
+      const sent = await sendDocument(Number(chat), buf, fname, { caption: FULLBKP_CAPTION[lang], parse_mode: "HTML" });
+      return NextResponse.json({ ok: sent, fullbackup: true, bytes: buf.length, counts });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, fullbackup: true, error: String(e?.message || e) });
+    }
+  }
+
   // Самотест еженедельного дампа ВСЕЙ базы: /api/cron?dbdump=<secret> — собирает и шлёт .zip владельцу.
   const dbd = req.nextUrl.searchParams.get("dbdump");
   if (dbd !== null) {
@@ -331,7 +362,7 @@ export async function GET(req: NextRequest) {
   const isFirstOfMonth = new Date().getUTCDate() === 1;
   const prevMonth = shiftMonth(currentMonth(), -1); // отчёт за завершившийся месяц
 
-  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, capsules: 0, heirsReleased: 0, birthdays: 0, dbDump: false };
+  const stats = { reminders: 0, streakReminders: 0, winbacks: 0, digests: 0, financeDigests: 0, bookQuestions: 0, recurringReminders: 0, backups: 0, fullBackups: 0, capsules: 0, heirsReleased: 0, birthdays: 0, dbDump: false };
 
   // 🗄 Воскресенье — еженедельный дамп всей базы владельцу (не зависит от пользовательского цикла).
   if (isSunday) {
@@ -416,6 +447,18 @@ export async function GET(req: NextRequest) {
             if (sent) stats.backups++;
           } catch (e) { console.error("obsidian backup", u.id, e); }
         }
+      }
+
+      // Еженедельная полная копия всех данных (.json) — по воскресеньям, только
+      // если пользователь сам включил опцию в «Пуш-уведомлениях» (opt-in).
+      if (isSunday && prefs.fullBackupWeekly && days.length) {
+        try {
+          const { data } = await buildFullExport(u.id, u.name);
+          const buf = Buffer.from(JSON.stringify(data, null, 2), "utf8");
+          const fname = `LIFE_OS_export_${today}.json`;
+          const sent = await sendDocument(u.chat_id, buf, fname, { caption: FULLBKP_CAPTION[lang], parse_mode: "HTML" });
+          if (sent) stats.fullBackups++;
+        } catch (e) { console.error("full backup", u.id, e); }
       }
 
       // Напоминания о регулярных платежах, у которых сегодня день списания.

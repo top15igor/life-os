@@ -47,6 +47,7 @@ export interface MorningPrefs {
   financeEnabled: boolean;    // месячный финансовый отчёт (1-го числа)
   recurringEnabled: boolean;  // напоминания о регулярных платежах в день списания
   backupEnabled: boolean;     // ежемесячная авто-выгрузка дневника в Obsidian (.zip)
+  fullBackupWeekly: boolean;  // еженедельная полная копия ВСЕХ данных (.json) в Telegram — opt-in
   taskHorizons: Record<string, "today" | "week" | "month">; // горизонт каждой задачи (по id): сегодня/неделя/месяц
 }
 
@@ -67,7 +68,7 @@ export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
-  remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, taskHorizons: {},
+  remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, fullBackupWeekly: false, taskHorizons: {},
 };
 
 // Горизонты задач: оставить только валидные пары id→(today|week|month), с капом.
@@ -130,6 +131,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     financeEnabled: raw.financeEnabled !== false,
     recurringEnabled: raw.recurringEnabled !== false,
     backupEnabled: raw.backupEnabled !== false,
+    fullBackupWeekly: raw.fullBackupWeekly === true,
     taskHorizons: normalizeTaskHorizons(raw.taskHorizons),
   };
 }

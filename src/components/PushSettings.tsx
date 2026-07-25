@@ -17,6 +17,7 @@ type L = {
   moreTitle: string; moreSub: string;
   remindTitle: string; remindDesc: string; financeTitle: string; financeDesc: string;
   recurTitle: string; recurDesc: string; backupTitle: string; backupDesc: string;
+  fullBkpTitle: string; fullBkpDesc: string;
   preview: string; loading: string; saved: string; autoHint: string;
   tone: Record<string, string>; topic: Record<MorningTopic, string>; length: Record<MorningLength, string>;
   theme: Record<EveningTheme, string>; dow: string[];
@@ -42,6 +43,7 @@ const STR: Record<string, L> = {
     financeTitle: "Месячный финансовый отчёт", financeDesc: "1-го числа — короткий итог доходов и расходов за прошлый месяц (если были операции).",
     recurTitle: "Регулярные платежи", recurDesc: "Напоминание в день списания подписки или счёта — с готовой командой, чтобы сразу записать.",
     backupTitle: "Авто-бэкап в Obsidian", backupDesc: "1-го числа бот присылает весь дневник папкой Markdown (.zip) — на всякий случай, храни у себя.",
+    fullBkpTitle: "Копия всех данных раз в неделю", fullBkpDesc: "По воскресеньям бот присылает полный экспорт всего аккаунта одним файлом (.json) — записи, финансы, книги, здоровье, путешествия. Данные всегда у тебя.",
     preview: "Показать пример", loading: "Собираю…", saved: "Сохранено", autoHint: "Бот подстроится под твою манеру письма.",
     tone: { auto: "Под мой стиль", friend: "Тёплый", direct: "Прямой", calm: "Спокойный", business: "Деловой", energetic: "Энергичный" },
     topic: { motivation: "Мотивация", goals: "Цели", tasks: "Задачи", diary: "Дневник", insight: "Инсайты", gratitude: "Благодарность", movement: "Зарядка" },
@@ -68,6 +70,7 @@ const STR: Record<string, L> = {
     financeTitle: "Monthly finance report", financeDesc: "On the 1st — a short recap of last month's income and expenses (if there were any).",
     recurTitle: "Recurring payments", recurDesc: "A reminder on the due date of a subscription or bill — with a ready command to log it.",
     backupTitle: "Auto-backup to Obsidian", backupDesc: "On the 1st the bot sends your whole diary as a Markdown folder (.zip) — just in case, keep it yourself.",
+    fullBkpTitle: "Weekly copy of all your data", fullBkpDesc: "On Sundays the bot sends a full export of your entire account in one file (.json) — entries, finance, books, health, trips. Your data always stays with you.",
     preview: "Show example", loading: "Building…", saved: "Saved", autoHint: "The bot will mirror how you write.",
     tone: { auto: "My style", friend: "Warm", direct: "Direct", calm: "Calm", business: "Business", energetic: "Energetic" },
     topic: { motivation: "Motivation", goals: "Goals", tasks: "Tasks", diary: "Diary", insight: "Insights", gratitude: "Gratitude", movement: "Movement" },
@@ -94,6 +97,7 @@ const STR: Record<string, L> = {
     financeTitle: "Місячний фінансовий звіт", financeDesc: "1-го числа — короткий підсумок доходів і витрат за минулий місяць (якщо були операції).",
     recurTitle: "Регулярні платежі", recurDesc: "Нагадування в день списання підписки чи рахунку — з готовою командою, щоб одразу записати.",
     backupTitle: "Авто-бекап в Obsidian", backupDesc: "1-го числа бот надсилає весь щоденник текою Markdown (.zip) — про всяк випадок, зберігай у себе.",
+    fullBkpTitle: "Копія всіх даних раз на тиждень", fullBkpDesc: "По неділях бот надсилає повний експорт усього акаунта одним файлом (.json) — записи, фінанси, книги, здоров'я, подорожі. Дані завжди в тебе.",
     preview: "Показати приклад", loading: "Збираю…", saved: "Збережено", autoHint: "Бот підлаштується під твою манеру письма.",
     tone: { auto: "Під мій стиль", friend: "Теплий", direct: "Прямий", calm: "Спокійний", business: "Діловий", energetic: "Енергійний" },
     topic: { motivation: "Мотивація", goals: "Цілі", tasks: "Завдання", diary: "Щоденник", insight: "Інсайти", gratitude: "Вдячність", movement: "Зарядка" },
@@ -120,6 +124,7 @@ const STR: Record<string, L> = {
     financeTitle: "Bilan financier mensuel", financeDesc: "Le 1er — un court récap des revenus et dépenses du mois dernier (s'il y en a eu).",
     recurTitle: "Paiements récurrents", recurDesc: "Un rappel le jour du prélèvement d'un abonnement ou d'une facture — avec une commande prête pour l'enregistrer.",
     backupTitle: "Sauvegarde auto vers Obsidian", backupDesc: "Le 1er, le bot envoie tout ton journal en dossier Markdown (.zip) — au cas où, garde-le chez toi.",
+    fullBkpTitle: "Copie hebdomadaire de toutes tes données", fullBkpDesc: "Le dimanche, le bot envoie un export complet de tout ton compte en un fichier (.json) — entrées, finances, livres, santé, voyages. Tes données restent toujours chez toi.",
     preview: "Voir un exemple", loading: "Génération…", saved: "Enregistré", autoHint: "Le bot s'alignera sur ta façon d'écrire.",
     tone: { auto: "Mon style", friend: "Chaleureux", direct: "Direct", calm: "Calme", business: "Pro", energetic: "Énergique" },
     topic: { motivation: "Motivation", goals: "Objectifs", tasks: "Tâches", diary: "Journal", insight: "Insights", gratitude: "Gratitude", movement: "Mouvement" },
@@ -146,6 +151,7 @@ const STR: Record<string, L> = {
     financeTitle: "Informe financiero mensual", financeDesc: "El día 1 — un breve resumen de ingresos y gastos del mes pasado (si hubo operaciones).",
     recurTitle: "Pagos recurrentes", recurDesc: "Un recordatorio el día del cobro de una suscripción o factura — con un comando listo para registrarlo.",
     backupTitle: "Copia de seguridad automática en Obsidian", backupDesc: "El día 1 el bot envía todo tu diario como carpeta Markdown (.zip) — por si acaso, guárdalo tú.",
+    fullBkpTitle: "Copia semanal de todos tus datos", fullBkpDesc: "Los domingos el bot envía una exportación completa de toda tu cuenta en un archivo (.json) — entradas, finanzas, libros, salud, viajes. Tus datos siempre contigo.",
     preview: "Ver ejemplo", loading: "Generando…", saved: "Guardado", autoHint: "El bot se adaptará a tu forma de escribir.",
     tone: { auto: "Mi estilo", friend: "Cálido", direct: "Directo", calm: "Tranquilo", business: "Formal", energetic: "Enérgico" },
     topic: { motivation: "Motivación", goals: "Metas", tasks: "Tareas", diary: "Diario", insight: "Insights", gratitude: "Gratitud", movement: "Ejercicio" },
@@ -388,6 +394,7 @@ export default function PushSettings({ locale, initial }: { locale: string; init
         <ToggleRow on={p.financeEnabled !== false} onChange={() => set({ financeEnabled: p.financeEnabled === false })} label={s.financeTitle} desc={s.financeDesc} />
         <ToggleRow on={p.recurringEnabled !== false} onChange={() => set({ recurringEnabled: p.recurringEnabled === false })} label={s.recurTitle} desc={s.recurDesc} />
         <ToggleRow on={p.backupEnabled !== false} onChange={() => set({ backupEnabled: p.backupEnabled === false })} label={s.backupTitle} desc={s.backupDesc} />
+        <ToggleRow on={p.fullBackupWeekly === true} onChange={() => set({ fullBackupWeekly: p.fullBackupWeekly !== true })} label={s.fullBkpTitle} desc={s.fullBkpDesc} />
       </div>
     </>
   );
