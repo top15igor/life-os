@@ -164,7 +164,7 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       system: [
         { type: "text", text: SYS, cache_control: { type: "ephemeral" } },
         { type: "text", text: nowLocalLine(tzOffset) },
-        ...(lastBot ? [{ type: "text", text: `Последнее сообщение бота пользователю (контекст для коротких отсылок «его», «этот», «а скинь…»):\n«${lastBot}»` }] : []),
+        ...(lastBot ? [{ type: "text" as const, text: `Последнее сообщение бота пользователю (контекст для коротких отсылок «его», «этот», «а скинь…»):\n«${lastBot}»` }] : []),
       ],
       messages: [{ role: "user", content: text }],
       tools: ACTION_TOOLS,
