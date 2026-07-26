@@ -26,6 +26,7 @@ import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
 import { KB, mainKeyboard, isAcquaintLabel, TASKS_LABEL_LEGACY, GUIDE_LABEL_LEGACY, DIARY_LABEL_LEGACY } from "@/lib/botKeyboard";
+import { INVITE, inviteShareUrl } from "@/lib/invitePitch";
 import { howtoMenu, howtoItem, howtoTip } from "@/lib/botHowto";
 import { ensureHorizons, setHorizon, bucketize, HORIZONS, type Horizon } from "@/lib/taskHorizon";
 import { broadcastKeyboard } from "@/lib/broadcastKeyboard";
@@ -257,13 +258,7 @@ const MEM: Record<string, any> = {
   es: { year: (t: string) => `⏳ Hace un año, en este día escribiste: «${t}»`, month: (t: string) => `⏳ Hace un mes, en este día: «${t}»` },
 };
 
-const INVITE: Record<string, { text: string; share: string }> = {
-  ru: { text: "📖 Представь, что через 10 лет ты сможешь открыть любой день своей жизни.\nВспомнить, о чём мечтал, какие идеи приходили, какие решения изменили всё и что делало тебя счастливым.\n\nLIFE OS помогает создать такую «Книгу жизни». Просто записывай мысли голосом, а AI сам сохранит их, найдёт связи и превратит разрозненные дни в историю твоей жизни.\n\nПопробуй 👉 {bot}", share: "📤 Поделиться" },
-  en: { text: "📖 Imagine that in 10 years you could open any day of your life.\nRemember what you dreamed of, what ideas came to you, which decisions changed everything and what made you happy.\n\nLIFE OS helps you create such a “Book of Life”. Just record your thoughts by voice, and AI saves them, finds the connections and turns scattered days into the story of your life.\n\nTry it 👉 {bot}", share: "📤 Share" },
-  uk: { text: "📖 Уяви, що через 10 років ти зможеш відкрити будь-який день свого життя.\nПригадати, про що мріяв, які ідеї приходили, які рішення змінили все і що робило тебе щасливим.\n\nLIFE OS допомагає створити таку «Книгу життя». Просто записуй думки голосом, а AI сам збереже їх, знайде зв'язки й перетворить розрізнені дні на історію твого життя.\n\nСпробуй 👉 {bot}", share: "📤 Поділитися" },
-  fr: { text: "📖 Imagine que dans 10 ans tu puisses ouvrir n'importe quel jour de ta vie.\nTe souvenir de tes rêves, des idées qui te venaient, des décisions qui ont tout changé et de ce qui te rendait heureux.\n\nLIFE OS t'aide à créer un tel « Livre de vie ». Enregistre simplement tes pensées à la voix, et l'IA les sauvegarde, trouve les liens et transforme des jours épars en l'histoire de ta vie.\n\nEssaie 👉 {bot}", share: "📤 Partager" },
-  es: { text: "📖 Imagina que dentro de 10 años pudieras abrir cualquier día de tu vida.\nRecordar con qué soñabas, qué ideas se te ocurrían, qué decisiones lo cambiaron todo y qué te hacía feliz.\n\nLIFE OS te ayuda a crear ese «Libro de la vida». Simplemente graba tus pensamientos por voz, y la IA los guarda, encuentra las conexiones y convierte días dispersos en la historia de tu vida.\n\nPruébalo 👉 {bot}", share: "📤 Compartir" },
-};
+// Питч-приглашение (INVITE) вынесен в @/lib/invitePitch — общий с мини-аппом /invite-share.
 
 function milestoneFor(count: number, streak: number, lang: string): string | null {
   const M = MILE[lang] || MILE.ru;
@@ -649,8 +644,9 @@ function loginBtn(lang: string, origin: string, next = "/") {
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
   const I = INVITE[lang] || INVITE.ru;
-  const inviteLink = `${origin}/i/${await getHandle(userId)}`;
-  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(I.text.replace("{bot}", "").trim())}`;
+  const handle = await getHandle(userId);
+  const inviteLink = `${origin}/i/${handle}`;
+  const shareUrl = inviteShareUrl(origin, handle, lang);
   await sendMessage(chatId, I.text.replace("{bot}", inviteLink), { reply_markup: { inline_keyboard: [[{ text: I.share, url: shareUrl }]] } });
 }
 
@@ -1850,8 +1846,7 @@ export async function POST(req: NextRequest) {
     // настроение 9+, и не чаще раза в 3 дня (иначе кнопка становится обоями).
     const peak = !!ms || (analysis.mood ?? 0) >= 9;
     if (peak && (await markInvitePrompt(user.id))) {
-      const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
+      const shareUrl = inviteShareUrl(origin, await getHandle(user.id, user.name), lang);
       rows.push([{ text: L.share, url: shareUrl }]);
     }
     await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });

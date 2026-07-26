@@ -4,6 +4,8 @@
 //  кронах и разовой рассылке (обновление кнопок у всех юзеров).
 // ============================================================
 
+const SITE = "https://life-os.today";
+
 export const KB: Record<string, { acquaint: string; diary: string; tasks: string; guide: string; invite: string }> = {
   ru: { acquaint: "🌱 Давай познакомимся", diary: "📔 Сохранённое", tasks: "🎯 Задачи", guide: "✨ Зачем я тебе", invite: "🎁 Позвать друга" },
   en: { acquaint: "🌱 Let's get acquainted", diary: "📔 Saved", tasks: "🎯 Tasks", guide: "✨ Why I'm here", invite: "🎁 Invite a friend" },
@@ -113,7 +115,9 @@ export function mainKeyboard(lang: string, acquaintPct?: number) {
     keyboard: [
       [{ text: acquaintLabel(lang, acquaintPct) }],
       [{ text: k.diary }, { text: k.tasks }],
-      [{ text: k.guide }, { text: k.invite }],
+      // «Позвать друга» — web_app: мини-апп /invite-share сразу открывает окно
+      // «кому отправить», без промежуточного сообщения с ещё одной кнопкой.
+      [{ text: k.guide }, { text: k.invite, web_app: { url: `${SITE}/invite-share` } }],
     ],
     resize_keyboard: true,
     is_persistent: true,
