@@ -19,7 +19,7 @@ function client() {
 export type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
 export type Route =
-  | { kind: "action"; name: string; input: any }
+  | { kind: "action"; name: string; input: any; more?: { name: string; input: any }[] }
   | { kind: "question" }
   | { kind: "note" };
 
@@ -116,7 +116,9 @@ const SYS =
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
   "«а почему трату не учёл?», «где сегодняшний расход?», «чего не показал?», «ты не записал…?» — это ask_question, " +
   "а НЕ save_entry, даже если в фразе названа сумма. Такую операцию НЕ нужно записывать заново — она уже есть. " +
-  "Всегда выбирай РОВНО один инструмент.";
+  "Выбирай ОДИН вид инструмента на сообщение. НО если в сообщении перечислено НЕСКОЛЬКО объектов одного действия " +
+  "(два фильма: «Река Медисон, Ранчо Даттонов — надо посмотреть»; несколько задач; несколько напоминаний) — " +
+  "вызови этот инструмент НЕСКОЛЬКО РАЗ, отдельно на каждый объект, чтобы ни один не потерялся.";
 
 // Local "now" string for resolving relative dates (today/tomorrow/in an hour).
 function nowLocalLine(off?: number | null): string {
@@ -144,11 +146,17 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       tool_choice: { type: "any" },
     });
     logClaude(userId, "bot_route", "haiku", (resp as any).usage);
-    const block: any = resp.content.find((c: any) => c.type === "tool_use");
+    const blocks: any[] = resp.content.filter((c: any) => c.type === "tool_use");
+    const block: any = blocks[0];
     const name = block?.name;
     if (!name || name === "save_entry") return { kind: "note" };
     if (name === "ask_question") return { kind: "question" };
-    return { kind: "action", name, input: block.input || {} };
+    // Несколько действий в одном сообщении («добавь два фильма: X и Y») — модель
+    // вызывает инструмент несколько раз; раньше выполнялся только первый вызов.
+    const more = blocks.slice(1, 5)
+      .filter((b: any) => b.name && b.name !== "save_entry" && b.name !== "ask_question")
+      .map((b: any) => ({ name: b.name, input: b.input || {} }));
+    return { kind: "action", name, input: block.input || {}, ...(more.length ? { more } : {}) };
   } catch {
     return { kind: "note" }; // при ошибке безопаснее сохранить как запись
   }

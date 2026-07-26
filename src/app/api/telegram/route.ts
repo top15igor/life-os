@@ -1626,7 +1626,11 @@ export async function POST(req: NextRequest) {
         const route = await routeMessage(text, user.id, (user as any).tz_offset);
         if (route.kind === "action") {
           const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
-          await sendMessage(chatId, mdToTelegram(res.text) || res.text, acqMarkup(lng0));
+          const texts = [res.text];
+          for (const m of route.more || []) {
+            try { texts.push((await runAction(user.id, m.name, m.input, lng0, (user as any).tz_offset)).text); } catch {}
+          }
+          await sendMessage(chatId, texts.map((t) => mdToTelegram(t) || t).join("\n"), acqMarkup(lng0));
           return NextResponse.json({ ok: true });
         }
         if (route.kind === "question") {
@@ -1711,6 +1715,12 @@ export async function POST(req: NextRequest) {
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
+        // Несколько объектов в одной команде («добавь два фильма») → несколько вызовов:
+        // выполняем все, подтверждения склеиваем в одно сообщение.
+        const moreTexts: string[] = [];
+        for (const m of route.more || []) {
+          try { moreTexts.push((await runAction(user.id, m.name, m.input, lang, (user as any).tz_offset)).text); } catch {}
+        }
         let extra: any = res.openNext
           ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/u/${user.token}?next=${encodeURIComponent(res.openNext)}` }]] } }
           : undefined;
@@ -1723,7 +1733,8 @@ export async function POST(req: NextRequest) {
           ]] } };
         }
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
-        await sendMessage(chatId, mdToTelegram(res.text) || res.text, extra);
+        const combined = [res.text, ...moreTexts].map((t) => mdToTelegram(t) || t).join("\n");
+        await sendMessage(chatId, combined, extra);
         return NextResponse.json({ ok: true });
       }
       if (route.kind === "question") {
