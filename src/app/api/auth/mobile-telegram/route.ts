@@ -23,11 +23,20 @@ export async function POST(req: NextRequest) {
   if (!token) return NextResponse.json({ ok: false, error: "no_token" }, { status: 400 });
 
   const db = supabaseAdmin();
-  const { data: user } = await db
-    .from("users")
-    .select("id, name, token, session_secret")
-    .eq("token", token)
-    .maybeSingle();
+  let hasTokenAt = true;
+  let q = await db.from("users").select("id, name, token, session_secret, token_at").eq("token", token).maybeSingle();
+  if (q.error) {
+    hasTokenAt = false;
+    q = await db.from("users").select("id, name, token, session_secret").eq("token", token).maybeSingle();
+  }
+  let user = q.data as any;
+
+  // TTL как и в вебе: токен живёт 1 час с выдачи /link. Если сессия приложения
+  // когда-нибудь погаснет (ротация session_secret) — попросим свежий /link.
+  if (user && hasTokenAt) {
+    const issued = user.token_at ? Date.parse(String(user.token_at)) : 0;
+    if (!issued || Date.now() - issued > 60 * 60 * 1000) user = null;
+  }
 
   if (!user) {
     // Token was rotated by a web /u login, or invalid — ask for a fresh /link.

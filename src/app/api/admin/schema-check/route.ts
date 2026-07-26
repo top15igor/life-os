@@ -16,6 +16,7 @@ const CHECKS: { key: string; table: string; column?: string; note: string }[] = 
   { key: "trip_entries", table: "trip_entries", note: "trips.sql — связь поездок с записями" },
   { key: "relay_aliases", table: "relay_aliases", note: "relay_aliases.sql — /send по прозвищам" },
   { key: "free_books_used", table: "users", column: "free_books_used", note: "referral_free_book.sql — «3 друга = книга»" },
+  { key: "token_at", table: "users", column: "token_at", note: "link_ttl.sql — срок жизни ссылки входа (1 час)" },
 ];
 
 export async function GET() {

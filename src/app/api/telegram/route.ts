@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
@@ -1119,7 +1120,17 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/link") {
     const lang = langOf(user, msg);
-    await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}\n\n${LINK_WARN[lang] || LINK_WARN.ru}`, openBtn(lang, link));
+    // Каждый /link выдаёт СВЕЖИЙ одноразовый токен со сроком жизни 1 час (link_ttl.sql):
+    // старые пересланные ссылки гаснут сами, живая — только последняя.
+    let freshLink = link;
+    try {
+      const freshTok = randomUUID();
+      const db = supabaseAdmin();
+      const { error } = await db.from("users").update({ token: freshTok, token_at: new Date().toISOString() }).eq("id", user.id);
+      if (error) await db.from("users").update({ token: freshTok }).eq("id", user.id);
+      freshLink = `${origin}/u/${freshTok}`;
+    } catch {}
+    await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${freshLink}\n\n${LINK_WARN[lang] || LINK_WARN.ru}`, openBtn(lang, freshLink));
     return NextResponse.json({ ok: true });
   }
 

@@ -44,7 +44,21 @@ async function sessionUserId(req: NextRequest): Promise<string | null> {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const db = supabaseAdmin();
-  const { data: user } = await db.from("users").select("id, token, session_secret, name, chat_id, lang").eq("token", token).maybeSingle();
+  // token_at может ещё не существовать (link_ttl.sql не применён) — мягкий фолбэк без TTL.
+  let hasTokenAt = true;
+  let q = await db.from("users").select("id, token, session_secret, name, chat_id, lang, token_at").eq("token", token).maybeSingle();
+  if (q.error) {
+    hasTokenAt = false;
+    q = await db.from("users").select("id, token, session_secret, name, chat_id, lang").eq("token", token).maybeSingle();
+  }
+  let user = q.data as any;
+
+  // TTL: ссылка входа живёт 1 час с выдачи (/link ротирует токен и ставит token_at).
+  // token_at = null (старые строки) считаем истёкшим — свежую ссылку даст /link.
+  if (user && hasTokenAt) {
+    const issued = user.token_at ? Date.parse(String(user.token_at)) : 0;
+    if (!issued || Date.now() - issued > 60 * 60 * 1000) user = null;
+  }
 
   // id текущей сессии в браузере (нужно и для guard'а, и для ветки «токен сгорел»).
   const curId = await sessionUserId(req);
@@ -67,7 +81,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     // Ротация токена безопасна, только если сессии живут на session_secret
     // (иначе legacy-cookie владельца = token, и ротация разлогинит его самого).
     if ((user as any).session_secret) {
-      try { await db.from("users").update({ token: randomUUID() }).eq("id", user.id); } catch {}
+      try {
+        const rot = { token: randomUUID(), token_at: new Date().toISOString() };
+        const { error } = await db.from("users").update(rot).eq("id", user.id);
+        if (error) await db.from("users").update({ token: rot.token }).eq("id", user.id);
+      } catch {}
     }
     if ((user as any).chat_id) {
       const warn = LEAK_WARN[(user as any).lang] || LEAK_WARN.ru;
@@ -90,7 +108,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     }
     if (canRotate) {
       // Одноразовость: код входа (token) из URL заменяем на новый — старый URL «сгорает».
-      await db.from("users").update({ token: randomUUID() }).eq("id", user.id);
+      const rot = { token: randomUUID(), token_at: new Date().toISOString() };
+      const { error } = await db.from("users").update(rot).eq("id", user.id);
+      if (error) await db.from("users").update({ token: rot.token }).eq("id", user.id);
     }
   } catch {
     if (!secret) secret = token;
