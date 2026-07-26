@@ -7,6 +7,7 @@ import {
   DEFAULT_MORNING_PREFS, normalizeMorningPrefs, TONE_PROMPT, TOPIC_PROMPT, LENGTH_PROMPT,
 } from "./morningPrefs";
 import { localParts } from "./pushSchedule";
+import { MORNING_TAG } from "./biographer";
 
 const WEEKDAY_RU = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
 
@@ -52,7 +53,7 @@ export async function personalMorning(
     if (want.size === 0) return null; // всё выключено → обычная короткая фраза
 
     const db = supabaseAdmin();
-    const [streak, goals, tasks, insights, gratitude, entriesRes] = await Promise.all([
+    const [streak, goals, tasks, insights, gratitude, entriesRes, prevPushRes] = await Promise.all([
       getStreak(userId).catch(() => 0),
       want.has("goals") ? getGoals(userId).catch(() => [] as any[]) : Promise.resolve([] as any[]),
       want.has("tasks") ? getOpenTasks(userId, 5).catch(() => [] as any[]) : Promise.resolve([] as any[]),
@@ -60,8 +61,11 @@ export async function personalMorning(
       want.has("gratitude") ? getRecentGratitude(userId, 3).catch(() => [] as string[]) : Promise.resolve([] as string[]),
       // Записи тянем всегда — для понимания личности и манеры речи (а не только для темы «дневник»).
       db.from("entries").select("entry_date, summary, raw_text").eq("user_id", userId).order("entry_date", { ascending: false }).limit(7),
+      // Последние утренние пуши — чтобы сегодня не повторять их темы («этот футбол не даёт ему покоя»).
+      db.from("biographer_chats").select("answer").eq("user_id", userId).eq("question", MORNING_TAG).order("created_at", { ascending: false }).limit(2),
     ]);
     const entries = (entriesRes as any).data || [];
+    const prevPushes: string[] = (((prevPushRes as any).data || []) as any[]).map((r) => (r.answer || "").trim().slice(0, 350)).filter(Boolean);
 
     // Какие темы реально «есть о чём сказать». motivation и movement не требуют данных.
     const effective: MorningTopic[] = [];
@@ -107,7 +111,15 @@ export async function personalMorning(
       : "";
 
     // Слова самого пользователя — чтобы понять его личность, контекст и манеру речи (не для пересказа).
-    const voice: string[] = entries.map((e: any) => (e.raw_text || e.summary || "").trim()).filter(Boolean).slice(0, 4).map((t: string) => t.slice(0, 220));
+    // Каждая цитата помечена давностью: внутри старых записей живут слова «вчера/сегодня»,
+    // которые относились к ТОМУ дню — без метки модель выдавала их за свежие факты.
+    const voice: string[] = entries
+      .map((e: any) => {
+        const t = (e.raw_text || e.summary || "").trim();
+        return t ? `[${agoLabel(daysBetween(e.entry_date, todayKey))}] ${t.slice(0, 220)}` : "";
+      })
+      .filter(Boolean)
+      .slice(0, 4);
 
     const today = todayKey;
     // Контекст протух (пользователь давно не писал) → не опираемся на старые записи,
@@ -132,6 +144,8 @@ ${LENGTH_PROMPT[p.length]} Эмодзи — только если они в ду
 - Не придумывай несуществующих дел, людей, сроков и цифр. Мало данных → будь просто человечным и тёплым, без выдуманной конкретики.
 - Не нагнетай: «висят и ждут», «срочно», «горит» — только если это реально в данных.
 - ДАТЫ: у каждой записи в контексте УЖЕ ПОСЧИТАНА давность (СЕГОДНЯ / ВЧЕРА / N дн. назад) — верь ей, сам даты не пересчитывай. Слово «вчера» можно говорить ТОЛЬКО про записи с пометкой «ВЧЕРА». Событие с пометкой «2+ дн. назад» НИКОГДА не называй вчерашним — говори честно («пару дней назад», «на прошлой неделе») или не привязывай ко времени вовсе. Это критично: пользователи ловят бота на «вчера смотрел футбол», когда матч был неделю назад, и перестают доверять.
+- Слова «вчера», «сегодня», «этой ночью» ВНУТРИ текста записи писал пользователь В ДЕНЬ записи. Запись [5 дн. назад] со словами «вчера засиделся за футболом» значит: футбол был ~6 дней назад, а НЕ вчера. Никогда не переноси такие слова из старой записи в своё сообщение как свежие.
+- НЕ ПОВТОРЯЙСЯ: если событие уже упоминалось в твоих недавних утренних сообщениях (блок ниже), сегодня не поднимай его снова — найди другую тему или просто пожелай доброго утра. Одно и то же старое событие изо дня в день («опять футбол») раздражает.
 - Записи с пометкой СЕГОДНЯ/ВЧЕРА — это происходит сейчас, не в прошлом. Не предлагай «вернуться» к тому, что человек делает сегодня/вчера; наоборот, отметь как успех.${sparkLine}
 - Не связывай несвязанное: бытовые покупки (средства для посуды, хозтовары) НЕ относятся к диете/аскезе/режиму/спорту.
 
@@ -144,9 +158,12 @@ ${LENGTH_PROMPT[p.length]} Эмодзи — только если они в ду
 Пример КАК НАДО: «Доброе утро. Сегодня постарайся не хвататься за всё сразу, выбери одну важную вещь и начни с неё.»
 Верни ТОЛЬКО текст сообщения, без кавычек.
 
-КАК ГОВОРИТ ПОЛЬЗОВАТЕЛЬ (его собственные слова — для понимания личности и манеры, НЕ для пересказа):
+КАК ГОВОРИТ ПОЛЬЗОВАТЕЛЬ (его собственные слова с давностью записи — для понимания личности и манеры, НЕ для пересказа):
 ${voice.length ? voice.join("\n---\n") : "(пока мало записей — будь просто человечным и тёплым, без штампов)"}
-
+${prevPushes.length ? `
+ТВОИ НЕДАВНИЕ УТРЕННИЕ СООБЩЕНИЯ (НЕ повторяй их темы, события и формулировки):
+${prevPushes.join("\n---\n")}
+` : ""}
 КОНТЕКСТ:
 ${ctx.join("\n")}`;
 

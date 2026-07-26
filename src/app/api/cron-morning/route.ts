@@ -7,13 +7,9 @@ import { normalizeMorningPrefs, type MorningPrefs } from "@/lib/morningPrefs";
 import { localParts } from "@/lib/pushSchedule";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
-import { saveChat } from "@/lib/biographer";
+import { saveChat, MORNING_TAG } from "@/lib/biographer";
 import { morningQuestion } from "@/lib/dailyQuestions";
 import { getGoodNews, goodNewsLine, type NewsLang } from "@/lib/goodNews";
-
-// Метка утреннего пуша в истории диалога — чтобы ассистент потом связывал
-// уточняющие вопросы пользователя с тем, что сам прислал утром.
-const MORNING_TAG = "☀️ (моё утреннее сообщение пользователю)";
 
 // Время по умолчанию (если пользователь не выбрал своё): 05:00 UTC = ~08:00 по Киеву.
 const LEGACY_UTC_HOUR = 5;

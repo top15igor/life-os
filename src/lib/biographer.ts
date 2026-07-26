@@ -145,6 +145,10 @@ ${convo}
   return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
 }
 
+// Метка, под которой утренние пуши лежат в biographer_chats: по ней их можно
+// достать (например, чтобы завтрашний пуш не повторял вчерашние темы).
+export const MORNING_TAG = "☀️ (моё утреннее сообщение пользователю)";
+
 export async function saveChat(userId: string, question: string, answer: string) {
   try {
     await supabaseAdmin().from("biographer_chats").insert({ user_id: userId, question, answer });
