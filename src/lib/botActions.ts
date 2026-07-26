@@ -118,7 +118,10 @@ const SYS =
   "а НЕ save_entry, даже если в фразе названа сумма. Такую операцию НЕ нужно записывать заново — она уже есть. " +
   "Выбирай ОДИН вид инструмента на сообщение. НО если в сообщении перечислено НЕСКОЛЬКО объектов одного действия " +
   "(два фильма: «Река Медисон, Ранчо Даттонов — надо посмотреть»; несколько задач; несколько напоминаний) — " +
-  "вызови этот инструмент НЕСКОЛЬКО РАЗ, отдельно на каждый объект, чтобы ни один не потерялся.";
+  "вызови этот инструмент НЕСКОЛЬКО РАЗ, отдельно на каждый объект, чтобы ни один не потерялся. " +
+  "КОНТЕКСТ ДИАЛОГА: если ниже дано последнее сообщение бота, а сообщение пользователя — короткая отсылка к нему " +
+  "(«а скинь мне рецепт» после того как бот сам упомянул рецепт гречневого хлеба; «да, добавь», «скинь его», «покажи этот») — " +
+  "РАСКРОЙ отсылку конкретикой из контекста: в query/параметры инструмента пиши полное название («рецепт гречневого хлеба»), а не общее слово («рецепт»).";
 
 // Local "now" string for resolving relative dates (today/tomorrow/in an hour).
 function nowLocalLine(off?: number | null): string {
@@ -129,8 +132,29 @@ function nowLocalLine(off?: number | null): string {
   return `Сейчас у пользователя (местное время): ${iso} (${dow}). Используй это для дат «сегодня», «завтра», «через час», «в 9».`;
 }
 
-// Один haiku-проход: действие / вопрос / запись.
-export async function routeMessage(text: string, userId?: string, tzOffset?: number | null): Promise<Route> {
+// Последнее сообщение бота пользователю (пуш или ответ) не старше 6 часов —
+// контекст для роутера, чтобы понимать отсылки «а скинь его», «да, добавь».
+export async function recentBotContext(userId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin()
+      .from("biographer_chats")
+      .select("answer, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data?.answer) return null;
+    if (Date.now() - Date.parse((data as any).created_at) > 6 * 3600 * 1000) return null;
+    return String((data as any).answer).slice(0, 600);
+  } catch {
+    return null;
+  }
+}
+
+// Один haiku-проход: действие / вопрос / запись. lastBot — последнее сообщение
+// бота пользователю (если недавнее): без него короткая отсылка «а скинь мне рецепт»
+// после утреннего пуша про гречневый хлеб превращалась в поиск «рецепт» вообще.
+export async function routeMessage(text: string, userId?: string, tzOffset?: number | null, lastBot?: string | null): Promise<Route> {
   try {
     const resp = await client().messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -140,6 +164,7 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       system: [
         { type: "text", text: SYS, cache_control: { type: "ephemeral" } },
         { type: "text", text: nowLocalLine(tzOffset) },
+        ...(lastBot ? [{ type: "text", text: `Последнее сообщение бота пользователю (контекст для коротких отсылок «его», «этот», «а скинь…»):\n«${lastBot}»` }] : []),
       ],
       messages: [{ role: "user", content: text }],
       tools: ACTION_TOOLS,

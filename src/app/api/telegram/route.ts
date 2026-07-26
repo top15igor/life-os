@@ -5,7 +5,7 @@ import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
-import { routeMessage, runAction } from "@/lib/botActions";
+import { routeMessage, runAction, recentBotContext } from "@/lib/botActions";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
@@ -1623,7 +1623,7 @@ export async function POST(req: NextRequest) {
         // зарегистрирован аккаунт?» три раза подряд игнорировался сценарием) —
         // сначала отвечаем по существу, и только обычные ответы идут в знакомство.
         const lng0 = langOf(user, msg);
-        const route = await routeMessage(text, user.id, (user as any).tz_offset);
+        const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
         if (route.kind === "action") {
           const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
           const texts = [res.text];
@@ -1711,7 +1711,7 @@ export async function POST(req: NextRequest) {
     // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
     // порог был 160 — из-за этого голосовой ВОПРОС на ~190 символов молча уходил в дневник)
     if (!forceSave && (!isVoice || text.length < 400)) {
-      const route = await routeMessage(text, user.id, (user as any).tz_offset);
+      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
