@@ -102,7 +102,7 @@ const WELCOME: Record<string, string[]> = {
     "Всё остальное я сделаю сам: сохраню, найду главное, выделю инсайты и начну писать твою Книгу жизни.",
     "А потом я смогу ответить на любой твой вопрос о твоей жизни. 📖",
     "🔒 И главное: твои записи видишь только ты. Команда их не читает, а код открыт — можешь проверить сам. Скачать или удалить всё можно в один клик.",
-    "Кстати, всё это красиво видно и в вебе — вот твоя личная ссылка, сохрани её:\n{link}",
+    "Кстати, всё это красиво видно и в вебе — жми кнопку ниже, вход в одно касание. 👇",
   ],
   en: [
     "👋 Hi!\nA year from now, you'll barely remember today.",
@@ -111,7 +111,7 @@ const WELCOME: Record<string, string[]> = {
     "I'll do the rest: save it, find what matters, extract insights, and start writing your Book of Life.",
     "And then I'll be able to answer any question about your life. 📖",
     "🔒 And the key part: only you see your entries. The team doesn't read them, and the code is open — check it yourself. Export or delete everything in one click.",
-    "By the way, you can see it all beautifully on the web — here's your personal link, keep it:\n{link}",
+    "By the way, it all looks beautiful on the web too — tap the button below, one-tap sign-in. 👇",
   ],
   uk: [
     "👋 Привіт!\nЧерез рік ти майже напевно не згадаєш сьогоднішній день.",
@@ -120,7 +120,7 @@ const WELCOME: Record<string, string[]> = {
     "Усе інше я зроблю сам: збережу, знайду головне, виділю інсайти й почну писати твою Книгу життя.",
     "А потім я зможу відповісти на будь-яке питання про твоє життя. 📖",
     "🔒 І головне: твої записи бачиш лише ти. Команда їх не читає, а код відкритий — можеш перевірити сам. Завантажити чи видалити все можна в один клік.",
-    "До речі, усе це красиво видно й у вебі — ось твоє особисте посилання, збережи його:\n{link}",
+    "До речі, усе це красиво видно й у вебі — тисни кнопку нижче, вхід в один дотик. 👇",
   ],
   fr: [
     "👋 Salut !\nDans un an, tu ne te souviendras presque plus d'aujourd'hui.",
@@ -129,7 +129,7 @@ const WELCOME: Record<string, string[]> = {
     "Je m'occupe du reste : je sauvegarde, je trouve l'essentiel, j'extrais les insights et je commence ton Livre de vie.",
     "Et ensuite, je pourrai répondre à toutes tes questions sur ta vie. 📖",
     "🔒 Et l'essentiel : toi seul vois tes entrées. L'équipe ne les lit pas, et le code est ouvert — vérifie toi-même. Exporte ou supprime tout en un clic.",
-    "Au fait, tu peux tout voir joliment sur le web — voici ton lien personnel, garde-le :\n{link}",
+    "Au fait, tu peux tout voir joliment sur le web — appuie sur le bouton ci-dessous, connexion en un geste. 👇",
   ],
   es: [
     "👋 ¡Hola!\nDentro de un año, apenas recordarás el día de hoy.",
@@ -138,16 +138,16 @@ const WELCOME: Record<string, string[]> = {
     "Yo me encargo del resto: lo guardo, encuentro lo importante, extraigo ideas clave y empiezo a escribir tu Libro de la vida.",
     "Y después podré responder cualquier pregunta sobre tu vida. 📖",
     "🔒 Y lo más importante: solo tú ves tus entradas. El equipo no las lee, y el código es abierto — puedes comprobarlo tú mismo. Exporta o elimina todo con un clic.",
-    "Por cierto, también puedes verlo todo muy bien en la web — aquí tienes tu enlace personal, guárdalo:\n{link}",
+    "Por cierto, también puedes verlo todo muy bien en la web — pulsa el botón de abajo, acceso con un toque. 👇",
   ],
 };
 
 const RETURN: Record<string, string> = {
-  ru: "С возвращением! 👋\nПросто пришли голосовое или текст — я всё разложу по полочкам.\n\nТвоя личная ссылка на дневник:\n{link}",
-  en: "Welcome back! 👋\nJust send a voice note or text — I'll sort it all out.\n\nYour personal diary link:\n{link}",
-  uk: "З поверненням! 👋\nПросто надішли голосове або текст — я все розкладу.\n\nТвоє особисте посилання на щоденник:\n{link}",
-  fr: "Bon retour ! 👋\nEnvoie une note vocale ou un texte — je m'occupe du reste.\n\nTon lien personnel vers le journal :\n{link}",
-  es: "¡Bienvenido de nuevo! 👋\nSolo envía una nota de voz o un texto — yo me encargo de organizarlo todo.\n\nTu enlace personal al diario:\n{link}",
+  ru: "С возвращением! 👋\nПросто пришли голосовое или текст — я всё разложу по полочкам.",
+  en: "Welcome back! 👋\nJust send a voice note or text — I'll sort it all out.",
+  uk: "З поверненням! 👋\nПросто надішли голосове або текст — я все розкладу.",
+  fr: "Bon retour ! 👋\nEnvoie une note vocale ou un texte — je m'occupe du reste.",
+  es: "¡Bienvenido de nuevo! 👋\nSolo envía una nota de voz o un texto — yo me encargo de organizarlo todo.",
 };
 
 const CONFIRM: Record<string, any> = {
@@ -427,6 +427,13 @@ const HELP: Record<string, (o: string) => string> = {
   es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
 };
 
+const LINK_WARN: Record<string, string> = {
+  ru: "⚠️ Ссылка одноразовая и логинит в твой аккаунт — никому её не пересылай.",
+  en: "⚠️ This link is one-time and signs into YOUR account — don't forward it to anyone.",
+  uk: "⚠️ Посилання одноразове й логінить у твій акаунт — нікому його не пересилай.",
+  fr: "⚠️ Ce lien est à usage unique et connecte à TON compte — ne le transfère à personne.",
+  es: "⚠️ Este enlace es de un solo uso e inicia sesión en TU cuenta — no lo reenvíes a nadie.",
+};
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
 // 📸 «В этот день» — воспоминания за этот календарный день.
 type Mem = { date: string; label: "year" | "years" | "month"; n: number; text: string };
@@ -601,6 +608,13 @@ const LINK_TG: Record<string, { ok: string; busy: string; expired: string }> = {
 
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
+}
+
+// Кнопка входа через Telegram (login_url): Telegram подписывает данные НАЖАВШЕГО,
+// /auth/tg логинит строго его. В ссылке нет токена — пересылка безопасна.
+// Требует привязки домена к боту: BotFather → /setdomain.
+function loginBtn(lang: string, origin: string, next = "/") {
+  return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, login_url: { url: `${origin}/auth/tg?next=${encodeURIComponent(next)}` } }]] } };
 }
 
 async function sendInvite(chatId: number, lang: string, origin: string, userId: string) {
@@ -971,7 +985,7 @@ export async function POST(req: NextRequest) {
       if (res.ok) {
         await noteTgUsername(res.user.id, msg.from?.username);
         const link = `${origin}/u/${res.user.token}`;
-        await sendMessage(chatId, LINK_TG[lang].ok, openBtn(lang, link));
+        await sendMessage(chatId, LINK_TG[lang].ok, loginBtn(lang, origin));
         // Пришедшему из веба тоже первым делом предлагаем выбрать тон общения
         // (если он ещё «свежий» — знакомство не начиналось).
         try {
@@ -1034,7 +1048,7 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < seq.length; i++) {
         await sendChatAction(chatId, "typing");
         await sleep(i === 0 ? 500 : 2800);
-        await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
+        await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
       }
       // Первым делом — выбор тона общения (кнопки). Нудж на знакомство придёт
       // сразу после выбора (в обработчике tone:), чтобы не сыпать всё разом.
@@ -1052,7 +1066,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
       await sleep(i === 0 ? 500 : 2800);
-      await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? openBtn(lang, link) : undefined);
+      await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
     }
     // Как у новичка: следом — выбор тона общения.
     await sleep(2800);
@@ -1067,7 +1081,7 @@ export async function POST(req: NextRequest) {
 
   if (msg.text === "/link") {
     const lang = langOf(user, msg);
-    await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}`, openBtn(lang, link));
+    await sendMessage(chatId, `${DIARY_LABEL[lang] || DIARY_LABEL.ru}\n${link}\n\n${LINK_WARN[lang] || LINK_WARN.ru}`, openBtn(lang, link));
     return NextResponse.json({ ok: true });
   }
 
@@ -1356,7 +1370,7 @@ export async function POST(req: NextRequest) {
       const openUrl = `${origin}/u/${user.token}?next=/`;
       await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, web_app: { url: openUrl } }]] } });
     }
-    else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, openBtn(lang, link));
+    else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, loginBtn(lang, origin));
     return NextResponse.json({ ok: true });
   }
 
