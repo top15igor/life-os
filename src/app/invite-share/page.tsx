@@ -24,8 +24,18 @@ function InviteShareInner() {
     tg.ready?.();
 
     const open = (share: string) => {
-      tg.openTelegramLink(share);
-      setTimeout(() => tg.close?.(), 400);
+      const plat = String(tg.platform || "").toLowerCase();
+      if (plat === "ios" || plat === "android") {
+        // На телефонах openTelegramLink сам закрывает мини-апп после открытия шэринга.
+        tg.openTelegramLink(share);
+        setTimeout(() => tg.close?.(), 400);
+      } else {
+        // macOS/Desktop открывают t.me-ссылку ВНУТРИ панельки и оставляют её висеть
+        // («Success!»). Диплинк tg:// открывает НАТИВНОЕ окно «кому отправить» вне
+        // панельки — и её можно сразу закрыть.
+        window.location.href = share.replace("https://t.me/share/url", "tg://msg_url");
+        setTimeout(() => tg.close?.(), 700);
+      }
     };
 
     const h = sp.get("h");
