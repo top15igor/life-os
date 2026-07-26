@@ -172,7 +172,11 @@ const EN: Dict = {
    заголовки, шапка-стекло, градиентные кнопки. Serif остался только как
    курсивный акцент в подписи — так же, как на лендинге. */
 const STYLE = `
-.fx-shell{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.011em;min-height:100vh;background:radial-gradient(820px 460px at 86% -4%, rgba(91,91,245,0.10), transparent 60%),#f7f8fc}
+.fx-shell{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.011em;min-height:100vh;background:radial-gradient(820px 460px at 86% -4%, rgba(91,91,245,0.10), transparent 60%),#f7f8fc;
+  /* Страница всегда светлая: свои значения темовых переменных, иначе у пользователей
+     с тёмной темой заголовки наследуют почти белый var(--text) на светлом фоне. */
+  --text:#14161c;--text-2:#4a5261;--text-3:#8b93a3;--border:rgba(20,24,40,0.08);--card-border:rgba(20,24,40,0.08);--accent:#5b5bf5;--accent-bg:#edecff;
+  color:var(--text);color-scheme:light}
 .fx-wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 .fx-top{position:sticky;top:0;z-index:50;background:rgba(247,248,252,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,15,40,.06)}
 .fx-top-in{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 24px}
