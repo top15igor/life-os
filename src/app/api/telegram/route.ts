@@ -151,11 +151,11 @@ const RETURN: Record<string, string> = {
 };
 
 const CONFIRM: Record<string, any> = {
-  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "📤 Поделиться с другом", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»", moneyFail: "Не удалось записать в «Деньги» — попробуй команду /spend", heard: "Записал твоими словами", gist: "Коротко" },
-  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "📤 Share with a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command", heard: "Saved in your words", gist: "In short" },
-  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "📤 Поділитися з другом", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend", heard: "Записав твоїми словами", gist: "Коротко" },
-  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "📤 Partager avec un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend", heard: "Enregistré avec tes mots", gist: "En bref" },
-  es: { saved: "Entrada guardada", insights: "insight(s)", tasks: "tarea(s)", tags: "etiqueta(s)", streakWord: "días seguidos", book: "📖 Mi Libro de la vida", ask: "🧠 Preguntar", share: "📤 Compartir con un amigo", tasksTitle: "Tareas", insightsTitle: "Insights", moneyTitle: "Dinero", money: "💰 Abrir Dinero", moneyFail: "No se pudo guardar en Dinero — prueba el comando /spend", heard: "Guardado con tus palabras", gist: "En resumen" },
+  ru: { saved: "Запись сохранена", insights: "инсайт(ов)", tasks: "задач(и)", tags: "тег(ов)", streakWord: "дней подряд", book: "📖 Моя Книга жизни", ask: "🧠 Спросить", share: "🎁 Позвать друга", tasksTitle: "Задачи", insightsTitle: "Инсайты", moneyTitle: "Деньги", money: "💰 Открыть «Деньги»", moneyFail: "Не удалось записать в «Деньги» — попробуй команду /spend", heard: "Записал твоими словами", gist: "Коротко" },
+  en: { saved: "Entry saved", insights: "insight(s)", tasks: "task(s)", tags: "tag(s)", streakWord: "days in a row", book: "📖 My Book of Life", ask: "🧠 Ask", share: "🎁 Invite a friend", tasksTitle: "Tasks", insightsTitle: "Insights", moneyTitle: "Money", money: "💰 Open Money", moneyFail: "Couldn't save to Money — try the /spend command", heard: "Saved in your words", gist: "In short" },
+  uk: { saved: "Запис збережено", insights: "інсайт(ів)", tasks: "завдань", tags: "тегів", streakWord: "днів поспіль", book: "📖 Моя Книга життя", ask: "🧠 Запитати", share: "🎁 Покликати друга", tasksTitle: "Завдання", insightsTitle: "Інсайти", moneyTitle: "Гроші", money: "💰 Відкрити «Гроші»", moneyFail: "Не вдалося записати у «Гроші» — спробуй команду /spend", heard: "Записав твоїми словами", gist: "Коротко" },
+  fr: { saved: "Entrée enregistrée", insights: "insight(s)", tasks: "tâche(s)", tags: "tag(s)", streakWord: "jours d'affilée", book: "📖 Mon Livre de vie", ask: "🧠 Demander", share: "🎁 Inviter un ami", tasksTitle: "Tâches", insightsTitle: "Insights", moneyTitle: "Argent", money: "💰 Ouvrir Argent", moneyFail: "Impossible d'enregistrer dans Argent — essaie la commande /spend", heard: "Enregistré avec tes mots", gist: "En bref" },
+  es: { saved: "Entrada guardada", insights: "insight(s)", tasks: "tarea(s)", tags: "etiqueta(s)", streakWord: "días seguidos", book: "📖 Mi Libro de la vida", ask: "🧠 Preguntar", share: "🎁 Invitar a un amigo", tasksTitle: "Tareas", insightsTitle: "Insights", moneyTitle: "Dinero", money: "💰 Abrir Dinero", moneyFail: "No se pudo guardar en Dinero — prueba el comando /spend", heard: "Guardado con tus palabras", gist: "En resumen" },
 };
 
 // Символы валют для подтверждения в боте.
@@ -404,6 +404,27 @@ async function saveChatTone(userId: string, tone: string) {
   }
 }
 
+// Старая подпись кнопки-приглашения (до переименования в «Позвать друга») —
+// у пользователей она остаётся на клавиатуре, пока бот не пришлёт новую.
+const INVITE_LABEL_LEGACY: Record<string, string> = { ru: "🤝 Пригласить друга", en: "🤝 Invite a friend", uk: "🤝 Запросити друга", fr: "🤝 Inviter un ami", es: "🤝 Invitar a un amigo" };
+
+// Кнопка «Позвать друга» под записью — только в моменты-пики (майлстоун или
+// настроение 9+) и не чаще раза в 3 дня. Дату показа храним в morning_prefs.
+async function markInvitePrompt(userId: string): Promise<boolean> {
+  try {
+    const db = supabaseAdmin();
+    const { data } = await db.from("users").select("morning_prefs").eq("id", userId).maybeSingle();
+    const raw = (data as any)?.morning_prefs && typeof (data as any).morning_prefs === "object" ? (data as any).morning_prefs : {};
+    const last = typeof raw.invitePromptedOn === "string" ? raw.invitePromptedOn : "";
+    const today = new Date().toISOString().slice(0, 10);
+    if (last && Date.parse(today) - Date.parse(last) < 3 * 86400 * 1000) return false;
+    await db.from("users").update({ morning_prefs: { ...raw, invitePromptedOn: today } }).eq("id", userId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" | "invite" | null {
   if (!text) return null;
   // Кнопка знакомства меняет подпись по «лестнице близости» и несёт суффикс «· 24%» —
@@ -414,7 +435,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
     if (text === k.diary || (DIARY_LABEL_LEGACY[lang] || []).includes(text)) return "diary";
     if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
     if (text === k.guide || (GUIDE_LABEL_LEGACY[lang] || []).includes(text)) return "guide";
-    if (text === k.invite) return "invite";
+    if (text === k.invite || text === INVITE_LABEL_LEGACY[lang]) return "invite";
   }
   return null;
 }
@@ -1819,15 +1840,20 @@ export async function POST(req: NextRequest) {
     // Тёплый отклик друга под разбором (в выбранном тоне) — отдельной строкой, факты не трогает.
     const reaction = await reactionP;
     if (reaction) body += `\n\n💬 ${esc(reaction)}`;
-    const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
       [
         { text: L.book, callback_data: "lifebook" },
       ],
     ];
     if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/go?next=/finance` }]);
-    rows.push([{ text: L.share, url: shareUrl }]);
+    // «Позвать друга» — не под каждой записью, а в момент-пик: майлстоун или
+    // настроение 9+, и не чаще раза в 3 дня (иначе кнопка становится обоями).
+    const peak = !!ms || (analysis.mood ?? 0) >= 9;
+    if (peak && (await markInvitePrompt(user.id))) {
+      const refLink = `${origin}/i/${await getHandle(user.id, user.name)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
+      rows.push([{ text: L.share, url: shareUrl }]);
+    }
     await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
   } catch (e: any) {
     console.error(e);
