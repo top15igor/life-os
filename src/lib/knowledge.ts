@@ -22,8 +22,25 @@ export async function askKnowledge(userId: string, question: string, locale = "r
     return "В Базе знаний пока пусто. Пришли боту пару ссылок из Instagram — и я смогу отвечать по ним.";
   }
 
-  const ctx = data
-    .map((d: any, i: number) => {
+  // Сначала — отбор по релевантности вопросу, и только потом контекст.
+  // Раньше склеивались ВСЕ сохранёнки свежими вперёд и резались на 14к символов:
+  // старые (например, рецепты хлеба из гречки) не влезали, и бот честно «не видел» их.
+  // Стемминг простейший: первые 4 буквы слова («гречневого» и «гречки» → «греч»).
+  const norm = (s: string) => (s || "").toLowerCase().replace(/ё/g, "е");
+  const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 4).map((w) => w.slice(0, 4));
+  const itemText = (d: any) =>
+    norm([d.title, d.topic, d.summary, ...(Array.isArray(d.key_points) ? d.key_points : []), ...(Array.isArray(d.tags) ? d.tags : [])].join(" "));
+  const scored = data.map((d: any, i: number) => ({
+    d,
+    i, // исходный порядок = свежесть, работает как tiebreak
+    score: stems.length ? stems.filter((st) => itemText(d).includes(st)).length : 0,
+  }));
+  const anyHit = scored.some((x) => x.score > 0);
+  // Есть совпадения → релевантные вперёд; нет → как раньше, свежие вперёд.
+  const picked = (anyHit ? [...scored].sort((a, b) => b.score - a.score || a.i - b.i) : scored).slice(0, 40);
+
+  const ctx = picked
+    .map(({ d }, i: number) => {
       const pts = Array.isArray(d.key_points) && d.key_points.length ? "\n- " + d.key_points.join("\n- ") : "";
       const tags = Array.isArray(d.tags) && d.tags.length ? `\nтеги: ${d.tags.join(", ")}` : "";
       return `[${i + 1}] ${d.title || "—"}${d.topic ? ` (${d.topic})` : ""}\n${d.summary || ""}${pts}${tags}`;
