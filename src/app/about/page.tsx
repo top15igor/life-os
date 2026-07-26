@@ -14,7 +14,7 @@ const C = {
     nav_login: "Войти",
     nav_why: "Зачем это", nav_how: "Как работает", nav_feat: "Возможности", nav_rev: "Отзывы",
     back_to_app: "В приложение",
-    hero_badge: "Фотографии хранят, как ты выглядел. LIFE OS — каким ты был.",
+    hero_badge: "Память стирается. История — нет.",
     hero_title: "Сохранись.",
     hero_sub:
       "Твоя жизнь — слишком ценная, чтобы её забыть. Просто расскажи, как прошёл день — голосом или текстом. AI расшифрует, поймёт и соберёт из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
@@ -109,7 +109,7 @@ const C = {
     nav_login: "Sign in",
     nav_why: "Why", nav_how: "How it works", nav_feat: "Features", nav_rev: "Stories",
     back_to_app: "Back to app",
-    hero_badge: "Photos keep how you looked. LIFE OS keeps who you were.",
+    hero_badge: "Memory fades. Your story doesn't.",
     hero_title: "Save yourself.",
     hero_sub:
       "Your life is too precious to forget. Just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
@@ -204,7 +204,7 @@ const C = {
     nav_login: "Увійти",
     nav_why: "Навіщо це", nav_how: "Як працює", nav_feat: "Можливості", nav_rev: "Відгуки",
     back_to_app: "До застосунку",
-    hero_badge: "Фото зберігають, який ти був на вигляд. LIFE OS — яким ти був.",
+    hero_badge: "Пам'ять стирається. Історія — ні.",
     hero_title: "Збережися.",
     hero_sub:
       "Твоє життя — надто цінне, щоб його забути. Просто розкажи, як минув день — голосом або текстом. AI розшифрує, зрозуміє й збере з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
@@ -298,7 +298,7 @@ const C = {
     nav_login: "Se connecter",
     nav_why: "Pourquoi", nav_how: "Comment ça marche", nav_feat: "Fonctions", nav_rev: "Témoignages",
     back_to_app: "Vers l'app",
-    hero_badge: "Les photos gardent ton apparence. LIFE OS garde qui tu étais.",
+    hero_badge: "La mémoire s'efface. Ton histoire, non.",
     hero_title: "Sauvegarde-toi.",
     hero_sub:
       "Ta vie est trop précieuse pour être oubliée. Raconte simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
@@ -392,7 +392,7 @@ const C = {
     nav_login: "Iniciar sesión",
     nav_why: "Por qué", nav_how: "Cómo funciona", nav_feat: "Funciones", nav_rev: "Opiniones",
     back_to_app: "Volver a la app",
-    hero_badge: "Las fotos guardan cómo te veías. LIFE OS guarda quién eras.",
+    hero_badge: "La memoria se borra. Tu historia, no.",
     hero_title: "Guárdate.",
     hero_sub:
       "Tu vida es demasiado valiosa para olvidarla. Solo cuenta cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",

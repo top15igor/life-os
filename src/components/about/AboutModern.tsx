@@ -104,7 +104,7 @@ function catList(names: Record<CatKey, string>, descs: Record<CatKey, string>, p
 const D: Record<Locale, Dict> = {
   ru: {
     nav: { how: "Как это работает", features: "Возможности", book: "Книга жизни", stories: "Истории", login: "Войти", start: "Начать бесплатно" },
-    heroBadge: "Фотографии хранят, как ты выглядел. LIFE OS — каким ты был.",
+    heroBadge: "Память стирается. История — нет.",
     heroPre: "", heroItalic: "Сохранись.", heroPost: "",
     heroP: "Твоя жизнь — слишком ценная, чтобы её забыть. Просто расскажи, как прошёл день — голосом или текстом. AI расшифрует, поймёт и соберёт из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
     watch: "Посмотреть, как это работает", statsCount: "Более 10 000 человек", statsSub: "уже сохраняют свою жизнь в LIFE OS",
@@ -136,7 +136,7 @@ const D: Record<Locale, Dict> = {
   },
   en: {
     nav: { how: "How it works", features: "Features", book: "Book of life", stories: "Stories", login: "Sign in", start: "Start free" },
-    heroBadge: "Photos keep how you looked. LIFE OS keeps who you were.",
+    heroBadge: "Memory fades. Your story doesn't.",
     heroPre: "", heroItalic: "Save yourself.", heroPost: "",
     heroP: "Your life is too precious to forget. Just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
     watch: "See how it works", statsCount: "10,000+ people", statsSub: "are already saving their life in LIFE OS",
@@ -168,7 +168,7 @@ const D: Record<Locale, Dict> = {
   },
   uk: {
     nav: { how: "Як це працює", features: "Можливості", book: "Книга життя", stories: "Історії", login: "Увійти", start: "Почати безкоштовно" },
-    heroBadge: "Фото зберігають, який ти був на вигляд. LIFE OS — яким ти був.",
+    heroBadge: "Пам'ять стирається. Історія — ні.",
     heroPre: "", heroItalic: "Збережися.", heroPost: "",
     heroP: "Твоє життя — надто цінне, щоб його забути. Просто розкажи, як минув день — голосом або текстом. AI розшифрує, зрозуміє й збере з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
     watch: "Подивитися, як це працює", statsCount: "Понад 10 000 людей", statsSub: "уже зберігають своє життя в LIFE OS",
@@ -200,7 +200,7 @@ const D: Record<Locale, Dict> = {
   },
   fr: {
     nav: { how: "Comment ça marche", features: "Fonctions", book: "Livre de vie", stories: "Témoignages", login: "Se connecter", start: "Commencer gratuitement" },
-    heroBadge: "Les photos gardent ton apparence. LIFE OS garde qui tu étais.",
+    heroBadge: "La mémoire s'efface. Ton histoire, non.",
     heroPre: "", heroItalic: "Sauvegarde-toi.", heroPost: "",
     heroP: "Ta vie est trop précieuse pour être oubliée. Raconte simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
     watch: "Voir comment ça marche", statsCount: "Plus de 10 000 personnes", statsSub: "sauvegardent déjà leur vie dans LIFE OS",
@@ -232,7 +232,7 @@ const D: Record<Locale, Dict> = {
   },
   es: {
     nav: { how: "Cómo funciona", features: "Funciones", book: "Libro de vida", stories: "Historias", login: "Iniciar sesión", start: "Empezar gratis" },
-    heroBadge: "Las fotos guardan cómo te veías. LIFE OS guarda quién eras.",
+    heroBadge: "La memoria se borra. Tu historia, no.",
     heroPre: "", heroItalic: "Guárdate.", heroPost: "",
     heroP: "Tu vida es demasiado valiosa para olvidarla. Solo cuenta cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",
     watch: "Ver cómo funciona", statsCount: "Más de 10.000 personas", statsSub: "ya guardan su vida en LIFE OS",
