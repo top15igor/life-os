@@ -1079,30 +1079,32 @@ export async function POST(req: NextRequest) {
       await sendMessage(chatId, opening, acqInline(lang));
       return NextResponse.json({ ok: true });
     }
+    const inviteHandle = await getHandle(user.id, user.name).catch(() => null);
     if (user.isNew) {
       const seq = WELCOME[lang] || WELCOME.ru;
       for (let i = 0; i < seq.length; i++) {
         await sendChatAction(chatId, "typing");
         await sleep(i === 0 ? 500 : 2800);
-        await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
+        await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang, undefined, inviteHandle) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
       }
       // Первым делом — выбор тона общения (кнопки). Нудж на знакомство придёт
       // сразу после выбора (в обработчике tone:), чтобы не сыпать всё разом.
       await sleep(2800);
       await sendMessage(chatId, TONE_Q[lang] || TONE_Q.ru, toneKeyboard(lang));
     } else {
-      await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang) });
+      await sendMessage(chatId, (RETURN[lang] || RETURN.ru).replace("{link}", link), { reply_markup: mainKeyboard(lang, undefined, inviteHandle) });
     }
     return NextResponse.json({ ok: true });
   }
 
   if (msg.text === "/demo") {
     const lang = langOf(user, msg);
+    const inviteHandle = await getHandle(user.id, user.name).catch(() => null);
     const seq = WELCOME[lang] || WELCOME.ru;
     for (let i = 0; i < seq.length; i++) {
       await sendChatAction(chatId, "typing");
       await sleep(i === 0 ? 500 : 2800);
-      await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
+      await sendMessage(chatId, seq[i].replace("{link}", link), i === 0 ? { reply_markup: mainKeyboard(lang, undefined, inviteHandle) } : i === seq.length - 1 ? loginBtn(lang, origin) : undefined);
     }
     // Как у новичка: следом — выбор тона общения.
     await sleep(2800);

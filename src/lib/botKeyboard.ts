@@ -109,15 +109,21 @@ export function isAcquaintLabel(text?: string): boolean {
   return false;
 }
 
-export function mainKeyboard(lang: string, acquaintPct?: number) {
+// inviteHandle: публичный /i/<handle> владельца. Если известен — кнопка «Позвать
+// друга» становится web_app и мини-апп /invite-share СРАЗУ открывает окно «кому
+// отправить» (Telegram не передаёт initData клавиатурным веб-аппам, поэтому
+// handle впекаем в URL — он и так публичный). Без handle — обычная текстовая
+// кнопка, работает старый поток через sendInvite.
+export function mainKeyboard(lang: string, acquaintPct?: number, inviteHandle?: string | null) {
   const k = KB[lang] || KB.ru;
+  const invite = inviteHandle
+    ? { text: k.invite, web_app: { url: `${SITE}/invite-share?h=${encodeURIComponent(inviteHandle)}&lang=${encodeURIComponent(lang)}` } }
+    : { text: k.invite };
   return {
     keyboard: [
       [{ text: acquaintLabel(lang, acquaintPct) }],
       [{ text: k.diary }, { text: k.tasks }],
-      // «Позвать друга» — web_app: мини-апп /invite-share сразу открывает окно
-      // «кому отправить», без промежуточного сообщения с ещё одной кнопкой.
-      [{ text: k.guide }, { text: k.invite, web_app: { url: `${SITE}/invite-share` } }],
+      [{ text: k.guide }, invite],
     ],
     resize_keyboard: true,
     is_persistent: true,

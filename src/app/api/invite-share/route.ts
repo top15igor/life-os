@@ -9,6 +9,28 @@ import { inviteShareUrl } from "@/lib/invitePitch";
 // находим пользователя по его Telegram ID и отдаём готовую ссылку t.me/share.
 export const runtime = "nodejs";
 
+// Запасной путь мини-аппа: identity из сессионной куки (если вебвью делит куки
+// с браузером, где пользователь уже входил). Отдаёт ту же готовую ссылку t.me/share.
+export async function GET(req: NextRequest) {
+  const c = req.cookies.get("lifeos_token")?.value;
+  if (!c) return NextResponse.json({ ok: false }, { status: 401 });
+  const db = supabaseAdmin();
+  let user: any = null;
+  try {
+    const { data } = await db.from("users").select("id, name, lang").eq("session_secret", c).maybeSingle();
+    user = data;
+  } catch {}
+  if (!user) {
+    try {
+      const { data } = await db.from("users").select("id, name, lang").eq("token", c).maybeSingle();
+      user = data;
+    } catch {}
+  }
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const handle = await getHandle(user.id, user.name);
+  return NextResponse.json({ ok: true, share: inviteShareUrl(req.nextUrl.origin, handle, user.lang || "ru") });
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const initData = String(body?.initData || "");
