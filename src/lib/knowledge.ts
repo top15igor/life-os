@@ -68,7 +68,8 @@ ${ctx}
 
   const msg = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 800,
+    // 800 не хватало на два рецепта — ответ обрывался на полуслове.
+    max_tokens: 1600,
     messages: [{ role: "user", content: prompt }],
   });
   logClaude(userId, "knowledge_ask", "sonnet", (msg as any).usage);
