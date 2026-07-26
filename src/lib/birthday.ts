@@ -106,15 +106,17 @@ export async function birthdayGreeting(userId: string, lang: Lang, name: string 
   try {
     const today = localDateKey || new Date().toISOString().slice(0, 10);
     const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
-    const [{ data: ents }, { data: dreams }, { data: prefsRow }] = await Promise.all([
+    const [{ data: ents }, { data: dreams }, { data: prefsRow }, { data: ppl }] = await Promise.all([
       db.from("entries").select("entry_date, summary").eq("user_id", userId).gte("entry_date", yearAgo).order("entry_date", { ascending: false }).limit(40),
       db.from("dreams").select("text, status").eq("user_id", userId).neq("status", "done").limit(5),
       db.from("users").select("morning_prefs").eq("id", userId).maybeSingle(),
+      db.from("people").select("name").eq("user_id", userId).eq("hidden", false).limit(60),
     ]);
     const prefs = normalizeMorningPrefs((prefsRow as any)?.morning_prefs);
     const age = birthday ? birthdayAge(birthday, today) : null;
 
     const entryLines = (ents || []).map((e: any) => `${e.entry_date}: ${String(e.summary || "").slice(0, 200)}`).join("\n").slice(0, 6000);
+    const peopleNames = (ppl || []).map((p: any) => String(p.name || "").trim()).filter(Boolean).join(", ");
     const dreamLines = (dreams || []).map((d: any) => `- ${String(d.text || "").slice(0, 100)}`).join("\n");
 
     const prompt = `Сегодня ДЕНЬ РОЖДЕНИЯ пользователя твоего дневника LIFE OS! Напиши поздравление на ${GREET_LANG[lang] || GREET_LANG.ru} языке.
@@ -126,6 +128,7 @@ export async function birthdayGreeting(userId: string, lang: Lang, name: string 
 - Обратись по имени${prefs.address ? ` (он просил называть его «${prefs.address}»)` : name ? ` (${name})` : " (если имени нет — без имени, на «ты»)"}.
 ${age ? `- Ему сегодня исполняется ${age} — можно тепло обыграть цифру, без шуток про старость.` : "- Возраст не называй (не знаем)."}
 - Вплети 1–2 КОНКРЕТНЫЕ детали из его года по записям ниже (чем он жил, что получилось, кто рядом) — именно это вызывает улыбку «он правда помнит!». Не пересказывай записи списком.
+${peopleNames ? `- Имена близких пиши РОВНО так, как в его разделе «Люди»: ${peopleNames}. Не выдумывай других форм и уменьшительных — в расшифровках записей имена бывают искажены, канон — этот список.` : ""}
 - Если есть мечты — можешь легко подмигнуть одной из них как пожеланию на новый год жизни.
 - Финал: одно тёплое пожелание + намёк, что следующую главу его книги жизни вы напишете вместе.
 ${prefs.chatStyle ? `- Пожелания пользователя к стилю общения: ${prefs.chatStyle}` : ""}
