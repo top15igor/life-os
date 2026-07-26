@@ -17,7 +17,7 @@ const C = {
     hero_badge: "Память стирается. История — нет.",
     hero_title: "Сохранись.",
     hero_sub:
-      "Живи как живёшь. Рассказывай — голосом или текстом. AI соберёт из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места. Так остаётся след.",
+      "Твоя жизнь — слишком ценная, чтобы её забыть. Просто расскажи, как прошёл день — голосом или текстом. AI расшифрует, поймёт и соберёт из этого твою историю: дневник, книгу жизни, цели, здоровье, людей и места.",
     hero_note: "чтобы было куда вернуться",
     cta_create: "Начать сохраняться",
     cta_tg: "Открыть в Telegram",
@@ -112,7 +112,7 @@ const C = {
     hero_badge: "Memory fades. Your story doesn't.",
     hero_title: "Save yourself.",
     hero_sub:
-      "Live your life. Tell it — by voice or text. AI turns it into your story: a diary, a book of life, goals, health, people and places. That's how you leave your mark.",
+      "Your life is too precious to forget. Just tell how your day went — by voice or text. AI transcribes it, makes sense of it and builds your story: a diary, a book of life, goals, health, people and places.",
     hero_note: "so you have somewhere to return",
     cta_create: "Start saving yourself",
     cta_tg: "Open in Telegram",
@@ -207,7 +207,7 @@ const C = {
     hero_badge: "Пам'ять стирається. Історія — ні.",
     hero_title: "Збережися.",
     hero_sub:
-      "Живи як живеш. Розповідай — голосом або текстом. AI збере з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця. Так лишається слід.",
+      "Твоє життя — надто цінне, щоб його забути. Просто розкажи, як минув день — голосом або текстом. AI розшифрує, зрозуміє й збере з цього твою історію: щоденник, книгу життя, цілі, здоров'я, людей і місця.",
     hero_note: "щоб було куди повернутися",
     cta_create: "Почати зберігатися",
     cta_tg: "Відкрити в Telegram",
@@ -301,7 +301,7 @@ const C = {
     hero_badge: "La mémoire s'efface. Ton histoire, non.",
     hero_title: "Sauvegarde-toi.",
     hero_sub:
-      "Vis ta vie. Raconte — à la voix ou au texte. L'IA en fait ton histoire : journal, livre de vie, objectifs, santé, gens et lieux. C'est ainsi qu'on laisse une trace.",
+      "Ta vie est trop précieuse pour être oubliée. Raconte simplement ta journée — à la voix ou au texte. L'IA transcrit, donne du sens et bâtit ton histoire : journal, livre de vie, objectifs, santé, gens et lieux.",
     hero_note: "pour avoir un endroit où revenir",
     cta_create: "Commencer à te sauvegarder",
     cta_tg: "Ouvrir dans Telegram",
@@ -395,7 +395,7 @@ const C = {
     hero_badge: "La memoria se borra. Tu historia, no.",
     hero_title: "Guárdate.",
     hero_sub:
-      "Vive tu vida. Cuéntala — por voz o texto. La IA la convierte en tu historia: un diario, un libro de vida, metas, salud, personas y lugares. Así queda tu huella.",
+      "Tu vida es demasiado valiosa para olvidarla. Solo cuenta cómo fue tu día — por voz o texto. La IA lo transcribe, le da sentido y construye tu historia: un diario, un libro de vida, metas, salud, personas y lugares.",
     hero_note: "para tener adónde volver",
     cta_create: "Empezar a guardarte",
     cta_tg: "Abrir en Telegram",
