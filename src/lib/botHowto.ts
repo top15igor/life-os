@@ -473,7 +473,7 @@ export function howtoMenu(lang: string, origin: string, token: string): Rendered
   const ALL_FEATURES: Record<string, string> = { ru: "📋 Все возможности", en: "📋 All features", uk: "📋 Усі можливості", fr: "📋 Toutes les fonctions", es: "📋 Todas las funciones" };
   // web_app-кнопка открывает страницу СРАЗУ внутри Telegram, без диалога «Открыть ссылку?».
   rows.push([{ text: ALL_FEATURES[lang] || ALL_FEATURES.ru, web_app: { url: `${origin}/features` } }]);
-  rows.push([{ text: d.fullGuide, url: `${origin}/u/${token}?next=${encodeURIComponent("/guide")}` }]);
+  rows.push([{ text: d.fullGuide, url: `${origin}/go?next=${encodeURIComponent("/guide")}` }]);
   return { text: d.intro, reply_markup: { inline_keyboard: rows } };
 }
 

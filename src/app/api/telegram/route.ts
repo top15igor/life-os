@@ -656,7 +656,7 @@ async function renderTasks(userId: string, lang: string, active: Horizon, origin
 
   // Вкладки: активная помечена стрелкой; счётчик прямо в подписи.
   const tabs = HORIZONS.map((h) => ({ text: `${h === active ? "‹ " : ""}${HL[h]} ${counts[h]}${h === active ? " ›" : ""}`, callback_data: `tsk:${h}` }));
-  const url = `${origin}/u/${token}?next=${encodeURIComponent("/goals?tab=tasks")}`;
+  const url = `${origin}/go?next=${encodeURIComponent("/goals?tab=tasks")}`;
   return { text, markup: { reply_markup: { inline_keyboard: [...doneRows, tabs, [{ text: T.open, url }]] } } };
 }
 
@@ -926,7 +926,7 @@ export async function POST(req: NextRequest) {
               if (report) text = `${report}\n\n➖➖➖\n\n${text}`;
             } catch { /* сводка необязательна — покажем хотя бы подсказки */ }
             const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
-            res = { text, reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lng] || GOALS_BTN.ru, url: `${req.nextUrl.origin}/u/${(u as any).token}?next=/goals` }], back] } };
+            res = { text, reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lng] || GOALS_BTN.ru, url: `${req.nextUrl.origin}/go?next=/goals` }], back] } };
           }
           else if (arg === "i:onthisday") {
             // «📸 В этот день» — живые воспоминания за этот календарный день + как включить.
@@ -1265,7 +1265,7 @@ export async function POST(req: NextRequest) {
     await sendChatAction(chatId, "typing");
     try {
       const report = await financeReview(user.id, lang);
-      await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+      await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/go?next=/finance` }]] } });
     } catch (e) {
       console.error("money cmd", e);
       await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
@@ -1315,7 +1315,7 @@ export async function POST(req: NextRequest) {
       const sub = parsed.subcategory ? ` › ${esc(parsed.subcategory)}` : "";
       const note = parsed.note ? `\n📝 ${esc(parsed.note)}` : "";
       await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${cat}${sub}${note}`,
-        { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/u/${user.token}?next=/finance` }]] } });
+        { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/go?next=/finance` }]] } });
     } catch (e) {
       console.error("quick finance", e);
       await sendMessage(chatId, "Не получилось записать операцию. Попробуй ещё раз 🙂");
@@ -1372,7 +1372,7 @@ export async function POST(req: NextRequest) {
       await sendMessage(chatId, M.empty);
     } else {
       const lines = mems.slice(0, 8).map((m) => `${M.ago(m)}\n«${esc(m.text)}»`).join("\n\n");
-      await sendMessage(chatId, `${M.title}\n\n${lines}`, { reply_markup: { inline_keyboard: [[{ text: M.open, url: `${origin}/u/${user.token}?next=/diary` }]] } });
+      await sendMessage(chatId, `${M.title}\n\n${lines}`, { reply_markup: { inline_keyboard: [[{ text: M.open, url: `${origin}/go?next=/diary` }]] } });
     }
     return NextResponse.json({ ok: true });
   }
@@ -1439,7 +1439,7 @@ export async function POST(req: NextRequest) {
           if (!book) { await sendMessage(chatId, B.failed); return NextResponse.json({ ok: true }); }
           let body = `📚 <b>${B.saved}</b>\n\n<b>${esc(book.title)}</b>`;
           if (book.author) body += `\n${esc(book.author)}`;
-          await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: B.open, url: `${origin}/u/${user.token}?next=/books` }]] } });
+          await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: B.open, url: `${origin}/go?next=/books` }]] } });
         } catch (e) {
           console.error("book photo", e);
           await sendMessage(chatId, B.failed);
@@ -1455,7 +1455,7 @@ export async function POST(req: NextRequest) {
         let body = `📸 ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
         if (vision.summary) body += `\n${esc(vision.summary)}`;
         if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 6).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
-        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/memory` }]] } } : undefined;
+        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
         console.error("photo", e);
@@ -1483,7 +1483,7 @@ export async function POST(req: NextRequest) {
         let body = `${mime === "application/pdf" ? "📄" : "📸"} ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
         if (vision.summary) body += `\n${esc(vision.summary)}`;
         if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 8).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
-        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/memory` }]] } } : undefined;
+        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
         console.error("document", e);
@@ -1544,7 +1544,7 @@ export async function POST(req: NextRequest) {
         if (a.key_points?.length) body += "\n\n" + a.key_points.slice(0, 5).map((p) => "• " + esc(p)).join("\n");
         if (a.tags?.length) body += "\n\n" + a.tags.slice(0, 6).map((tg) => "#" + esc(tg.trim().replace(/\s+/g, "_"))).join(" ");
         if (r.kind === "reel" && !r.hadTranscript) body += `\n\n${L.noAudio}`;
-        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/u/${user.token}?next=/knowledge` }]] } });
+        await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/knowledge` }]] } });
         // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
         // (лимит Telegram ~20 МБ) — даём кнопку со ссылкой на файл в хранилище.
         if (r.videoUrl) {
@@ -1586,7 +1586,7 @@ export async function POST(req: NextRequest) {
         if (wishBtnUrl) body += `\n\n${esc(W.shareHint)}`;
         const wishBtn = wishBtnUrl
           ? [{ text: W.open, url: wishBtnUrl }]
-          : [{ text: "🎁 Открыть Вишлист", url: `${origin}/u/${user.token}?next=/wishlist` }];
+          : [{ text: "🎁 Открыть Вишлист", url: `${origin}/go?next=/wishlist` }];
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [wishBtn] } });
       } catch (e) {
         console.error("wishlist", e);
@@ -1700,7 +1700,7 @@ export async function POST(req: NextRequest) {
         const streak = await getStreak(user.id);
         const body = `${FIXED[lang] || FIXED.ru}\n\n${formatConfirm(amended.analysis, streak, lang)}`;
         await sendMessage(chatId, body, {
-          reply_markup: { inline_keyboard: [[{ text: L.book, url: `${origin}/u/${user.token}?next=/entry/${amended.entry.id}` }]] },
+          reply_markup: { inline_keyboard: [[{ text: L.book, url: `${origin}/go?next=/entry/${amended.entry.id}` }]] },
         });
         return NextResponse.json({ ok: true });
       }
@@ -1722,7 +1722,7 @@ export async function POST(req: NextRequest) {
           try { moreTexts.push((await runAction(user.id, m.name, m.input, lang, (user as any).tz_offset)).text); } catch {}
         }
         let extra: any = res.openNext
-          ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/u/${user.token}?next=${encodeURIComponent(res.openNext)}` }]] } }
+          ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent(res.openNext)}` }]] } }
           : undefined;
         // Удаление записи — с подтверждением (кнопки Да/Отмена), чтобы не потерять данные случайно.
         if (res.confirmDelete) {
@@ -1790,10 +1790,10 @@ export async function POST(req: NextRequest) {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
       [
-        { text: L.book, url: `${origin}/u/${user.token}?next=/entry/${entry.id}` },
+        { text: L.book, url: `${origin}/go?next=/entry/${entry.id}` },
       ],
     ];
-    if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/u/${user.token}?next=/finance` }]);
+    if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/go?next=/finance` }]);
     rows.push([{ text: L.share, url: shareUrl }]);
     await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
   } catch (e: any) {
