@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getCurrentUser } from "@/lib/auth";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { buildObsidianZip } from "@/lib/obsidian";
@@ -199,6 +200,19 @@ async function sendMoodCheckIfMissing(db: any, u: any, today: string, lang: Lang
   return true;
 }
 
+
+// Самотесты (?bday=, ?people=) может дёргать и владелец из браузера — по сессии,
+// без знания TELEGRAM_WEBHOOK_SECRET: /api/cron?bday=self в залогиненном Safari.
+const OWNER_ID = "00000000-0000-0000-0000-000000000000";
+async function ownerViaCookie(): Promise<boolean> {
+  try {
+    const u = await getCurrentUser();
+    return !!u && (u as any).id === OWNER_ID;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest) {
   // Безопасный самотест доставки: /api/cron?test=<TELEGRAM_WEBHOOK_SECRET>
   // Шлёт ОДИН тестовый пуш владельцу и выходит (без массовой рассылки).
@@ -277,7 +291,7 @@ export async function GET(req: NextRequest) {
   // (или отвечает, что давно не упоминавшихся близких нет), без массовой рассылки.
   const ppl = req.nextUrl.searchParams.get("people");
   if (ppl !== null) {
-    if (ppl !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    if (ppl !== process.env.TELEGRAM_WEBHOOK_SECRET && !(await ownerViaCookie())) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
     const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
     const db2 = supabaseAdmin();
     const { data: u } = await db2.from("users").select("id, lang").eq("chat_id", Number(chat)).maybeSingle();
@@ -292,7 +306,7 @@ export async function GET(req: NextRequest) {
   // поздравление (как будто сегодня его день рождения), без записи в БД.
   const bd = req.nextUrl.searchParams.get("bday");
   if (bd !== null) {
-    if (bd !== process.env.TELEGRAM_WEBHOOK_SECRET) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    if (bd !== process.env.TELEGRAM_WEBHOOK_SECRET && !(await ownerViaCookie())) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
     const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
     const db3 = supabaseAdmin();
     const { data: u } = await db3.from("users").select("id, lang, name").eq("chat_id", Number(chat)).maybeSingle();
