@@ -606,6 +606,15 @@ const LINK_TG: Record<string, { ok: string; busy: string; expired: string }> = {
   },
 };
 
+// «Моя Книга жизни»: сначала окошко с описанием, из него — переход на /lifebook.
+const LIFEBOOK: Record<string, { d: string; open: string }> = {
+  ru: { d: "📖 <b>Книга жизни</b> — твоя история, которую LIFE OS пишет сам из твоих записей: главы по времени, люди, места, инсайты и цитаты.\n\nКаждая запись делает книгу толще, а в конце года её можно напечатать — подарок себе и близким.", open: "📖 Открыть Книгу жизни" },
+  en: { d: "📖 <b>Book of Life</b> — your story LIFE OS writes by itself from your entries: chapters over time, people, places, insights and quotes.\n\nEvery entry makes the book thicker, and at the end of the year you can print it — a gift for you and your family.", open: "📖 Open my Book of Life" },
+  uk: { d: "📖 <b>Книга життя</b> — твоя історія, яку LIFE OS пише сам із твоїх записів: розділи в часі, люди, місця, інсайти й цитати.\n\nКожен запис робить книгу товщою, а наприкінці року її можна надрукувати — подарунок собі й близьким.", open: "📖 Відкрити Книгу життя" },
+  fr: { d: "📖 <b>Livre de vie</b> — ton histoire que LIFE OS écrit tout seul à partir de tes entrées : chapitres au fil du temps, personnes, lieux, insights et citations.\n\nChaque entrée épaissit le livre, et en fin d'année tu peux l'imprimer — un cadeau pour toi et tes proches.", open: "📖 Ouvrir mon Livre de vie" },
+  es: { d: "📖 <b>Libro de la vida</b> — tu historia que LIFE OS escribe solo a partir de tus entradas: capítulos en el tiempo, personas, lugares, ideas y citas.\n\nCada entrada hace el libro más grueso, y al final del año puedes imprimirlo — un regalo para ti y los tuyos.", open: "📖 Abrir mi Libro de la vida" },
+};
+
 function openBtn(lang: string, link: string) {
   return { reply_markup: { inline_keyboard: [[{ text: OPEN[lang] || OPEN.ru, url: link }]] } };
 }
@@ -742,7 +751,17 @@ export async function POST(req: NextRequest) {
   if (cq) {
     const data: string = cq.data || "";
     const cqChat: number | undefined = cq.message?.chat?.id;
-    if (data.startsWith("mood:") && cqChat) {
+    if (data === "lifebook" && cqChat) {
+      // Кнопка «Моя Книга жизни» под записью: окошко с описанием + кнопка на /lifebook.
+      // Вход — через подпись Telegram (login_url), в ссылке нет токена, пересылка безопасна.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("lang").eq("chat_id", cqChat).maybeSingle();
+        const B = LIFEBOOK[(u as any)?.lang] || LIFEBOOK.ru;
+        await sendMessage(cqChat, B.d, { reply_markup: { inline_keyboard: [[{ text: B.open, login_url: { url: `${req.nextUrl.origin}/auth/tg?next=${encodeURIComponent("/lifebook")}` } }]] } });
+      } catch {}
+      await answerCallback(cq.id);
+    } else if (data.startsWith("mood:") && cqChat) {
       // mood:<YYYY-MM-DD>:<band 1-5> — one-tap evening mood check.
       const [, day, bandStr] = data.split(":");
       const band = Number(bandStr) as MoodBand;
@@ -1714,7 +1733,7 @@ export async function POST(req: NextRequest) {
         const streak = await getStreak(user.id);
         const body = `${FIXED[lang] || FIXED.ru}\n\n${formatConfirm(amended.analysis, streak, lang)}`;
         await sendMessage(chatId, body, {
-          reply_markup: { inline_keyboard: [[{ text: L.book, url: `${origin}/go?next=/entry/${amended.entry.id}` }]] },
+          reply_markup: { inline_keyboard: [[{ text: L.book, callback_data: "lifebook" }]] },
         });
         return NextResponse.json({ ok: true });
       }
@@ -1804,7 +1823,7 @@ export async function POST(req: NextRequest) {
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent((INVITE[lang] || INVITE.ru).text.replace("{bot}", "").trim())}`;
     const rows: any[] = [
       [
-        { text: L.book, url: `${origin}/go?next=/entry/${entry.id}` },
+        { text: L.book, callback_data: "lifebook" },
       ],
     ];
     if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/go?next=/finance` }]);
