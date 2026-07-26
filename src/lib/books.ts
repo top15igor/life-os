@@ -94,6 +94,37 @@ export async function searchMedia(query: string, kind: MediaKind, locale = "ru")
   }
 }
 
+// Поиск сразу по фильмам И сериалам (search/multi): TMDb сам говорит, что это
+// (movie/tv) — так «Ранчо Даттонов» станет сериалом, даже если человек сказал «фильм».
+export async function searchMediaAny(query: string, locale = "ru"): Promise<MediaHit[]> {
+  const q = query.trim();
+  const key = process.env.TMDB_API_KEY;
+  if (!q || !key) return [];
+  const lang = TMDB_LANG[locale] || "ru-RU";
+  try {
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${encodeURIComponent(q)}&language=${lang}&include_adult=false&page=1`;
+    const data = await fetch(url).then((r) => r.json());
+    const results = ((data?.results || []) as any[]).filter((m) => m.media_type === "movie" || m.media_type === "tv");
+    return results.slice(0, 8).map((m) => {
+      const date = String(m.release_date || m.first_air_date || "");
+      const y = date.slice(0, 4);
+      return {
+        title: String(m.title || m.name || "").slice(0, 250),
+        author: null,
+        year: /^\d{4}$/.test(y) ? Number(y) : null,
+        coverUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+        olKey: null,
+        isbn: null,
+        genre: null,
+        description: m.overview ? String(m.overview).slice(0, 1200) : null,
+        kind: (m.media_type === "tv" ? "series" : "film") as MediaKind,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function fetchDescription(olKey: string | null): Promise<string | null> {
   if (!olKey) return null;
   try {
@@ -167,22 +198,28 @@ export async function addBookByTitle(userId: string, title: string, author?: str
   return addBook(userId, { ...hit, title: hit.title || title, status: "want" });
 }
 
-// Добавить фильм/сериал по названию. Пытаемся обогатить постером/описанием из TMDb
-// (берём наиболее похожее по названию); если ключа/совпадений нет — сохраняем как есть.
+// Добавить фильм/сериал по названию. Ищем в TMDb сразу и среди фильмов, и среди
+// сериалов: при уверенном совпадении TMDb сам решает, что это (фильм → сериал и
+// наоборот), а название/постер/описание берутся каноничные. Без ключа/совпадений —
+// сохраняем как назвал пользователь.
 export async function addMediaByTitle(userId: string, title: string, kind: MediaKind, status = "want", locale = "ru"): Promise<Book | null> {
   const clean = String(title || "").trim().slice(0, 250);
   if (!clean) return null;
   if (kind === "book") return addBookByTitle(userId, clean);
-  const hits = await searchMedia(clean, kind, locale);
+  const hits = await searchMediaAny(clean, locale);
   const words = clean.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
   let best = hits[0];
   let bestScore = -1;
   for (const h of hits) {
     const ht = (h.title || "").toLowerCase();
-    const score = words.filter((w) => ht.includes(w)).length + (h.coverUrl ? 0.5 : 0);
+    const score = words.filter((w) => ht.includes(w)).length + (h.coverUrl ? 0.5 : 0) + (h.kind === kind ? 0.25 : 0);
     if (score > bestScore) { bestScore = score; best = h; }
   }
-  if (best) return addBook(userId, { title: best.title || clean, coverUrl: best.coverUrl, year: best.year, description: best.description, kind, status });
+  if (best) {
+    // Название совпало по словам → верим типу из TMDb; слабое совпадение → тип пользователя.
+    const finalKind = bestScore >= 1 ? best.kind : kind;
+    return addBook(userId, { title: best.title || clean, coverUrl: best.coverUrl, year: best.year, description: best.description, kind: finalKind, status });
+  }
   return addBook(userId, { title: clean, kind, status });
 }
 

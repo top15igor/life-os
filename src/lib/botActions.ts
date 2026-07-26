@@ -408,9 +408,13 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const status = input?.status === "done" ? "read" : input?.status === "doing" ? "reading" : "want";
       const book = await addMediaByTitle(userId, title, kind, status, lang);
       if (!book) return { text: s.fail };
-      const kindLabel = s.mvKind[kind] || s.mvKind.film;
-      const statusLabel = (kind === "book" ? s.mvStatusRead : s.mvStatusWatch)[status];
-      return { text: s.media(kindLabel, title, statusLabel), openNext: "/books" };
+      // Подтверждаем тем, что реально сохранилось: TMDb мог уточнить тип
+      // (фильм → сериал) и каноничное название.
+      const finalKind = (book as any).kind || kind;
+      const finalTitle = (book as any).title || title;
+      const kindLabel = s.mvKind[finalKind] || s.mvKind.film;
+      const statusLabel = (finalKind === "book" ? s.mvStatusRead : s.mvStatusWatch)[status];
+      return { text: s.media(kindLabel, finalTitle, statusLabel), openNext: "/books" };
     }
     if (name === "rename_person") {
       const from = String(input?.from || "").trim();
