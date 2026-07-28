@@ -96,8 +96,8 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "find_note",
     description:
-      "Найти сохранённую ЗАМЕТКУ: «какой код от домофона?», «найди заметку про фильтр», «что я записывал про wifi?». Это запрос СПРАВКИ, которую пользователь сам просил запомнить, — не вопрос о жизни (ask_question) и не поиск по сохранёнкам из Instagram (ask_knowledge). query — о чём заметка.",
-    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+      "Найти сохранённую ЗАМЕТКУ или показать их обзор. Поиск: «какой код от домофона?», «найди заметку про фильтр» — query о чём заметка. ОБЗОР: «что у меня по заметкам?», «покажи мои заметки», «какие у меня заметки» — БЕЗ query. Это про раздел «Заметки» (справка), НЕ про записи дневника (их статистика — ask_question) и НЕ про сохранёнки из Instagram (ask_knowledge).",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: [] },
   },
   {
     name: "list_reminders",
@@ -168,7 +168,8 @@ const SYS =
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
   "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
-  "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. " +
+  "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. «Что у меня по заметкам», «покажи (мои) заметки» → find_note БЕЗ query (обзор). " +
+  "РАЗЛИЧАЙ СЛОВА: «записи», «дневник» — это ДНЕВНИК (статистика → ask_question); «заметки» — это раздел справки (find_note); «списки» — чек-листы (show_list). Не подменяй одно другим. " +
   "«Отмени/убери напоминание про…», «не напоминай про…» → cancel_reminder, а НЕ save_entry и НЕ delete_last_entry. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
@@ -430,12 +431,12 @@ const AGENDA_MSG: Record<Lang, {
 };
 
 // Строки для заметок (save_note / find_note).
-const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none: string }> = {
-  ru: { saved: (t) => `📝 Сохранил в Заметки: «${t}».`, head: "📝 Нашёл в Заметках:", none: "В Заметках такого не нашёл. Скажи «запиши …» — и сохраню." },
-  en: { saved: (t) => `📝 Saved to Notes: “${t}”.`, head: "📝 Found in your Notes:", none: "Nothing like that in your Notes. Say “save a note …” and I'll keep it." },
-  uk: { saved: (t) => `📝 Зберіг у Нотатки: «${t}».`, head: "📝 Знайшов у Нотатках:", none: "У Нотатках такого не знайшов. Скажи «запиши …» — і збережу." },
-  fr: { saved: (t) => `📝 Enregistré dans Notes : « ${t} ».`, head: "📝 Trouvé dans tes Notes :", none: "Rien de tel dans tes Notes. Dis « note … » et je le garde." },
-  es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo." },
+const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none: string; ovHead: (n: number) => string; ovEmpty: string; ovMore: string }> = {
+  ru: { saved: (t) => `📝 Сохранил в Заметки: «${t}».`, head: "📝 Нашёл в Заметках:", none: "В Заметках такого не нашёл. Скажи «запиши …» — и сохраню.", ovHead: (n) => `📝 Твои заметки (всего ${n}):`, ovEmpty: "Заметок пока нет. Скажи «запиши код от домофона 4582» — и справка будет всегда под рукой.", ovMore: "Спроси «найди заметку про …» — или открой раздел «Заметки» в приложении." },
+  en: { saved: (t) => `📝 Saved to Notes: “${t}”.`, head: "📝 Found in your Notes:", none: "Nothing like that in your Notes. Say “save a note …” and I'll keep it.", ovHead: (n) => `📝 Your notes (${n} total):`, ovEmpty: "No notes yet. Say “save a note: locker code 4582” — and the fact stays at hand.", ovMore: "Ask “find the note about …” — or open the “Notes” section in the app." },
+  uk: { saved: (t) => `📝 Зберіг у Нотатки: «${t}».`, head: "📝 Знайшов у Нотатках:", none: "У Нотатках такого не знайшов. Скажи «запиши …» — і збережу.", ovHead: (n) => `📝 Твої нотатки (всього ${n}):`, ovEmpty: "Нотаток поки немає. Скажи «запиши код від домофона 4582» — і довідка буде під рукою.", ovMore: "Спитай «знайди нотатку про …» — або відкрий розділ «Нотатки» в застосунку." },
+  fr: { saved: (t) => `📝 Enregistré dans Notes : « ${t} ».`, head: "📝 Trouvé dans tes Notes :", none: "Rien de tel dans tes Notes. Dis « note … » et je le garde.", ovHead: (n) => `📝 Tes notes (${n} au total) :`, ovEmpty: "Pas encore de notes. Dis « note : code du portail 4582 » — et l'info reste à portée.", ovMore: "Demande « trouve la note sur … » — ou ouvre la section « Notes » dans l'app." },
+  es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo.", ovHead: (n) => `📝 Tus notas (${n} en total):`, ovEmpty: "Aún no hay notas. Di «apunta: código del portal 4582» — y el dato queda a mano.", ovMore: "Pregunta «busca la nota sobre …» — o abre la sección «Notas» en la app." },
 };
 
 // Строки для списков (чек-листов).
@@ -566,7 +567,21 @@ export async function runAction(userId: string, name: string, input: any, lang: 
     if (name === "find_note") {
       const q = String(input?.query || "").trim();
       const N = NOTE_MSG[lang] || NOTE_MSG.ru;
-      if (!q) return { text: N.none };
+      if (!q) {
+        // Обзор: «что у меня по заметкам?» — закреплённые и свежие + сколько всего.
+        const { data: rows, error, count } = await db.from("notes")
+          .select("text, pinned", { count: "exact" })
+          .eq("user_id", userId)
+          .order("pinned", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (error) return { text: s.fail };
+        if (!rows?.length) return { text: N.ovEmpty };
+        const lines = (rows as any[]).map((r) => `• ${r.pinned ? "📌 " : ""}${String(r.text).slice(0, 120)}`);
+        const total = count ?? rows.length;
+        const tail = total > rows.length ? `\n…\n${N.ovMore}` : `\n\n${N.ovMore}`;
+        return { text: `${N.ovHead(total)}\n${lines.join("\n")}${tail}`, openNext: "/notes" };
+      }
       const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
       const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
       const { data: rows, error } = await db.from("notes").select("text, created_at")

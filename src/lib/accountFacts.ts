@@ -23,7 +23,7 @@ const count = async (table: string, userId: string, extra?: (q: any) => any): Pr
 export async function getAccountFacts(userId: string): Promise<string> {
   const db = supabaseAdmin();
   try {
-    const [userRow, entriesTotal, voiceTotal, firstEntry, textsRes, streak, tasksOpen, goalsN, dreamsN, savedN, memsN] = await Promise.all([
+    const [userRow, entriesTotal, voiceTotal, firstEntry, textsRes, streak, tasksOpen, goalsN, dreamsN, savedN, memsN, notesN, listOpenN, remindersN] = await Promise.all([
       Promise.resolve(db.from("users").select("email, tg_username, name, created_at, plan").eq("id", userId).maybeSingle()).then((r) => r.data as any).catch(() => null),
       count("entries", userId),
       count("entries", userId, (q) => q.eq("source", "telegram_voice")),
@@ -35,6 +35,9 @@ export async function getAccountFacts(userId: string): Promise<string> {
       count("dreams", userId),
       count("saved_items", userId),
       count("memories", userId),
+      count("notes", userId),
+      count("list_items", userId, (q) => q.eq("done", false)),
+      count("reminders", userId, (q) => q.eq("done", false)),
     ]);
 
     let chars = 0, words = 0;
@@ -60,6 +63,10 @@ export async function getAccountFacts(userId: string): Promise<string> {
     if (dreamsN != null) lines.push(`Мечт в Карте желаний: ${dreamsN}`);
     if (savedN != null) lines.push(`Сохранённого в Базе знаний: ${savedN}`);
     if (memsN != null) lines.push(`Фото и документов в Памяти: ${memsN}`);
+    // Заметки ≠ записи дневника: если спрашивают «что по заметкам» — это раздел «Заметки».
+    if (notesN != null) lines.push(`Заметок (раздел «Заметки», справка — коды/адреса/размеры): ${notesN}`);
+    if (listOpenN != null) lines.push(`Невычеркнутых пунктов в списках (покупки и др.): ${listOpenN}`);
+    if (remindersN != null) lines.push(`Активных напоминаний: ${remindersN}`);
     return lines.join("\n");
   } catch {
     return "(не удалось получить)";
