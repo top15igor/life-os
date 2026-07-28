@@ -41,6 +41,16 @@ const C = {
       { n: "Джон Рокфеллер", d: "вёл детальные журналы встреч и договорённостей, придавая огромное значение людям и репутации." },
     ],
 
+    mem_kicker: "Ничего не забывается",
+    mem_title: "Все заметки и напоминания — в одном месте",
+    mem_lead: "Не нужно жонглировать пятью приложениями: напоминалки, заметки, списки. Просто скажи боту — как живому помощнику.",
+    mem_cards: [
+      { i: "ti-alarm", t: "Напоминания приходят сами", d: "Бот напишет точно в срок — с кнопками «Готово» и «Через час». Понимает повторы: «каждый день в 8».", ex: "«Напомни завтра в 9 позвонить маме»" },
+      { i: "ti-note", t: "Заметки, которые находятся", d: "Коды, размеры, адреса — отдельно от дневника. Спроси — бот мгновенно ответит.", ex: "«Какой код от домофона?»" },
+      { i: "ti-list-check", t: "Списки покупок", d: "Пункты добавляются голосом, вычёркиваются кнопкой прямо в чате. Списков может быть несколько.", ex: "«Добавь молоко и хлеб в список»" },
+    ],
+    mem_foot: "А утром спроси: «Что у меня сегодня?» — и получишь весь день одним списком.",
+
     how_kicker: "Как это работает",
     how: [
       { n: "1", t: "Рассказываешь", d: "Голосом или текстом — в Telegram-бота или прямо на сайте. Как другу: «сегодня было…»." },
@@ -135,6 +145,16 @@ const C = {
       { n: "Andrew Carnegie", d: "had secretaries keep card files on partners and clients: who, what was agreed, what to remember." },
       { n: "John D. Rockefeller", d: "kept detailed journals of meetings and agreements, valuing people and reputation immensely." },
     ],
+
+    mem_kicker: "Nothing gets forgotten",
+    mem_title: "All your notes and reminders — in one place",
+    mem_lead: "No juggling five apps for reminders, notes and lists. Just tell the bot — like a real assistant.",
+    mem_cards: [
+      { i: "ti-alarm", t: "Reminders that arrive on their own", d: "The bot messages you right on time — with “Done” and “In an hour” buttons. Understands recurrence: “every day at 8”.", ex: "“Remind me tomorrow at 9 to call mom”" },
+      { i: "ti-note", t: "Notes that can be found", d: "Codes, sizes, addresses — separate from the diary. Ask, and the bot answers instantly.", ex: "“What's the door code?”" },
+      { i: "ti-list-check", t: "Shopping lists", d: "Add items by voice, check them off with a tap right in the chat. Keep several lists.", ex: "“Add milk and bread to the list”" },
+    ],
+    mem_foot: "And in the morning ask: “What's on today?” — your whole day in one list.",
 
     how_kicker: "How it works",
     how: [
@@ -231,6 +251,16 @@ const C = {
       { n: "Джон Рокфеллер", d: "вів детальні журнали зустрічей і домовленостей, надаючи величезне значення людям і репутації." },
     ],
 
+    mem_kicker: "Ніщо не забувається",
+    mem_title: "Усі нотатки й нагадування — в одному місці",
+    mem_lead: "Не треба жонглювати п'ятьма застосунками: нагадування, нотатки, списки. Просто скажи боту — як живому помічнику.",
+    mem_cards: [
+      { i: "ti-alarm", t: "Нагадування приходять самі", d: "Бот напише точно в строк — із кнопками «Готово» та «За годину». Розуміє повтори: «щодня о 8».", ex: "«Нагадай завтра о 9 подзвонити мамі»" },
+      { i: "ti-note", t: "Нотатки, які знаходяться", d: "Коди, розміри, адреси — окремо від щоденника. Спитай — бот миттєво відповість.", ex: "«Який код від домофона?»" },
+      { i: "ti-list-check", t: "Списки покупок", d: "Пункти додаються голосом, викреслюються кнопкою прямо в чаті. Списків може бути кілька.", ex: "«Додай молоко і хліб у список»" },
+    ],
+    mem_foot: "А вранці спитай: «Що в мене сьогодні?» — і отримаєш весь день одним списком.",
+
     how_kicker: "Як це працює",
     how: [
       { n: "1", t: "Розповідаєш", d: "Голосом або текстом — Telegram-боту або прямо на сайті. Як другу: «сьогодні було…»." },
@@ -325,6 +355,16 @@ const C = {
       { n: "John D. Rockefeller", d: "tenait des journaux détaillés de ses rencontres et accords, accordant une immense valeur aux gens et à la réputation." },
     ],
 
+    mem_kicker: "Rien ne s'oublie",
+    mem_title: "Toutes tes notes et rappels — au même endroit",
+    mem_lead: "Plus besoin de jongler entre cinq applis : rappels, notes, listes. Dis-le au bot — comme à un vrai assistant.",
+    mem_cards: [
+      { i: "ti-alarm", t: "Des rappels qui arrivent tout seuls", d: "Le bot t'écrit pile à l'heure — avec les boutons « Fait » et « Dans une heure ». Il comprend la récurrence : « chaque jour à 8h ».", ex: "« Rappelle-moi demain à 9h d'appeler maman »" },
+      { i: "ti-note", t: "Des notes qui se retrouvent", d: "Codes, tailles, adresses — séparés du journal. Demande, et le bot répond instantanément.", ex: "« Quel est le code de la porte ? »" },
+      { i: "ti-list-check", t: "Listes de courses", d: "Ajoute à la voix, raye d'un tap dans le chat. Plusieurs listes possibles.", ex: "« Ajoute le lait et le pain à la liste »" },
+    ],
+    mem_foot: "Et le matin, demande : « Qu'est-ce que j'ai aujourd'hui ? » — toute ta journée en une liste.",
+
     how_kicker: "Comment ça marche",
     how: [
       { n: "1", t: "Tu racontes", d: "À la voix ou au texte — au bot Telegram ou directement sur le site. Comme à un ami : « aujourd'hui… »." },
@@ -418,6 +458,16 @@ const C = {
       { n: "Andrew Carnegie", d: "sus secretarios llevaban fichas de socios y clientes: quién, qué se acordó, qué recordar." },
       { n: "John D. Rockefeller", d: "llevaba diarios detallados de reuniones y acuerdos, dando enorme valor a las personas y la reputación." },
     ],
+
+    mem_kicker: "Nada se olvida",
+    mem_title: "Todas tus notas y recordatorios — en un solo lugar",
+    mem_lead: "Sin hacer malabares con cinco apps: recordatorios, notas, listas. Solo díselo al bot — como a un asistente de verdad.",
+    mem_cards: [
+      { i: "ti-alarm", t: "Recordatorios que llegan solos", d: "El bot te escribe justo a tiempo — con botones «Hecho» y «En una hora». Entiende repeticiones: «cada día a las 8».", ex: "«Recuérdame mañana a las 9 llamar a mamá»" },
+      { i: "ti-note", t: "Notas que se encuentran", d: "Códigos, tallas, direcciones — aparte del diario. Pregunta y el bot responde al instante.", ex: "«¿Cuál es el código del portal?»" },
+      { i: "ti-list-check", t: "Listas de compras", d: "Añade con la voz, tacha con un toque en el chat. Puedes tener varias listas.", ex: "«Añade leche y pan a la lista»" },
+    ],
+    mem_foot: "Y por la mañana pregunta: «¿Qué tengo hoy?» — todo tu día en una lista.",
 
     how_kicker: "Cómo funciona",
     how: [
@@ -678,6 +728,28 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Заметки и напоминания — маркет-фича «всё в одном месте» */}
+      {(t as any).mem_title && (
+        <div style={{ ...section, padding: "0 22px 56px" }}>
+          <div className="lp-kicker">{(t as any).mem_kicker}</div>
+          <h2 className="lp-h2" style={{ margin: "10px 0 12px" }}>{(t as any).mem_title}</h2>
+          <p style={{ fontSize: 16.5, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 22px", maxWidth: 700 }}>{(t as any).mem_lead}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+            {(t as any).mem_cards.map((f: any) => (
+              <div key={f.t} className="lp-card" style={{ padding: "22px 20px", display: "flex", flexDirection: "column" }}>
+                <span style={{ display: "inline-flex", width: 44, height: 44, borderRadius: 13, background: "var(--accent-bg)", alignItems: "center", justifyContent: "center" }}>
+                  <i className={`ti ${f.i}`} style={{ fontSize: 23, color: "var(--accent)" }} />
+                </span>
+                <div style={{ fontSize: 17, fontWeight: 700, margin: "14px 0 6px", letterSpacing: "-0.01em" }}>{f.t}</div>
+                <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 12 }}>{f.d}</div>
+                <div style={{ marginTop: "auto", fontSize: 13.5, color: "var(--accent-text, var(--accent))", background: "var(--accent-bg)", borderRadius: 11, padding: "8px 12px", lineHeight: 1.45 }}>{f.ex}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.6, margin: "18px 0 0", fontStyle: "italic" }}>{(t as any).mem_foot}</p>
         </div>
       )}
 
