@@ -28,7 +28,9 @@ export async function GET(req: NextRequest) {
   }
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const handle = await getHandle(user.id, user.name);
-  return NextResponse.json({ ok: true, share: inviteShareUrl(req.nextUrl.origin, handle, user.lang || "ru") });
+  // handle+lang нужны мини-аппу, чтобы построить текст и для НЕ-телеграмных каналов
+  // (системный шэринг, WhatsApp/Viber, копирование для Instagram).
+  return NextResponse.json({ ok: true, share: inviteShareUrl(req.nextUrl.origin, handle, user.lang || "ru"), handle, lang: user.lang || "ru" });
 }
 
 export async function POST(req: NextRequest) {
@@ -67,5 +69,5 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ ok: false }, { status: 404 });
 
   const handle = await getHandle((user as any).id, (user as any).name);
-  return NextResponse.json({ ok: true, share: inviteShareUrl(req.nextUrl.origin, handle, (user as any).lang || "ru") });
+  return NextResponse.json({ ok: true, share: inviteShareUrl(req.nextUrl.origin, handle, (user as any).lang || "ru"), handle, lang: (user as any).lang || "ru" });
 }
