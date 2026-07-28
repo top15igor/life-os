@@ -63,6 +63,18 @@ export const ACTION_TOOLS: any[] = [
     },
   },
   {
+    name: "save_note",
+    description:
+      "Сохранить ЗАМЕТКУ — справочную информацию, которую надо потом НАЙТИ: код (домофон, шкафчик), номер (счёта, размера, документа), адрес, wifi, марку/модель, список. Команды: «запиши код от домофона 4582», «сохрани заметку: …», «запомни: размер фильтра 60×40». НЕ для рассказов о дне/чувствах/событиях (это save_entry). text — сама заметка, без слов «запиши/запомни/заметка».",
+    input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
+  },
+  {
+    name: "find_note",
+    description:
+      "Найти сохранённую ЗАМЕТКУ: «какой код от домофона?», «найди заметку про фильтр», «что я записывал про wifi?». Это запрос СПРАВКИ, которую пользователь сам просил запомнить, — не вопрос о жизни (ask_question) и не поиск по сохранёнкам из Instagram (ask_knowledge). query — о чём заметка.",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+  },
+  {
     name: "list_reminders",
     description:
       "Показать план: напоминания и задачи с датой. Команды: «что у меня сегодня?», «какие планы на завтра?», «что на этой неделе?», «покажи напоминания». period — today (сегодня), tomorrow (завтра), week (неделя), all (все ближайшие).",
@@ -129,6 +141,8 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
+  "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi, список) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
+  "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. " +
   "«Отмени/убери напоминание про…», «не напоминай про…» → cancel_reminder, а НЕ save_entry и НЕ delete_last_entry. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
@@ -389,6 +403,15 @@ const AGENDA_MSG: Record<Lang, {
     allDay: "todo el día", taskTag: "tarea", canceled: (t) => `Cancelé el recordatorio: «${t}».`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
 };
 
+// Строки для заметок (save_note / find_note).
+const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none: string }> = {
+  ru: { saved: (t) => `📝 Сохранил в Заметки: «${t}».`, head: "📝 Нашёл в Заметках:", none: "В Заметках такого не нашёл. Скажи «запиши …» — и сохраню." },
+  en: { saved: (t) => `📝 Saved to Notes: “${t}”.`, head: "📝 Found in your Notes:", none: "Nothing like that in your Notes. Say “save a note …” and I'll keep it." },
+  uk: { saved: (t) => `📝 Зберіг у Нотатки: «${t}».`, head: "📝 Знайшов у Нотатках:", none: "У Нотатках такого не знайшов. Скажи «запиши …» — і збережу." },
+  fr: { saved: (t) => `📝 Enregistré dans Notes : « ${t} ».`, head: "📝 Trouvé dans tes Notes :", none: "Rien de tel dans tes Notes. Dis « note … » et je le garde." },
+  es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo." },
+};
+
 export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string } };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
@@ -425,6 +448,31 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const when = allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
       const suffix = recurrence ? rm.rep[recurrence] : "";
       return { text: rm.label(t, when + suffix), openNext: "/reminders" };
+    }
+    if (name === "save_note") {
+      const t = String(input?.text || "").trim().slice(0, 2000);
+      const N = NOTE_MSG[lang] || NOTE_MSG.ru;
+      if (!t) return { text: s.fail };
+      const { error } = await db.from("notes").insert({ user_id: userId, text: t });
+      if (error) return { text: s.fail }; // таблицы может не быть до миграции notes.sql
+      return { text: N.saved(t.slice(0, 150)), openNext: "/notes" };
+    }
+    if (name === "find_note") {
+      const q = String(input?.query || "").trim();
+      const N = NOTE_MSG[lang] || NOTE_MSG.ru;
+      if (!q) return { text: N.none };
+      const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
+      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const { data: rows, error } = await db.from("notes").select("text, created_at")
+        .eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
+      if (error) return { text: N.none };
+      const hits = ((rows || []) as any[])
+        .map((r) => ({ r, score: stems.filter((st) => norm(String(r.text)).includes(st)).length }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      if (!hits.length) return { text: N.none };
+      return { text: `${N.head}\n${hits.map((x) => `• ${String(x.r.text).slice(0, 300)}`).join("\n")}`, openNext: "/notes" };
     }
     if (name === "list_reminders") {
       const period = ["today", "tomorrow", "week", "all"].includes(input?.period) ? input.period : "today";

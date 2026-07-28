@@ -11,7 +11,7 @@ import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
 // Берём из общего набора бота, исключая роутер-заглушки и опасное удаление.
-const AGENT_NAMES = ["set_reminder", "add_task", "add_goal", "log_weight", "add_dream", "complete_task", "complete_dream", "add_deed", "rename_person", "set_style", "account_info", "ask_knowledge", "add_media", "list_reminders", "cancel_reminder"];
+const AGENT_NAMES = ["set_reminder", "add_task", "add_goal", "log_weight", "add_dream", "complete_task", "complete_dream", "add_deed", "rename_person", "set_style", "account_info", "ask_knowledge", "add_media", "list_reminders", "cancel_reminder", "save_note", "find_note"];
 const AGENT_TOOLS = ACTION_TOOLS.filter((t) => AGENT_NAMES.includes(t.name));
 
 // AI-компаньон («идеальный друг под боком»): живая беседа с памятью диалога,
