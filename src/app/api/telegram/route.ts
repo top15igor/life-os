@@ -21,7 +21,7 @@ import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVo
 import { getHandle } from "@/lib/handle";
 import { getStreak, getEntryCount, getOnThisDay, getDayMemories, getOpenTasks, getGoals, getInsights } from "@/lib/queries";
 import { parseCapsule, createCapsule, listCapsules } from "@/lib/timeCapsule";
-import { askLife, saveChat } from "@/lib/biographer";
+import { askLife, saveChat, ACTION_TAG } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
@@ -1902,6 +1902,9 @@ export async function POST(req: NextRequest) {
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
         const combined = [res.text, ...moreTexts].map((t) => mdToTelegram(t) || t).join("\n");
         await sendMessage(chatId, combined, extra);
+        // В контекст: короткая реплика следом («все удаляй», «первое») должна
+        // пониматься как продолжение ЭТОГО ответа, а не как новая команда.
+        saveChat(user.id, ACTION_TAG, combined).catch(() => {});
         return NextResponse.json({ ok: true });
       }
       if (route.kind === "question") {

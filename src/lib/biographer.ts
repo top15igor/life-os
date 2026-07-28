@@ -145,9 +145,8 @@ ${convo}
   return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
 }
 
-// Метка, под которой утренние пуши лежат в biographer_chats: по ней их можно
-// достать (например, чтобы завтрашний пуш не повторял вчерашние темы).
-export const MORNING_TAG = "☀️ (моё утреннее сообщение пользователю)";
+// Метки живут в lib/botTags (без зависимостей) — реэкспорт для совместимости.
+export { MORNING_TAG, ACTION_TAG, SERVICE_TAGS } from "./botTags";
 
 export async function saveChat(userId: string, question: string, answer: string) {
   try {

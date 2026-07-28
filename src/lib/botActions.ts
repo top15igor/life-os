@@ -114,8 +114,8 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "cancel_reminder",
     description:
-      "Отменить/удалить НАПОМИНАНИЕ: «отмени напоминание про стоматолога», «убери напоминание о звонке», «не напоминай про…». query — слова для поиска напоминания.",
-    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+      "Отменить/удалить НАПОМИНАНИЕ: «отмени напоминание про стоматолога», «убери напоминание о звонке», «не напоминай про…». query — слова для поиска напоминания. Если бот только что показал несколько похожих и пользователь ответил «все»/«все удаляй» — повтори тот же query и поставь all=true.",
+    input_schema: { type: "object", properties: { query: { type: "string" }, all: { type: "boolean", description: "true — удалить ВСЕ подходящие напоминания, а не одно" } }, required: ["query"] },
   },
   {
     name: "rename_person",
@@ -162,7 +162,8 @@ const SYS =
   "Если человек просто описывает, что сделал («сегодня пробежал 5 км», «поговорил с мамой») — это save_entry, НЕ действие. " +
   "ВАЖНО: фразы-поправки, недовольство и уточнения («не так записал», «не надо было это добавлять», «надо было иначе», «зачем ты…», «неправильно понял») — это НЕ команда действия и тем более НЕ удаление; по умолчанию save_entry. " +
   "ИСКЛЮЧЕНИЕ: если поправка — про ИМЯ человека («её зовут X», «настоящее имя — X», «переименуй Y в X», «исправь имя», «запиши у себя и измени: её зовут X») → rename_person, чтобы имя исправилось во всей базе, а не легло новой записью. " +
-  "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) запись»; при любом сомнении — НЕ удаляй. " +
+  "delete_last_entry выбирай ТОЛЬКО когда прямо сказано «удали/убери/сотри (последнюю) ЗАПИСЬ (дневника)»; при любом сомнении — НЕ удаляй. " +
+  "КОРОТКИЙ ОТВЕТ НА ВОПРОС БОТА: если в контексте последнее сообщение бота — про напоминания, заметки или списки (например, «уточни, какое отменить»), то «все», «все удаляй», «первое», «да» относятся ИМЕННО К НИМ: повтори то же действие (cancel_reminder с all=true и тем же query). НИКОГДА не превращай такой ответ в delete_last_entry — иначе сотрёшь запись дневника, которую никто не просил трогать. " +
   "Просьбы к БОТУ изменить манеру или содержание его сообщений («пиши короче», «меньше эмодзи», «не пиши мне про…», «обращайся иначе», «не называй меня…») → set_style, а НЕ save_entry: пожелание должно сохраниться и влиять. " +
   "Вопросы про свой АККАУНТ и вход («на какую почту зарегистрирован», «какая у меня почта», «как я вошёл») → account_info, а НЕ save_entry и НЕ ask_question. " +
   "Вопросы про свои ЦИФРЫ/СТАТИСТИКУ («сколько у меня записей/голосовых», «сколько слов/букв за всё время», «когда я зарегистрировался») и про ПРИЛОЖЕНИЕ («как зайти в приложение», «как работает…», «где найти…», «что ты умеешь») → ask_question: у ассистента есть точные данные и инструкция. ЛЮБОЙ вопрос боту — это ask_question, а НЕ save_entry, даже если ты не уверен, что ассистент знает ответ: лучше честное «не умею», чем молчаливая запись в дневник. " +
@@ -419,23 +420,23 @@ const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: st
 // Строки для «что у меня сегодня/завтра» и «отмени напоминание».
 const AGENDA_MSG: Record<Lang, {
   head: Record<string, string>; empty: Record<string, string>;
-  allDay: string; taskTag: string; canceled: (t: string) => string; cancelNone: string; cancelMany: string;
+  allDay: string; taskTag: string; canceled: (t: string) => string; canceledMany: (n: number) => string; cancelNone: string; cancelMany: string;
 }> = {
   ru: { head: { today: "📅 Сегодня", tomorrow: "📅 Завтра", week: "📅 Ближайшая неделя", all: "📅 Ближайшие планы" },
     empty: { today: "На сегодня напоминаний и задач с датой нет — день свободен 🙂", tomorrow: "На завтра пока ничего не запланировано.", week: "На этой неделе напоминаний нет.", all: "Ближайших напоминаний нет." },
-    allDay: "весь день", taskTag: "задача", canceled: (t) => `Отменил напоминание: «${t}».`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
+    allDay: "весь день", taskTag: "задача", canceled: (t) => `Отменил напоминание: «${t}».`, canceledMany: (n) => `Отменил напоминания: ${n}.`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
   en: { head: { today: "📅 Today", tomorrow: "📅 Tomorrow", week: "📅 This week", all: "📅 Upcoming" },
     empty: { today: "No reminders or dated tasks today — the day is free 🙂", tomorrow: "Nothing planned for tomorrow yet.", week: "No reminders this week.", all: "No upcoming reminders." },
-    allDay: "all day", taskTag: "task", canceled: (t) => `Canceled the reminder: “${t}”.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelMany: "Found several similar ones — which should I cancel?" },
+    allDay: "all day", taskTag: "task", canceled: (t) => `Canceled the reminder: “${t}”.`, canceledMany: (n) => `Canceled ${n} reminders.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelMany: "Found several similar ones — which should I cancel?" },
   uk: { head: { today: "📅 Сьогодні", tomorrow: "📅 Завтра", week: "📅 Найближчий тиждень", all: "📅 Найближчі плани" },
     empty: { today: "На сьогодні нагадувань і задач із датою немає — день вільний 🙂", tomorrow: "На завтра поки нічого не заплановано.", week: "На цьому тижні нагадувань немає.", all: "Найближчих нагадувань немає." },
-    allDay: "весь день", taskTag: "задача", canceled: (t) => `Скасував нагадування: «${t}».`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
+    allDay: "весь день", taskTag: "задача", canceled: (t) => `Скасував нагадування: «${t}».`, canceledMany: (n) => `Скасував нагадування: ${n}.`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
   fr: { head: { today: "📅 Aujourd'hui", tomorrow: "📅 Demain", week: "📅 Cette semaine", all: "📅 À venir" },
     empty: { today: "Aucun rappel ni tâche datée aujourd'hui — journée libre 🙂", tomorrow: "Rien de prévu pour demain.", week: "Aucun rappel cette semaine.", all: "Aucun rappel à venir." },
-    allDay: "toute la journée", taskTag: "tâche", canceled: (t) => `Rappel annulé : « ${t} ».`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
+    allDay: "toute la journée", taskTag: "tâche", canceled: (t) => `Rappel annulé : « ${t} ».`, canceledMany: (n) => `${n} rappels annulés.`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
   es: { head: { today: "📅 Hoy", tomorrow: "📅 Mañana", week: "📅 Esta semana", all: "📅 Próximos" },
     empty: { today: "Hoy no hay recordatorios ni tareas con fecha — día libre 🙂", tomorrow: "Nada planeado para mañana todavía.", week: "No hay recordatorios esta semana.", all: "No hay próximos recordatorios." },
-    allDay: "todo el día", taskTag: "tarea", canceled: (t) => `Cancelé el recordatorio: «${t}».`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
+    allDay: "todo el día", taskTag: "tarea", canceled: (t) => `Cancelé el recordatorio: «${t}».`, canceledMany: (n) => `Cancelé ${n} recordatorios.`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
 };
 
 // Строки для заметок (save_note / find_note).
@@ -689,6 +690,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         .sort((a, b) => b.score - a.score);
       if (!scored.length) return { text: A.cancelNone };
       const top = scored.filter((x) => x.score === scored[0].score);
+      // «Все удаляй» после уточнения — сносим все подходящие разом.
+      if (input?.all === true) {
+        const ids = scored.map((x) => x.r.id);
+        for (const id of ids) await deleteReminder(userId, id);
+        return { text: A.canceledMany(ids.length), openNext: "/reminders" };
+      }
       if (top.length > 1) {
         return { text: `${A.cancelMany}\n${top.slice(0, 3).map((x) => `• ${String(x.r.text).slice(0, 100)}`).join("\n")}` };
       }

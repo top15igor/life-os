@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { SERVICE_TAGS } from "./botTags";
 
 const LIST_SELECT = `
   id, entry_date, entry_time, source, raw_text, summary,
@@ -367,8 +368,10 @@ export async function getBiographerHistory(userId: string, limit = 30) {
     .select("id, question, answer, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(limit);
-  return data || [];
+    .limit(limit * 2); // с запасом: служебные записи отсеиваем ниже
+  // Утренние пуши и ответы о действиях лежат там же (как контекст для бота),
+  // но в истории Биографа им не место — это не диалог с ним.
+  return (data || []).filter((r: any) => !SERVICE_TAGS.includes(r.question)).slice(0, limit);
 }
 
 export async function getAllTasks(userId: string) {
