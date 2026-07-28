@@ -1054,7 +1054,7 @@ export async function POST(req: NextRequest) {
       // Меню «Зачем я тебе»: menu / раздел / случайный лайфхак — редактируем то же сообщение.
       try {
         const db = supabaseAdmin();
-        const { data: u } = await db.from("users").select("id, lang, token").eq("chat_id", cqChat).maybeSingle();
+        const { data: u } = await db.from("users").select("id, lang, token, tz_offset, morning_prefs").eq("chat_id", cqChat).maybeSingle();
         await answerCallback(cq.id);
         const mid = cq.message?.message_id;
         if (u && mid) {
@@ -1063,32 +1063,29 @@ export async function POST(req: NextRequest) {
           let res: { text: string; reply_markup: any } | null;
           if (arg === "menu") res = howtoMenu(lng, req.nextUrl.origin, (u as any).token);
           else if (arg === "tip") res = howtoTip(lng);
-          else if (arg === "i:crm") {
-            // «Жизнь под контролем» — живая сводка (серия + цели + инсайт) + подсказки как применять.
-            const item = howtoItem(lng, "crm");
+          else if (arg === "i:remind" || arg === "i:crm") {
+            // «Ничего не забудешь» — сразу живая повестка на сегодня + как этим пользоваться.
+            // (i:crm — старая кнопка «Под контролем» в уже отправленных сообщениях.)
+            const item = howtoItem(lng, "remind");
+            let text = item?.text || "";
+            try {
+              const off = userTzOffsetMin((u as any).tz_offset, (u as any).morning_prefs?.tz);
+              const agenda = await runAction((u as any).id, "list_reminders", { period: "today" }, lng, off);
+              if (agenda?.text) text = `${agenda.text}\n\n➖➖➖\n\n${text}`;
+            } catch { /* повестка необязательна — покажем хотя бы подсказки */ }
+            const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
+            res = { text, reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lng] || ACT_OPEN.ru, url: `${req.nextUrl.origin}/go?next=${encodeURIComponent("/notes")}` }], back] } };
+          }
+          else if (arg === "i:portrait" || arg === "i:onthisday") {
+            // «Что я о тебе понял» — живая сводка (серия + цели + инсайт) + описание.
+            const item = howtoItem(lng, "portrait");
             let text = item?.text || "";
             try {
               const report = await motivationReport((u as any).id, lng);
               if (report) text = `${report}\n\n➖➖➖\n\n${text}`;
-            } catch { /* сводка необязательна — покажем хотя бы подсказки */ }
+            } catch { /* сводка необязательна */ }
             const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
             res = { text, reply_markup: { inline_keyboard: [[{ text: GOALS_BTN[lng] || GOALS_BTN.ru, url: `${req.nextUrl.origin}/go?next=/goals` }], back] } };
-          }
-          else if (arg === "i:onthisday") {
-            // «📸 В этот день» — живые воспоминания за этот календарный день + как включить.
-            const item = howtoItem(lng, "onthisday");
-            let text = item?.text || "";
-            try {
-              const today = new Date().toISOString().slice(0, 10);
-              const mems = await getDayMemories((u as any).id, today);
-              const M = MEMORIES[lng] || MEMORIES.ru;
-              if (mems.length) {
-                const lines = mems.slice(0, 5).map((m) => `${M.ago(m)}\n«${esc(m.text)}»`).join("\n\n");
-                text = `${M.title}\n\n${lines}\n\n➖➖➖\n\n${text}`;
-              }
-            } catch { /* воспоминания необязательны — покажем описание */ }
-            const back = (item?.reply_markup?.inline_keyboard?.[0]) || [];
-            res = { text, reply_markup: { inline_keyboard: [back] } };
           }
           else if (arg.startsWith("i:")) res = howtoItem(lng, arg.slice(2));
           else res = null;
