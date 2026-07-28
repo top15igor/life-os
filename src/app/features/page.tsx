@@ -243,6 +243,10 @@ export default async function FeaturesPage() {
             <span className="fx-tag">{s.metaCount}</span>
             <span className="fx-tag">{s.metaA}</span>
             <span className="fx-tag">{s.metaB}</span>
+            {/* Мост на лендинг /one-place — заметки, списки, напоминания в одном месте */}
+            <Link href="/one-place" className="fx-tag" style={{ textDecoration: "none", color: "var(--accent)", fontWeight: 600, borderColor: "var(--accent)" }}>
+              {locale === "en" ? "Notes & reminders in one place →" : "Заметки и напоминания — в одном месте →"}
+            </Link>
           </div>
         </header>
 

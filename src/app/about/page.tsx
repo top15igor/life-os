@@ -619,6 +619,16 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
 
+  // Врезка-мост на лендинг /one-place (заметки, списки, напоминания в одном месте).
+  const ONE_PLACE: Record<string, { t: string; d: string; cta: string }> = {
+    ru: { t: "Все заметки и напоминания — в одном месте", d: "Заметки айфона, сохранёнки Инстаграма, файлы, стикеры и будильники — в одной базе, которая сама напоминает вовремя.", cta: "Посмотреть" },
+    en: { t: "All your notes and reminders — in one place", d: "iPhone notes, Instagram saves, files, sticky notes and alarms — in one base that reminds you on time.", cta: "Take a look" },
+    uk: { t: "Усі нотатки й нагадування — в одному місці", d: "Нотатки айфона, збережене з Інстаграму, файли, наліпки й будильники — в одній базі, що нагадує вчасно.", cta: "Подивитись" },
+    fr: { t: "Toutes vos notes et rappels — en un seul endroit", d: "Notes iPhone, enregistrements Instagram, fichiers, post-it et alarmes — dans une seule base qui vous rappelle à temps.", cta: "Voir" },
+    es: { t: "Todas tus notas y recordatorios — en un solo lugar", d: "Notas del iPhone, guardados de Instagram, archivos, pósits y alarmas — en una sola base que te recuerda a tiempo.", cta: "Ver" },
+  };
+  const onePlace = ONE_PLACE[locale] || ONE_PLACE.ru;
+
   // Лендинг — СВОЯ светлая палитра (не зависит от темы посетителя): чистый премиальный
   // вид + мягкая «аврора» под первым экраном. Ховеры/градиенты — в LP_CSS ниже.
   const shell = {
@@ -812,6 +822,23 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           >
             {t.feat_more_cta}
             <i className="ti ti-arrow-right" style={{ fontSize: 17 }} />
+          </span>
+        </a>
+
+        {/* Мост на лендинг «Всё в одном месте» — заметки, списки, напоминания */}
+        <a
+          href="/one-place"
+          className="lp-card"
+          style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 12, padding: "20px 24px", textDecoration: "none" }}
+        >
+          <span style={{ fontSize: 26, lineHeight: 1 }}>🗂</span>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 4 }}>{onePlace.t}</div>
+            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 560 }}>{onePlace.d}</div>
+          </div>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap" }}>
+            {onePlace.cta}
+            <i className="ti ti-arrow-right" style={{ fontSize: 16 }} />
           </span>
         </a>
       </div>
