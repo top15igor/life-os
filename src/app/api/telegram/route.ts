@@ -7,6 +7,7 @@ import { archiveVoice } from "@/lib/voiceArchive";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction, recentBotContext } from "@/lib/botActions";
+import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
@@ -1099,6 +1100,11 @@ export async function POST(req: NextRequest) {
     await sendMessage(chatId, "Не удалось завести аккаунт. Попробуй ещё раз чуть позже.");
     return NextResponse.json({ ok: true });
   }
+  // Часовой пояс для всего, что бот делает со временем («напомни через 10 минут»,
+  // «что у меня сегодня»): явный оффсет с веба или зона из настроек пушей.
+  // Раньше tz_offset вообще не выбирался из базы — бот жил по UTC.
+  (user as any).tz_offset = userTzOffsetMin((user as any).tz_offset, (user as any).morning_prefs?.tz);
+
   // Сохраняем настоящий Telegram-@username — чтобы по нему можно было писать (/send @username).
   await noteTgUsername(user.id, msg.from?.username);
 

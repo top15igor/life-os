@@ -4,7 +4,7 @@ import { resolveHandle } from "./handle";
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
-export type User = { id: string; token: string; name: string | null; lang?: string | null; chat_id?: number; isNew?: boolean };
+export type User = { id: string; token: string; name: string | null; lang?: string | null; chat_id?: number; isNew?: boolean; tz_offset?: number | null };
 
 // ===== Настройка: показывать полную расшифровку голоса под ответом бота =====
 // По умолчанию ВКЛ (помогает поймать кривое распознавание, напр. сумм). Защищённо:
@@ -93,11 +93,17 @@ export async function noteTgUsername(userId: string, username?: string | null): 
 export async function getOrCreateUser(chatId: number, name?: string, referredBy?: string, lang?: string, source?: string): Promise<User> {
   const db = supabaseAdmin();
 
-  const { data: existing } = await db
+  // tz_offset и morning_prefs.tz нужны боту для времени («напомни через 10 минут»,
+  // «что у меня сегодня») — раньше они не выбирались, и бот жил по UTC.
+  let { data: existing, error: selErr } = await db
     .from("users")
-    .select("id, token, name, lang")
+    .select("id, token, name, lang, tz_offset, morning_prefs")
     .eq("chat_id", chatId)
     .maybeSingle();
+  if (selErr) {
+    // Колонок tz_offset/morning_prefs может не быть на старой базе — мягкий фолбэк.
+    ({ data: existing } = await db.from("users").select("id, token, name, lang").eq("chat_id", chatId).maybeSingle());
+  }
   if (existing) {
     // Подхватываем актуальное имя из Telegram (чинит «кракозябры» из seed).
     // Язык из Telegram ставим ТОЛЬКО как первый дефолт (если ещё не задан) —
