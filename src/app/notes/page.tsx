@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar";
 import NotesManager from "@/components/NotesManager";
+import ListsBlock from "@/components/ListsBlock";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
@@ -23,6 +24,7 @@ export default async function NotesPage() {
             <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>{TITLE[locale] || TITLE.ru}</h1>
           </div>
           <NotesManager locale={locale} />
+          <ListsBlock locale={locale} />
         </div>
       </main>
     </div>

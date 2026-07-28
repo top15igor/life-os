@@ -63,6 +63,31 @@ export const ACTION_TOOLS: any[] = [
     },
   },
   {
+    name: "add_list_item",
+    description:
+      "Добавить пункт(ы) в СПИСОК (чек-лист): «добавь молоко в список покупок», «в список подарков — духи», «добавь в покупки хлеб, сыр и яйца». items — массив пунктов (несколько через запятую/«и» — все в один вызов). list — название списка своими словами («покупки», «подарки»); не указывай, если это обычный список покупок.",
+    input_schema: {
+      type: "object",
+      properties: { items: { type: "array", items: { type: "string" } }, list: { type: "string" } },
+      required: ["items"],
+    },
+  },
+  {
+    name: "show_list",
+    description: "Показать список (чек-лист): «что в списке покупок?», «покажи список подарков», «что купить?». list — название, если не покупки.",
+    input_schema: { type: "object", properties: { list: { type: "string" } }, required: [] },
+  },
+  {
+    name: "check_list_item",
+    description: "Вычеркнуть пункт из списка: «вычеркни молоко», «молоко купил, убери из списка», «убери духи из списка подарков». query — пункт; list — название списка, если не покупки.",
+    input_schema: { type: "object", properties: { query: { type: "string" }, list: { type: "string" } }, required: ["query"] },
+  },
+  {
+    name: "clear_list",
+    description: "Очистить список целиком: «очисти список покупок», «удали весь список подарков». list — название, если не покупки.",
+    input_schema: { type: "object", properties: { list: { type: "string" } }, required: [] },
+  },
+  {
     name: "save_note",
     description:
       "Сохранить ЗАМЕТКУ — справочную информацию, которую надо потом НАЙТИ: код (домофон, шкафчик), номер (счёта, размера, документа), адрес, wifi, марку/модель, список. Команды: «запиши код от домофона 4582», «сохрани заметку: …», «запомни: размер фильтра 60×40». НЕ для рассказов о дне/чувствах/событиях (это save_entry). text — сама заметка, без слов «запиши/запомни/заметка».",
@@ -141,7 +166,8 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
-  "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi, список) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
+  "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
+  "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
   "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. " +
   "«Отмени/убери напоминание про…», «не напоминай про…» → cancel_reminder, а НЕ save_entry и НЕ delete_last_entry. " +
   "Вопросы о своей жизни → ask_question. " +
@@ -412,7 +438,45 @@ const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none:
   es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo." },
 };
 
-export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string } };
+// Строки для списков (чек-листов).
+const LIST_MSG: Record<Lang, { defName: string; added: (what: string, list: string) => string; head: (list: string) => string; empty: (list: string) => string; checked: (item: string) => string; cleared: (list: string) => string; notFound: string }> = {
+  ru: { defName: "Покупки", added: (w, l) => `🛒 Добавил в «${l}»: ${w}.`, head: (l) => `🛒 ${l}:`, empty: (l) => `Список «${l}» пуст.`, checked: (i) => `Вычеркнул: ${i} ✅`, cleared: (l) => `Очистил список «${l}».`, notFound: "Такого пункта в списке не нашёл." },
+  en: { defName: "Shopping", added: (w, l) => `🛒 Added to “${l}”: ${w}.`, head: (l) => `🛒 ${l}:`, empty: (l) => `The “${l}” list is empty.`, checked: (i) => `Checked off: ${i} ✅`, cleared: (l) => `Cleared the “${l}” list.`, notFound: "Couldn't find that item in the list." },
+  uk: { defName: "Покупки", added: (w, l) => `🛒 Додав у «${l}»: ${w}.`, head: (l) => `🛒 ${l}:`, empty: (l) => `Список «${l}» порожній.`, checked: (i) => `Викреслив: ${i} ✅`, cleared: (l) => `Очистив список «${l}».`, notFound: "Такого пункту в списку не знайшов." },
+  fr: { defName: "Courses", added: (w, l) => `🛒 Ajouté à « ${l} » : ${w}.`, head: (l) => `🛒 ${l} :`, empty: (l) => `La liste « ${l} » est vide.`, checked: (i) => `Rayé : ${i} ✅`, cleared: (l) => `Liste « ${l} » vidée.`, notFound: "Je n'ai pas trouvé cet élément dans la liste." },
+  es: { defName: "Compras", added: (w, l) => `🛒 Añadido a «${l}»: ${w}.`, head: (l) => `🛒 ${l}:`, empty: (l) => `La lista «${l}» está vacía.`, checked: (i) => `Tachado: ${i} ✅`, cleared: (l) => `Lista «${l}» vaciada.`, notFound: "No encontré ese punto en la lista." },
+};
+
+// Ключ списка: покупки — общий 'shopping' на всех языках, остальные — по имени.
+const SHOPPING_WORDS = ["покупк", "покупо", "продукт", "shopping", "groceries", "courses", "compras", "закуп"];
+export function normListKey(raw: any): string {
+  const v = String(raw || "").toLowerCase().replace(/ё/g, "е").trim();
+  if (!v) return "shopping";
+  if (SHOPPING_WORDS.some((w) => v.includes(w))) return "shopping";
+  return v.slice(0, 60);
+}
+const listTitle = (key: string, lang: Lang) =>
+  key === "shopping" ? (LIST_MSG[lang] || LIST_MSG.ru).defName : key.charAt(0).toUpperCase() + key.slice(1);
+
+// Текст + кнопки «✓ N» для списка — используется и действиями, и колбэком вычёркивания.
+export async function renderListMessage(userId: string, listKey: string, lang: Lang): Promise<{ text: string; markup: any | null }> {
+  const L = LIST_MSG[lang] || LIST_MSG.ru;
+  const db = supabaseAdmin();
+  const { data } = await db.from("list_items").select("id, text, done").eq("user_id", userId).eq("list", listKey).order("created_at", { ascending: true }).limit(50);
+  const rows = (data || []) as any[];
+  const open = rows.filter((r) => !r.done);
+  const doneRows = rows.filter((r) => r.done);
+  if (!rows.length) return { text: L.empty(listTitle(listKey, lang)), markup: null };
+  const lines = [L.head(listTitle(listKey, lang))];
+  open.forEach((r, i) => lines.push(`${i + 1}. ${String(r.text).slice(0, 100)}`));
+  doneRows.slice(-10).forEach((r) => lines.push(`✅ ${String(r.text).slice(0, 100)}`));
+  const btns = open.slice(0, 10).map((r, i) => ({ text: `✓ ${i + 1}`, callback_data: `lstd:${r.id}` }));
+  const kb: any[] = [];
+  for (let i = 0; i < btns.length; i += 5) kb.push(btns.slice(i, i + 5));
+  return { text: lines.join("\n"), markup: kb.length ? { inline_keyboard: kb } : null };
+}
+
+export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
 export async function runAction(userId: string, name: string, input: any, lang: Lang, tzOffset?: number | null): Promise<ActionResult> {
@@ -448,6 +512,48 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const when = allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
       const suffix = recurrence ? rm.rep[recurrence] : "";
       return { text: rm.label(t, when + suffix), openNext: "/reminders" };
+    }
+    if (name === "add_list_item") {
+      const L = LIST_MSG[lang] || LIST_MSG.ru;
+      const items = (Array.isArray(input?.items) ? input.items : [input?.items])
+        .map((x: any) => String(x || "").trim().slice(0, 200)).filter(Boolean).slice(0, 20);
+      if (!items.length) return { text: s.fail };
+      const key = normListKey(input?.list);
+      const { error } = await db.from("list_items").insert(items.map((t: string) => ({ user_id: userId, list: key, text: t })));
+      if (error) return { text: s.fail }; // таблицы может не быть до миграции lists.sql
+      const view = await renderListMessage(userId, key, lang);
+      return { text: `${L.added(items.join(", "), listTitle(key, lang))}\n\n${view.text}`, markup: view.markup, openNext: "/notes" };
+    }
+    if (name === "show_list") {
+      const key = normListKey(input?.list);
+      const view = await renderListMessage(userId, key, lang).catch(() => null);
+      if (!view) return { text: s.fail };
+      return { text: view.text, markup: view.markup, openNext: "/notes" };
+    }
+    if (name === "check_list_item") {
+      const L = LIST_MSG[lang] || LIST_MSG.ru;
+      const q = String(input?.query || "").trim();
+      if (!q) return { text: L.notFound };
+      const key = normListKey(input?.list);
+      const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
+      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const { data, error } = await db.from("list_items").select("id, text").eq("user_id", userId).eq("list", key).eq("done", false).limit(100);
+      if (error) return { text: s.fail };
+      const hit = ((data || []) as any[])
+        .map((r) => ({ r, score: stems.filter((st) => norm(String(r.text)).includes(st)).length }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)[0];
+      if (!hit) return { text: L.notFound };
+      await db.from("list_items").update({ done: true }).eq("id", hit.r.id);
+      const view = await renderListMessage(userId, key, lang);
+      return { text: `${L.checked(String(hit.r.text).slice(0, 100))}\n\n${view.text}`, markup: view.markup };
+    }
+    if (name === "clear_list") {
+      const L = LIST_MSG[lang] || LIST_MSG.ru;
+      const key = normListKey(input?.list);
+      const { error } = await db.from("list_items").delete().eq("user_id", userId).eq("list", key);
+      if (error) return { text: s.fail };
+      return { text: L.cleared(listTitle(key, lang)) };
     }
     if (name === "save_note") {
       const t = String(input?.text || "").trim().slice(0, 2000);

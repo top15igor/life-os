@@ -6,7 +6,7 @@ import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
-import { routeMessage, runAction, recentBotContext } from "@/lib/botActions";
+import { routeMessage, runAction, recentBotContext, renderListMessage } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
@@ -901,6 +901,28 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if (data.startsWith("lstd:") && cqChat) {
+      // «✓ N» под списком — вычеркнуть пункт и перерисовать список тем же сообщением.
+      const itemId = data.slice(5);
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        if (u && /^[0-9a-f-]{16,}$/i.test(itemId)) {
+          const { data: item } = await db.from("list_items").select("id, list, text").eq("id", itemId).eq("user_id", (u as any).id).maybeSingle();
+          if (item) {
+            await db.from("list_items").update({ done: true }).eq("id", itemId);
+            const lng = pickLang((u as any).lang);
+            const view = await renderListMessage((u as any).id, (item as any).list, lng);
+            await answerCallback(cq.id, `✅ ${String((item as any).text).slice(0, 150)}`);
+            if (mid) await editMessageText(cqChat, mid, view.text, view.markup ? { reply_markup: view.markup } : undefined);
+          } else {
+            await answerCallback(cq.id);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch { await answerCallback(cq.id); }
     } else if ((data.startsWith("remok:") || data.startsWith("remsn:")) && cqChat) {
       // Кнопки под доставленным напоминанием: «✅ Готово» / «⏰ Через час».
       const remId = data.slice(6);
@@ -1832,6 +1854,10 @@ export async function POST(req: NextRequest) {
         let extra: any = res.openNext
           ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent(res.openNext)}` }]] } }
           : undefined;
+        // Собственные кнопки действия (например, «✓ N» у списка) — выше кнопки «Открыть».
+        if (res.markup?.inline_keyboard) {
+          extra = { reply_markup: { inline_keyboard: [...res.markup.inline_keyboard, ...(extra?.reply_markup?.inline_keyboard || [])] } };
+        }
         // Удаление записи — с подтверждением (кнопки Да/Отмена), чтобы не потерять данные случайно.
         if (res.confirmDelete) {
           const D = DEL_BTN[lang] || DEL_BTN.ru;
