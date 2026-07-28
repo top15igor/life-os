@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { sendMessage } from "./telegram";
+import { userTzOffsetMin } from "./pushSchedule";
 
 // Доставка напоминаний ботом точно в срок. До этого напоминание уведомляло
 // только через Google Календарь (если подключён) — без него «напомни в 9»
@@ -24,8 +25,34 @@ export const REM_BTN: Record<Lang, { done: string; snooze: string }> = {
   es: { done: "✅ Hecho", snooze: "⏰ En una hora" },
 };
 
+// Окно почасового повтора: "hourly:9-21" → { from: 9, to: 21 } (местные часы).
+export function parseHourly(recurrence: string): { from: number; to: number } | null {
+  const m = /^hourly(?::(\d{1,2})-(\d{1,2}))?$/.exec(recurrence || "");
+  if (!m) return null;
+  const from = m[1] === undefined ? 0 : Math.min(23, Math.max(0, Number(m[1])));
+  const to = m[2] === undefined ? 23 : Math.min(23, Math.max(0, Number(m[2])));
+  return from <= to ? { from, to } : { from: to, to: from };
+}
+
 // Для повторяющихся: следующее срабатывание ПОСЛЕ «сейчас», с сохранением времени дня.
-function nextOccurrence(dueISO: string, recurrence: string, nowMs: number): string {
+// Почасовой повтор идёт по местным часам и не выходит за окно (9→21, потом
+// следующее утро в 9) — иначе «каждый час» будило бы ночью.
+function nextOccurrence(dueISO: string, recurrence: string, nowMs: number, offMin = 0): string {
+  const hourly = parseHourly(recurrence);
+  if (hourly) {
+    let t = Date.parse(dueISO);
+    for (let guard = 0; t <= nowMs && guard < 24 * 400; guard++) {
+      t += 3600000;
+      const loc = new Date(t + offMin * 60000);
+      const h = loc.getUTCHours();
+      if (h < hourly.from || h > hourly.to) {
+        if (h > hourly.to) loc.setUTCDate(loc.getUTCDate() + 1);
+        loc.setUTCHours(hourly.from, 0, 0, 0);
+        t = loc.getTime() - offMin * 60000;
+      }
+    }
+    return new Date(t).toISOString();
+  }
   const d = new Date(dueISO);
   let guard = 0;
   while (d.getTime() <= nowMs && guard < 500) {
@@ -37,6 +64,9 @@ function nextOccurrence(dueISO: string, recurrence: string, nowMs: number): stri
   }
   return d.toISOString();
 }
+
+const isRepeating = (r?: string | null) =>
+  !!r && (["daily", "weekly", "monthly", "yearly"].includes(r) || !!parseHourly(r));
 
 // Пройти по просроченным неотправленным напоминаниям и доставить их в Telegram.
 export async function deliverDueReminders(): Promise<{ sent: number; rolled: number; expired: number; skipped: number }> {
@@ -56,13 +86,14 @@ export async function deliverDueReminders(): Promise<{ sent: number; rolled: num
   if (!rows?.length) return stats;
 
   const userIds = [...new Set(rows.map((r: any) => r.user_id))];
-  const { data: users } = await db.from("users").select("id, chat_id, lang, tz_offset, push_enabled").in("id", userIds);
+  const { data: users } = await db.from("users").select("id, chat_id, lang, tz_offset, morning_prefs, push_enabled").in("id", userIds);
   const byId = new Map((users || []).map((u: any) => [u.id, u]));
 
   for (const r of rows as any[]) {
     try {
       const due = Date.parse(r.due_at);
       const u = byId.get(r.user_id);
+      const offMin = userTzOffsetMin(u?.tz_offset, u?.morning_prefs?.tz) ?? 0;
 
       // Момент срабатывания: обычные — в срок (минус remind_min, если задан);
       // «на весь день» — в 9 утра по местному времени (due_at хранит местную
@@ -75,8 +106,8 @@ export async function deliverDueReminders(): Promise<{ sent: number; rolled: num
 
       if (now - fireAt > 24 * 3600 * 1000) {
         // Пропущенное окно: не шлём, но переводим повторы вперёд, разовые гасим.
-        if (["daily", "weekly", "monthly", "yearly"].includes(r.recurrence)) {
-          await db.from("reminders").update({ due_at: nextOccurrence(r.due_at, r.recurrence, now) }).eq("id", r.id);
+        if (isRepeating(r.recurrence)) {
+          await db.from("reminders").update({ due_at: nextOccurrence(r.due_at, r.recurrence, now, offMin) }).eq("id", r.id);
           stats.rolled++;
         } else {
           await db.from("reminders").update({ notified_at: new Date().toISOString() }).eq("id", r.id);
@@ -97,9 +128,9 @@ export async function deliverDueReminders(): Promise<{ sent: number; rolled: num
       });
       stats.sent++;
 
-      if (["daily", "weekly", "monthly", "yearly"].includes(r.recurrence)) {
+      if (isRepeating(r.recurrence)) {
         // Повтор: катим дату вперёд, notified_at не трогаем — следующее сработает само.
-        await db.from("reminders").update({ due_at: nextOccurrence(r.due_at, r.recurrence, now) }).eq("id", r.id);
+        await db.from("reminders").update({ due_at: nextOccurrence(r.due_at, r.recurrence, now, offMin) }).eq("id", r.id);
         stats.rolled++;
       } else {
         await db.from("reminders").update({ notified_at: new Date().toISOString() }).eq("id", r.id);

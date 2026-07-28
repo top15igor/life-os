@@ -6,10 +6,17 @@ export type NewReminder = {
   dueISO: string;
   dateStr?: string; // YYYY-MM-DD (for all-day)
   allDay?: boolean;
-  recurrence?: Recurrence | null;
+  // "daily" | "weekly" | "monthly" | "yearly" | "hourly:<from>-<to>" (local hours)
+  recurrence?: string | null;
   remindMin?: number | null;
   calendarId?: string;
 };
+
+const CAL_RECURRENCES: Recurrence[] = ["daily", "weekly", "monthly", "yearly"];
+// Почасовой повтор («каждый час с 9 до 21») в Google Calendar не выражается
+// адекватно (FREQ=HOURLY идёт круглосуточно), поэтому такие напоминания живут
+// только в боте — он и присылает их точно в срок.
+export const isHourly = (r?: string | null) => !!r && r.startsWith("hourly");
 
 const COLS = "id, text, due_at, gcal_event_id, gcal_link, done, recurrence, all_day, remind_min, gcal_calendar_id";
 const COLS_BASIC = "id, text, due_at, gcal_event_id, gcal_link, done";
@@ -27,19 +34,22 @@ export async function createReminder(userId: string, r: NewReminder): Promise<{ 
 
   let gcalId: string | null = null;
   let gcalLink: string | null = null;
-  const ev = await createCalendarEvent(
-    userId,
-    {
-      summary: r.text,
-      description: "LIFE OS reminder",
-      startISO: due.toISOString(),
-      remindMinutes: [typeof remindMin === "number" ? remindMin : 10],
-      allDay,
-      dateStr: r.dateStr || due.toISOString().slice(0, 10),
-      recurrence,
-    },
-    calendarId
-  );
+  const calRecurrence = CAL_RECURRENCES.includes(recurrence as Recurrence) ? (recurrence as Recurrence) : null;
+  const ev = isHourly(recurrence)
+    ? { ok: false as const, id: null, link: null }
+    : await createCalendarEvent(
+      userId,
+      {
+        summary: r.text,
+        description: "LIFE OS reminder",
+        startISO: due.toISOString(),
+        remindMinutes: [typeof remindMin === "number" ? remindMin : 10],
+        allDay,
+        dateStr: r.dateStr || due.toISOString().slice(0, 10),
+        recurrence: calRecurrence,
+      },
+      calendarId
+    );
   if (ev.ok) {
     gcalId = ev.id;
     gcalLink = ev.link;

@@ -37,7 +37,9 @@ export const ACTION_TOOLS: any[] = [
         date: { type: "string", description: "дата YYYY-MM-DD по местному времени пользователя" },
         time: { type: "string", description: "время HH:MM 24ч по местному; не указывай, если на весь день" },
         all_day: { type: "boolean", description: "true, если без конкретного времени (день рождения и т.п.)" },
-        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly", "yearly"], description: "повтор, если сказано «каждый день/неделю/месяц/год»" },
+        recurrence: { type: "string", enum: ["none", "hourly", "daily", "weekly", "monthly", "yearly"], description: "повтор: «каждый день/неделю/месяц/год»; hourly — «каждый час» (тогда задай from_hour/to_hour)" },
+        from_hour: { type: "number", description: "для hourly: с какого часа (0–23), напр. «с 9 утра» → 9; по умолчанию 9" },
+        to_hour: { type: "number", description: "для hourly: до какого часа (0–23), напр. «до 9 вечера» → 21; по умолчанию 21" },
         remind_min: { type: "number", description: "за сколько минут предупредить, если названо (10/30/60/1440); иначе не указывай" },
       },
       required: ["text", "date"],
@@ -156,6 +158,7 @@ const SYS =
   "Инструменты-ДЕЙСТВИЯ (add_goal, add_task, set_reminder, complete_task, log_weight, add_dream, complete_dream, add_deed, delete_last_entry) " +
   "выбирай ТОЛЬКО при ЯВНОЙ ПОВЕЛИТЕЛЬНОЙ команде боту («добавь…», «напомни…», «отметь…», «удали…», «запиши вес…», «заверши задачу…»). " +
   "«Напомни …» с датой/временем → set_reminder (разбери дату и время по местному времени). «Добавь задачу» без времени → add_task. " +
+  "«Напоминай КАЖДЫЙ ЧАС с 9 до 21 …» (интервал в течение дня) → ОДИН set_reminder с recurrence=hourly, from_hour=9, to_hour=21. НИКОГДА не создавай для этого десяток отдельных напоминаний на каждый час. " +
   "Если человек просто описывает, что сделал («сегодня пробежал 5 км», «поговорил с мамой») — это save_entry, НЕ действие. " +
   "ВАЖНО: фразы-поправки, недовольство и уточнения («не так записал», «не надо было это добавлять», «надо было иначе», «зачем ты…», «неправильно понял») — это НЕ команда действия и тем более НЕ удаление; по умолчанию save_entry. " +
   "ИСКЛЮЧЕНИЕ: если поправка — про ИМЯ человека («её зовут X», «настоящее имя — X», «переименуй Y в X», «исправь имя», «запиши у себя и измени: её зовут X») → rename_person, чтобы имя исправилось во всей базе, а не легло новой записью. " +
@@ -237,8 +240,13 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
     if (name === "ask_question") return { kind: "question" };
     // Несколько действий в одном сообщении («добавь два фильма: X и Y») — модель
     // вызывает инструмент несколько раз; раньше выполнялся только первый вызов.
+    // Дубли отсекаем: модель иногда разбивает одно дело на несколько одинаковых
+    // вызовов («напоминай каждый час» → два напоминания с тем же текстом).
+    const sig = (b: any) => `${b.name}|${String(b.input?.text || b.input?.query || JSON.stringify(b.input || {})).toLowerCase().trim()}`;
+    const seen = new Set([sig(block)]);
     const more = blocks.slice(1, 5)
       .filter((b: any) => b.name && b.name !== "save_entry" && b.name !== "ask_question")
+      .filter((b: any) => { const k = sig(b); if (seen.has(k)) return false; seen.add(k); return true; })
       .map((b: any) => ({ name: b.name, input: b.input || {} }));
     return { kind: "action", name, input: block.input || {}, ...(more.length ? { more } : {}) };
   } catch {
@@ -400,12 +408,12 @@ const M: Record<Lang, any> = {
 };
 
 // Reminder confirmation strings (kept separate from M for brevity).
-const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: string; allDayNote: string; rep: Record<Recurrence, string> }> = {
-  ru: { label: (t, w) => `⏰ Напомню: «${t}» — ${w}.`, at: "в", allDayNote: "весь день", rep: { daily: " · каждый день", weekly: " · каждую неделю", monthly: " · каждый месяц", yearly: " · каждый год" } },
-  en: { label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" } },
-  uk: { label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" } },
-  fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" } },
-  es: { label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" } },
+const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: string; allDayNote: string; rep: Record<Recurrence, string>; hourly: (from: number, to: number) => string }> = {
+  ru: { label: (t, w) => `⏰ Напомню: «${t}» — ${w}.`, at: "в", allDayNote: "весь день", rep: { daily: " · каждый день", weekly: " · каждую неделю", monthly: " · каждый месяц", yearly: " · каждый год" }, hourly: (f, t) => ` · каждый час с ${f}:00 до ${t}:00` },
+  en: { label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" }, hourly: (f, t) => ` · every hour from ${f}:00 to ${t}:00` },
+  uk: { label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" }, hourly: (f, t) => ` · щогодини з ${f}:00 до ${t}:00` },
+  fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" }, hourly: (f, t) => ` · chaque heure de ${f}h à ${t}h` },
+  es: { label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" }, hourly: (f, t) => ` · cada hora de ${f}:00 a ${t}:00` },
 };
 
 // Строки для «что у меня сегодня/завтра» и «отмени напоминание».
@@ -502,16 +510,43 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
       const time = input?.time ? String(input.time).trim() : null;
       const allDay = !!input?.all_day || !time;
-      const recurrence = (["daily", "weekly", "monthly", "yearly"] as Recurrence[]).includes(input?.recurrence) ? (input.recurrence as Recurrence) : null;
+      // Повтор: стандартный (день/неделя/месяц/год) или почасовой с окном
+      // («каждый час с 9 до 21») — он хранится строкой "hourly:<from>-<to>".
+      const hourFrom = Math.min(23, Math.max(0, Math.round(Number(input?.from_hour ?? 9)) || 0));
+      const hourTo = Math.min(23, Math.max(0, Math.round(Number(input?.to_hour ?? 21)) || 0));
+      const recurrence: string | null = input?.recurrence === "hourly"
+        ? `hourly:${Math.min(hourFrom, hourTo)}-${Math.max(hourFrom, hourTo)}`
+        : (["daily", "weekly", "monthly", "yearly"] as Recurrence[]).includes(input?.recurrence) ? (input.recurrence as Recurrence) : null;
       const remindMin = typeof input?.remind_min === "number" ? input.remind_min : null;
-      const dueISO = localToISO(date, allDay ? null : time, tzOffset);
+      let dueISO = localToISO(date, allDay ? null : time, tzOffset);
       if (!dueISO) return { text: s.fail };
-      const res = await createReminder(userId, { text: t, dueISO, dateStr: date, allDay, recurrence, remindMin });
+
+      // Почасовой: первое срабатывание — ближайший будущий час внутри окна
+      // (иначе «каждый час с 9» в 16:20 сработало бы сразу, задним числом).
+      const hFrom = Math.min(hourFrom, hourTo), hTo = Math.max(hourFrom, hourTo);
+      let firstLocal: Date | null = null;
+      if (input?.recurrence === "hourly") {
+        const off = typeof tzOffset === "number" ? tzOffset : 0;
+        const loc = new Date(Date.now() + off * 60000);
+        loc.setUTCMinutes(0, 0, 0);
+        loc.setUTCHours(loc.getUTCHours() + 1); // следующий круглый час
+        const h = loc.getUTCHours();
+        if (h > hTo) { loc.setUTCDate(loc.getUTCDate() + 1); loc.setUTCHours(hFrom, 0, 0, 0); }
+        else if (h < hFrom) loc.setUTCHours(hFrom, 0, 0, 0);
+        firstLocal = loc;
+        dueISO = new Date(loc.getTime() - off * 60000).toISOString();
+      }
+
+      const res = await createReminder(userId, { text: t, dueISO, dateStr: date, allDay: input?.recurrence === "hourly" ? false : allDay, recurrence, remindMin });
       if (!res.ok) return { text: s.fail };
       const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
       const [, mm, dd] = date.split("-");
-      const when = allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
-      const suffix = recurrence ? rm.rep[recurrence] : "";
+      const when = firstLocal
+        ? `${String(firstLocal.getUTCDate()).padStart(2, "0")}.${String(firstLocal.getUTCMonth() + 1).padStart(2, "0")} ${rm.at} ${String(firstLocal.getUTCHours()).padStart(2, "0")}:00`
+        : allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
+      const suffix = recurrence
+        ? (input?.recurrence === "hourly" ? rm.hourly(Math.min(hourFrom, hourTo), Math.max(hourFrom, hourTo)) : rm.rep[recurrence as Recurrence])
+        : "";
       return { text: rm.label(t, when + suffix), openNext: "/reminders" };
     }
     if (name === "add_list_item") {
