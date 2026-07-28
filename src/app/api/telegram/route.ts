@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, editMessageText } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, editMessageText } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -8,6 +8,7 @@ import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction, recentBotContext, renderListMessage } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
+import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
@@ -462,6 +463,15 @@ const LINK_WARN: Record<string, string> = {
   es: "⚠️ Este enlace es de un solo uso e inicia sesión en TU cuenta — no lo reenvíes a nadie.",
 };
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
+
+// Импорт заметок из присланного текстового файла.
+const NOTES_IMPORT: Record<string, { done: (n: number) => string; empty: string; failed: string }> = {
+  ru: { done: (n) => `📝 Перенёс заметки: ${n}. Теперь они ищутся — спроси «какой код от…?».`, empty: "В файле не нашлось текста для заметок.", failed: "Не получилось перенести заметки. Попробуй ещё раз чуть позже." },
+  en: { done: (n) => `📝 Imported ${n} notes. They're searchable now — ask “what's the code for…?”.`, empty: "Couldn't find any note text in that file.", failed: "Couldn't import the notes. Try again a bit later." },
+  uk: { done: (n) => `📝 Переніс нотатки: ${n}. Тепер вони шукаються — спитай «який код від…?».`, empty: "У файлі не знайшлося тексту для нотаток.", failed: "Не вдалося перенести нотатки. Спробуй ще раз трохи пізніше." },
+  fr: { done: (n) => `📝 ${n} notes importées. Elles sont désormais consultables — demande « quel est le code de… ? ».`, empty: "Aucun texte de note trouvé dans ce fichier.", failed: "Import impossible. Réessaie un peu plus tard." },
+  es: { done: (n) => `📝 Importé ${n} notas. Ya se pueden buscar — pregunta «¿cuál es el código de…?».`, empty: "No encontré texto de notas en ese archivo.", failed: "No se pudieron importar las notas. Inténtalo un poco más tarde." },
+};
 
 // Кнопки-разделы хаба «⏰ Заметки» (повестка дня + переходы).
 const HUB_BTN: Record<string, { notes: string; list: string; tasks: string }> = {
@@ -1633,6 +1643,29 @@ export async function POST(req: NextRequest) {
       const L = MEM_MSG[lang] || MEM_MSG.ru;
       const doc = msg.document;
       const mime = (doc.mime_type || "").toLowerCase();
+
+      // 📝 Текстовый файл — перенос заметок из другого приложения (Заметки iPhone,
+      // Keep, Obsidian): каждая заметка отделена пустой строкой, одиночные строки
+      // тоже принимаем. Фото и PDF ниже по-прежнему идут в «Память».
+      const isTextFile = mime.startsWith("text/") || /\.(txt|md|markdown|csv)$/i.test(doc.file_name || "");
+      if (isTextFile) {
+        const N = NOTES_IMPORT[lang] || NOTES_IMPORT.ru;
+        try {
+          const fileUrl = await getFileUrl(doc.file_id);
+          const raw = await (await fetch(fileUrl)).text();
+          const oneLiner = !/\n\s*\n/.test(raw.trim());
+          const items = parseNotesText(raw, oneLiner ? "lines" : "blocks");
+          if (!items.length) { await sendMessage(chatId, N.empty); return NextResponse.json({ ok: true }); }
+          const { error } = await supabaseAdmin().from("notes").insert(items.map((t) => ({ user_id: user.id, text: t })));
+          if (error) { await sendMessage(chatId, N.failed); return NextResponse.json({ ok: true }); }
+          await sendMessage(chatId, N.done(items.length), { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent("/notes")}` }]] } });
+        } catch (e) {
+          console.error("notes import", e);
+          await sendMessage(chatId, N.failed);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       const supported = mime.startsWith("image/") || mime === "application/pdf";
       if (!supported) {
         await sendMessage(chatId, L.unsupported);
@@ -1901,6 +1934,12 @@ export async function POST(req: NextRequest) {
         }
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
         const combined = [res.text, ...moreTexts].map((t) => mdToTelegram(t) || t).join("\n");
+        // Действие может отдать файл (выгрузка заметок) — шлём документом.
+        if (res.file) {
+          await sendDocument(chatId, Buffer.from(res.file.text, "utf8"), res.file.name, { caption: combined, parse_mode: "HTML" });
+          saveChat(user.id, ACTION_TAG, combined).catch(() => {});
+          return NextResponse.json({ ok: true });
+        }
         await sendMessage(chatId, combined, extra);
         // В контекст: короткая реплика следом («все удаляй», «первое») должна
         // пониматься как продолжение ЭТОГО ответа, а не как новая команда.

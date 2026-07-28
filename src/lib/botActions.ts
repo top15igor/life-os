@@ -7,6 +7,7 @@ import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
 import { askKnowledge } from "./knowledge";
+import { notesToText } from "./notesIO";
 import { birthdayISO, BDAY_UNKNOWN_YEAR } from "./birthday";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -96,6 +97,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
   },
   {
+    name: "export_notes",
+    description:
+      "Выгрузить ЗАМЕТКИ файлом: «выгрузи заметки», «пришли мои заметки файлом», «экспорт заметок», «скинь заметки, перенесу на айфон». Отправляет текстовый файл со всеми заметками.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
     name: "find_note",
     description:
       "Найти сохранённую ЗАМЕТКУ или показать их обзор. Поиск: «какой код от домофона?», «найди заметку про фильтр» — query о чём заметка. ОБЗОР: «что у меня по заметкам?», «покажи мои заметки», «какие у меня заметки» — БЕЗ query. Это про раздел «Заметки» (справка), НЕ про записи дневника (их статистика — ask_question) и НЕ про сохранёнки из Instagram (ask_knowledge).",
@@ -172,6 +179,7 @@ const SYS =
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
   "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
+  "«Выгрузи/пришли заметки файлом», «экспорт заметок», «перенесу на айфон» → export_notes. " +
   "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. «Что у меня по заметкам», «покажи (мои) заметки» → find_note БЕЗ query (обзор). " +
   "РАЗЛИЧАЙ СЛОВА: «записи», «дневник» — это ДНЕВНИК (статистика → ask_question); «заметки» — это раздел справки (find_note); «списки» — чек-листы (show_list). Не подменяй одно другим. " +
   "«Отмени/убери напоминание про…», «не напоминай про…» → cancel_reminder, а НЕ save_entry и НЕ delete_last_entry. " +
@@ -440,12 +448,12 @@ const AGENDA_MSG: Record<Lang, {
 };
 
 // Строки для заметок (save_note / find_note).
-const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none: string; ovHead: (n: number) => string; ovEmpty: string; ovMore: string }> = {
-  ru: { saved: (t) => `📝 Сохранил в Заметки: «${t}».`, head: "📝 Нашёл в Заметках:", none: "В Заметках такого не нашёл. Скажи «запиши …» — и сохраню.", ovHead: (n) => `📝 Твои заметки (всего ${n}):`, ovEmpty: "Заметок пока нет. Скажи «запиши код от домофона 4582» — и справка будет всегда под рукой.", ovMore: "Спроси «найди заметку про …» — или открой раздел «Заметки» в приложении." },
-  en: { saved: (t) => `📝 Saved to Notes: “${t}”.`, head: "📝 Found in your Notes:", none: "Nothing like that in your Notes. Say “save a note …” and I'll keep it.", ovHead: (n) => `📝 Your notes (${n} total):`, ovEmpty: "No notes yet. Say “save a note: locker code 4582” — and the fact stays at hand.", ovMore: "Ask “find the note about …” — or open the “Notes” section in the app." },
-  uk: { saved: (t) => `📝 Зберіг у Нотатки: «${t}».`, head: "📝 Знайшов у Нотатках:", none: "У Нотатках такого не знайшов. Скажи «запиши …» — і збережу.", ovHead: (n) => `📝 Твої нотатки (всього ${n}):`, ovEmpty: "Нотаток поки немає. Скажи «запиши код від домофона 4582» — і довідка буде під рукою.", ovMore: "Спитай «знайди нотатку про …» — або відкрий розділ «Нотатки» в застосунку." },
-  fr: { saved: (t) => `📝 Enregistré dans Notes : « ${t} ».`, head: "📝 Trouvé dans tes Notes :", none: "Rien de tel dans tes Notes. Dis « note … » et je le garde.", ovHead: (n) => `📝 Tes notes (${n} au total) :`, ovEmpty: "Pas encore de notes. Dis « note : code du portail 4582 » — et l'info reste à portée.", ovMore: "Demande « trouve la note sur … » — ou ouvre la section « Notes » dans l'app." },
-  es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo.", ovHead: (n) => `📝 Tus notas (${n} en total):`, ovEmpty: "Aún no hay notas. Di «apunta: código del portal 4582» — y el dato queda a mano.", ovMore: "Pregunta «busca la nota sobre …» — o abre la sección «Notas» en la app." },
+const NOTE_MSG: Record<Lang, { saved: (t: string) => string; head: string; none: string; ovHead: (n: number) => string; ovEmpty: string; ovMore: string; exported: (n: number) => string }> = {
+  ru: { saved: (t) => `📝 Сохранил в Заметки: «${t}».`, head: "📝 Нашёл в Заметках:", none: "В Заметках такого не нашёл. Скажи «запиши …» — и сохраню.", ovHead: (n) => `📝 Твои заметки (всего ${n}):`, ovEmpty: "Заметок пока нет. Скажи «запиши код от домофона 4582» — и справка будет всегда под рукой.", ovMore: "Спроси «найди заметку про …» — или открой раздел «Заметки» в приложении.", exported: (n: number) => `📝 Твои заметки (${n}) — файлом. Открой его в Заметках айфона, Obsidian или где удобно; вернуть обратно можно, прислав файл мне.` },
+  en: { saved: (t) => `📝 Saved to Notes: “${t}”.`, head: "📝 Found in your Notes:", none: "Nothing like that in your Notes. Say “save a note …” and I'll keep it.", ovHead: (n) => `📝 Your notes (${n} total):`, ovEmpty: "No notes yet. Say “save a note: locker code 4582” — and the fact stays at hand.", ovMore: "Ask “find the note about …” — or open the “Notes” section in the app.", exported: (n: number) => `📝 Your notes (${n}) as a file. Open it in iPhone Notes, Obsidian or anywhere; send the file back to me to import it again.` },
+  uk: { saved: (t) => `📝 Зберіг у Нотатки: «${t}».`, head: "📝 Знайшов у Нотатках:", none: "У Нотатках такого не знайшов. Скажи «запиши …» — і збережу.", ovHead: (n) => `📝 Твої нотатки (всього ${n}):`, ovEmpty: "Нотаток поки немає. Скажи «запиши код від домофона 4582» — і довідка буде під рукою.", ovMore: "Спитай «знайди нотатку про …» — або відкрий розділ «Нотатки» в застосунку.", exported: (n: number) => `📝 Твої нотатки (${n}) — файлом. Відкрий його в Нотатках айфона, Obsidian чи де зручно; повернути назад можна, надіславши файл мені.` },
+  fr: { saved: (t) => `📝 Enregistré dans Notes : « ${t} ».`, head: "📝 Trouvé dans tes Notes :", none: "Rien de tel dans tes Notes. Dis « note … » et je le garde.", ovHead: (n) => `📝 Tes notes (${n} au total) :`, ovEmpty: "Pas encore de notes. Dis « note : code du portail 4582 » — et l'info reste à portée.", ovMore: "Demande « trouve la note sur … » — ou ouvre la section « Notes » dans l'app.", exported: (n: number) => `📝 Tes notes (${n}) en fichier. Ouvre-le dans Notes de l'iPhone, Obsidian ou ailleurs ; renvoie-le-moi pour réimporter.` },
+  es: { saved: (t) => `📝 Guardado en Notas: «${t}».`, head: "📝 Encontrado en tus Notas:", none: "No encontré nada así en tus Notas. Di «apunta …» y lo guardo.", ovHead: (n) => `📝 Tus notas (${n} en total):`, ovEmpty: "Aún no hay notas. Di «apunta: código del portal 4582» — y el dato queda a mano.", ovMore: "Pregunta «busca la nota sobre …» — o abre la sección «Notas» en la app.", exported: (n: number) => `📝 Tus notas (${n}) en un archivo. Ábrelo en Notas del iPhone, Obsidian o donde quieras; envíamelo de vuelta para reimportarlo.` },
 };
 
 // Строки для списков (чек-листов).
@@ -486,7 +494,7 @@ export async function renderListMessage(userId: string, listKey: string, lang: L
   return { text: lines.join("\n"), markup: kb.length ? { inline_keyboard: kb } : null };
 }
 
-export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any };
+export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string } };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
 export async function runAction(userId: string, name: string, input: any, lang: Lang, tzOffset?: number | null): Promise<ActionResult> {
@@ -591,6 +599,15 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const { error } = await db.from("list_items").delete().eq("user_id", userId).eq("list", key);
       if (error) return { text: s.fail };
       return { text: L.cleared(listTitle(key, lang)) };
+    }
+    if (name === "export_notes") {
+      const N = NOTE_MSG[lang] || NOTE_MSG.ru;
+      const { data, error } = await db.from("notes").select("text, pinned")
+        .eq("user_id", userId).order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(500);
+      if (error) return { text: s.fail };
+      if (!data?.length) return { text: N.ovEmpty };
+      const date = new Date().toISOString().slice(0, 10);
+      return { text: N.exported(data.length), file: { name: `lifeos-notes-${date}.md`, text: notesToText(data as any[], date) } };
     }
     if (name === "save_note") {
       const t = String(input?.text || "").trim().slice(0, 2000);
