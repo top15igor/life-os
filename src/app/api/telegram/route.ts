@@ -439,7 +439,7 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
   for (const lang of Object.keys(KB)) {
     const k = KB[lang];
     if (text === k.diary || (DIARY_LABEL_LEGACY[lang] || []).includes(text)) return "diary";
-    if (text === k.tasks || text === TASKS_LABEL_LEGACY[lang]) return "tasks";
+    if (text === k.tasks || (TASKS_LABEL_LEGACY[lang] || []).includes(text)) return "tasks";
     if (text === k.guide || (GUIDE_LABEL_LEGACY[lang] || []).includes(text)) return "guide";
     if (text === k.invite || text === INVITE_LABEL_LEGACY[lang]) return "invite";
   }
@@ -462,6 +462,15 @@ const LINK_WARN: Record<string, string> = {
   es: "⚠️ Este enlace es de un solo uso e inicia sesión en TU cuenta — no lo reenvíes a nadie.",
 };
 const DIARY_LABEL: Record<string, string> = { ru: "Твой дневник:", en: "Your diary:", uk: "Твій щоденник:", fr: "Ton journal :", es: "Tu diario:" };
+
+// Кнопки-разделы хаба «⏰ Заметки» (повестка дня + переходы).
+const HUB_BTN: Record<string, { notes: string; list: string; tasks: string }> = {
+  ru: { notes: "📝 Заметки", list: "🛒 Список", tasks: "🎯 Задачи" },
+  en: { notes: "📝 Notes", list: "🛒 List", tasks: "🎯 Tasks" },
+  uk: { notes: "📝 Нотатки", list: "🛒 Список", tasks: "🎯 Завдання" },
+  fr: { notes: "📝 Notes", list: "🛒 Liste", tasks: "🎯 Tâches" },
+  es: { notes: "📝 Notas", list: "🛒 Lista", tasks: "🎯 Tareas" },
+};
 // 📸 «В этот день» — воспоминания за этот календарный день.
 type Mem = { date: string; label: "year" | "years" | "month"; n: number; text: string };
 const plYearRu = (n: number) => { const a = n % 100, b = n % 10; if (a > 10 && a < 20) return "лет"; if (b === 1) return "год"; if (b >= 2 && b <= 4) return "года"; return "лет"; };
@@ -901,6 +910,30 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if (data.startsWith("hub:") && cqChat) {
+      // Разделы хаба «⏰ Заметки»: обзор заметок / список покупок / задачи.
+      const kind = data.slice(4);
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang, token, tz_offset, morning_prefs").eq("chat_id", cqChat).maybeSingle();
+        if (u) {
+          const lng = pickLang((u as any).lang);
+          const off = userTzOffsetMin((u as any).tz_offset, (u as any).morning_prefs?.tz);
+          if (kind === "tasks") {
+            const T = TASKS_MSG[lng] || TASKS_MSG.ru;
+            const res = await renderTasks((u as any).id, lng, "today", req.nextUrl.origin, (u as any).token);
+            if ("empty" in res) await sendMessage(cqChat, T.empty);
+            else await sendMessage(cqChat, res.text, res.markup);
+          } else if (kind === "list") {
+            const res = await runAction((u as any).id, "show_list", {}, lng, off);
+            await sendMessage(cqChat, mdToTelegram(res.text) || res.text, res.markup ? { reply_markup: res.markup } : undefined);
+          } else {
+            const res = await runAction((u as any).id, "find_note", {}, lng, off);
+            await sendMessage(cqChat, mdToTelegram(res.text) || res.text);
+          }
+        }
+        await answerCallback(cq.id);
+      } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("lstd:") && cqChat) {
       // «✓ N» под списком — вычеркнуть пункт и перерисовать список тем же сообщением.
       const itemId = data.slice(5);
@@ -1466,11 +1499,14 @@ export async function POST(req: NextRequest) {
     // Любая другая кнопка — выходим из режима знакомства, если он был.
     await stopAcquaint(user.id).catch(() => {});
     if (ba === "tasks") {
+      // «⏰ Заметки» — хаб «ничего не забыть»: повестка дня + кнопки-разделы.
       await sendChatAction(chatId, "typing");
-      const T = TASKS_MSG[lang] || TASKS_MSG.ru;
-      const res = await renderTasks(user.id, lang, "today", origin, user.token);
-      if ("empty" in res) await sendMessage(chatId, T.empty);
-      else await sendMessage(chatId, res.text, res.markup);
+      const agenda = await runAction(user.id, "list_reminders", { period: "today" }, lang, (user as any).tz_offset);
+      const H = HUB_BTN[lang] || HUB_BTN.ru;
+      await sendMessage(chatId, agenda.text, { reply_markup: { inline_keyboard: [
+        [{ text: H.notes, callback_data: "hub:notes" }, { text: H.list, callback_data: "hub:list" }],
+        [{ text: H.tasks, callback_data: "hub:tasks" }, { text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent("/notes")}` }],
+      ] } });
     }
     else if (ba === "guide") {
       // «🧭 Зачем я тебе» — интерактивное меню способов применения сервиса.
