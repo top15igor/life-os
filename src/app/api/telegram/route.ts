@@ -561,16 +561,16 @@ const CAPSULE: Record<string, { help: string; when: string; past: string; saved:
   },
 };
 
-// «📔 Сохранённое» — краткое описание твоей сохранённой жизни + переход на портал.
+// «🪷 LIFE OS» — что такое приложение и что там лежит + переход на портал.
 const CRM_INTRO: Record<string, string> = {
-  ru: "📔 <b>Твоя сохранённая жизнь</b>\n\nВсё, что ты рассказал, я сохранил и разложил по полочкам: записи, люди, цели, здоровье, память и Книга жизни. Открой — и увидишь свою жизнь целиком.",
-  en: "📔 <b>Your saved life</b>\n\nEverything you've told me is saved and sorted: entries, people, goals, health, memory and your Book of Life. Open it — and see your whole life at once.",
-  uk: "📔 <b>Твоє збережене життя</b>\n\nУсе, що ти розповів, я зберіг і розклав по поличках: записи, люди, цілі, здоров'я, пам'ять і Книга життя. Відкрий — і побачиш своє життя цілком.",
-  fr: "📔 <b>Ta vie sauvegardée</b>\n\nTout ce que tu m'as raconté est sauvegardé et rangé : entrées, personnes, objectifs, santé, mémoire et ton Livre de vie. Ouvre — et vois toute ta vie d'un coup.",
-  es: "📔 <b>Tu vida guardada</b>\n\nTodo lo que me contaste está guardado y ordenado: entradas, personas, metas, salud, memoria y tu Libro de la vida. Ábrelo — y verás tu vida entera de una vez.",
+  ru: "🪷 <b>LIFE OS — твоя жизнь целиком</b>\n\nЗдесь всё, что ты мне рассказал, разложено по полочкам: дневник и Книга жизни, люди и путешествия, цели и задачи, заметки и напоминания, здоровье и деньги.\n\nОткрой — и увидишь всю картину сразу.",
+  en: "🪷 <b>LIFE OS — your whole life</b>\n\nEverything you've told me, sorted into place: your diary and Book of Life, people and travels, goals and tasks, notes and reminders, health and money.\n\nOpen it — and see the whole picture at once.",
+  uk: "🪷 <b>LIFE OS — твоє життя цілком</b>\n\nТут усе, що ти мені розповів, розкладено по поличках: щоденник і Книга життя, люди й подорожі, цілі та задачі, нотатки й нагадування, здоров'я та гроші.\n\nВідкрий — і побачиш усю картину одразу.",
+  fr: "🪷 <b>LIFE OS — toute ta vie</b>\n\nTout ce que tu m'as raconté, rangé à sa place : ton journal et ton Livre de vie, les gens et les voyages, objectifs et tâches, notes et rappels, santé et argent.\n\nOuvre — et vois toute l'image d'un coup.",
+  es: "🪷 <b>LIFE OS — tu vida entera</b>\n\nTodo lo que me has contado, ordenado en su sitio: tu diario y tu Libro de la vida, personas y viajes, metas y tareas, notas y recordatorios, salud y dinero.\n\nÁbrelo — y verás el cuadro completo de una vez.",
 };
 const CRM_OPEN: Record<string, string> = {
-  ru: "📔 Открыть сохранённое", en: "📔 Open my saved life", uk: "📔 Відкрити збережене", fr: "📔 Ouvrir ma vie sauvegardée", es: "📔 Abrir lo guardado",
+  ru: "🪷 Открыть LIFE OS", en: "🪷 Open LIFE OS", uk: "🪷 Відкрити LIFE OS", fr: "🪷 Ouvrir LIFE OS", es: "🪷 Abrir LIFE OS",
 };
 const L_MONEY: Record<string, string> = { ru: "💰 Открыть «Деньги»", en: "💰 Open Money", uk: "💰 Відкрити «Гроші»", fr: "💰 Ouvrir Argent", es: "💰 Abrir Dinero" };
 
