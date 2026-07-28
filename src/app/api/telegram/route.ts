@@ -166,6 +166,15 @@ const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB:
 // Подпись кнопки «открыть раздел» после действия бота.
 const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir", es: "↗️ Abrir" };
 // Подтверждение удаления записи.
+// Ответы на кнопки под доставленным напоминанием.
+const REM_CB: Record<string, { done: string; snoozed: string; gone: string }> = {
+  ru: { done: "Готово ✅", snoozed: "Отложил на час ⏰", gone: "Это напоминание уже удалено." },
+  en: { done: "Done ✅", snoozed: "Snoozed for an hour ⏰", gone: "This reminder is already gone." },
+  uk: { done: "Готово ✅", snoozed: "Відклав на годину ⏰", gone: "Це нагадування вже видалено." },
+  fr: { done: "Fait ✅", snoozed: "Reporté d'une heure ⏰", gone: "Ce rappel n'existe plus." },
+  es: { done: "Hecho ✅", snoozed: "Pospuesto una hora ⏰", gone: "Este recordatorio ya no existe." },
+};
+
 const DEL_BTN: Record<string, { yes: string; no: string; done: string; kept: string; gone: string }> = {
   ru: { yes: "🗑 Да, удалить", no: "Отмена", done: "🗑 Запись удалена.", kept: "Ок, оставил запись.", gone: "Записи уже нет." },
   en: { yes: "🗑 Yes, delete", no: "Cancel", done: "🗑 Entry deleted.", kept: "Ok, kept the entry.", gone: "The entry is already gone." },
@@ -891,6 +900,36 @@ export async function POST(req: NextRequest) {
       } else {
         await answerCallback(cq.id);
       }
+    } else if ((data.startsWith("remok:") || data.startsWith("remsn:")) && cqChat) {
+      // Кнопки под доставленным напоминанием: «✅ Готово» / «⏰ Через час».
+      const remId = data.slice(6);
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const R = REM_CB[lng] || REM_CB.ru;
+        const orig = String(cq.message?.text || "");
+        if (u && /^[0-9a-f-]{16,}$/i.test(remId)) {
+          const { data: rem } = await db.from("reminders").select("id").eq("id", remId).eq("user_id", (u as any).id).maybeSingle();
+          if (rem) {
+            if (data.startsWith("remok:")) {
+              await db.from("reminders").update({ done: true }).eq("id", remId);
+              await answerCallback(cq.id, R.done);
+              if (mid) await editMessageText(cqChat, mid, `${orig}\n\n${R.done}`);
+            } else {
+              const next = new Date(Date.now() + 3600 * 1000).toISOString();
+              await db.from("reminders").update({ due_at: next, notified_at: null, done: false }).eq("id", remId);
+              await answerCallback(cq.id, R.snoozed);
+              if (mid) await editMessageText(cqChat, mid, `${orig}\n\n${R.snoozed}`);
+            }
+          } else {
+            await answerCallback(cq.id, R.gone);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch { await answerCallback(cq.id); }
     } else if ((data.startsWith("delok:") || data === "delno") && cqChat) {
       // Подтверждение/отмена удаления последней записи.
       const mid = cq.message?.message_id;

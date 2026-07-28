@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { logClaude } from "./usage";
 import { DREAM_SPHERES } from "./ai";
-import { createReminder, localToISO } from "./reminders";
+import { createReminder, localToISO, deleteReminder } from "./reminders";
 import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
@@ -63,6 +63,22 @@ export const ACTION_TOOLS: any[] = [
     },
   },
   {
+    name: "list_reminders",
+    description:
+      "Показать план: напоминания и задачи с датой. Команды: «что у меня сегодня?», «какие планы на завтра?», «что на этой неделе?», «покажи напоминания». period — today (сегодня), tomorrow (завтра), week (неделя), all (все ближайшие).",
+    input_schema: {
+      type: "object",
+      properties: { period: { type: "string", enum: ["today", "tomorrow", "week", "all"] } },
+      required: ["period"],
+    },
+  },
+  {
+    name: "cancel_reminder",
+    description:
+      "Отменить/удалить НАПОМИНАНИЕ: «отмени напоминание про стоматолога», «убери напоминание о звонке», «не напоминай про…». query — слова для поиска напоминания.",
+    input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+  },
+  {
     name: "rename_person",
     description:
       "Пользователь исправляет ИМЯ человека: «её зовут X (а не Y)», «настоящее имя — X», «переименуй Y в X», «исправь имя», «это не Y, это X», «запиши, что её зовут X». Переименовывает человека в базе людей и исправляет его имя во всех сохранённых инсайтах — выбирай это, а НЕ save_entry, когда суть сообщения = поправить имя. from — имя, как записано сейчас (неправильное), to — правильное; оба в именительном падеже.",
@@ -112,6 +128,8 @@ const SYS =
   "Вопросы про свои ЦИФРЫ/СТАТИСТИКУ («сколько у меня записей/голосовых», «сколько слов/букв за всё время», «когда я зарегистрировался») и про ПРИЛОЖЕНИЕ («как зайти в приложение», «как работает…», «где найти…», «что ты умеешь») → ask_question: у ассистента есть точные данные и инструкция. ЛЮБОЙ вопрос боту — это ask_question, а НЕ save_entry, даже если ты не уверен, что ассистент знает ответ: лучше честное «не умею», чем молчаливая запись в дневник. " +
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
+  "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
+  "«Отмени/убери напоминание про…», «не напоминай про…» → cancel_reminder, а НЕ save_entry и НЕ delete_last_entry. " +
   "Вопросы о своей жизни → ask_question. " +
   "ВАЖНО: если человек СПРАШИВАЕТ или ВОЗМУЩАЕТСЯ по поводу уже записанного (особенно трат/денег) — " +
   "«а почему трату не учёл?», «где сегодняшний расход?», «чего не показал?», «ты не записал…?» — это ask_question, " +
@@ -349,6 +367,28 @@ const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: st
   es: { label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" } },
 };
 
+// Строки для «что у меня сегодня/завтра» и «отмени напоминание».
+const AGENDA_MSG: Record<Lang, {
+  head: Record<string, string>; empty: Record<string, string>;
+  allDay: string; taskTag: string; canceled: (t: string) => string; cancelNone: string; cancelMany: string;
+}> = {
+  ru: { head: { today: "📅 Сегодня", tomorrow: "📅 Завтра", week: "📅 Ближайшая неделя", all: "📅 Ближайшие планы" },
+    empty: { today: "На сегодня напоминаний и задач с датой нет — день свободен 🙂", tomorrow: "На завтра пока ничего не запланировано.", week: "На этой неделе напоминаний нет.", all: "Ближайших напоминаний нет." },
+    allDay: "весь день", taskTag: "задача", canceled: (t) => `Отменил напоминание: «${t}».`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
+  en: { head: { today: "📅 Today", tomorrow: "📅 Tomorrow", week: "📅 This week", all: "📅 Upcoming" },
+    empty: { today: "No reminders or dated tasks today — the day is free 🙂", tomorrow: "Nothing planned for tomorrow yet.", week: "No reminders this week.", all: "No upcoming reminders." },
+    allDay: "all day", taskTag: "task", canceled: (t) => `Canceled the reminder: “${t}”.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelMany: "Found several similar ones — which should I cancel?" },
+  uk: { head: { today: "📅 Сьогодні", tomorrow: "📅 Завтра", week: "📅 Найближчий тиждень", all: "📅 Найближчі плани" },
+    empty: { today: "На сьогодні нагадувань і задач із датою немає — день вільний 🙂", tomorrow: "На завтра поки нічого не заплановано.", week: "На цьому тижні нагадувань немає.", all: "Найближчих нагадувань немає." },
+    allDay: "весь день", taskTag: "задача", canceled: (t) => `Скасував нагадування: «${t}».`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
+  fr: { head: { today: "📅 Aujourd'hui", tomorrow: "📅 Demain", week: "📅 Cette semaine", all: "📅 À venir" },
+    empty: { today: "Aucun rappel ni tâche datée aujourd'hui — journée libre 🙂", tomorrow: "Rien de prévu pour demain.", week: "Aucun rappel cette semaine.", all: "Aucun rappel à venir." },
+    allDay: "toute la journée", taskTag: "tâche", canceled: (t) => `Rappel annulé : « ${t} ».`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
+  es: { head: { today: "📅 Hoy", tomorrow: "📅 Mañana", week: "📅 Esta semana", all: "📅 Próximos" },
+    empty: { today: "Hoy no hay recordatorios ni tareas con fecha — día libre 🙂", tomorrow: "Nada planeado para mañana todavía.", week: "No hay recordatorios esta semana.", all: "No hay próximos recordatorios." },
+    allDay: "todo el día", taskTag: "tarea", canceled: (t) => `Cancelé el recordatorio: «${t}».`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
+};
+
 export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string } };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
@@ -385,6 +425,71 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const when = allDay ? `${dd}.${mm} (${rm.allDayNote})` : `${dd}.${mm} ${rm.at} ${time}`;
       const suffix = recurrence ? rm.rep[recurrence] : "";
       return { text: rm.label(t, when + suffix), openNext: "/reminders" };
+    }
+    if (name === "list_reminders") {
+      const period = ["today", "tomorrow", "week", "all"].includes(input?.period) ? input.period : "today";
+      const A = AGENDA_MSG[lang] || AGENDA_MSG.ru;
+      const off = typeof tzOffset === "number" ? tzOffset : 0;
+      // Границы периода в UTC, считая от МЕСТНЫХ суток пользователя.
+      const dayStartUTC = (shiftDays: number) => {
+        const d = new Date(Date.now() + off * 60000);
+        d.setUTCHours(0, 0, 0, 0);
+        return d.getTime() + shiftDays * 86400000 - off * 60000;
+      };
+      const now = Date.now();
+      const from = period === "tomorrow" ? dayStartUTC(1) : now;
+      const to = period === "today" ? dayStartUTC(1) : period === "tomorrow" ? dayStartUTC(2) : period === "week" ? now + 7 * 86400000 : now + 370 * 86400000;
+
+      const { data: rems } = await db.from("reminders").select("text, due_at, all_day, recurrence")
+        .eq("user_id", userId).eq("done", false)
+        .gte("due_at", new Date(from - 86400000).toISOString()) // весь-день хранится местной полночью
+        .lt("due_at", new Date(to).toISOString())
+        .order("due_at", { ascending: true }).limit(20);
+      const localFmt = (iso: string, allDay: boolean) => {
+        const l = new Date(Date.parse(iso) + off * 60000).toISOString();
+        const dd = `${l.slice(8, 10)}.${l.slice(5, 7)}`;
+        return allDay ? `${dd} (${A.allDay})` : `${dd} ${l.slice(11, 16)}`;
+      };
+      const lines: string[] = [];
+      for (const r of (rems || []) as any[]) {
+        const fireMs = r.all_day ? Date.parse(r.due_at) + 86400000 : Date.parse(r.due_at); // весь-день актуален весь свой день
+        if (fireMs < from || Date.parse(r.due_at) >= to) continue;
+        lines.push(`• ${localFmt(r.due_at, !!r.all_day)} — ${String(r.text).slice(0, 120)}`);
+      }
+      // Задачи с датой в периоде (местные календарные дни).
+      const dayKey = (ms: number) => new Date(ms + off * 60000).toISOString().slice(0, 10);
+      try {
+        const { data: tsk } = await db.from("tasks").select("text, due_date").eq("user_id", userId).eq("done", false)
+          .gte("due_date", dayKey(from)).lte("due_date", dayKey(to - 1)).order("due_date", { ascending: true }).limit(10);
+        for (const t of (tsk || []) as any[]) {
+          const [, m2, d2] = String(t.due_date).split("-");
+          lines.push(`• ${d2}.${m2} — ${String(t.text).slice(0, 120)} (${A.taskTag})`);
+        }
+      } catch { /* колонки due_date может не быть */ }
+      if (!lines.length) return { text: A.empty[period] };
+      return { text: `${A.head[period]}\n${lines.join("\n")}`, openNext: "/reminders" };
+    }
+    if (name === "cancel_reminder") {
+      const q = String(input?.query || "").trim();
+      const A = AGENDA_MSG[lang] || AGENDA_MSG.ru;
+      if (!q) return { text: A.cancelNone };
+      const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
+      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const { data: rems } = await db.from("reminders").select("id, text, due_at")
+        .eq("user_id", userId).eq("done", false)
+        .gte("due_at", new Date(Date.now() - 86400000).toISOString())
+        .order("due_at", { ascending: true }).limit(100);
+      const scored = ((rems || []) as any[])
+        .map((r) => ({ r, score: stems.filter((st) => norm(String(r.text)).includes(st)).length }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+      if (!scored.length) return { text: A.cancelNone };
+      const top = scored.filter((x) => x.score === scored[0].score);
+      if (top.length > 1) {
+        return { text: `${A.cancelMany}\n${top.slice(0, 3).map((x) => `• ${String(x.r.text).slice(0, 100)}`).join("\n")}` };
+      }
+      const ok = await deleteReminder(userId, scored[0].r.id);
+      return ok ? { text: A.canceled(String(scored[0].r.text).slice(0, 150)), openNext: "/reminders" } : { text: s.fail };
     }
     if (name === "complete_task") {
       const q = String(input?.query || "").trim();

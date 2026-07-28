@@ -1,0 +1,26 @@
+# Доставка напоминаний ботом точно в срок. На Vercel Hobby крон бывает только
+# раз в день, поэтому «будильником» служит GitHub Actions: каждые 5 минут
+# дёргаем /api/cron-reminders, а эндпоинт сам решает, чему пришло время,
+# и шлёт напоминания в Telegram (защита от повторов — notified_at в базе).
+#
+# Использует те же секреты репозитория, что и morning-hourly.yml:
+#   APP_URL      — https://life-os.today (без слэша в конце)
+#   CRON_SECRET  — то же значение, что в переменных окружения Vercel
+name: Reminders delivery (every 5 min)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # каждые 5 минут (UTC; GitHub может задерживать на пару минут)
+  workflow_dispatch: {} # можно запустить вручную из вкладки Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminders cron
+        run: |
+          curl -fsS -X GET "${APP_URL}/api/cron-reminders" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

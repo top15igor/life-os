@@ -81,3 +81,16 @@ export function localToISO(dateStr: string, timeStr: string | null, tzOffsetMin:
   const off = typeof tzOffsetMin === "number" ? tzOffsetMin : 0;
   return new Date(asUTC - off * 60000).toISOString();
 }
+
+// Удалить напоминание (и его событие в Google Календаре, если было).
+// Используется ботом («отмени напоминание про…») — веб-версия делает то же в /api/reminder.
+export async function deleteReminder(userId: string, id: string): Promise<boolean> {
+  const db = supabaseAdmin();
+  try {
+    const { data } = await db.from("reminders").select("gcal_event_id, gcal_calendar_id").eq("id", id).eq("user_id", userId).maybeSingle();
+    const ev = (data as any)?.gcal_event_id;
+    if (ev) await deleteCalendarEvent(userId, ev, (data as any)?.gcal_calendar_id || "primary");
+  } catch { /* колонки календаря может не быть — не мешаем удалению */ }
+  const { error } = await db.from("reminders").delete().eq("id", id).eq("user_id", userId);
+  return !error;
+}
