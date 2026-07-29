@@ -3,8 +3,13 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("features", "/features");
+}
 
 type Item = { t: string; d: string; soon?: boolean };
 type Cat = { kicker: string; title: string; lead: string; edge?: string; items: Item[] };

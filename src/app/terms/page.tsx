@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
@@ -9,10 +10,9 @@ import { POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "LIFE OS — Terms of Service",
-  description: "Terms of service of LIFE OS: how the service works, account rules, plans and payment, liability.",
-};
+export async function generateMetadata() {
+  return pageMetadata("terms", "/terms");
+}
 
 // Публичная страница (middleware пропускает /terms). Адрес отдаём в App Store Connect.
 export default async function TermsPage() {

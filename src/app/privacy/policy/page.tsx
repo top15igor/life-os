@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMetadata } from "@/lib/seo";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
@@ -8,10 +9,9 @@ import { policyContent, POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "LIFE OS — Privacy Policy",
-  description: "Full legal privacy policy of LIFE OS: what data is processed, why, with whom it is shared and what rights you have.",
-};
+export async function generateMetadata() {
+  return pageMetadata("policy", "/privacy/policy");
+}
 
 // Формальная версия политики. Публичная (middleware пропускает всё, что начинается с /privacy).
 // Именно этот адрес отдаём в App Store Connect и в Google OAuth-верификацию.

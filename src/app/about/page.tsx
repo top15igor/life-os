@@ -5,8 +5,13 @@ import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
 import PublicFooter from "@/components/PublicFooter";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("about", "/about");
+}
 
 const C = {
   ru: {

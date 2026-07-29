@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import ChaosToOrder, { type Chip } from "@/components/onePlace/ChaosToOrder";
@@ -8,11 +8,9 @@ import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Все заметки и напоминания — в одном месте · LIFE OS",
-  description:
-    "Заметки айфона, сохранёнки Инстаграма, файлы, стикеры и будильники — в одной базе. Скажи словами — LIFE OS запишет, разложит и напомнит вовремя.",
-};
+export async function generateMetadata() {
+  return pageMetadata("onePlace", "/one-place");
+}
 
 type Shelf = { icon: string; t: string; items: string[] };
 type Step = { n: string; t: string; d: string };

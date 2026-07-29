@@ -9,8 +9,13 @@ import { getEntries } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { getCurrentUser } from "@/lib/auth";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("pricing", "/pricing");
+}
 
 const HINT: Record<string, string> = {
   ru: "Честная оплата: платишь за ценность дневника, а не фиксированную «подписку на всякий случай».",

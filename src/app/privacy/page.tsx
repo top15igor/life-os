@@ -5,8 +5,13 @@ import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { PUBLIC_LIGHT_AURORA } from "@/lib/publicShell";
 import { privacyContent } from "@/lib/privacy";
+import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("privacy", "/privacy");
+}
 
 export default async function PrivacyPage() {
   const locale = await getLocale();
