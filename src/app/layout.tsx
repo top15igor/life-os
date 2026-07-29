@@ -42,18 +42,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/fonts/tabler-icons.woff2"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.34.0/dist/tabler-icons.min.css"
-        />
+        {/* Шрифт иконок лежит у нас (public/fonts), а не на стороннем CDN: если бы
+            jsdelivr тормозил или был недоступен, весь интерфейс остался бы без иконок.
+            Обновление: качнуть новую версию @tabler/icons-webfont в public/fonts. */}
+        <link rel="preload" as="font" type="font/woff2" crossOrigin="anonymous" href="/fonts/tabler-icons.woff2" />
+        <link rel="stylesheet" href="/fonts/tabler-icons.css" />
       </head>
       <body>
         <LangFromQuery />
