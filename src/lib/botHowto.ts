@@ -66,9 +66,12 @@ const RU: HowtoDoc = {
       "🎁 <b>Для близких</b>\n\n" +
       "LIFE OS — не только про тебя. Подари Книгу жизни маме или партнёру, передавай сообщения через меня, пиши письма в будущее.\n\n" +
       "<b>Попробуй:</b>\n" +
-      "• передай Коле, что опоздаю на час\n" +
+      "• передай Коле, что опоздаю на час — доставлю ему в чат с ботом\n" +
+      "• /send Коля буду через 10 минут — то же самое командой\n" +
+      "• /nick @kolya Коля — короткое прозвище вместо @имени\n" +
       "• /capsule через 1 год Дорогой я из будущего…\n" +
-      "• /invite — позвать близкого" },
+      "• /invite — позвать близкого\n\n" +
+      "Писать можно тем, кто тоже в LIFE OS и связан с тобой (кого пригласил ты или кто пригласил тебя). Не хочешь получать сообщения — /relay." },
   ],
   tipBtn: "🎲 Случайный лайфхак",
   tipMore: "🎲 Ещё лайфхак",
@@ -137,9 +140,12 @@ const EN: HowtoDoc = {
       "🎁 <b>For your loved ones</b>\n\n" +
       "LIFE OS isn't only about you. Gift a Book of Life to your mom or partner, pass messages through me, write letters to the future.\n\n" +
       "<b>Try:</b>\n" +
-      "• tell Nick I'll be an hour late\n" +
+      "• tell Nick I'll be an hour late — I deliver it to his chat\n" +
+      "• /send Nick running 10 minutes late — same thing as a command\n" +
+      "• /nick @kolya Nick — a short nickname instead of the @name\n" +
       "• /capsule in 1 year Dear future me…\n" +
-      "• /invite — invite someone close" },
+      "• /invite — invite someone close\n\n" +
+      "You can message people who also use LIFE OS and are connected to you (you invited them, or they invited you). Don't want incoming messages — /relay." },
   ],
   tipBtn: "🎲 Random tip",
   tipMore: "🎲 Another tip",

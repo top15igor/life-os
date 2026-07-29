@@ -130,6 +130,32 @@ const E: Record<Locale, Extras> = {
     ],
     features: [
       {
+        key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Сообщения близким через бота",
+        short: "Скажи «передай Ане, что опоздаю» — я доставлю сообщение ей в чат с ботом. Без переписки и лишних приложений.",
+        sections: [
+          { p: "LIFE OS умеет передавать короткие сообщения между своими пользователями. Удобно, когда нужно быстро что-то сообщить, а созваниваться или начинать переписку не хочется: ты говоришь боту одну фразу — человек получает её у себя, с подписью, от кого." },
+          { h: "Как передать", steps: [
+            "Скажи или напиши обычными словами: «передай Коле, что опоздаю на час».",
+            "Или командой: /send Коля буду через 10 минут",
+            "Если знаешь его @имя из LIFE OS: /send @kolya привет",
+            "Готово — бот подтвердит «Передал» и доставит сообщение ему в чат.",
+          ] },
+          { h: "Что увидит получатель", p: "«📨 Игорь передаёт тебе через LIFE OS: «опоздаю на час»» — и подсказку, как ответить одной командой. Ответ придёт тебе так же." },
+          { h: "Короткие прозвища", steps: [
+            "/nick @kolya Коля — назови человека так, как тебе удобно",
+            "Потом просто: /send Коля текст",
+            "/nicks — список прозвищ, /unnick Коля — убрать",
+          ] },
+          { h: "Кому можно писать", p: "Тем, кто тоже пользуется LIFE OS и связан с тобой: кого ты пригласил, кто пригласил тебя, или с кем вы уже переписывались через бота. Это защита от спама — писать незнакомым людям нельзя. Если нужного человека нет в списке, попроси его написать тебе первым: /send @твоё-имя привет (твоё @имя — в Профиле)." },
+          { h: "Если не хочешь получать сообщения", p: "Команда /relay выключает приём — тому, кто попробует написать, бот вежливо ответит, что ты отключил сообщения. Повторная команда включает обратно. На твою возможность писать другим это не влияет." },
+          { tips: [
+            "Работает и голосом: наговори «передай Жене, что буду к семи» — распознает и отправит.",
+            "Не больше 20 сообщений в сутки — чтобы бот не превращался в рассыльщик.",
+            "Имя можно называть в любом падеже: «передай Ане», «скажи Ане» — найдёт Анну.",
+          ] },
+        ],
+      },
+      {
         key: "botactions", icon: "ti-robot", color: "#6d5efc", title: "Бот действует за тебя",
         short: "Дай боту команду обычными словами — он сам добавит цель, закроет задачу, запишет вес и не только.",
         sections: [
@@ -437,6 +463,32 @@ const E: Record<Locale, Extras> = {
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Messages to loved ones via the bot",
+        short: "Say “tell Anna I'll be late” — I deliver it to her chat with the bot. No back-and-forth, no extra apps.",
+        sections: [
+          { p: "LIFE OS can relay short messages between its users. Handy when you need to tell someone something fast without calling or starting a chat: you say one phrase to the bot, and the person gets it, signed with your name." },
+          { h: "How to send", steps: [
+            "Just say it in plain words: “tell Nick I'll be an hour late”.",
+            "Or use the command: /send Nick running 10 minutes late",
+            "If you know their LIFE OS @name: /send @kolya hi",
+            "Done — the bot confirms “Sent” and delivers it to their chat.",
+          ] },
+          { h: "What the recipient sees", p: "“📨 Igor sends you a message via LIFE OS: «I'll be an hour late»” — plus a one-command hint to reply. Their answer reaches you the same way." },
+          { h: "Short nicknames", steps: [
+            "/nick @kolya Nick — call the person whatever suits you",
+            "Then simply: /send Nick your text",
+            "/nicks — list them, /unnick Nick — remove",
+          ] },
+          { h: "Who you can message", p: "People who also use LIFE OS and are connected to you: someone you invited, who invited you, or with whom you've already exchanged messages through the bot. That's the anti-spam rule — you can't message strangers. If someone's missing from the list, ask them to message you first: /send @your-name hi (your @name is in your Profile)." },
+          { h: "If you'd rather not receive messages", p: "The /relay command turns your inbox off — anyone trying to write gets a polite note that you've disabled messages. Run it again to turn it back on. It doesn't affect your ability to message others." },
+          { tips: [
+            "Voice works too: say “tell Zhenya I'll be there by seven” — it transcribes and sends.",
+            "Up to 20 messages a day — so the bot never becomes a mailing tool.",
+            "Names work in any form: “tell Anna”, “say to Anna” — it finds Anna.",
+          ] },
+        ],
+      },
       {
         key: "botactions", icon: "ti-robot", color: "#6d5efc", title: "The bot acts for you",
         short: "Give the bot a command in plain words — it adds a goal, closes a task, logs your weight and more.",
