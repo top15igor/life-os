@@ -15,7 +15,6 @@ type Device = {
 
 const STR: Record<string, any> = {
   ru: {
-    lead: "Кнопка на запястье или на шнурке: нажал — наговорил — мысль уже в дневнике. Телефон доставать не нужно.",
     empty: "Пока ни одного устройства. Начни с Apple Watch — это 5 минут и без всякого железа.",
     addWatch: "Добавить Apple Watch",
     addFob: "Добавить брелок",
@@ -47,7 +46,6 @@ const STR: Record<string, any> = {
     sqlNote: "Раздел ещё не готов к работе: нужно применить devices.sql в базе.",
   },
   en: {
-    lead: "A button on your wrist or on a neck strap: press, speak, and the thought is already in your diary. No need to take out the phone.",
     empty: "No devices yet. Start with Apple Watch — 5 minutes, no hardware needed.",
     addWatch: "Add Apple Watch",
     addFob: "Add keyfob",
@@ -203,8 +201,6 @@ export default function DevicesManager({ devices, locale, origin, ready }: { dev
 
   return (
     <div>
-      <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 16 }}>{s.lead}</div>
-
       {!ready && (
         <div className="card" style={{ padding: 14, marginBottom: 14, fontSize: 12.5, color: "var(--text-2)" }}>{s.sqlNote}</div>
       )}
