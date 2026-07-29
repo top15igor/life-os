@@ -46,6 +46,11 @@ function numParam(v: string | null | undefined) {
   return isFinite(n) ? n : undefined;
 }
 
+// Сообщения бота уходят с parse_mode=HTML: угловые скобки в речи ломают отправку.
+function esc(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function deviceLabel(d: Device) {
   return d.name?.trim() || (d.kind === "watch" ? "Часы" : d.kind === "keyfob" ? "Брелок" : "Устройство");
 }
@@ -113,11 +118,18 @@ export async function POST(req: NextRequest) {
   // Когда мысль была записана: брелок с офлайн-буфером заливает её позже.
   let stamp: { entry_date: string; entry_time: string } | null = null;
   let chatId: number | null = null;
+  // Двумя запросами нарочно: если колонки tz_offset нет, единый select падает
+  // целиком и вместе с ним теряется chat_id — то есть и подтверждение в Telegram.
   try {
-    const { data: u } = await supabaseAdmin().from("users").select("chat_id, tz_offset").eq("id", device.user_id).maybeSingle();
+    const { data: u } = await supabaseAdmin().from("users").select("chat_id").eq("id", device.user_id).maybeSingle();
     chatId = (u as any)?.chat_id ?? null;
-    if (at) stamp = localStampFromEpoch(at, (u as any)?.tz_offset);
-  } catch { /* нет колонки tz_offset — время по умолчанию */ }
+  } catch { /* нет пользователя — просто не подтверждаем */ }
+  if (at) {
+    try {
+      const { data: u } = await supabaseAdmin().from("users").select("tz_offset").eq("id", device.user_id).maybeSingle();
+      stamp = localStampFromEpoch(at, (u as any)?.tz_offset);
+    } catch { /* нет колонки tz_offset — время по умолчанию */ }
+  }
 
   let entryId: string | null = null;
   try {
@@ -134,12 +146,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
   }
 
-  touchDevice(device.id, battery);
+  // Ждём оба: на Vercel функция замирает сразу после ответа, и «отправлю потом»
+  // означает «не отправлю никогда» — подтверждение в Telegram не доходило.
+  await touchDevice(device.id, battery).catch(() => {});
 
   // Подтверждение в Telegram — чтобы ты видел, что мысль дошла и как её услышали.
   if (chatId) {
     const short = text.length > 400 ? text.slice(0, 400) + "…" : text;
-    sendMessage(chatId, `🎙 ${deviceLabel(device)}: ${short}`).catch(() => {});
+    await sendMessage(chatId, `🎙 ${deviceLabel(device)}: ${esc(short)}`).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, text, id: entryId });
