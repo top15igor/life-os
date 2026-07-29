@@ -8,6 +8,7 @@ import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
 import { askKnowledge } from "./knowledge";
 import { notesToText } from "./notesIO";
+import { sendRelay } from "./relay";
 import { birthdayISO, BDAY_UNKNOWN_YEAR } from "./birthday";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -97,6 +98,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
   },
   {
+    name: "send_message",
+    description:
+      "Передать сообщение ДРУГОМУ человеку через бота: «передай Коле, что опоздаю», «напиши Ане, что буду через час», «скажи маме спасибо». Работает, если человек тоже пользуется LIFE OS (он есть в контактах). to — имя/прозвище/@имя получателя, text — что передать (без слов «передай/скажи»).",
+    input_schema: { type: "object", properties: { to: { type: "string" }, text: { type: "string" } }, required: ["to", "text"] },
+  },
+  {
     name: "export_notes",
     description:
       "Выгрузить ЗАМЕТКИ файлом: «выгрузи заметки», «пришли мои заметки файлом», «экспорт заметок», «скинь заметки, перенесу на айфон». Отправляет текстовый файл со всеми заметками.",
@@ -179,6 +186,7 @@ const SYS =
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
   "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
+  "«Передай/скажи/напиши <кому> …» (сообщение ДРУГОМУ человеку) → send_message. Ты УМЕЕШЬ это: бот доставит сообщение получателю в его чат. Никогда не отвечай «я не могу написать другому человеку». " +
   "«Выгрузи/пришли заметки файлом», «экспорт заметок», «перенесу на айфон» → export_notes. " +
   "«Какой код от…?», «найди заметку…», «что я записывал про…» (справка, которую сам просил запомнить) → find_note. «Что у меня по заметкам», «покажи (мои) заметки» → find_note БЕЗ query (обзор). " +
   "РАЗЛИЧАЙ СЛОВА: «записи», «дневник» — это ДНЕВНИК (статистика → ask_question); «заметки» — это раздел справки (find_note); «списки» — чек-листы (show_list). Не подменяй одно другим. " +
@@ -494,6 +502,15 @@ export async function renderListMessage(userId: string, listKey: string, lang: L
   return { text: lines.join("\n"), markup: kb.length ? { inline_keyboard: kb } : null };
 }
 
+// Подтверждение передачи сообщения другому пользователю.
+const RELAY_OK: Record<Lang, (name: string) => string> = {
+  ru: (n) => `✅ Передал «${n}».`,
+  en: (n) => `✅ Delivered to ${n}.`,
+  uk: (n) => `✅ Передав «${n}».`,
+  fr: (n) => `✅ Transmis à ${n}.`,
+  es: (n) => `✅ Entregado a ${n}.`,
+};
+
 export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string } };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
@@ -599,6 +616,15 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const { error } = await db.from("list_items").delete().eq("user_id", userId).eq("list", key);
       if (error) return { text: s.fail };
       return { text: L.cleared(listTitle(key, lang)) };
+    }
+    if (name === "send_message") {
+      const to = String(input?.to || "").trim();
+      const body = String(input?.text || "").trim().slice(0, 2000);
+      if (!to || !body) return { text: s.fail };
+      const { data: me } = await db.from("users").select("name").eq("id", userId).maybeSingle();
+      const r = await sendRelay({ id: userId, name: (me as any)?.name || null }, to, body, lang);
+      // Не доставили (нет такого контакта / отключил приём) — показываем причину как есть.
+      return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(r.toName || to) : (r.error || s.fail) };
     }
     if (name === "export_notes") {
       const N = NOTE_MSG[lang] || NOTE_MSG.ru;
