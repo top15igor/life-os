@@ -9,7 +9,7 @@ import { hints } from "./hints";
 // пунктов (способы ввода, экспорт), которых нет среди разделов приложения.
 
 export type Cap = { icon: string; name: string; desc: string };
-export type CapGroup = { icon: string; color: string; title: string; items: Cap[] };
+export type CapGroup = { key: string; icon: string; color: string; title: string; items: Cap[] };
 export type Capabilities = { kicker: string; title: string; sub: string; groups: CapGroup[] };
 
 // Иконки для разделов приложения (совпадают со стилистикой Sidebar/Guide).
@@ -56,7 +56,7 @@ type T = {
 const TR: Record<Locale, T> = {
   ru: {
     kicker: "Как использовать",
-    title: "Всё, что умеет LIFE OS",
+    title: "Куда всё раскладывается",
     sub: "Нажми на раздел — раскроется список возможностей. Вести вручную ничего не нужно: ты просто рассказываешь, а LIFE OS сам раскладывает всё по этим полкам.",
     g: {
       input: "Как добавлять — без усилий",
@@ -79,7 +79,7 @@ const TR: Record<Locale, T> = {
   },
   en: {
     kicker: "How to use it",
-    title: "Everything LIFE OS can do",
+    title: "Where everything lands",
     sub: "Tap a section — it opens a list of features. Nothing to log by hand: you just talk, and LIFE OS sorts it all onto these shelves.",
     g: {
       input: "How you add things — effortlessly",
@@ -102,7 +102,7 @@ const TR: Record<Locale, T> = {
   },
   uk: {
     kicker: "Як користуватися",
-    title: "Усе, що вміє LIFE OS",
+    title: "Куди все розкладається",
     sub: "Натисни на розділ — розкриється список можливостей. Вести вручну нічого не треба: ти просто розповідаєш, а LIFE OS сам розкладає все по цих поличках.",
     g: {
       input: "Як додавати — без зусиль",
@@ -125,7 +125,7 @@ const TR: Record<Locale, T> = {
   },
   fr: {
     kicker: "Comment l'utiliser",
-    title: "Tout ce que LIFE OS sait faire",
+    title: "Où tout se range",
     sub: "Touche une section — la liste des possibilités s'ouvre. Rien à saisir à la main : tu parles, et LIFE OS range tout sur ces étagères.",
     g: {
       input: "Comment ajouter — sans effort",
@@ -148,7 +148,7 @@ const TR: Record<Locale, T> = {
   },
   es: {
     kicker: "Cómo usarlo",
-    title: "Todo lo que LIFE OS puede hacer",
+    title: "Dónde acaba cada cosa",
     sub: "Toca una sección — se despliega la lista de posibilidades. No hace falta registrar nada a mano: tú simplemente cuentas, y LIFE OS lo ordena todo en estos estantes.",
     g: {
       input: "Cómo añadir — sin esfuerzo",
@@ -179,14 +179,14 @@ export function capabilities(locale: Locale): Capabilities {
   const s = (key: string): Cap => ({ icon: ICON[key] || "ti-point", name: nav[key] || key, desc: h[key] || "" });
 
   const groups: CapGroup[] = [
-    { icon: "ti-microphone", color: "var(--accent)", title: t.g.input, items: [t.in_voice, t.in_text, t.in_photo, t.in_link] },
-    { icon: "ti-book", color: "var(--accent)", title: t.g.day, items: [s("today"), s("diary"), s("tasks"), t.reminders] },
-    { icon: "ti-heartbeat", color: "#ef4444", title: t.g.body, items: [s("health"), s("energy"), s("sport"), s("food")] },
-    { icon: "ti-target", color: "#3b82f6", title: t.g.plans, items: [s("goals"), s("projects"), s("finance")] },
-    { icon: "ti-bookmarks", color: "#0ea5e9", title: t.g.know, items: [s("knowledge"), s("memory"), s("books"), s("wishlist")] },
-    { icon: "ti-sparkles", color: "var(--insight)", title: t.g.ai, items: [s("analytics"), s("biographer"), s("lab"), s("lifebook"), s("insights"), s("intelligence")] },
-    { icon: "ti-user-heart", color: "#ec4899", title: t.g.people, items: [s("people"), s("places"), s("family")] },
-    { icon: "ti-shield-lock", color: "var(--positive)", title: t.g.data, items: [t.export, t.privacy, s("profile"), t.opensource] },
+    { key: "input", icon: "ti-microphone", color: "var(--accent)", title: t.g.input, items: [t.in_voice, t.in_text, t.in_photo, t.in_link] },
+    { key: "day", icon: "ti-book", color: "var(--accent)", title: t.g.day, items: [s("today"), s("diary"), s("tasks"), t.reminders] },
+    { key: "body", icon: "ti-heartbeat", color: "#ef4444", title: t.g.body, items: [s("health"), s("energy"), s("sport"), s("food")] },
+    { key: "plans", icon: "ti-target", color: "#3b82f6", title: t.g.plans, items: [s("goals"), s("projects"), s("finance")] },
+    { key: "know", icon: "ti-bookmarks", color: "#0ea5e9", title: t.g.know, items: [s("knowledge"), s("memory"), s("books"), s("wishlist")] },
+    { key: "ai", icon: "ti-sparkles", color: "var(--insight)", title: t.g.ai, items: [s("analytics"), s("biographer"), s("lab"), s("lifebook"), s("insights"), s("intelligence")] },
+    { key: "people", icon: "ti-user-heart", color: "#ec4899", title: t.g.people, items: [s("people"), s("places"), s("family")] },
+    { key: "data", icon: "ti-shield-lock", color: "var(--positive)", title: t.g.data, items: [t.export, t.privacy, s("profile"), t.opensource] },
   ];
 
   return { kicker: t.kicker, title: t.title, sub: t.sub, groups };

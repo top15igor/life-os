@@ -1,7 +1,5 @@
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
-import { intlOf } from "@/lib/i18n";
-import AboutModern from "@/components/about/AboutModern";
 import ProductPeek from "@/components/about/ProductPeek";
 import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
@@ -33,7 +31,7 @@ const C = {
     crm_kicker: "Для тех, кто ведёт дела",
     crm_title: "Ты помнишь про клиентов лучше, чем про свою жизнь",
     crm_p1: "У тебя есть CRM, заметки, таблицы — целая система, чтобы не забыть про работу и клиентов. А своя жизнь — мысли, здоровье, близкие, решения — нигде. Она просто утекает.",
-    crm_p2: "LIFE OS — это CRM наоборот: система, которая помнит не клиентов, а тебя. И вести её не надо — просто говори, остальное сделает AI.",
+    crm_p2: "LIFE OS — это CRM наоборот: система, которая помнит не клиентов, а тебя. Ту дисциплину, которую ты держишь ради работы, она берёт на себя.",
     crm_histT: "Так делали те, кто добился большего",
     crm_hist: [
       { n: "Бенджамин Франклин", d: "вёл записи о людях, встречах и договорённостях — и считал круг знакомств одним из главных своих активов." },
@@ -94,7 +92,7 @@ const C = {
     // TODO: заменить на реальные отзывы пользователей (пока — примеры для вёрстки)
     testi: [
       { text: "Веду LIFE OS три месяца и впервые в жизни не забросил дневник. Просто говорю в Telegram по дороге домой — а вечером читаю свою жизнь, разложенную по полочкам.", name: "Анна", role: "маркетолог" },
-      { text: "Пробовал десятки приложений для заметок — всё бросал. Здесь ничего не надо настраивать: говоришь как другу, остальное делает AI.", name: "Дмитрий", role: "предприниматель" },
+      { text: "Пробовал десятки приложений для заметок — всё бросал. Здесь бросать нечего: ни папок, ни тегов, ни настроек, которые надо поддерживать.", name: "Дмитрий", role: "предприниматель" },
       { text: "Выгрузил всё в Obsidian и понял — это правда моё. Я не привязан к сервису, мои воспоминания всегда со мной.", name: "Сергей", role: "инженер" },
       { text: "Делаю это для дочери. Хочу, чтобы однажды она смогла прочитать, о чём я думала, когда она была маленькой.", name: "Мария", role: "мама в декрете" },
     ],
@@ -104,7 +102,7 @@ const C = {
     trust_open: "Открытый код",
     trust_open_d: "Проект публичный — можно проверить, как всё устроено.",
     trust_priv: "Честная приватность",
-    trust_priv_d: "Дневник видишь только ты. Скачать или удалить всё — в один клик.",
+    trust_priv_d: "Дневник видишь только ты. Захочешь уйти — сотрём всё без остатка.",
 
     final_title: "Начни первую страницу своей книги жизни",
     final_sub: "Бесплатно. Через Google или почту.",
@@ -113,8 +111,6 @@ const C = {
     foot_code: "Код на GitHub",
     foot_tester: "Тестировщикам",
     foot_terms: "Условия",
-    design_a: "Классика",
-    design_b: "Новый",
   },
   en: {
     nav_login: "Sign in",
@@ -139,7 +135,7 @@ const C = {
     crm_kicker: "For people who run things",
     crm_title: "You remember your customers better than your own life",
     crm_p1: "You've got a CRM, notes, spreadsheets — a whole system so you never forget work and clients. But your own life — thoughts, health, the people you love, decisions — lives nowhere. It just slips away.",
-    crm_p2: "LIFE OS is a CRM in reverse: a system that remembers you, not your customers. And you don't manage it — you just talk, AI does the rest.",
+    crm_p2: "LIFE OS is a CRM in reverse: a system that remembers you, not your customers. The discipline you keep for work, it keeps for you.",
     crm_histT: "The people who achieved more did exactly this",
     crm_hist: [
       { n: "Benjamin Franklin", d: "kept records of people, meetings and agreements — and saw his network as one of his key assets." },
@@ -200,7 +196,7 @@ const C = {
     // TODO: replace with real user testimonials (these are placeholders for layout)
     testi: [
       { text: "I've used LIFE OS for three months and for the first time I haven't abandoned a diary. I just talk into Telegram on my way home — and in the evening I read my life, neatly sorted.", name: "Anna", role: "marketer" },
-      { text: "I've tried dozens of note apps and quit them all. Here there's nothing to set up: you talk like to a friend, AI does the rest.", name: "Dmitry", role: "entrepreneur" },
+      { text: "I've tried dozens of note apps and quit them all. Here there's nothing to quit: no folders, no tags, no system to maintain.", name: "Dmitry", role: "entrepreneur" },
       { text: "I exported everything to Obsidian and realized — it's truly mine. I'm not locked to the service, my memories are always with me.", name: "Sergey", role: "engineer" },
       { text: "I'm doing this for my daughter. I want her to one day read what I was thinking when she was little.", name: "Maria", role: "mom" },
     ],
@@ -210,7 +206,7 @@ const C = {
     trust_open: "Open source",
     trust_open_d: "The project is public — you can check how everything works.",
     trust_priv: "Honest privacy",
-    trust_priv_d: "Only you see your diary. Export or delete everything in one click.",
+    trust_priv_d: "Only you see your diary. Decide to leave — we erase everything for good.",
 
     final_title: "Start the first page of your book of life",
     final_sub: "Free. With Google or email.",
@@ -219,8 +215,6 @@ const C = {
     foot_code: "Code on GitHub",
     foot_tester: "For testers",
     foot_terms: "Terms",
-    design_a: "Classic",
-    design_b: "New",
   },
   uk: {
     nav_login: "Увійти",
@@ -245,7 +239,7 @@ const C = {
     crm_kicker: "Для тих, хто веде справи",
     crm_title: "Ти пам'ятаєш про клієнтів краще, ніж про власне життя",
     crm_p1: "У тебе є CRM, нотатки, таблиці — ціла система, щоб не забути про роботу й клієнтів. А власне життя — думки, здоров'я, близькі, рішення — ніде. Воно просто витікає.",
-    crm_p2: "LIFE OS — це CRM навпаки: система, що пам'ятає не клієнтів, а тебе. І вести її не треба — просто говори, решту зробить AI.",
+    crm_p2: "LIFE OS — це CRM навпаки: система, що пам'ятає не клієнтів, а тебе. Ту дисципліну, яку ти тримаєш заради роботи, вона бере на себе.",
     crm_histT: "Так робили ті, хто досяг більшого",
     crm_hist: [
       { n: "Бенджамін Франклін", d: "вів записи про людей, зустрічі й домовленості — і вважав коло знайомств одним із головних активів." },
@@ -305,7 +299,7 @@ const C = {
     testi_title: "Люди в захваті від LIFE OS",
     testi: [
       { text: "Веду LIFE OS три місяці й уперше в житті не закинув щоденник. Просто говорю в Telegram дорогою додому — а ввечері читаю своє життя, розкладене по поличках.", name: "Анна", role: "маркетолог" },
-      { text: "Пробував десятки застосунків для нотаток — усе кидав. Тут нічого не треба налаштовувати: говориш як другу, решту робить AI.", name: "Дмитро", role: "підприємець" },
+      { text: "Пробував десятки застосунків для нотаток — усе кидав. Тут кидати нічого: ні тек, ні тегів, ні налаштувань, які треба підтримувати.", name: "Дмитро", role: "підприємець" },
       { text: "Вивантажив усе в Obsidian і зрозумів — це справді моє. Я не прив'язаний до сервісу, мої спогади завжди зі мною.", name: "Сергій", role: "інженер" },
       { text: "Роблю це для доньки. Хочу, щоб одного дня вона змогла прочитати, про що я думала, коли вона була маленькою.", name: "Марія", role: "мама в декреті" },
     ],
@@ -315,7 +309,7 @@ const C = {
     trust_open: "Відкритий код",
     trust_open_d: "Проєкт публічний — можна перевірити, як усе влаштовано.",
     trust_priv: "Чесна приватність",
-    trust_priv_d: "Щоденник бачиш лише ти. Завантажити або видалити все — в один клік.",
+    trust_priv_d: "Щоденник бачиш лише ти. Захочеш піти — зітремо все без залишку.",
 
     final_title: "Почни першу сторінку своєї книги життя",
     final_sub: "Безкоштовно. Через Google або пошту.",
@@ -324,8 +318,6 @@ const C = {
     foot_code: "Код на GitHub",
     foot_tester: "Тестувальникам",
     foot_terms: "Умови",
-    design_a: "Класика",
-    design_b: "Новий",
   },
   fr: {
     nav_login: "Se connecter",
@@ -350,7 +342,7 @@ const C = {
     crm_kicker: "Pour ceux qui gèrent",
     crm_title: "Tu te souviens mieux de tes clients que de ta propre vie",
     crm_p1: "Tu as un CRM, des notes, des tableurs — tout un système pour ne rien oublier du travail et des clients. Mais ta propre vie — pensées, santé, proches, décisions — n'existe nulle part. Elle file, tout simplement.",
-    crm_p2: "LIFE OS, c'est un CRM à l'envers : un système qui se souvient de toi, pas de tes clients. Et tu n'as rien à gérer — parle, l'IA fait le reste.",
+    crm_p2: "LIFE OS, c'est un CRM à l'envers : un système qui se souvient de toi, pas de tes clients. La discipline que tu tiens pour le travail, il la tient pour toi.",
     crm_histT: "Ceux qui ont réussi le plus faisaient exactement ça",
     crm_hist: [
       { n: "Benjamin Franklin", d: "tenait des notes sur les gens, les rencontres et les accords — et voyait son réseau comme l'un de ses principaux atouts." },
@@ -410,7 +402,7 @@ const C = {
     testi_title: "Les gens adorent LIFE OS",
     testi: [
       { text: "Je tiens LIFE OS depuis trois mois et, pour la première fois, je n'ai pas abandonné mon journal. Je parle simplement dans Telegram en rentrant — et le soir je relis ma vie, bien rangée.", name: "Anna", role: "marketeuse" },
-      { text: "J'ai essayé des dizaines d'applis de notes — je les ai toutes lâchées. Ici, rien à configurer : tu parles comme à un ami, l'IA fait le reste.", name: "Dmitri", role: "entrepreneur" },
+      { text: "J'ai essayé des dizaines d'applis de notes — je les ai toutes lâchées. Ici, rien à lâcher : ni dossiers, ni tags, ni système à entretenir.", name: "Dmitri", role: "entrepreneur" },
       { text: "J'ai tout exporté vers Obsidian et j'ai compris — c'est vraiment à moi. Je ne dépends pas du service, mes souvenirs sont toujours avec moi.", name: "Sergueï", role: "ingénieur" },
       { text: "Je le fais pour ma fille. Je veux qu'un jour elle puisse lire ce à quoi je pensais quand elle était petite.", name: "Maria", role: "maman en congé" },
     ],
@@ -420,7 +412,7 @@ const C = {
     trust_open: "Code ouvert",
     trust_open_d: "Le projet est public — tu peux vérifier comment tout fonctionne.",
     trust_priv: "Une vraie confidentialité",
-    trust_priv_d: "Toi seul vois ton journal. Télécharge ou supprime tout en un clic.",
+    trust_priv_d: "Toi seul vois ton journal. Si tu pars, on efface tout, sans reste.",
 
     final_title: "Commence la première page de ton livre de vie",
     final_sub: "Gratuit. Avec Google ou e-mail.",
@@ -429,8 +421,6 @@ const C = {
     foot_code: "Code sur GitHub",
     foot_tester: "Pour les testeurs",
     foot_terms: "Conditions",
-    design_a: "Classique",
-    design_b: "Nouveau",
   },
   es: {
     nav_login: "Iniciar sesión",
@@ -455,7 +445,7 @@ const C = {
     crm_kicker: "Para quien lleva las riendas",
     crm_title: "Recuerdas a tus clientes mejor que tu propia vida",
     crm_p1: "Tienes un CRM, notas, hojas de cálculo — todo un sistema para no olvidar el trabajo y los clientes. Pero tu propia vida — pensamientos, salud, seres queridos, decisiones — no está en ningún lado. Simplemente se escapa.",
-    crm_p2: "LIFE OS es un CRM al revés: un sistema que te recuerda a ti, no a tus clientes. Y no hay que gestionarlo — solo habla, la IA hace el resto.",
+    crm_p2: "LIFE OS es un CRM al revés: un sistema que te recuerda a ti, no a tus clientes. La disciplina que mantienes para el trabajo, la mantiene por ti.",
     crm_histT: "Los que lograron más hacían exactamente esto",
     crm_hist: [
       { n: "Benjamin Franklin", d: "llevaba registros de personas, reuniones y acuerdos — y veía su red de contactos como uno de sus principales activos." },
@@ -516,7 +506,7 @@ const C = {
     // TODO: reemplazar con testimonios reales de usuarios (por ahora son ejemplos para el diseño)
     testi: [
       { text: "Uso LIFE OS desde hace tres meses y por primera vez no abandoné un diario. Simplemente hablo por Telegram camino a casa — y por la noche leo mi vida, ordenada por capas.", name: "Anna", role: "marketera" },
-      { text: "Probé decenas de apps de notas y las dejé todas. Aquí no hay que configurar nada: hablas como a un amigo, la IA hace el resto.", name: "Dmitry", role: "emprendedor" },
+      { text: "Probé decenas de apps de notas y las dejé todas. Aquí no hay nada que dejar: ni carpetas, ni etiquetas, ni sistema que mantener.", name: "Dmitry", role: "emprendedor" },
       { text: "Exporté todo a Obsidian y entendí — de verdad es mío. No dependo del servicio, mis recuerdos siempre están conmigo.", name: "Sergey", role: "ingeniero" },
       { text: "Lo hago por mi hija. Quiero que algún día pueda leer en qué pensaba yo cuando ella era pequeña.", name: "Maria", role: "mamá" },
     ],
@@ -526,7 +516,7 @@ const C = {
     trust_open: "Código abierto",
     trust_open_d: "El proyecto es público — puedes revisar cómo funciona todo.",
     trust_priv: "Privacidad honesta",
-    trust_priv_d: "Solo tú ves tu diario. Descarga o elimina todo en un clic.",
+    trust_priv_d: "Solo tú ves tu diario. Si decides irte, lo borramos todo sin dejar rastro.",
 
     final_title: "Empieza la primera página de tu libro de vida",
     final_sub: "Gratis. Con Google o correo.",
@@ -535,8 +525,6 @@ const C = {
     foot_code: "Código en GitHub",
     foot_tester: "Para testers",
     foot_terms: "Condiciones",
-    design_a: "Clásico",
-    design_b: "Nuevo",
   },
 };
 
@@ -593,7 +581,7 @@ const LP_CSS = `
 @media (max-width:600px){ .lp .lp-h1{ font-size:34px; } }
 `;
 
-export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string; d?: string }> }) {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<{ ref?: string }> }) {
   const sp = await searchParams;
   const locale = await getLocale();
   const t = C[locale] || C.ru;
@@ -603,13 +591,6 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Реферал: пробрасываем метку на страницу входа, чтобы пригласивший засчитался.
   const ref = sp.ref && /^[A-Za-z0-9-]{3,40}$/.test(sp.ref) ? sp.ref : "";
   const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
-  // Какой дизайн показывать: B (новый) или A (классический, по умолчанию).
-  const design = sp.d === "b" ? "b" : "a";
-
-  // Новый дизайн (Дизайн B) — основной остаётся A, переключатель-пилюля внизу справа.
-  if (design === "b") {
-    return <AboutModern locale={locale} intl={intlOf(locale)} isAuthed={isAuthed} loginHref={loginHref} refCode={ref} />;
-  }
 
   const section: React.CSSProperties = { maxWidth: 920, margin: "0 auto", padding: "0 22px" };
   const kicker: React.CSSProperties = {
@@ -624,13 +605,14 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
 
-  // Врезка-мост на лендинг /one-place (заметки, списки, напоминания в одном месте).
+  // Врезка-мост на лендинг /one-place. Заголовок секции уже сказал «всё в одном месте» —
+  // карточка обещает следующее, чего на этой странице нет: перенос старых заметок.
   const ONE_PLACE: Record<string, { t: string; d: string; cta: string }> = {
-    ru: { t: "Все заметки и напоминания — в одном месте", d: "Заметки айфона, сохранёнки Инстаграма, файлы, стикеры и будильники — в одной базе, которая сама напоминает вовремя.", cta: "Посмотреть" },
-    en: { t: "All your notes and reminders — in one place", d: "iPhone notes, Instagram saves, files, sticky notes and alarms — in one base that reminds you on time.", cta: "Take a look" },
-    uk: { t: "Усі нотатки й нагадування — в одному місці", d: "Нотатки айфона, збережене з Інстаграму, файли, наліпки й будильники — в одній базі, що нагадує вчасно.", cta: "Подивитись" },
-    fr: { t: "Toutes vos notes et rappels — en un seul endroit", d: "Notes iPhone, enregistrements Instagram, fichiers, post-it et alarmes — dans une seule base qui vous rappelle à temps.", cta: "Voir" },
-    es: { t: "Todas tus notas y recordatorios — en un solo lugar", d: "Notas del iPhone, guardados de Instagram, archivos, pósits y alarmas — en una sola base que te recuerda a tiempo.", cta: "Ver" },
+    ru: { t: "Перенести старые заметки — две минуты", d: "Скопируй Заметки айфона или пришли файл — LIFE OS разложит их по полкам. И так же легко выгрузишь обратно.", cta: "Как это работает" },
+    en: { t: "Move your old notes over — two minutes", d: "Paste your iPhone Notes or send a file — LIFE OS files them onto the right shelves. And you can take them back just as easily.", cta: "See how" },
+    uk: { t: "Перенести старі нотатки — дві хвилини", d: "Скопіюй Нотатки айфона або надішли файл — LIFE OS розкладе їх по поличках. І так само легко вивантажиш назад.", cta: "Як це працює" },
+    fr: { t: "Transférer vos anciennes notes — deux minutes", d: "Collez vos notes iPhone ou envoyez un fichier — LIFE OS les range sur les bonnes étagères. Et vous les récupérez aussi facilement.", cta: "Voir comment" },
+    es: { t: "Pasar tus notas antiguas — dos minutos", d: "Copia tus notas del iPhone o envía un archivo — LIFE OS las coloca en su estante. Y las recuperas con la misma facilidad.", cta: "Ver cómo" },
   };
   const onePlace = ONE_PLACE[locale] || ONE_PLACE.ru;
 
@@ -746,9 +728,27 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       )}
 
+      {/* How */}
+      <div id="how" className="lp-band" style={{ padding: "60px 0" }}>
+        <div style={section}>
+          <div className="lp-kicker">{t.how_kicker}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 18 }}>
+            {t.how.map((s) => (
+              <div key={s.n}>
+                <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(135deg,#6d6bf6,#8b5cf6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, marginBottom: 14, boxShadow: "0 10px 22px -10px rgba(91,91,245,.6)" }}>
+                  {s.n}
+                </div>
+                <div style={{ fontSize: 18.5, fontWeight: 700, marginBottom: 6, letterSpacing: "-0.01em" }}>{s.t}</div>
+                <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55 }}>{s.d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Заметки и напоминания — маркет-фича «всё в одном месте» */}
       {(t as any).mem_title && (
-        <div style={{ ...section, padding: "0 22px 56px" }}>
+        <div style={{ ...section, padding: "56px 22px 0" }}>
           <div className="lp-kicker">{(t as any).mem_kicker}</div>
           <h2 className="lp-h2" style={{ margin: "10px 0 12px" }}>{(t as any).mem_title}</h2>
           <p style={{ fontSize: 16.5, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 22px", maxWidth: 700 }}>{(t as any).mem_lead}</p>
@@ -784,24 +784,6 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </a>
         </div>
       )}
-
-      {/* How */}
-      <div id="how" className="lp-band" style={{ padding: "60px 0" }}>
-        <div style={section}>
-          <div className="lp-kicker">{t.how_kicker}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 24, marginTop: 18 }}>
-            {t.how.map((s) => (
-              <div key={s.n}>
-                <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(135deg,#6d6bf6,#8b5cf6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, marginBottom: 14, boxShadow: "0 10px 22px -10px rgba(91,91,245,.6)" }}>
-                  {s.n}
-                </div>
-                <div style={{ fontSize: 18.5, fontWeight: 700, marginBottom: 6, letterSpacing: "-0.01em" }}>{s.t}</div>
-                <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55 }}>{s.d}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Features */}
       <div id="inside" style={{ ...section, padding: "60px 22px" }}>
@@ -857,7 +839,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           <p style={{ fontSize: 16, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 22px", maxWidth: 640 }}>{caps.sub}</p>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 12, alignItems: "start" }}>
-            {caps.groups.map((grp, gi) => (
+            {/* Группу «данные» здесь не показываем: её дословно повторяет блок «Доверие» ниже. */}
+            {caps.groups.filter((g) => g.key !== "data").map((grp, gi) => (
               <details
                 key={grp.title}
                 className="about-caps"

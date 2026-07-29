@@ -17,7 +17,7 @@ const RU: Dict = {
   closeKicker: "Одна идея", closeTitle: "Ты просто живёшь. Остальное — на мне.",
   closeText: "Каждый день — ещё одна страница, которая не исчезнет. Через год это уже история, которую приятно перечитывать. Через жизнь — то, что останется.",
   sign: "💾 LIFE OS — Сохранись.",
-  final: "Начни первую страницу своей Книги жизни", finalCta: "Создать аккаунт",
+  final: "Всё это включается с первой записи", finalCta: "Создать аккаунт",
   foot: "Каталог возможностей LIFE OS · обновляется по мере роста продукта",
   cats: [
     { kicker: "Запись жизни", title: "Дневник, который ведёт себя сам", lead: "Расскажи про день — остальное LIFE OS сделает за тебя: разберёт, разложит по полочкам и ответит по-человечески.", edge: "var(--accent)", items: [
@@ -97,7 +97,7 @@ const EN: Dict = {
   closeKicker: "One idea", closeTitle: "You just live. I'll handle the rest.",
   closeText: "Every day is one more page that won't disappear. In a year it's a story worth rereading. In a lifetime — what remains.",
   sign: "💾 LIFE OS — Save yourself.",
-  final: "Start the first page of your Book of Life", finalCta: "Create account",
+  final: "All of it switches on with your first entry", finalCta: "Create account",
   foot: "LIFE OS feature catalog · updated as the product grows",
   cats: [
     { kicker: "Capturing life", title: "A diary that keeps itself", lead: "Just tell it about your day — LIFE OS does the rest: parses it, sorts it and replies like a human.", edge: "var(--accent)", items: [
