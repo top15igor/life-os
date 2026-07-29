@@ -4,6 +4,7 @@ export type PrivacyContent = {
   intro: string;
   points: PrivacyPoint[];
   note: string;
+  legal: string;
   back: string;
 };
 
@@ -21,6 +22,7 @@ const P: Record<string, PrivacyContent> = {
       { icon: "ti-brand-github", title: "Открытый код — проверь сам", text: "Код LIFE OS открыт. Любой (или твой программист) может посмотреть, что именно происходит с данными. Не верь на слово — проверь." },
     ],
     note: "Полная анонимность «даже мы не сможем прочитать» возможна только с end-to-end шифрованием — но тогда AI не смог бы анализировать записи. Мы выбрали пользу AI и строгие правила доступа. Если важна максимальная приватность — напиши нам.",
+    legal: "Полная юридическая версия",
     back: "На главную",
   },
   en: {
@@ -36,6 +38,7 @@ const P: Record<string, PrivacyContent> = {
       { icon: "ti-brand-github", title: "Open source — check it yourself", text: "The LIFE OS code is open. Anyone (or your developer) can see exactly what happens with the data. Don't take our word — verify." },
     ],
     note: "True \"not even we can read it\" is only possible with end-to-end encryption — but then AI couldn't analyze your entries. We chose AI value plus strict access rules. If maximum privacy matters to you — reach out.",
+    legal: "Full legal version",
     back: "Home",
   },
   uk: {
@@ -51,6 +54,7 @@ const P: Record<string, PrivacyContent> = {
       { icon: "ti-brand-github", title: "Відкритий код — перевір сам", text: "Код LIFE OS відкритий. Будь-хто (або твій програміст) може подивитися, що саме відбувається з даними. Не вір на слово — перевір." },
     ],
     note: "Повна анонімність «навіть ми не зможемо прочитати» можлива лише з end-to-end шифруванням — але тоді AI не зміг би аналізувати записи. Ми обрали користь AI та суворі правила доступу. Якщо важлива максимальна приватність — напиши нам.",
+    legal: "Повна юридична версія",
     back: "На головну",
   },
   fr: {
@@ -66,6 +70,7 @@ const P: Record<string, PrivacyContent> = {
       { icon: "ti-brand-github", title: "Code ouvert — vérifie toi-même", text: "Le code de LIFE OS est ouvert. N'importe qui (ou ton développeur) peut voir ce qui se passe avec les données. Ne nous crois pas sur parole — vérifie." },
     ],
     note: "Un vrai « même nous ne pouvons pas lire » n'est possible qu'avec un chiffrement de bout en bout — mais l'IA ne pourrait plus analyser tes entrées. Nous avons choisi la valeur de l'IA avec des règles d'accès strictes. Si la confidentialité maximale compte pour toi, contacte-nous.",
+    legal: "Version juridique complète",
     back: "Accueil",
   },
   es: {
@@ -81,6 +86,7 @@ const P: Record<string, PrivacyContent> = {
       { icon: "ti-brand-github", title: "Código abierto — compruébalo tú mismo", text: "El código de LIFE OS es abierto. Cualquiera (o tu programador) puede ver exactamente qué pasa con los datos. No te fíes de nuestra palabra — compruébalo." },
     ],
     note: "El verdadero \"ni siquiera nosotros podemos leerlo\" solo es posible con cifrado de extremo a extremo — pero entonces la IA no podría analizar tus entradas. Elegimos el valor de la IA junto con reglas de acceso estrictas. Si la privacidad máxima te importa, escríbenos.",
+    legal: "Versión legal completa",
     back: "Inicio",
   },
 };

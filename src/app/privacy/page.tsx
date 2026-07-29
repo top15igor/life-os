@@ -66,6 +66,13 @@ export default async function PrivacyPage() {
         <span>{p.note}</span>
       </div>
 
+      {/* Формальный документ: его адрес отдаём в App Store и Google OAuth-верификацию. */}
+      <Link href="/privacy/policy" style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 15px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, textDecoration: "none", marginBottom: 12 }}>
+        <i className="ti ti-file-text" style={{ fontSize: 20, color: "var(--accent)" }} />
+        <span style={{ flex: 1 }}>{p.legal}</span>
+        <i className="ti ti-chevron-right" style={{ fontSize: 16, color: "var(--text-3)" }} />
+      </Link>
+
       <a href="https://github.com/top15igor/life-os" target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 15px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 14, textDecoration: "none", marginBottom: 24 }}>
         <i className="ti ti-brand-github" style={{ fontSize: 20 }} />
         <span style={{ flex: 1 }}>github.com/top15igor/life-os</span>
