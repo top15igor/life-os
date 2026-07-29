@@ -765,6 +765,23 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
             ))}
           </div>
           <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.6, margin: "18px 0 0", fontStyle: "italic" }}>{(t as any).mem_foot}</p>
+
+          {/* Мост на лендинг «Всё в одном месте» — заметки, списки, напоминания */}
+          <a
+            href="/one-place"
+            className="lp-card"
+            style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 18, padding: "20px 24px", textDecoration: "none" }}
+          >
+            <span style={{ fontSize: 26, lineHeight: 1 }}>🗂</span>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 4 }}>{onePlace.t}</div>
+              <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 560 }}>{onePlace.d}</div>
+            </div>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap" }}>
+              {onePlace.cta}
+              <i className="ti ti-arrow-right" style={{ fontSize: 16 }} />
+            </span>
+          </a>
         </div>
       )}
 
@@ -830,22 +847,6 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </span>
         </a>
 
-        {/* Мост на лендинг «Всё в одном месте» — заметки, списки, напоминания */}
-        <a
-          href="/one-place"
-          className="lp-card"
-          style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 12, padding: "20px 24px", textDecoration: "none" }}
-        >
-          <span style={{ fontSize: 26, lineHeight: 1 }}>🗂</span>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 4 }}>{onePlace.t}</div>
-            <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 560 }}>{onePlace.d}</div>
-          </div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap" }}>
-            {onePlace.cta}
-            <i className="ti ti-arrow-right" style={{ fontSize: 16 }} />
-          </span>
-        </a>
       </div>
 
       {/* Capabilities — how to use / full feature list (expandable) */}
