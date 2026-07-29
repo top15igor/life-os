@@ -52,7 +52,7 @@ function esc(s: string) {
 }
 
 function deviceLabel(d: Device) {
-  return d.name?.trim() || (d.kind === "watch" ? "Часы" : d.kind === "keyfob" ? "Брелок" : "Устройство");
+  return d.name?.trim() || (d.kind === "watch" ? "Часы" : d.kind === "phone" ? "Айфон" : d.kind === "keyfob" ? "Брелок" : "Устройство");
 }
 
 export async function POST(req: NextRequest) {

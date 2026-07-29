@@ -15,10 +15,11 @@ type Device = {
 
 const STR: Record<string, any> = {
   ru: {
-    empty: "Пока ни одного устройства. Начни с Apple Watch — это 5 минут и без всякого железа.",
+    empty: "Пока ни одного устройства. Нет часов и брелка — начни с айфона: двойное постукивание по крышке, и мысль записана. Это 5 минут и без всякого железа.",
     addWatch: "Добавить Apple Watch",
+    addPhone: "Добавить айфон",
     addFob: "Добавить брелок",
-    kindWatch: "Часы", kindFob: "Брелок", kindOther: "Устройство",
+    kindWatch: "Часы", kindPhone: "Айфон", kindFob: "Брелок", kindOther: "Устройство",
     namePh: "Название (например, «Мои часы»)",
     add: "Добавить", cancel: "Отмена",
     link: "Личная ссылка устройства",
@@ -31,14 +32,24 @@ const STR: Record<string, any> = {
     sent: (n: number) => `записей прислано: ${n}`,
     batt: (n: number) => `заряд ${n}%`,
     howWatch: "Как настроить Apple Watch",
-    watchSteps: [
+    howPhone: "Как настроить айфон",
+    shortcutSteps: [
       "На айфоне открой приложение «Команды» → «+» (новая команда).",
-      "Добавь действие «Диктовать текст».",
-      "Добавь действие «Получить содержимое URL»: вставь ссылку выше, метод — POST, тело — JSON, добавь поле text и подставь в него «Продиктованный текст».",
-      "Назови команду «В LIFE OS» и в настройках команды включи «Показывать на Apple Watch».",
+      "Добавь действие «Диктовать текст». В нём поставь язык, на котором реально говоришь, — иначе распознает плохо.",
+      "Добавь действие «Получить содержимое URL». В поле адреса вставь ссылку сверху, метод — POST, тело запроса — JSON.",
+      "В теле нажми «Добавить новое поле»: слева, где «Ключ», напиши латиницей text, а справа, в значении, вставь переменную «Продиктованный текст». Именно так: text — слева, продиктованное — справа.",
+      "Назови команду «В LIFE OS» и нажми ▶️ — скажи что-нибудь для проверки. В ответ должно прийти ok: true, а в Telegram — подтверждение с текстом.",
+    ],
+    watchSteps: [
+      "В настройках команды включи «Показывать на Apple Watch».",
       "На часах: приложение «Команды» → «В LIFE OS». Добавь её в «Смарт-стопку» или на циферблат — и она в одно касание.",
     ],
-    watchTip: "На айфоне ту же команду можно повесить на «Кнопку действия» (iPhone 15 Pro и новее) или на постукивание по задней крышке — Настройки → Универсальный доступ → Касание → Касание задней панели.",
+    phoneSteps: [
+      "Настройки → Универсальный доступ → Касание → «Касание задней панели» → «Двойное касание» → выбери свою команду.",
+      "Теперь дважды стукни по задней крышке айфона — начнётся диктовка. Телефон может лежать в кармане: доставать и разблокировать не надо.",
+    ],
+    phoneTip: "На iPhone 15 Pro и новее ту же команду удобнее повесить на «Кнопку действия» — Настройки → Кнопка действия → Команда.",
+    watchTip: "Это тот же путь, что и на айфоне: команда одна, просто показывается ещё и на часах.",
     howFob: "Для своего брелка (железо)",
     fobLead: "Устройство шлёт запись одним запросом. Если интернета в этот момент нет — пусть сохранит у себя и отправит позже, а в параметре at укажет момент записи: мысль ляжет в дневник тем временем, когда ты её наговорил.",
     fobTip: "Можно прислать и готовый текст: тело {\"text\":\"…\"} — тогда расшифровка не нужна.",
@@ -46,10 +57,11 @@ const STR: Record<string, any> = {
     sqlNote: "Раздел ещё не готов к работе: нужно применить devices.sql в базе.",
   },
   en: {
-    empty: "No devices yet. Start with Apple Watch — 5 minutes, no hardware needed.",
+    empty: "No devices yet. No watch and no keyfob — start with your iPhone: double-tap the back and the thought is captured. 5 minutes, no hardware needed.",
     addWatch: "Add Apple Watch",
+    addPhone: "Add iPhone",
     addFob: "Add keyfob",
-    kindWatch: "Watch", kindFob: "Keyfob", kindOther: "Device",
+    kindWatch: "Watch", kindPhone: "iPhone", kindFob: "Keyfob", kindOther: "Device",
     namePh: "Name (e.g. “My watch”)",
     add: "Add", cancel: "Cancel",
     link: "Personal device link",
@@ -62,14 +74,24 @@ const STR: Record<string, any> = {
     sent: (n: number) => `entries sent: ${n}`,
     batt: (n: number) => `battery ${n}%`,
     howWatch: "How to set up Apple Watch",
-    watchSteps: [
+    howPhone: "How to set up your iPhone",
+    shortcutSteps: [
       "On iPhone open the Shortcuts app → “+” (new shortcut).",
-      "Add the “Dictate Text” action.",
-      "Add “Get Contents of URL”: paste the link above, method POST, body JSON, add a field text and set it to “Dictated Text”.",
-      "Name it “To LIFE OS” and turn on “Show on Apple Watch” in the shortcut settings.",
+      "Add the “Dictate Text” action. Set the language you actually speak, or recognition will be poor.",
+      "Add “Get Contents of URL”. Paste the link above into the address field, method POST, request body JSON.",
+      "In the body tap “Add new field”: on the left, where it says “Key”, type text; on the right, in the value, insert the “Dictated Text” variable. That order matters: text on the left, the dictation on the right.",
+      "Name it “To LIFE OS” and hit ▶️ — say something as a test. You should get ok: true back, and a confirmation with the text in Telegram.",
+    ],
+    watchSteps: [
+      "In the shortcut settings turn on “Show on Apple Watch”.",
       "On the watch: Shortcuts app → “To LIFE OS”. Add it to the Smart Stack or a watch face for one-tap access.",
     ],
-    watchTip: "On iPhone you can also bind the same shortcut to the Action Button (iPhone 15 Pro and newer) or to Back Tap — Settings → Accessibility → Touch → Back Tap.",
+    phoneSteps: [
+      "Settings → Accessibility → Touch → Back Tap → Double Tap → pick your shortcut.",
+      "Now double-tap the back of the iPhone and dictation starts. The phone can stay in your pocket — no need to take it out or unlock it.",
+    ],
+    phoneTip: "On iPhone 15 Pro and newer the Action Button is even handier — Settings → Action Button → Shortcut.",
+    watchTip: "It's the same path as on iPhone: one shortcut, it just also shows up on the watch.",
     howFob: "For your own keyfob (hardware)",
     fobLead: "The device sends a recording in a single request. With no connection at that moment it can store the clip and upload it later, passing at with the moment of recording — the entry lands in the diary at the time you actually spoke it.",
     fobTip: "Plain text works too: body {\"text\":\"…\"} — no transcription needed.",
@@ -94,7 +116,7 @@ function DeviceCard({ d, s, locale, origin }: { d: Device; s: any; locale: strin
   const [copied, setCopied] = useState(false);
   const [test, setTest] = useState("");
   const url = `${origin}/api/device/voice?token=${d.token}`;
-  const name = d.name?.trim() || (d.kind === "watch" ? s.kindWatch : d.kind === "keyfob" ? s.kindFob : s.kindOther);
+  const name = d.name?.trim() || (d.kind === "watch" ? s.kindWatch : d.kind === "phone" ? s.kindPhone : d.kind === "keyfob" ? s.kindFob : s.kindOther);
 
   const meta = [
     ago(d.last_seen, locale) || s.never,
@@ -147,13 +169,14 @@ function DeviceCard({ d, s, locale, origin }: { d: Device; s: any; locale: strin
       </div>
       <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 12 }}>{s.linkHint}</div>
 
-      {d.kind === "watch" ? (
+      {d.kind === "watch" || d.kind === "phone" ? (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{s.howWatch}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{d.kind === "watch" ? s.howWatch : s.howPhone}</div>
+          {/* Команда на айфоне одна и та же — часам добавляется только показ на запястье */}
           <ol style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6, paddingLeft: 18, margin: "0 0 8px" }}>
-            {s.watchSteps.map((x: string, i: number) => <li key={i}>{x}</li>)}
+            {[...s.shortcutSteps, ...(d.kind === "watch" ? s.watchSteps : s.phoneSteps)].map((x: string, i: number) => <li key={i}>{x}</li>)}
           </ol>
-          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>{s.watchTip}</div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>{d.kind === "watch" ? s.watchTip : s.phoneTip}</div>
         </div>
       ) : (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
@@ -223,8 +246,12 @@ export default function DevicesManager({ devices, locale, origin, ready }: { dev
           </div>
         </div>
       ) : (
+        // Айфон первым: он есть у всех, часы и брелок — у кого есть.
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => setAdding("watch")} style={{ ...addBtn, background: "var(--accent)", color: "#fff" }}>
+          <button onClick={() => setAdding("phone")} style={{ ...addBtn, background: "var(--accent)", color: "#fff" }}>
+            <i className="ti ti-device-mobile" style={{ fontSize: 17 }} />{s.addPhone}
+          </button>
+          <button onClick={() => setAdding("watch")} style={{ ...addBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}>
             <i className="ti ti-device-watch" style={{ fontSize: 17 }} />{s.addWatch}
           </button>
           <button onClick={() => setAdding("keyfob")} style={{ ...addBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}>

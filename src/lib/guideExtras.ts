@@ -135,13 +135,13 @@ const E: Record<Locale, Extras> = {
         short: "Нажал кнопку на запястье — наговорил — мысль уже в дневнике. Телефон доставать не нужно.",
         sections: [
           { p: "Лучшие мысли приходят там, где телефона в руках нет: на велосипеде, за рулём, на пробежке, с пакетами в обеих руках. Раньше такая мысль просто терялась. Теперь достаточно нажать кнопку на часах или на брелке, наговорить пару фраз — и запись пройдёт тот же путь, что голосовое боту: расшифровка, AI-разбор, дневник." },
-          { h: "Как настроить (Apple Watch, 5 минут)", steps: [
-            "Профиль → Мои устройства → «Добавить Apple Watch».",
+          { h: "Как настроить (5 минут, железо не нужно)", steps: [
+            "Профиль → Мои устройства → «Добавить айфон» (или «Добавить Apple Watch», если часы есть).",
             "Скопируй личную ссылку устройства — она появится на карточке.",
-            "На айфоне: «Команды» → «+» → действие «Диктовать текст».",
+            "На айфоне: «Команды» → «+» → действие «Диктовать текст», язык поставь тот, на котором говоришь.",
             "Добавь действие «Получить содержимое URL»: вставь ссылку, метод POST, тело JSON, поле text = «Продиктованный текст».",
-            "Назови команду «В LIFE OS» и включи «Показывать на Apple Watch».",
-            "На часах добавь её в «Смарт-стопку» или на циферблат — и она в одно касание.",
+            "Назови команду «В LIFE OS» и проверь кнопкой ▶️ — в Telegram должно прийти подтверждение.",
+            "Повесь её на постукивание по крышке: Настройки → Универсальный доступ → Касание → Касание задней панели. С часами — включи «Показывать на Apple Watch» и добавь на циферблат.",
           ] },
           { h: "Как это ощущается", p: "Едешь на велике, приходит идея — тап по циферблату, десять секунд вслух, поехал дальше. Вечером открываешь дневник: мысль на месте, уже разобрана по категориям. В Telegram сразу приходит подтверждение с текстом — чтобы ты видел, что она дошла и как её услышали." },
           { h: "Своя кнопка на шнурке", p: "Если носишь отдельное устройство-брелок, выдай ему ключ кнопкой «Добавить брелок» — на карточке будет всё, что нужно прошивке. Интернета в момент записи может и не быть: брелок сохранит мысль у себя и зальёт позже, а в дневник она ляжет тем временем, когда ты её наговорил." },
@@ -492,13 +492,13 @@ const E: Record<Locale, Extras> = {
         short: "Press the button on your wrist, speak, and the thought is already in your diary. No phone needed.",
         sections: [
           { p: "The best thoughts arrive where your phone isn't in your hands: on a bike, driving, running, carrying bags. Those used to be lost. Now you press a button on your watch or keyfob, say a few sentences, and the recording goes the same way as a voice note to the bot: transcription, AI analysis, diary." },
-          { h: "How to set it up (Apple Watch, 5 minutes)", steps: [
-            "Profile → My devices → “Add Apple Watch”.",
+          { h: "How to set it up (5 minutes, no hardware)", steps: [
+            "Profile → My devices → “Add iPhone” (or “Add Apple Watch” if you have one).",
             "Copy the personal device link that appears on the card.",
-            "On iPhone: Shortcuts → “+” → the “Dictate Text” action.",
+            "On iPhone: Shortcuts → “+” → the “Dictate Text” action, set the language you speak.",
             "Add “Get Contents of URL”: paste the link, method POST, body JSON, field text = “Dictated Text”.",
-            "Name it “To LIFE OS” and turn on “Show on Apple Watch”.",
-            "On the watch, add it to the Smart Stack or a watch face — one tap away.",
+            "Name it “To LIFE OS” and test it with ▶️ — a confirmation should arrive in Telegram.",
+            "Bind it to Back Tap: Settings → Accessibility → Touch → Back Tap. With a watch — turn on “Show on Apple Watch” and add it to a watch face.",
           ] },
           { h: "What it feels like", p: "You're cycling, an idea hits — tap the watch face, ten seconds out loud, ride on. In the evening you open the diary: the thought is there, already sorted into categories. Telegram gets a confirmation with the text right away, so you can see it arrived and how it was heard." },
           { h: "Your own button on a strap", p: "If you carry a separate keyfob, issue it a key with “Add keyfob” — the card holds everything the firmware needs. There may be no connection at the moment of recording: the keyfob stores the clip and uploads it later, and the entry lands in the diary at the time you actually spoke it." },
