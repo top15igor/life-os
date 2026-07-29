@@ -511,12 +511,12 @@ const RELAY_SELF: Record<Lang, string> = {
 };
 
 // Подтверждение передачи сообщения другому пользователю.
-const RELAY_OK: Record<Lang, (name: string) => string> = {
-  ru: (n) => `✅ Передал «${n}».`,
-  en: (n) => `✅ Delivered to ${n}.`,
-  uk: (n) => `✅ Передав «${n}».`,
-  fr: (n) => `✅ Transmis à ${n}.`,
-  es: (n) => `✅ Entregado a ${n}.`,
+const RELAY_OK: Record<Lang, (name: string, msg: string) => string> = {
+  ru: (n, m) => `✅ Передал «${n}»:\n«${m}»`,
+  en: (n, m) => `✅ Delivered to ${n}:\n“${m}”`,
+  uk: (n, m) => `✅ Передав «${n}»:\n«${m}»`,
+  fr: (n, m) => `✅ Transmis à ${n} :\n« ${m} »`,
+  es: (n, m) => `✅ Entregado a ${n}:\n«${m}»`,
 };
 
 // html:true — текст УЖЕ в HTML для Telegram (например, подсказки relay с <code>);
@@ -639,7 +639,8 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (myName && to.toLowerCase().replace(/ё/g, "е").trim() === myName) return { text: (RELAY_SELF[lang] || RELAY_SELF.ru) };
       const r = await sendRelay({ id: userId, name: (me as any)?.name || null }, to, body, lang);
       // Не доставили (нет такого контакта / отключил приём) — показываем причину как есть.
-      return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(r.toName || to) : (r.error || s.fail), html: true };
+      const esc = (x: string) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(esc(r.toName || to), esc(body)) : (r.error || s.fail), html: true };
     }
     if (name === "export_notes") {
       const N = NOTE_MSG[lang] || NOTE_MSG.ru;

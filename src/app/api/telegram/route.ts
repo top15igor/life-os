@@ -1294,7 +1294,7 @@ export async function POST(req: NextRequest) {
     const parsed = parseSend(msg.text.trim());
     if (!parsed) { await sendMessage(chatId, relayHelp(lang)); return NextResponse.json({ ok: true }); }
     const r = await sendRelay({ id: user.id, name: user.name ?? null }, parsed.handle, parsed.message, lang);
-    await sendMessage(chatId, r.ok ? relaySentMsg(lang, r.toName!) : r.error!);
+    await sendMessage(chatId, r.ok ? relaySentMsg(lang, r.toName!, parsed.message) : r.error!);
     return NextResponse.json({ ok: true });
   }
 

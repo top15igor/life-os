@@ -46,7 +46,7 @@ const RELAY: Record<string, any> = {
   ru: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> передаёт тебе через LIFE OS:\n\n«${esc(msg)}»`,
     replyHint: (h: string) => `\n\n↩️ Ответить: <code>/send @${esc(h)} твой текст</code>`,
-    sent: (name: string) => `✅ Передал «${esc(name)}».`,
+    sent: (name: string, msg?: string) => `✅ Передал «${esc(name)}»${msg ? `:\n«${esc(msg)}»` : "."}`,
     notFound: "Не нашёл такого человека среди твоих контактов. Можно указать его @имя из LIFE OS (Профиль → имя-ссылка), и он должен пользоваться ботом.",
     notFoundList: (q: string, list: string[]) => `Не нашёл «${esc(q)}». Кому можно написать — нажми команду (скопируется) и допиши сообщение:\n\n${list.join("\n")}\n\n💡 Нужного человека нет в списке? Он появится, как только вы свяжетесь: попроси его написать тебе <code>/send @твоё-имя привет</code> (своё @имя — в Профиле). Или напиши ему сам по точному @имени, если знаешь его.`,
     noContacts: "У тебя пока нет контактов в боте, кому можно написать. Пригласи друга (кнопка «Пригласить друга») — или напиши по точному @имени из LIFE OS, если знаешь его. Важно: человек должен пользоваться этим ботом.",
@@ -69,7 +69,7 @@ const RELAY: Record<string, any> = {
   en: {
     incoming: (name: string, msg: string) => `📨 <b>${esc(name)}</b> sends you a message via LIFE OS:\n\n“${esc(msg)}”`,
     replyHint: (h: string) => `\n\n↩️ Reply: <code>/send @${esc(h)} your text</code>`,
-    sent: (name: string) => `✅ Sent to “${esc(name)}”.`,
+    sent: (name: string, msg?: string) => `✅ Sent to “${esc(name)}”${msg ? `:\n“${esc(msg)}”` : "."}`,
     notFound: "Couldn't find that person among your contacts. You can use their LIFE OS @name (Profile → link name), and they must use the bot.",
     notFoundList: (q: string, list: string[]) => `Couldn't find “${esc(q)}”. People you can message — tap a command (it copies) and add your text:\n\n${list.join("\n")}\n\n💡 Person not on the list? They show up as soon as you connect: ask them to message you with <code>/send @your-name hi</code> (your @name is in your Profile). Or message them yourself using their exact @name.`,
     noContacts: "You have no contacts in the bot yet. Invite a friend (the “Invite a friend” button) — or use someone's exact LIFE OS @name if you know it. Note: they must use this bot.",
@@ -94,7 +94,7 @@ const RELAY: Record<string, any> = {
 function L(lang?: string | null) { return RELAY[lang || "ru"] || (lang === "en" || lang === "fr" ? RELAY.en : RELAY.ru); }
 
 export function relayHelp(lang: string) { return L(lang).how; }
-export function relaySentMsg(lang: string, name: string) { return L(lang).sent(name); }
+export function relaySentMsg(lang: string, name: string, msg?: string) { return L(lang).sent(name, msg); }
 export function relayToggleMsg(lang: string, nowOff: boolean) { return nowOff ? L(lang).off : L(lang).on; }
 export function nickHelp(lang: string) { return L(lang).nickHow; }
 
@@ -349,7 +349,7 @@ export async function relayFromPhrase(from: { id: string; name: string | null },
     return { handled: false }; // не нашли получателя — не перехватываем, это обычная запись
   }
   const r = await deliver(from, res.user, p.message, senderLang);
-  return { handled: true, reply: r.ok ? L(senderLang).sent(r.toName || res.user.name || p.recipient) : r.error! };
+  return { handled: true, reply: r.ok ? L(senderLang).sent(r.toName || res.user.name || p.recipient, p.message) : r.error! };
 }
 
 // Задать своё прозвище для контакта: /nick @имя прозвище. Возвращает имя получателя.
