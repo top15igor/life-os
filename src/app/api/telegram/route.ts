@@ -1822,11 +1822,13 @@ export async function POST(req: NextRequest) {
         const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
         if (route.kind === "action") {
           const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
-          const texts = [res.text];
+          // html-флаг у каждого ответа свой: одно действие может вернуть готовый
+          // HTML (подсказки relay), другое — markdown. Общий флаг ломал бы одно из них.
+          const parts: { text: string; html?: boolean }[] = [{ text: res.text, html: res.html }];
           for (const m of route.more || []) {
-            try { texts.push((await runAction(user.id, m.name, m.input, lng0, (user as any).tz_offset)).text); } catch {}
+            try { const r = await runAction(user.id, m.name, m.input, lng0, (user as any).tz_offset); parts.push({ text: r.text, html: r.html }); } catch {}
           }
-          await sendMessage(chatId, texts.map((t) => (res.html ? t : mdToTelegram(t) || t)).join("\n"), acqMarkup(lng0));
+          await sendMessage(chatId, parts.map((p) => (p.html ? p.text : mdToTelegram(p.text) || p.text)).join("\n"), acqMarkup(lng0));
           return NextResponse.json({ ok: true });
         }
         if (route.kind === "question") {
@@ -1913,9 +1915,9 @@ export async function POST(req: NextRequest) {
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
         // Несколько объектов в одной команде («добавь два фильма») → несколько вызовов:
         // выполняем все, подтверждения склеиваем в одно сообщение.
-        const moreTexts: string[] = [];
+        const moreParts: { text: string; html?: boolean }[] = [];
         for (const m of route.more || []) {
-          try { moreTexts.push((await runAction(user.id, m.name, m.input, lang, (user as any).tz_offset)).text); } catch {}
+          try { const r = await runAction(user.id, m.name, m.input, lang, (user as any).tz_offset); moreParts.push({ text: r.text, html: r.html }); } catch {}
         }
         let extra: any = res.openNext
           ? { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent(res.openNext)}` }]] } }
@@ -1933,7 +1935,8 @@ export async function POST(req: NextRequest) {
           ]] } };
         }
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
-        const combined = [res.text, ...moreTexts].map((t) => (res.html ? t : mdToTelegram(t) || t)).join("\n");
+        const combined = [{ text: res.text, html: res.html }, ...moreParts]
+          .map((p) => (p.html ? p.text : mdToTelegram(p.text) || p.text)).join("\n");
         // Действие может отдать файл (выгрузка заметок) — шлём документом.
         if (res.file) {
           await sendDocument(chatId, Buffer.from(res.file.text, "utf8"), res.file.name, { caption: combined, parse_mode: "HTML" });

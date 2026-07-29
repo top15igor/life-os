@@ -100,7 +100,7 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "send_message",
     description:
-      "Передать сообщение ДРУГОМУ человеку через бота: «передай Коле, что опоздаю», «напиши Ане, что буду через час», «скажи маме спасибо». Работает, если человек тоже пользуется LIFE OS (он есть в контактах). to — имя/прозвище/@имя получателя, text — что передать (без слов «передай/скажи»).",
+      "Передать сообщение ДРУГОМУ человеку через бота: «передай Коле, что опоздаю», «напиши Ане, что буду через час», «скажи маме спасибо». Вызывай ТОЛЬКО когда явно названы И получатель, И что ему передать. Разговоры ПРО саму функцию — «попробуй отправку сообщения», «затестить передачу», «а ты умеешь передавать?» — это НЕ команда: ничего не отправляй. Получатель — другой человек, а НЕ сам пользователь (его собственное имя сюда не подставляй). to — имя/прозвище/@имя получателя, text — что передать (без слов «передай/скажи»).",
     input_schema: { type: "object", properties: { to: { type: "string" }, text: { type: "string" } }, required: ["to", "text"] },
   },
   {
@@ -502,6 +502,14 @@ export async function renderListMessage(userId: string, listKey: string, lang: L
   return { text: lines.join("\n"), markup: kb.length ? { inline_keyboard: kb } : null };
 }
 
+const RELAY_SELF: Record<Lang, string> = {
+  ru: "Это же ты сам 🙂 Скажи, кому передать: «передай Коле, что…».",
+  en: "That's you 🙂 Tell me who to send it to: “tell Nick that…”.",
+  uk: "Це ж ти сам 🙂 Скажи, кому передати: «передай Колі, що…».",
+  fr: "C'est toi 🙂 Dis-moi à qui l'envoyer : « dis à Nicolas que… ».",
+  es: "Ese eres tú 🙂 Dime a quién enviarlo: «dile a Nico que…».",
+};
+
 // Подтверждение передачи сообщения другому пользователю.
 const RELAY_OK: Record<Lang, (name: string) => string> = {
   ru: (n) => `✅ Передал «${n}».`,
@@ -625,6 +633,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const body = String(input?.text || "").trim().slice(0, 2000);
       if (!to || !body) return { text: s.fail };
       const { data: me } = await db.from("users").select("name").eq("id", userId).maybeSingle();
+      const myName = String((me as any)?.name || "").toLowerCase().replace(/ё/g, "е").trim();
+      // Модель иногда подставляет в получатели самого пользователя («укажи, как меня
+      // называть» → to: «Игорь») — молча ничего не отправляем.
+      if (myName && to.toLowerCase().replace(/ё/g, "е").trim() === myName) return { text: (RELAY_SELF[lang] || RELAY_SELF.ru) };
       const r = await sendRelay({ id: userId, name: (me as any)?.name || null }, to, body, lang);
       // Не доставили (нет такого контакта / отключил приём) — показываем причину как есть.
       return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(r.toName || to) : (r.error || s.fail), html: true };
