@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT } from "@/lib/publicShell";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
 
   if (!path) {
     return (
-      <div style={{ minHeight: "100vh" }}>
+      <div data-public="1" style={PUBLIC_LIGHT}>
         <PublicHeader locale={locale} isAuthed={!!(await getCurrentUser())} showLang={false} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>{s.notFound}</div>
         <PublicFooter locale={locale} width={620} />
@@ -42,7 +43,7 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
   // Шапка: с чужого пути должно быть куда уйти — и след пригласившего не теряется.
   const isAuthed = !!(await getCurrentUser());
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div data-public="1" style={PUBLIC_LIGHT}>
       <PublicHeader
         locale={locale}
         isAuthed={isAuthed}

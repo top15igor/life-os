@@ -6,6 +6,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT } from "@/lib/publicShell";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   if (!prof) {
     return (
-      <div style={{ minHeight: "100vh" }}>
+      <div data-public="1" style={PUBLIC_LIGHT}>
         <PublicHeader locale={locale} isAuthed={!!(await getCurrentUser())} showLang={false} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>
           {s.notFound}
@@ -61,7 +62,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   // Шапка: с чужой витрины должно быть куда уйти — и след пригласившего не теряется.
   const isAuthed = !!(await getCurrentUser());
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div data-public="1" style={PUBLIC_LIGHT}>
       <PublicHeader
         locale={locale}
         isAuthed={isAuthed}

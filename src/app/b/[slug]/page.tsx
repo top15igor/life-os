@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT } from "@/lib/publicShell";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function PublicBooksPage({ params }: { params: Promise<{ sl
   const own: Record<string, string> = {"ru": "Завести свой", "en": "Start your own", "uk": "Завести свій", "fr": "Créer le tien", "es": "Crea el tuyo"};
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+    <div data-public="1" style={PUBLIC_LIGHT}>
       <PublicHeader
         locale={locale}
         isAuthed={isAuthed}

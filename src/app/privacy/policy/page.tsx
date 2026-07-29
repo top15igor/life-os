@@ -3,6 +3,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT_AURORA } from "@/lib/publicShell";
 import { policyContent, POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
@@ -20,24 +21,7 @@ export default async function PrivacyPolicyPage() {
   const p = policyContent(locale);
 
   // Своя светлая палитра — как на /privacy: страница не зависит от темы посетителя.
-  const shell = {
-    ["--bg" as any]: "#f7f8fc",
-    ["--surface" as any]: "#ffffff",
-    ["--surface-2" as any]: "#eef1f8",
-    ["--text" as any]: "#14161c",
-    ["--text-2" as any]: "#4a5261",
-    ["--text-3" as any]: "#8b93a3",
-    ["--border" as any]: "rgba(20,24,40,0.08)",
-    ["--accent" as any]: "#5b5bf5",
-    ["--shadow" as any]: "0 1px 2px rgba(20,24,40,0.05), 0 12px 32px -20px rgba(20,24,40,0.18)",
-    colorScheme: "light",
-    color: "var(--text)",
-    minHeight: "100dvh",
-    background:
-      "radial-gradient(720px 420px at 18% -12%, rgba(124,92,246,0.20), transparent 60%)," +
-      "radial-gradient(720px 420px at 84% -8%, rgba(91,91,245,0.16), transparent 60%)," +
-      "#f7f8fc",
-  } as React.CSSProperties;
+  const shell = PUBLIC_LIGHT_AURORA;
 
   const para: React.CSSProperties = { fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.65, margin: "0 0 10px" };
 
