@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Запись без телефона — кнопка на руке или на шее", d: "Мысль приходит там, где телефона в руках нет: за рулём, на велике, в спортзале, с пакетами в обеих руках. Теперь в «Профиль → Мои устройства» можно подключить Apple Watch: нажал на циферблате — наговорил — запись уже в дневнике, телефон доставать не нужно. Настройка занимает пять минут, железо покупать не надо: пошаговая инструкция прямо на странице. Там же можно выдать ключ своему брелку-кнопке (для тех, кто носит отдельное устройство на шнурке) — если в момент записи интернета нет, брелок сохранит мысль у себя и зальёт позже, а в дневник она ляжет тем временем, когда ты её наговорил. Запись проходит тот же путь, что и голосовое боту: расшифровка → AI-разбор → дневник, а в Telegram приходит подтверждение с текстом, чтобы ты видел, что мысль дошла. У каждого устройства свой ключ: потерял — отозвал одной кнопкой, вход в аккаунт при этом не меняется.", tag: "new" },
       { t: "Условия использования — понятный договор без юридического тумана", d: "На life-os.today/terms появились Условия использования: что такое сервис, правила аккаунта (один человек — один аккаунт, с 16 лет, личную ссылку не пересылать), тарифы и оплата (Старт бесплатно, Pro $9.99, Премиум $19.99, автооплаты пока нет — заявка и ручное подключение, о повышении цены предупреждаем за 30 дней), правила для печатной «Книги жизни» и бесплатной книги за приглашения, границы AI (это информация, а не медицинская, юридическая или финансовая консультация), ответственность и что происходит, если ты уходишь. Главное записано прямо: твои записи и фото принадлежат тебе, мы не претендуем на права и не учим на них модели. Ссылки — в футере главной и на странице политики конфиденциальности. Документ на пяти языках.", tag: "new" },
       { t: "Политика конфиденциальности — полный юридический документ", d: "У «Приватности» появилась вторая, формальная версия: /privacy/policy. Там по пунктам расписано, какие именно данные обрабатываются (аккаунт, содержимое, финансы, здоровье, техника), зачем и на каком основании, полный список подрядчиков (Supabase, Vercel, Telegram, Anthropic, OpenAI, Google, банки) с честной пометкой, что данные не продаются и не идут в рекламу, сроки хранения, что становится публичным только по твоему решению, и твои права по GDPR и украинскому закону — со ссылками на кнопки «Скачать все мои данные» и «Право уйти», которыми права реализуются в один клик. Документ на пяти языках. Дружелюбная страница «Приватность» осталась прежней — с неё есть ссылка на юридическую версию.", tag: "new" },
       { t: "Заметки можно перенести куда угодно — и принести откуда угодно", d: "Заметки теперь не заперты в LIFE OS. «Выгрузи заметки» — бот пришлёт файлом: открывается в Заметках айфона, Obsidian, где угодно. Обратно так же просто: пришли боту текстовый файл (.txt, .md, .csv) — он разложит его на заметки. На вебе в разделе «Заметки» появился блок «Перенос заметок»: скачать файл, вставить список текстом или загрузить файл; можно выбрать, считать ли каждую строку отдельной заметкой. Переносишь из Google Keep, Apple Notes или блокнота — просто скопируй и вставь.", tag: "new" },
@@ -129,6 +130,28 @@ const E: Record<Locale, Extras> = {
       { t: "Новый дизайн «Осознанность»", d: "Голос-first главная с большим живым микрофоном. Включается тумблером вверху главной — можно сравнить с классическим.", tag: "new" },
     ],
     features: [
+      {
+        key: "devices", icon: "ti-device-watch", color: "#6366f1", title: "Запись без телефона: часы и кнопка-брелок",
+        short: "Нажал кнопку на запястье — наговорил — мысль уже в дневнике. Телефон доставать не нужно.",
+        sections: [
+          { p: "Лучшие мысли приходят там, где телефона в руках нет: на велосипеде, за рулём, на пробежке, с пакетами в обеих руках. Раньше такая мысль просто терялась. Теперь достаточно нажать кнопку на часах или на брелке, наговорить пару фраз — и запись пройдёт тот же путь, что голосовое боту: расшифровка, AI-разбор, дневник." },
+          { h: "Как настроить (Apple Watch, 5 минут)", steps: [
+            "Профиль → Мои устройства → «Добавить Apple Watch».",
+            "Скопируй личную ссылку устройства — она появится на карточке.",
+            "На айфоне: «Команды» → «+» → действие «Диктовать текст».",
+            "Добавь действие «Получить содержимое URL»: вставь ссылку, метод POST, тело JSON, поле text = «Продиктованный текст».",
+            "Назови команду «В LIFE OS» и включи «Показывать на Apple Watch».",
+            "На часах добавь её в «Смарт-стопку» или на циферблат — и она в одно касание.",
+          ] },
+          { h: "Как это ощущается", p: "Едешь на велике, приходит идея — тап по циферблату, десять секунд вслух, поехал дальше. Вечером открываешь дневник: мысль на месте, уже разобрана по категориям. В Telegram сразу приходит подтверждение с текстом — чтобы ты видел, что она дошла и как её услышали." },
+          { h: "Своя кнопка на шнурке", p: "Если носишь отдельное устройство-брелок, выдай ему ключ кнопкой «Добавить брелок» — на карточке будет всё, что нужно прошивке. Интернета в момент записи может и не быть: брелок сохранит мысль у себя и зальёт позже, а в дневник она ляжет тем временем, когда ты её наговорил." },
+          { tips: [
+            "У каждого устройства свой ключ. Потерял брелок — «Удалить» или «Сменить ключ», и он мёртв. Личная ссылка входа в аккаунт при этом не меняется.",
+            "На айфоне ту же команду можно повесить на «Кнопку действия» (iPhone 15 Pro и новее) или на постукивание по задней крышке.",
+            "Кнопка «Проверить» на карточке скажет, работает ли ссылка, — до того как ты полезешь настраивать часы.",
+          ] },
+        ],
+      },
       {
         key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Сообщения близким через бота",
         short: "Скажи «передай Ане, что опоздаю» — я доставлю сообщение ей в чат с ботом. Без переписки и лишних приложений.",
@@ -392,6 +415,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Capture without the phone — a button on your wrist or neck", d: "Thoughts arrive where your phone isn't in your hands: driving, cycling, at the gym, carrying bags. In “Profile → My devices” you can now connect your Apple Watch: tap the face, speak, and the entry is already in your diary — no phone needed. Setup takes five minutes and no hardware: step-by-step instructions are right on the page. You can also issue a key to your own button keyfob (for a separate device on a strap) — with no connection at the moment of recording it stores the clip and uploads later, and the entry lands in the diary at the time you actually spoke it. The recording goes the same way as a voice note to the bot: transcription → AI analysis → diary, and Telegram sends a confirmation with the text so you can see it arrived. Every device has its own key: lose it and revoke it with one tap — your account sign-in link stays untouched.", tag: "new" },
       { t: "Terms of Service — a plain-language agreement", d: "life-os.today/terms now holds the Terms of Service: what the service is, account rules (one person — one account, 16+, never forward your personal link), plans and payment (Start free, Pro $9.99, Premium $19.99, no automatic billing yet — a request and manual activation, price increases announced 30 days ahead), rules for the printed Book of Life and the free book for invites, the limits of AI (information, not medical, legal or financial advice), liability, and what happens when you leave. The key part is stated plainly: your entries and photos belong to you, we claim no rights over them and never train models on them. Links live in the landing footer and on the privacy policy page. Available in five languages.", tag: "new" },
       { t: "Privacy Policy — the full legal document", d: "“Privacy” now has a second, formal version: /privacy/policy. It spells out exactly what data is processed (account, content, finance, health, technical), why and on what legal basis, the full list of processors (Supabase, Vercel, Telegram, Anthropic, OpenAI, Google, banks) with a plain statement that data is never sold or used for ads, retention periods, what becomes public only when you decide so, and your rights under the GDPR and Ukrainian law — pointing at the “Download all my data” and “Right to leave” buttons that make those rights one click away. Available in five languages. The friendly “Privacy” page stays as it was, with a link to the legal version.", tag: "new" },
       { t: "Notes can move anywhere — and come from anywhere", d: "Your notes aren't locked inside LIFE OS anymore. Say “export my notes” and the bot sends a file — it opens in iPhone Notes, Obsidian, anywhere. Bringing them back is just as easy: send the bot a text file (.txt, .md, .csv) and it turns into notes. On the web, the “Notes” page now has a “Move notes” block: download the file, paste a list as text or upload a file, and choose whether each line is a separate note. Moving from Google Keep, Apple Notes or a plain notepad — just copy and paste.", tag: "new" },
@@ -463,6 +487,28 @@ const E: Record<Locale, Extras> = {
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "devices", icon: "ti-device-watch", color: "#6366f1", title: "Capture without the phone: watch and button keyfob",
+        short: "Press the button on your wrist, speak, and the thought is already in your diary. No phone needed.",
+        sections: [
+          { p: "The best thoughts arrive where your phone isn't in your hands: on a bike, driving, running, carrying bags. Those used to be lost. Now you press a button on your watch or keyfob, say a few sentences, and the recording goes the same way as a voice note to the bot: transcription, AI analysis, diary." },
+          { h: "How to set it up (Apple Watch, 5 minutes)", steps: [
+            "Profile → My devices → “Add Apple Watch”.",
+            "Copy the personal device link that appears on the card.",
+            "On iPhone: Shortcuts → “+” → the “Dictate Text” action.",
+            "Add “Get Contents of URL”: paste the link, method POST, body JSON, field text = “Dictated Text”.",
+            "Name it “To LIFE OS” and turn on “Show on Apple Watch”.",
+            "On the watch, add it to the Smart Stack or a watch face — one tap away.",
+          ] },
+          { h: "What it feels like", p: "You're cycling, an idea hits — tap the watch face, ten seconds out loud, ride on. In the evening you open the diary: the thought is there, already sorted into categories. Telegram gets a confirmation with the text right away, so you can see it arrived and how it was heard." },
+          { h: "Your own button on a strap", p: "If you carry a separate keyfob, issue it a key with “Add keyfob” — the card holds everything the firmware needs. There may be no connection at the moment of recording: the keyfob stores the clip and uploads it later, and the entry lands in the diary at the time you actually spoke it." },
+          { tips: [
+            "Every device has its own key. Lost the keyfob — “Delete” or “New key”, and it's dead. Your account sign-in link stays untouched.",
+            "On iPhone the same shortcut can go on the Action Button (iPhone 15 Pro and newer) or on Back Tap.",
+            "The “Test” button on the card tells you the link works before you start setting up the watch.",
+          ] },
+        ],
+      },
       {
         key: "relay", icon: "ti-send", color: "#0ea5e9", title: "Messages to loved ones via the bot",
         short: "Say “tell Anna I'll be late” — I deliver it to her chat with the bot. No back-and-forth, no extra apps.",
