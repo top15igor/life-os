@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const serverTheme = themePref === "dark" ? "dark" : themePref === "light" ? "light" : undefined;
   const themeScript = `(function(){try{var t=${JSON.stringify(themePref || "light")};var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(t==='auto'){matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){document.documentElement.dataset.theme=e.matches?'dark':'light';});}}catch(e){}})();`;
   return (
-    <html lang="ru" data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme}>
+    <html lang="ru" data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />

@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 
 const T: Record<string, any> = {
-  ru: { youNow: "Ты сейчас здесь", month: "/мес", choose: "Оформить", sending: "Отправляю…", sent: "Заявка отправлена ✓", popular: "Популярный", usage: "Записей в этом месяце", note: "Оплату подключим позже — пока оставь заявку, и мы свяжемся вручную.", soft: "Лимиты мягкие: это «честный потолок» от перегруза, а не жёсткая отсечка.", bookTitle: "Хочешь печатную «Книгу жизни»?", bookSub: "Твоя жизнь в твёрдой обложке — чтобы подарить близким. Это разовый заказ, отдельно от подписки.", bookCta: "Заказать книгу" },
-  en: { youNow: "You're here now", month: "/mo", choose: "Choose", sending: "Sending…", sent: "Request sent ✓", popular: "Popular", usage: "Entries this month", note: "Payments come later — for now leave a request and we'll reach out.", soft: "Limits are soft: a fair ceiling against overload, not a hard cutoff.", bookTitle: "Want a printed Book of Life?", bookSub: "Your life in a hardcover — to gift your loved ones. A one-time order, separate from the subscription.", bookCta: "Order the book" },
-  uk: { youNow: "Ти зараз тут", month: "/міс", choose: "Оформити", sending: "Надсилаю…", sent: "Заявку надіслано ✓", popular: "Популярний", usage: "Записів цього місяця", note: "Оплату підключимо пізніше — поки залиш заявку, і ми зв'яжемося.", soft: "Ліміти м'які: чесна стеля від перевантаження, а не жорстка відсічка.", bookTitle: "Хочеш друковану «Книгу життя»?", bookSub: "Твоє життя у твердій обкладинці — щоб подарувати близьким. Це разове замовлення, окремо від підписки.", bookCta: "Замовити книгу" },
-  fr: { youNow: "Tu es ici", month: "/mois", choose: "Choisir", sending: "Envoi…", sent: "Demande envoyée ✓", popular: "Populaire", usage: "Entrées ce mois-ci", note: "Le paiement viendra plus tard — laisse une demande, on te recontacte.", soft: "Limites souples : un plafond juste contre la surcharge, pas un blocage.", bookTitle: "Envie d'un Livre de vie imprimé ?", bookSub: "Ta vie en couverture rigide — à offrir à tes proches. Une commande unique, séparée de l'abonnement.", bookCta: "Commander le livre" },
-  es: { youNow: "Ya estás aquí", month: "/mes", choose: "Elegir", sending: "Enviando…", sent: "Solicitud enviada ✓", popular: "Popular", usage: "Entradas este mes", note: "El pago se habilitará más adelante — por ahora deja una solicitud y te contactaremos a mano.", soft: "Los límites son flexibles: es un techo justo contra la sobrecarga, no un corte estricto.", bookTitle: "¿Quieres un «Libro de vida» impreso?", bookSub: "Tu vida en tapa dura, para regalar a tus seres queridos. Es un pedido único, aparte de la suscripción.", bookCta: "Pedir el libro" },
+  ru: { youNow: "Ты сейчас здесь", month: "/мес", choose: "Оформить", sending: "Отправляю…", sent: "Заявка отправлена ✓", popular: "Популярный", usage: "Записей в этом месяце", note: "Оплату подключим позже — пока оставь заявку, и мы свяжемся вручную.", soft: "Лимиты мягкие: это «честный потолок» от перегруза, а не жёсткая отсечка.", bookTitle: "Хочешь печатную «Книгу жизни»?", bookSub: "Твоя жизнь в твёрдой обложке — чтобы подарить близким. Это разовый заказ, отдельно от подписки.", bookCta: "Заказать книгу", startFree: "Начать бесплатно", guestNote: "Регистрация за минуту — через Google или обычную почту. Оплату подключим позже." },
+  en: { youNow: "You're here now", month: "/mo", choose: "Choose", sending: "Sending…", sent: "Request sent ✓", popular: "Popular", usage: "Entries this month", note: "Payments come later — for now leave a request and we'll reach out.", soft: "Limits are soft: a fair ceiling against overload, not a hard cutoff.", bookTitle: "Want a printed Book of Life?", bookSub: "Your life in a hardcover — to gift your loved ones. A one-time order, separate from the subscription.", bookCta: "Order the book", startFree: "Start free", guestNote: "Sign up in a minute — with Google or regular email. Payments come later." },
+  uk: { youNow: "Ти зараз тут", month: "/міс", choose: "Оформити", sending: "Надсилаю…", sent: "Заявку надіслано ✓", popular: "Популярний", usage: "Записів цього місяця", note: "Оплату підключимо пізніше — поки залиш заявку, і ми зв'яжемося.", soft: "Ліміти м'які: чесна стеля від перевантаження, а не жорстка відсічка.", bookTitle: "Хочеш друковану «Книгу життя»?", bookSub: "Твоє життя у твердій обкладинці — щоб подарувати близьким. Це разове замовлення, окремо від підписки.", bookCta: "Замовити книгу", startFree: "Почати безкоштовно", guestNote: "Реєстрація за хвилину — через Google або звичайну пошту. Оплату підключимо пізніше." },
+  fr: { youNow: "Tu es ici", month: "/mois", choose: "Choisir", sending: "Envoi…", sent: "Demande envoyée ✓", popular: "Populaire", usage: "Entrées ce mois-ci", note: "Le paiement viendra plus tard — laisse une demande, on te recontacte.", soft: "Limites souples : un plafond juste contre la surcharge, pas un blocage.", bookTitle: "Envie d'un Livre de vie imprimé ?", bookSub: "Ta vie en couverture rigide — à offrir à tes proches. Une commande unique, séparée de l'abonnement.", bookCta: "Commander le livre", startFree: "Commencer gratuitement", guestNote: "Inscription en une minute — via Google ou e-mail. Le paiement viendra plus tard." },
+  es: { youNow: "Ya estás aquí", month: "/mes", choose: "Elegir", sending: "Enviando…", sent: "Solicitud enviada ✓", popular: "Popular", usage: "Entradas este mes", note: "El pago se habilitará más adelante — por ahora deja una solicitud y te contactaremos a mano.", soft: "Los límites son flexibles: es un techo justo contra la sobrecarga, no un corte estricto.", bookTitle: "¿Quieres un «Libro de vida» impreso?", bookSub: "Tu vida en tapa dura, para regalar a tus seres queridos. Es un pedido único, aparte de la suscripción.", bookCta: "Pedir el libro", startFree: "Empezar gratis", guestNote: "Registro en un minuto — con Google o correo normal. El pago se habilitará más adelante." },
 };
 
 const PLANS: Record<string, any[]> = {
@@ -39,7 +39,7 @@ const PLANS: Record<string, any[]> = {
   ],
 };
 
-export default function PricingPlans({ locale, monthEntries, userName }: { locale: string; monthEntries: number; userName: string }) {
+export default function PricingPlans({ locale, monthEntries, userName, guest = false }: { locale: string; monthEntries: number; userName: string; guest?: boolean }) {
   const s = T[locale] || T.ru;
   const plans = PLANS[locale] || PLANS.ru;
   const [sent, setSent] = useState<Record<string, boolean>>({});
@@ -56,9 +56,11 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
 
   return (
     <div>
-      <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 16 }}>
-        <i className="ti ti-pencil" style={{ fontSize: 14, color: "var(--accent)", verticalAlign: "-2px" }} /> {s.usage}: <b>{monthEntries}</b>
-      </div>
+      {!guest && (
+        <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 16 }}>
+          <i className="ti ti-pencil" style={{ fontSize: 14, color: "var(--accent)", verticalAlign: "-2px" }} /> {s.usage}: <b>{monthEntries}</b>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, alignItems: "start" }}>
         {plans.map((p) => {
@@ -82,7 +84,11 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
                   </div>
                 ))}
               </div>
-              {isFree ? (
+              {guest ? (
+                <Link href="/login" style={{ display: "block", width: "100%", boxSizing: "border-box", textAlign: "center", padding: "10px", borderRadius: 10, background: p.popular ? "#f59e0b" : isFree ? "var(--surface-2)" : "var(--accent)", color: isFree ? "var(--text)" : "#fff", fontSize: 13.5, fontWeight: 600, textDecoration: "none" }}>
+                  {s.startFree}
+                </Link>
+              ) : isFree ? (
                 <div style={{ fontSize: 12.5, textAlign: "center", padding: "9px", borderRadius: 10, background: "var(--surface-2)", color: "var(--text-2)" }}>
                   <i className="ti ti-circle-check" style={{ fontSize: 14, color: "#10b981", verticalAlign: "-2px" }} /> {s.youNow}
                 </div>
@@ -99,7 +105,7 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
       </div>
 
       {/* Печатная книга — разовый заказ, отдельно от подписки */}
-      <Link href="/lifebook" className="card soft-hero" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, textDecoration: "none", color: "var(--text)", border: "1px solid var(--border)" }}>
+      <Link href={guest ? "/features" : "/lifebook"} className="card soft-hero" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, textDecoration: "none", color: "var(--text)", border: "1px solid var(--border)" }}>
         <span style={{ width: 44, height: 44, borderRadius: 11, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <i className="ti ti-book-2" style={{ fontSize: 24, color: "var(--accent)" }} />
         </span>
@@ -112,7 +118,7 @@ export default function PricingPlans({ locale, monthEntries, userName }: { local
 
       <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 14, lineHeight: 1.5 }}>
         <div>{s.soft}</div>
-        <div style={{ marginTop: 3 }}>{s.note}</div>
+        <div style={{ marginTop: 3 }}>{guest ? s.guestNote : s.note}</div>
       </div>
     </div>
   );

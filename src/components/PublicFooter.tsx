@@ -8,12 +8,12 @@ import type { Locale } from "@/lib/i18n";
 
 const GH = "https://github.com/top15igor/life-os";
 
-const T: Record<string, { priv: string; terms: string; code: string; tester: string }> = {
-  ru: { priv: "Безопасно и приватно", terms: "Условия", code: "Код на GitHub", tester: "Тестировщикам" },
-  en: { priv: "Safe and private", terms: "Terms", code: "Code on GitHub", tester: "For testers" },
-  uk: { priv: "Безпечно і приватно", terms: "Умови", code: "Код на GitHub", tester: "Тестувальникам" },
-  fr: { priv: "Sûr et privé", terms: "Conditions", code: "Code sur GitHub", tester: "Pour les testeurs" },
-  es: { priv: "Seguro y privado", terms: "Términos", code: "Código en GitHub", tester: "Para testers" },
+const T: Record<string, { priv: string; terms: string; code: string; tester: string; pricing: string }> = {
+  ru: { priv: "Безопасно и приватно", terms: "Условия", code: "Код на GitHub", tester: "Тестировщикам", pricing: "Тарифы" },
+  en: { priv: "Safe and private", terms: "Terms", code: "Code on GitHub", tester: "For testers", pricing: "Plans" },
+  uk: { priv: "Безпечно і приватно", terms: "Умови", code: "Код на GitHub", tester: "Тестувальникам", pricing: "Тарифи" },
+  fr: { priv: "Sûr et privé", terms: "Conditions", code: "Code sur GitHub", tester: "Pour les testeurs", pricing: "Forfaits" },
+  es: { priv: "Seguro y privado", terms: "Términos", code: "Código en GitHub", tester: "Para testers", pricing: "Planes" },
 };
 
 const CSS = `
@@ -58,6 +58,7 @@ export default function PublicFooter({
             <i className="ti ti-shield-lock" style={{ fontSize: 16, color: "var(--accent, #5b5bf5)" }} />
             {s.priv}
           </Link>
+          <Link href="/pricing">{s.pricing}</Link>
           <a href={testerHref}>{s.tester}</a>
           <Link href="/terms">{s.terms}</Link>
           <a href={GH} target="_blank" rel="noreferrer">{s.code}</a>
