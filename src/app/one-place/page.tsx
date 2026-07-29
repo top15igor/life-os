@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import ChaosToOrder, { type Chip } from "@/components/onePlace/ChaosToOrder";
+import PublicHeader from "@/components/PublicHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -376,17 +377,14 @@ export default async function OnePlacePage() {
     <div className="op-shell">
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
 
-      <div className="op-top">
-        <div className="op-wrap op-top-in">
-          <Link href="/about" className="op-brand" title={s.backHome}>
-            <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} /> LIFE OS
-          </Link>
-          <nav className="op-nav">
-            <Link href="/features">{s.allFeatures}</Link>
-            <Link href={isAuthed ? "/" : "/login"} className="pri">{isAuthed ? s.app : s.login}</Link>
-          </nav>
-        </div>
-      </div>
+      <PublicHeader
+        locale={locale}
+        isAuthed={isAuthed}
+        links={[
+          { href: "/about", label: s.backHome },
+          { href: "/features", label: s.allFeatures },
+        ]}
+      />
 
       <header className="op-hero">
         <div className="op-wrap">

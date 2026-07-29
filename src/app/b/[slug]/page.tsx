@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import BooksPublic from "@/components/BooksPublic";
 import { getPublicLibrary } from "@/lib/books";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +20,19 @@ export default async function PublicBooksPage({ params }: { params: Promise<{ sl
   if (!data) notFound();
   const locale = await getLocale();
 
+  const isAuthed = !!(await getCurrentUser());
+  // С чужой витрины должно быть куда уйти: логотип и кнопка ведут на лендинг.
+  const own: Record<string, string> = {"ru": "Завести свой", "en": "Start your own", "uk": "Завести свій", "fr": "Créer le tien", "es": "Crea el tuyo"};
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <PublicHeader
+        locale={locale}
+        isAuthed={isAuthed}
+        ctaLabel={isAuthed ? undefined : own[locale] || own.ru}
+        ctaHref={isAuthed ? undefined : "/about"}
+        showLang={false}
+      />
       <BooksPublic locale={locale} ownerName={data.ownerName} books={data.books} />
     </div>
   );

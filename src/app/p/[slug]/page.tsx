@@ -3,6 +3,8 @@ import { getPublicBySlug, getPublicStats } from "@/lib/public";
 import { getPublicPages } from "@/lib/publish";
 import { getHandle } from "@/lib/handle";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +33,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
   if (!prof) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, color: "var(--text-2)", fontSize: 15 }}>
-        {s.notFound}
+      <div style={{ minHeight: "100vh" }}>
+        <PublicHeader locale={locale} isAuthed={!!(await getCurrentUser())} showLang={false} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>
+          {s.notFound}
+        </div>
       </div>
     );
   }
@@ -51,8 +56,19 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   if (blocks.has("dreams") && st.dreamsDone > 0) extra.push({ n: st.dreamsDone, label: s.lblDreams });
   if (blocks.has("streak") && st.streak > 1) extra.push({ n: st.streak, label: s.lblStreak });
 
+  // Шапка: с чужой витрины должно быть куда уйти — и след пригласившего не теряется.
+  const isAuthed = !!(await getCurrentUser());
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", justifyContent: "center", padding: "0 0 40px" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <PublicHeader
+        locale={locale}
+        isAuthed={isAuthed}
+        homeHref={`/i/${inviteCode}`}
+        ctaLabel={isAuthed ? undefined : s.cta}
+        ctaHref={isAuthed ? undefined : `/i/${inviteCode}`}
+        showLang={false}
+      />
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 0 40px" }}>
       <div style={{ width: "100%", maxWidth: 560 }}>
         {/* Герой */}
         <div style={{ background: "linear-gradient(135deg, #4f46e5, #7c6ff0)", padding: "44px 24px 30px", color: "#fff", textAlign: "center" }}>
@@ -104,6 +120,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <span style={{ fontWeight: 700, letterSpacing: 1 }}>LIFE OS</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 import { privacyContent } from "@/lib/privacy";
 
 export const dynamic = "force-dynamic";
 
 export default async function PrivacyPage() {
   const locale = await getLocale();
+  const isAuthed = !!(await getCurrentUser());
   const p = privacyContent(locale);
 
   // Своя светлая палитра (в тон лендингу /about и странице входа), не зависит от темы посетителя.
@@ -42,6 +45,7 @@ export default async function PrivacyPage() {
 
   return (
     <div style={shell}>
+      <PublicHeader locale={locale} isAuthed={isAuthed} width={640} />
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "40px 22px 60px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <i className="ti ti-lock" style={{ fontSize: 26, color: "var(--accent)" }} />

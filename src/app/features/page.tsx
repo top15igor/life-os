@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -222,17 +223,14 @@ export default async function FeaturesPage() {
   return (
     <div className="fx-shell">
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
-      <div className="fx-top">
-        <div className="fx-wrap fx-top-in">
-          <Link href="/about" className="fx-brand" title={s.backHome}>
-            <i className="ti ti-flower" style={{ fontSize: 22, color: "var(--accent)" }} /> LIFE OS
-          </Link>
-          <nav className="fx-nav">
-            <Link href="/about">← {s.backHome}</Link>
-            <Link href={isAuthed ? "/" : "/login"} className="pri">{isAuthed ? s.app : s.login}</Link>
-          </nav>
-        </div>
-      </div>
+      <PublicHeader
+        locale={locale}
+        isAuthed={isAuthed}
+        links={[
+          { href: "/about", label: s.backHome },
+          { href: "/one-place", label: locale === "en" ? "Notes & reminders" : "Заметки и напоминания" },
+        ]}
+      />
       <div className="fx-wrap">
 
         <header className="fx-hero">
@@ -243,10 +241,6 @@ export default async function FeaturesPage() {
             <span className="fx-tag">{s.metaCount}</span>
             <span className="fx-tag">{s.metaA}</span>
             <span className="fx-tag">{s.metaB}</span>
-            {/* Мост на лендинг /one-place — заметки, списки, напоминания в одном месте */}
-            <Link href="/one-place" className="fx-tag" style={{ textDecoration: "none", color: "var(--accent)", fontWeight: 600, borderColor: "var(--accent)" }}>
-              {locale === "en" ? "Notes & reminders in one place →" : "Заметки и напоминания — в одном месте →"}
-            </Link>
           </div>
         </header>
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 import { policyContent, POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,7 @@ export const metadata = {
 // Именно этот адрес отдаём в App Store Connect и в Google OAuth-верификацию.
 export default async function PrivacyPolicyPage() {
   const locale = await getLocale();
+  const isAuthed = !!(await getCurrentUser());
   const p = policyContent(locale);
 
   // Своя светлая палитра — как на /privacy: страница не зависит от темы посетителя.
@@ -39,6 +42,7 @@ export default async function PrivacyPolicyPage() {
 
   return (
     <div style={shell}>
+      <PublicHeader locale={locale} isAuthed={isAuthed} width={680} />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 22px 60px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <i className="ti ti-file-text" style={{ fontSize: 26, color: "var(--accent)" }} />

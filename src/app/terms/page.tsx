@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 import { termsContent } from "@/lib/terms";
 import { POLICY_EMAIL } from "@/lib/privacyPolicy";
 
@@ -13,6 +15,7 @@ export const metadata = {
 // Публичная страница (middleware пропускает /terms). Адрес отдаём в App Store Connect.
 export default async function TermsPage() {
   const locale = await getLocale();
+  const isAuthed = !!(await getCurrentUser());
   const t = termsContent(locale);
 
   // Своя светлая палитра — как на /privacy и /privacy/policy: не зависит от темы посетителя.
@@ -38,6 +41,7 @@ export default async function TermsPage() {
 
   return (
     <div style={shell}>
+      <PublicHeader locale={locale} isAuthed={isAuthed} width={680} />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 22px 60px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <i className="ti ti-scale" style={{ fontSize: 26, color: "var(--accent)" }} />

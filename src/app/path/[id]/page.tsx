@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getPublicPath, getPathPages } from "@/lib/paths";
 import { getInviteCode } from "@/lib/users";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
+import PublicHeader from "@/components/PublicHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,12 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
   const path = await getPublicPath(id);
 
   if (!path) {
-    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, color: "var(--text-2)", fontSize: 15 }}>{s.notFound}</div>;
+    return (
+      <div style={{ minHeight: "100vh" }}>
+        <PublicHeader locale={locale} isAuthed={!!(await getCurrentUser())} showLang={false} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>{s.notFound}</div>
+      </div>
+    );
   }
 
   const [c1, c2] = ACCENTS[path.accent] || ACCENTS.indigo;
@@ -30,8 +37,19 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
   const inviteCode = await getInviteCode(path.userId);
   const fmt = (iso: string) => { const [y, m, d] = (iso || "").slice(0, 10).split("-"); return m ? `${Number(d)} ${s.months[Number(m) - 1]} ${y}` : iso; };
 
+  // Шапка: с чужого пути должно быть куда уйти — и след пригласившего не теряется.
+  const isAuthed = !!(await getCurrentUser());
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", justifyContent: "center", padding: "0 0 40px" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <PublicHeader
+        locale={locale}
+        isAuthed={isAuthed}
+        homeHref={`/i/${inviteCode}`}
+        ctaLabel={isAuthed ? undefined : s.cta}
+        ctaHref={isAuthed ? undefined : `/i/${inviteCode}`}
+        showLang={false}
+      />
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 0 40px" }}>
       <div style={{ width: "100%", maxWidth: 620 }}>
         {/* Герой */}
         <div style={{ background: `linear-gradient(135deg, ${c1}, ${c2})`, padding: "46px 24px 34px", color: "#fff", textAlign: "center" }}>
@@ -70,6 +88,7 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
           <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--text-3)", marginTop: 8 }}>{s.ctaSub}</div>
           <div style={{ textAlign: "center", fontSize: 12, color: "var(--text-3)", marginTop: 24 }}><span style={{ fontWeight: 700, letterSpacing: 1 }}>LIFE OS</span></div>
         </div>
+      </div>
       </div>
     </div>
   );
