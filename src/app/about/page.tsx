@@ -4,6 +4,7 @@ import ProductPeek from "@/components/about/ProductPeek";
 import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
+import { testimonials } from "@/lib/testimonials";
 import PublicFooter from "@/components/PublicFooter";
 import { pageMetadata } from "@/lib/seo";
 
@@ -95,13 +96,6 @@ const C = {
 
     testi_kicker: "Отзывы",
     testi_title: "Люди в восторге от LIFE OS",
-    // TODO: заменить на реальные отзывы пользователей (пока — примеры для вёрстки)
-    testi: [
-      { text: "Веду LIFE OS три месяца и впервые в жизни не забросил дневник. Просто говорю в Telegram по дороге домой — а вечером читаю свою жизнь, разложенную по полочкам.", name: "Анна", role: "маркетолог" },
-      { text: "Пробовал десятки приложений для заметок — всё бросал. Здесь бросать нечего: ни папок, ни тегов, ни настроек, которые надо поддерживать.", name: "Дмитрий", role: "предприниматель" },
-      { text: "Выгрузил всё в Obsidian и понял — это правда моё. Я не привязан к сервису, мои воспоминания всегда со мной.", name: "Сергей", role: "инженер" },
-      { text: "Делаю это для дочери. Хочу, чтобы однажды она смогла прочитать, о чём я думала, когда она была маленькой.", name: "Мария", role: "мама в декрете" },
-    ],
 
     trust_own: "Данные — ваши навсегда",
     trust_own_d: "Выгрузка в Markdown и Obsidian в один клик. Ваша книга жизни останется с вами — даже без интернета и без нашего сервиса.",
@@ -195,13 +189,6 @@ const C = {
 
     testi_kicker: "Testimonials",
     testi_title: "People love LIFE OS",
-    // TODO: replace with real user testimonials (these are placeholders for layout)
-    testi: [
-      { text: "I've used LIFE OS for three months and for the first time I haven't abandoned a diary. I just talk into Telegram on my way home — and in the evening I read my life, neatly sorted.", name: "Anna", role: "marketer" },
-      { text: "I've tried dozens of note apps and quit them all. Here there's nothing to quit: no folders, no tags, no system to maintain.", name: "Dmitry", role: "entrepreneur" },
-      { text: "I exported everything to Obsidian and realized — it's truly mine. I'm not locked to the service, my memories are always with me.", name: "Sergey", role: "engineer" },
-      { text: "I'm doing this for my daughter. I want her to one day read what I was thinking when she was little.", name: "Maria", role: "mom" },
-    ],
 
     trust_own: "Your data, forever yours",
     trust_own_d: "Export to Markdown and Obsidian in one click. Your book of life stays with you — even without internet and without our service.",
@@ -295,12 +282,6 @@ const C = {
 
     testi_kicker: "Відгуки",
     testi_title: "Люди в захваті від LIFE OS",
-    testi: [
-      { text: "Веду LIFE OS три місяці й уперше в житті не закинув щоденник. Просто говорю в Telegram дорогою додому — а ввечері читаю своє життя, розкладене по поличках.", name: "Анна", role: "маркетолог" },
-      { text: "Пробував десятки застосунків для нотаток — усе кидав. Тут кидати нічого: ні тек, ні тегів, ні налаштувань, які треба підтримувати.", name: "Дмитро", role: "підприємець" },
-      { text: "Вивантажив усе в Obsidian і зрозумів — це справді моє. Я не прив'язаний до сервісу, мої спогади завжди зі мною.", name: "Сергій", role: "інженер" },
-      { text: "Роблю це для доньки. Хочу, щоб одного дня вона змогла прочитати, про що я думала, коли вона була маленькою.", name: "Марія", role: "мама в декреті" },
-    ],
 
     trust_own: "Дані — ваші назавжди",
     trust_own_d: "Вивантаження в Markdown і Obsidian в один клік. Ваша книга життя залишиться з вами — навіть без інтернету і без нашого сервісу.",
@@ -394,12 +375,6 @@ const C = {
 
     testi_kicker: "Témoignages",
     testi_title: "Les gens adorent LIFE OS",
-    testi: [
-      { text: "Je tiens LIFE OS depuis trois mois et, pour la première fois, je n'ai pas abandonné mon journal. Je parle simplement dans Telegram en rentrant — et le soir je relis ma vie, bien rangée.", name: "Anna", role: "marketeuse" },
-      { text: "J'ai essayé des dizaines d'applis de notes — je les ai toutes lâchées. Ici, rien à lâcher : ni dossiers, ni tags, ni système à entretenir.", name: "Dmitri", role: "entrepreneur" },
-      { text: "J'ai tout exporté vers Obsidian et j'ai compris — c'est vraiment à moi. Je ne dépends pas du service, mes souvenirs sont toujours avec moi.", name: "Sergueï", role: "ingénieur" },
-      { text: "Je le fais pour ma fille. Je veux qu'un jour elle puisse lire ce à quoi je pensais quand elle était petite.", name: "Maria", role: "maman en congé" },
-    ],
 
     trust_own: "Tes données, à toi pour toujours",
     trust_own_d: "Export vers Markdown et Obsidian en un clic. Ton livre de vie reste avec toi — même sans internet et sans notre service.",
@@ -493,13 +468,6 @@ const C = {
 
     testi_kicker: "Testimonios",
     testi_title: "A la gente le encanta LIFE OS",
-    // TODO: reemplazar con testimonios reales de usuarios (por ahora son ejemplos para el diseño)
-    testi: [
-      { text: "Uso LIFE OS desde hace tres meses y por primera vez no abandoné un diario. Simplemente hablo por Telegram camino a casa — y por la noche leo mi vida, ordenada por capas.", name: "Anna", role: "marketera" },
-      { text: "Probé decenas de apps de notas y las dejé todas. Aquí no hay nada que dejar: ni carpetas, ni etiquetas, ni sistema que mantener.", name: "Dmitry", role: "emprendedor" },
-      { text: "Exporté todo a Obsidian y entendí — de verdad es mío. No dependo del servicio, mis recuerdos siempre están conmigo.", name: "Sergey", role: "ingeniero" },
-      { text: "Lo hago por mi hija. Quiero que algún día pueda leer en qué pensaba yo cuando ella era pequeña.", name: "Maria", role: "mamá" },
-    ],
 
     trust_own: "Tus datos, siempre tuyos",
     trust_own_d: "Exportación a Markdown y Obsidian en un clic. Tu libro de vida se queda contigo — incluso sin internet y sin nuestro servicio.",
@@ -590,6 +558,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
 
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
+  // Отзывы — из отдельного файла: там только настоящие, с разрешения авторов.
+  const reviews = testimonials(locale);
 
   // Врезка-мост на лендинг /one-place. Заголовок секции уже сказал «всё в одном месте» —
   // карточка обещает следующее, чего на этой странице нет: перенос старых заметок.
@@ -639,7 +609,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
               { href: "#why", label: (t as any).nav_why },
               { href: "#how", label: (t as any).nav_how },
               { href: "#inside", label: (t as any).nav_feat },
-              { href: "#reviews", label: (t as any).nav_rev },
+              ...(reviews.length > 0 ? [{ href: "#reviews", label: (t as any).nav_rev }] : []),
             ]}
             ctaLabel={t.cta_create}
             ctaHref={isAuthed ? "/" : loginHref}
@@ -900,13 +870,14 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      {/* Testimonials */}
+      {/* Отзывы — только настоящие (src/lib/testimonials.ts). Пока их нет, секции нет. */}
+      {reviews.length > 0 && (
       <div id="reviews" className="lp-band" style={{ padding: "60px 0" }}>
         <div style={section}>
         <div className="lp-kicker">{t.testi_kicker}</div>
         <h2 className="lp-h2" style={{ margin: "10px 0 26px" }}>{t.testi_title}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {t.testi.map((r, i) => (
+          {reviews.map((r, i) => (
             <div key={i} className="lp-card" style={{ background: "var(--bg)", padding: "24px 22px", display: "flex", flexDirection: "column" }}>
               <div style={{ color: "#f5a623", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>★★★★★</div>
               <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 18px", flex: 1 }}>«{r.text}»</p>
@@ -924,6 +895,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
         </div>
       </div>
+      )}
 
       {/* Trust */}
       <div style={{ ...section, padding: "60px 22px" }}>
