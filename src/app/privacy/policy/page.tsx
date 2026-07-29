@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { policyContent, POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
@@ -97,6 +98,7 @@ export default async function PrivacyPolicyPage() {
           <Link href="/privacy" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {p.back}</Link>
         </div>
       </div>
+      <PublicFooter locale={locale} width={680} />
     </div>
   );
 }

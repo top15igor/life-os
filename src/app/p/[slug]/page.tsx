@@ -5,6 +5,7 @@ import { getHandle } from "@/lib/handle";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>
           {s.notFound}
         </div>
+        <PublicFooter locale={locale} width={560} />
       </div>
     );
   }
@@ -122,6 +124,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </div>
       </div>
       </div>
+      <PublicFooter locale={locale} width={560} />
     </div>
   );
 }

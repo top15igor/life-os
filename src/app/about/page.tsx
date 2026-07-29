@@ -4,6 +4,7 @@ import ProductPeek from "@/components/about/ProductPeek";
 import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -107,10 +108,6 @@ const C = {
     final_title: "Начни первую страницу своей книги жизни",
     final_sub: "Бесплатно. Через Google или почту.",
 
-    foot_priv: "Безопасно и приватно",
-    foot_code: "Код на GitHub",
-    foot_tester: "Тестировщикам",
-    foot_terms: "Условия",
   },
   en: {
     nav_login: "Sign in",
@@ -211,10 +208,6 @@ const C = {
     final_title: "Start the first page of your book of life",
     final_sub: "Free. With Google or email.",
 
-    foot_priv: "Safe and private",
-    foot_code: "Code on GitHub",
-    foot_tester: "For testers",
-    foot_terms: "Terms",
   },
   uk: {
     nav_login: "Увійти",
@@ -314,10 +307,6 @@ const C = {
     final_title: "Почни першу сторінку своєї книги життя",
     final_sub: "Безкоштовно. Через Google або пошту.",
 
-    foot_priv: "Безпечно і приватно",
-    foot_code: "Код на GitHub",
-    foot_tester: "Тестувальникам",
-    foot_terms: "Умови",
   },
   fr: {
     nav_login: "Se connecter",
@@ -417,10 +406,6 @@ const C = {
     final_title: "Commence la première page de ton livre de vie",
     final_sub: "Gratuit. Avec Google ou e-mail.",
 
-    foot_priv: "Sécurisé et privé",
-    foot_code: "Code sur GitHub",
-    foot_tester: "Pour les testeurs",
-    foot_terms: "Conditions",
   },
   es: {
     nav_login: "Iniciar sesión",
@@ -521,10 +506,6 @@ const C = {
     final_title: "Empieza la primera página de tu libro de vida",
     final_sub: "Gratis. Con Google o correo.",
 
-    foot_priv: "Seguro y privado",
-    foot_code: "Código en GitHub",
-    foot_tester: "Para testers",
-    foot_terms: "Condiciones",
   },
 };
 
@@ -974,33 +955,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ borderTop: "1px solid var(--border)", padding: "24px 22px" }}>
-        <div style={{ ...section, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-2)", fontSize: 14 }}>
-            <i className="ti ti-flower" style={{ fontSize: 16, color: "var(--accent)" }} />
-            LIFE OS
-          </div>
-          <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
-            {/* Приватность — выделена кнопкой: это главный вопрос доверия к дневнику. */}
-            <a
-              href="/privacy"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "9px 16px", borderRadius: 10,
-                border: "1px solid var(--accent)", background: "var(--accent-bg)",
-                color: "var(--accent-text)", fontSize: 13.5, fontWeight: 600, textDecoration: "none",
-              }}
-            >
-              <i className="ti ti-shield-lock" style={{ fontSize: 16, color: "var(--accent)" }} />
-              {t.foot_priv}
-            </a>
-            <a href={ref ? `/tester.html?ref=${encodeURIComponent(ref)}` : "/tester.html"} style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
-            <a href="/terms" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_terms}</a>
-            <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
-          </div>
-        </div>
-      </div>
+      <PublicFooter locale={locale} refCode={ref} />
     </div>
   );
 }

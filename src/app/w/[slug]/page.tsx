@@ -4,6 +4,7 @@ import { getPublicWishlist } from "@/lib/wishlist";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function PublicWishlistPage({ params }: { params: Promise<{
         showLang={false}
       />
       <WishlistPublic locale={locale} ownerName={data.ownerName} wishes={data.wishes} />
+      <PublicFooter locale={locale} width={920} />
     </div>
   );
 }

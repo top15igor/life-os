@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -275,8 +276,8 @@ export default async function FeaturesPage() {
           </div>
         </main>
 
-        <footer className="fx-foot">{s.foot}</footer>
       </div>
+      <PublicFooter locale={locale} note={s.foot} />
     </div>
   );
 }

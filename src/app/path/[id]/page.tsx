@@ -4,6 +4,7 @@ import { getInviteCode } from "@/lib/users";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
       <div style={{ minHeight: "100vh" }}>
         <PublicHeader locale={locale} isAuthed={!!(await getCurrentUser())} showLang={false} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", color: "var(--text-2)", fontSize: 15 }}>{s.notFound}</div>
+        <PublicFooter locale={locale} width={620} />
       </div>
     );
   }
@@ -90,6 +92,7 @@ export default async function PublicPathPage({ params }: { params: Promise<{ id:
         </div>
       </div>
       </div>
+      <PublicFooter locale={locale} width={620} />
     </div>
   );
 }

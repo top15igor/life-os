@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { termsContent } from "@/lib/terms";
 import { POLICY_EMAIL } from "@/lib/privacyPolicy";
 
@@ -87,6 +88,7 @@ export default async function TermsPage() {
           <Link href="/about" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {t.back}</Link>
         </div>
       </div>
+      <PublicFooter locale={locale} width={680} />
     </div>
   );
 }

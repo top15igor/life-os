@@ -4,6 +4,7 @@ import { getPublicLibrary } from "@/lib/books";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function PublicBooksPage({ params }: { params: Promise<{ sl
         showLang={false}
       />
       <BooksPublic locale={locale} ownerName={data.ownerName} books={data.books} />
+      <PublicFooter locale={locale} width={920} />
     </div>
   );
 }

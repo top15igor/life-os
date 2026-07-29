@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import ChaosToOrder, { type Chip } from "@/components/onePlace/ChaosToOrder";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -505,13 +506,8 @@ export default async function OnePlacePage() {
           <Link href={href} className="op-btn">{isAuthed ? s.ctaApp : s.cta}</Link>
         </div>
 
-        <footer className="op-foot">
-          <span>{s.foot}</span>
-          <span>
-            <Link href="/features">{s.allFeatures}</Link> · <Link href="/about">{s.backHome}</Link>
-          </span>
-        </footer>
       </div>
+      <PublicFooter locale={locale} note={s.foot} />
     </div>
   );
 }
