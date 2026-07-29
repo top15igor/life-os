@@ -4,7 +4,8 @@ import ProductPeek from "@/components/about/ProductPeek";
 import LandingNav from "@/components/about/LandingNav";
 import LangMenu from "@/components/LangMenu";
 import { capabilities } from "@/lib/capabilities";
-import { testimonials } from "@/lib/testimonials";
+import { publicTestimonials } from "@/lib/reviews";
+import ReviewsCarousel from "@/components/ReviewsCarousel";
 import PublicFooter from "@/components/PublicFooter";
 import { pageMetadata } from "@/lib/seo";
 
@@ -95,7 +96,8 @@ const C = {
     founder_sign: "Игорь Холодинский, основатель LIFE OS",
 
     testi_kicker: "Отзывы",
-    testi_title: "Люди в восторге от LIFE OS",
+    testi_title: "Что говорят те, кто уже ведёт",
+    testi_cta: "Оставить свой отзыв",
 
     trust_own: "Данные — ваши навсегда",
     trust_own_d: "Выгрузка в Markdown и Obsidian в один клик. Ваша книга жизни останется с вами — даже без интернета и без нашего сервиса.",
@@ -188,7 +190,8 @@ const C = {
     founder_sign: "Igor Kholodinsky, founder of LIFE OS",
 
     testi_kicker: "Testimonials",
-    testi_title: "People love LIFE OS",
+    testi_title: "What people who keep it say",
+    testi_cta: "Leave your review",
 
     trust_own: "Your data, forever yours",
     trust_own_d: "Export to Markdown and Obsidian in one click. Your book of life stays with you — even without internet and without our service.",
@@ -281,7 +284,8 @@ const C = {
     founder_sign: "Ігор Холодінський, засновник LIFE OS",
 
     testi_kicker: "Відгуки",
-    testi_title: "Люди в захваті від LIFE OS",
+    testi_title: "Що кажуть ті, хто вже веде",
+    testi_cta: "Залишити свій відгук",
 
     trust_own: "Дані — ваші назавжди",
     trust_own_d: "Вивантаження в Markdown і Obsidian в один клік. Ваша книга життя залишиться з вами — навіть без інтернету і без нашого сервісу.",
@@ -374,7 +378,8 @@ const C = {
     founder_sign: "Igor Kholodinsky, fondateur de LIFE OS",
 
     testi_kicker: "Témoignages",
-    testi_title: "Les gens adorent LIFE OS",
+    testi_title: "Ce que disent ceux qui le tiennent",
+    testi_cta: "Laisser ton avis",
 
     trust_own: "Tes données, à toi pour toujours",
     trust_own_d: "Export vers Markdown et Obsidian en un clic. Ton livre de vie reste avec toi — même sans internet et sans notre service.",
@@ -467,7 +472,8 @@ const C = {
     founder_sign: "Igor Kholodinsky, fundador de LIFE OS",
 
     testi_kicker: "Testimonios",
-    testi_title: "A la gente le encanta LIFE OS",
+    testi_title: "Lo que dicen quienes ya lo llevan",
+    testi_cta: "Dejar tu opinión",
 
     trust_own: "Tus datos, siempre tuyos",
     trust_own_d: "Exportación a Markdown y Obsidian en un clic. Tu libro de vida se queda contigo — incluso sin internet y sin nuestro servicio.",
@@ -559,7 +565,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
   // Полный перечень возможностей для раскрывающегося блока «Как использовать».
   const caps = capabilities(locale);
   // Отзывы — из отдельного файла: там только настоящие, с разрешения авторов.
-  const reviews = testimonials(locale);
+  const reviews = await publicTestimonials(locale);
 
   // Врезка-мост на лендинг /one-place. Заголовок секции уже сказал «всё в одном месте» —
   // карточка обещает следующее, чего на этой странице нет: перенос старых заметок.
@@ -876,22 +882,12 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
         <div style={section}>
         <div className="lp-kicker">{t.testi_kicker}</div>
         <h2 className="lp-h2" style={{ margin: "10px 0 26px" }}>{t.testi_title}</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {reviews.map((r, i) => (
-            <div key={i} className="lp-card" style={{ background: "var(--bg)", padding: "24px 22px", display: "flex", flexDirection: "column" }}>
-              <div style={{ color: "#f5a623", fontSize: 15, letterSpacing: 2, marginBottom: 12 }}>★★★★★</div>
-              <p style={{ fontSize: 15.5, color: "var(--text)", lineHeight: 1.6, margin: "0 0 18px", flex: 1 }}>«{r.text}»</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 999, background: "var(--accent-bg)", color: "var(--accent-text)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>
-                  {r.name.charAt(0)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text)" }}>{r.name}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-3)" }}>{r.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <ReviewsCarousel items={reviews} />
+        <div style={{ marginTop: 22 }}>
+          <a href="/reviews#write" className="lp-ghost" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 22px", borderRadius: 12, fontSize: 14.5, fontWeight: 600 }}>
+            <i className="ti ti-pencil-plus" style={{ fontSize: 17, color: "var(--accent)" }} />
+            {(t as any).testi_cta}
+          </a>
         </div>
         </div>
       </div>

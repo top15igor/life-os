@@ -27,5 +27,5 @@ export const config = {
   // Служебные адреса (robots.txt, sitemap.xml, картинки-превью, иконки, манифест)
   // тоже пропускаем: их читают поисковики и мессенджеры, у них нет куки.
   // Слэш в p/, w/, b/, path/, i/ важен: чтобы не задеть /people, /places, /pricing, /profile, /wishlist, /books, /biographer, /paths, /insights.
-  matcher: ["/((?!welcome|login|about|privacy|terms|tester|features|one-place|pricing|heir/|u|m/|api|p/|w/|b/|path/|i/|voice-live|invite-share|auth/|_next/static|_next/image|fonts/|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|opengraph-image|twitter-image|apple-icon|icon).*)"],
+  matcher: ["/((?!welcome|login|about|privacy|terms|tester|features|one-place|pricing|reviews|heir/|u|m/|api|p/|w/|b/|path/|i/|voice-live|invite-share|auth/|_next/static|_next/image|fonts/|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|opengraph-image|twitter-image|apple-icon|icon).*)"],
 };

@@ -13,7 +13,7 @@ export const SITE_URL = "https://life-os.today";
 const OG_IMAGE = `${SITE_URL}/opengraph-image`;
 
 type Page = { title: string; description: string };
-type PageKey = "about" | "features" | "onePlace" | "pricing" | "privacy" | "policy" | "terms";
+type PageKey = "about" | "features" | "onePlace" | "pricing" | "privacy" | "policy" | "terms" | "reviews";
 
 const M: Record<Locale, Record<PageKey, Page>> = {
   ru: {
@@ -40,6 +40,10 @@ const M: Record<Locale, Record<PageKey, Page>> = {
     policy: {
       title: "Политика конфиденциальности LIFE OS",
       description: "Полный юридический документ: какие данные обрабатываются, на каком основании, кому передаются и какие у тебя права.",
+    },
+    reviews: {
+      title: "Отзывы о LIFE OS — что говорят люди",
+      description: "Живые отзывы тех, кто ведёт дневник в LIFE OS. Каждый оставил человек сам и разрешил опубликовать. Здесь же можно написать свой.",
     },
     terms: {
       title: "Условия использования LIFE OS",
@@ -71,6 +75,10 @@ const M: Record<Locale, Record<PageKey, Page>> = {
       title: "LIFE OS Privacy Policy",
       description: "The full legal document: what data is processed, on what grounds, who it is shared with and what rights you have.",
     },
+    reviews: {
+      title: "LIFE OS reviews — what people say",
+      description: "Real reviews from people who keep a diary in LIFE OS. Each one was written by a person who allowed us to publish it. You can add yours here.",
+    },
     terms: {
       title: "LIFE OS Terms of Service",
       description: "The agreement between you and the owner of LIFE OS: how the service works, what is allowed, how plans work and who is responsible for what.",
@@ -100,6 +108,10 @@ const M: Record<Locale, Record<PageKey, Page>> = {
     policy: {
       title: "Політика конфіденційності LIFE OS",
       description: "Повний юридичний документ: які дані обробляються, на якій підставі, кому передаються та які в тебе права.",
+    },
+    reviews: {
+      title: "Відгуки про LIFE OS — що кажуть люди",
+      description: "Живі відгуки тих, хто веде щоденник у LIFE OS. Кожен залишила людина сама й дозволила опублікувати. Тут же можна написати свій.",
     },
     terms: {
       title: "Умови використання LIFE OS",
@@ -131,6 +143,10 @@ const M: Record<Locale, Record<PageKey, Page>> = {
       title: "Politique de confidentialité LIFE OS",
       description: "Le document juridique complet : quelles données sont traitées, sur quelle base, avec qui elles sont partagées et quels sont tes droits.",
     },
+    reviews: {
+      title: "Avis sur LIFE OS — ce que disent les gens",
+      description: "De vrais avis de ceux qui tiennent un journal dans LIFE OS. Chacun a été écrit par une personne qui a autorisé sa publication.",
+    },
     terms: {
       title: "Conditions d'utilisation LIFE OS",
       description: "L'accord entre toi et le propriétaire de LIFE OS : comment fonctionne le service, ce qui est permis, les forfaits et les responsabilités.",
@@ -160,6 +176,10 @@ const M: Record<Locale, Record<PageKey, Page>> = {
     policy: {
       title: "Política de privacidad de LIFE OS",
       description: "El documento legal completo: qué datos se procesan, con qué base, con quién se comparten y qué derechos tienes.",
+    },
+    reviews: {
+      title: "Opiniones sobre LIFE OS — lo que dice la gente",
+      description: "Opiniones reales de quienes llevan un diario en LIFE OS. Cada una la escribió una persona que autorizó publicarla.",
     },
     terms: {
       title: "Términos de uso de LIFE OS",
