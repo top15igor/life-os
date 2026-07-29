@@ -42,11 +42,11 @@ const C = {
 
     mem_kicker: "Ничего не забывается",
     mem_title: "Все заметки и напоминания — в одном месте",
-    mem_lead: "Не нужно жонглировать пятью приложениями: напоминалки, заметки, списки. Просто скажи боту — как живому помощнику.",
+    mem_lead: "Не нужно жонглировать пятью приложениями. Скажи боту обычными словами — вот три фразы, которые работают прямо сейчас.",
     mem_cards: [
-      { i: "ti-alarm", t: "Напоминания приходят сами", d: "Бот напишет точно в срок — с кнопками «Готово» и «Через час». Понимает повторы: «каждый день в 8».", ex: "«Напомни завтра в 9 позвонить маме»" },
-      { i: "ti-note", t: "Заметки, которые находятся", d: "Коды, размеры, адреса — отдельно от дневника. Спроси — бот мгновенно ответит.", ex: "«Какой код от домофона?»" },
-      { i: "ti-list-check", t: "Списки покупок", d: "Пункты добавляются голосом, вычёркиваются кнопкой прямо в чате. Списков может быть несколько.", ex: "«Добавь молоко и хлеб в список»" },
+      { i: "ti-alarm", t: "«Напомни завтра в 9 позвонить маме»", d: "Придёт точно в срок — с кнопками «Готово» и «Через час». Повторы тоже понимает: «каждый день в 8»." },
+      { i: "ti-note", t: "«Какой код от домофона?»", d: "Ответ за секунду из твоих заметок: коды, размеры, адреса лежат отдельно от дневника." },
+      { i: "ti-list-check", t: "«Добавь молоко и хлеб в список»", d: "Пункты вычёркиваются кнопкой прямо в чате. Списков может быть несколько: покупки, подарки, в дорогу." },
     ],
     mem_foot: "А утром спроси: «Что у меня сегодня?» — и получишь весь день одним списком.",
 
@@ -142,11 +142,11 @@ const C = {
 
     mem_kicker: "Nothing gets forgotten",
     mem_title: "All your notes and reminders — in one place",
-    mem_lead: "No juggling five apps for reminders, notes and lists. Just tell the bot — like a real assistant.",
+    mem_lead: "No juggling five apps. Just tell the bot in plain words — here are three phrases that already work.",
     mem_cards: [
-      { i: "ti-alarm", t: "Reminders that arrive on their own", d: "The bot messages you right on time — with “Done” and “In an hour” buttons. Understands recurrence: “every day at 8”.", ex: "“Remind me tomorrow at 9 to call mom”" },
-      { i: "ti-note", t: "Notes that can be found", d: "Codes, sizes, addresses — separate from the diary. Ask, and the bot answers instantly.", ex: "“What's the door code?”" },
-      { i: "ti-list-check", t: "Shopping lists", d: "Add items by voice, check them off with a tap right in the chat. Keep several lists.", ex: "“Add milk and bread to the list”" },
+      { i: "ti-alarm", t: "“Remind me tomorrow at 9 to call mum”", d: "Arrives right on time — with “Done” and “In an hour” buttons. Repeats work too: “every day at 8”." },
+      { i: "ti-note", t: "“What's the door code?”", d: "Answered in a second from your notes: codes, sizes and addresses live apart from the diary." },
+      { i: "ti-list-check", t: "“Add milk and bread to the list”", d: "Tap to check items off right in the chat. Keep several lists: groceries, gifts, packing." },
     ],
     mem_foot: "And in the morning ask: “What's on today?” — your whole day in one list.",
 
@@ -242,11 +242,11 @@ const C = {
 
     mem_kicker: "Ніщо не забувається",
     mem_title: "Усі нотатки й нагадування — в одному місці",
-    mem_lead: "Не треба жонглювати п'ятьма застосунками: нагадування, нотатки, списки. Просто скажи боту — як живому помічнику.",
+    mem_lead: "Не треба жонглювати п'ятьма застосунками. Скажи боту звичайними словами — ось три фрази, які працюють просто зараз.",
     mem_cards: [
-      { i: "ti-alarm", t: "Нагадування приходять самі", d: "Бот напише точно в строк — із кнопками «Готово» та «За годину». Розуміє повтори: «щодня о 8».", ex: "«Нагадай завтра о 9 подзвонити мамі»" },
-      { i: "ti-note", t: "Нотатки, які знаходяться", d: "Коди, розміри, адреси — окремо від щоденника. Спитай — бот миттєво відповість.", ex: "«Який код від домофона?»" },
-      { i: "ti-list-check", t: "Списки покупок", d: "Пункти додаються голосом, викреслюються кнопкою прямо в чаті. Списків може бути кілька.", ex: "«Додай молоко і хліб у список»" },
+      { i: "ti-alarm", t: "«Нагадай завтра о 9 подзвонити мамі»", d: "Прийде точно вчасно — з кнопками «Готово» і «Через годину». Повтори теж розуміє: «щодня о 8»." },
+      { i: "ti-note", t: "«Який код від домофона?»", d: "Відповідь за секунду з твоїх нотаток: коди, розміри, адреси лежать окремо від щоденника." },
+      { i: "ti-list-check", t: "«Додай молоко і хліб у список»", d: "Пункти викреслюються кнопкою просто в чаті. Списків може бути кілька: покупки, подарунки, у дорогу." },
     ],
     mem_foot: "А вранці спитай: «Що в мене сьогодні?» — і отримаєш весь день одним списком.",
 
@@ -341,11 +341,11 @@ const C = {
 
     mem_kicker: "Rien ne s'oublie",
     mem_title: "Toutes tes notes et rappels — au même endroit",
-    mem_lead: "Plus besoin de jongler entre cinq applis : rappels, notes, listes. Dis-le au bot — comme à un vrai assistant.",
+    mem_lead: "Plus besoin de jongler entre cinq applis. Parle au bot normalement — voici trois phrases qui marchent déjà.",
     mem_cards: [
-      { i: "ti-alarm", t: "Des rappels qui arrivent tout seuls", d: "Le bot t'écrit pile à l'heure — avec les boutons « Fait » et « Dans une heure ». Il comprend la récurrence : « chaque jour à 8h ».", ex: "« Rappelle-moi demain à 9h d'appeler maman »" },
-      { i: "ti-note", t: "Des notes qui se retrouvent", d: "Codes, tailles, adresses — séparés du journal. Demande, et le bot répond instantanément.", ex: "« Quel est le code de la porte ? »" },
-      { i: "ti-list-check", t: "Listes de courses", d: "Ajoute à la voix, raye d'un tap dans le chat. Plusieurs listes possibles.", ex: "« Ajoute le lait et le pain à la liste »" },
+      { i: "ti-alarm", t: "« Rappelle-moi demain à 9h d'appeler maman »", d: "Arrive pile à l'heure — avec les boutons « Fait » et « Dans une heure ». Les répétitions aussi : « tous les jours à 8h »." },
+      { i: "ti-note", t: "« C'est quoi le code de la porte ? »", d: "Réponse en une seconde depuis tes notes : codes, tailles et adresses vivent à part du journal." },
+      { i: "ti-list-check", t: "« Ajoute du lait et du pain à la liste »", d: "Coche les articles d'un tap dans le chat. Plusieurs listes possibles : courses, cadeaux, valise." },
     ],
     mem_foot: "Et le matin, demande : « Qu'est-ce que j'ai aujourd'hui ? » — toute ta journée en une liste.",
 
@@ -440,11 +440,11 @@ const C = {
 
     mem_kicker: "Nada se olvida",
     mem_title: "Todas tus notas y recordatorios — en un solo lugar",
-    mem_lead: "Sin hacer malabares con cinco apps: recordatorios, notas, listas. Solo díselo al bot — como a un asistente de verdad.",
+    mem_lead: "Sin hacer malabares con cinco apps. Díselo al bot con palabras normales — estas tres frases ya funcionan.",
     mem_cards: [
-      { i: "ti-alarm", t: "Recordatorios que llegan solos", d: "El bot te escribe justo a tiempo — con botones «Hecho» y «En una hora». Entiende repeticiones: «cada día a las 8».", ex: "«Recuérdame mañana a las 9 llamar a mamá»" },
-      { i: "ti-note", t: "Notas que se encuentran", d: "Códigos, tallas, direcciones — aparte del diario. Pregunta y el bot responde al instante.", ex: "«¿Cuál es el código del portal?»" },
-      { i: "ti-list-check", t: "Listas de compras", d: "Añade con la voz, tacha con un toque en el chat. Puedes tener varias listas.", ex: "«Añade leche y pan a la lista»" },
+      { i: "ti-alarm", t: "«Recuérdame mañana a las 9 llamar a mamá»", d: "Llega justo a tiempo — con botones «Hecho» y «En una hora». También entiende repeticiones: «cada día a las 8»." },
+      { i: "ti-note", t: "«¿Cuál es el código del portal?»", d: "Respuesta en un segundo desde tus notas: códigos, tallas y direcciones viven aparte del diario." },
+      { i: "ti-list-check", t: "«Añade leche y pan a la lista»", d: "Tacha los ítems con un toque en el chat. Puedes tener varias listas: compra, regalos, viaje." },
     ],
     mem_foot: "Y por la mañana pregunta: «¿Qué tengo hoy?» — todo tu día en una lista.",
 
@@ -739,9 +739,8 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
                 <span style={{ display: "inline-flex", width: 44, height: 44, borderRadius: 13, background: "var(--accent-bg)", alignItems: "center", justifyContent: "center" }}>
                   <i className={`ti ${f.i}`} style={{ fontSize: 23, color: "var(--accent)" }} />
                 </span>
-                <div style={{ fontSize: 17, fontWeight: 700, margin: "14px 0 6px", letterSpacing: "-0.01em" }}>{f.t}</div>
-                <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 12 }}>{f.d}</div>
-                <div style={{ marginTop: "auto", fontSize: 13.5, color: "var(--accent-text, var(--accent))", background: "var(--accent-bg)", borderRadius: 11, padding: "8px 12px", lineHeight: 1.45 }}>{f.ex}</div>
+                <div style={{ fontSize: 16.5, fontWeight: 700, margin: "14px 0 8px", letterSpacing: "-0.01em", color: "var(--accent-text, var(--accent))", lineHeight: 1.35 }}>{f.t}</div>
+                <div style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.55 }}>{f.d}</div>
               </div>
             ))}
           </div>
