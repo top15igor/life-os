@@ -1,21 +1,21 @@
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
-import { policyContent, POLICY_EMAIL } from "@/lib/privacyPolicy";
+import { termsContent } from "@/lib/terms";
+import { POLICY_EMAIL } from "@/lib/privacyPolicy";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "LIFE OS — Privacy Policy",
-  description: "Full legal privacy policy of LIFE OS: what data is processed, why, with whom it is shared and what rights you have.",
+  title: "LIFE OS — Terms of Service",
+  description: "Terms of service of LIFE OS: how the service works, account rules, plans and payment, liability.",
 };
 
-// Формальная версия политики. Публичная (middleware пропускает всё, что начинается с /privacy).
-// Именно этот адрес отдаём в App Store Connect и в Google OAuth-верификацию.
-export default async function PrivacyPolicyPage() {
+// Публичная страница (middleware пропускает /terms). Адрес отдаём в App Store Connect.
+export default async function TermsPage() {
   const locale = await getLocale();
-  const p = policyContent(locale);
+  const t = termsContent(locale);
 
-  // Своя светлая палитра — как на /privacy: страница не зависит от темы посетителя.
+  // Своя светлая палитра — как на /privacy и /privacy/policy: не зависит от темы посетителя.
   const shell = {
     ["--bg" as any]: "#f7f8fc",
     ["--surface" as any]: "#ffffff",
@@ -25,7 +25,6 @@ export default async function PrivacyPolicyPage() {
     ["--text-3" as any]: "#8b93a3",
     ["--border" as any]: "rgba(20,24,40,0.08)",
     ["--accent" as any]: "#5b5bf5",
-    ["--shadow" as any]: "0 1px 2px rgba(20,24,40,0.05), 0 12px 32px -20px rgba(20,24,40,0.18)",
     colorScheme: "light",
     color: "var(--text)",
     minHeight: "100dvh",
@@ -41,31 +40,22 @@ export default async function PrivacyPolicyPage() {
     <div style={shell}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "40px 22px 60px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <i className="ti ti-file-text" style={{ fontSize: 26, color: "var(--accent)" }} />
-          <h1 style={{ fontSize: 27, fontWeight: 600, margin: 0, letterSpacing: "-0.02em" }}>{p.title}</h1>
+          <i className="ti ti-scale" style={{ fontSize: 26, color: "var(--accent)" }} />
+          <h1 style={{ fontSize: 27, fontWeight: 600, margin: 0, letterSpacing: "-0.02em" }}>{t.title}</h1>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 14 }}>LIFE OS · life-os.today · {p.updated}</div>
-        <p style={{ fontSize: 15.5, color: "var(--text-2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>{p.intro}</p>
+        <div style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 14 }}>LIFE OS · life-os.today · {t.updated}</div>
+        <p style={{ fontSize: 15.5, color: "var(--text-2)", lineHeight: 1.65, marginTop: 0, marginBottom: 16 }}>{t.intro}</p>
 
-        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginBottom: 26 }}>
-          <Link
-            href="/privacy"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, textDecoration: "none" }}
-          >
-            <i className="ti ti-lock" style={{ fontSize: 17, color: "var(--accent)" }} />
-            <span>{p.friendly}</span>
-          </Link>
-          <Link
-            href="/terms"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, textDecoration: "none" }}
-          >
-            <i className="ti ti-scale" style={{ fontSize: 17, color: "var(--accent)" }} />
-            <span>{p.termsLink}</span>
-          </Link>
-        </div>
+        <Link
+          href="/privacy/policy"
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 11, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: 13.5, textDecoration: "none", marginBottom: 26 }}
+        >
+          <i className="ti ti-lock" style={{ fontSize: 17, color: "var(--accent)" }} />
+          <span>{t.privacyLink}</span>
+        </Link>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {p.sections.map((s, i) => (
+          {t.sections.map((s, i) => (
             <section key={i}>
               <h2 style={{ fontSize: 16.5, fontWeight: 600, margin: "0 0 8px", letterSpacing: "-0.01em" }}>{s.h}</h2>
               {s.blocks.map((b, j) =>
@@ -90,7 +80,7 @@ export default async function PrivacyPolicyPage() {
         </div>
 
         <div style={{ marginTop: 22 }}>
-          <Link href="/privacy" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {p.back}</Link>
+          <Link href="/about" style={{ fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>← {t.back}</Link>
         </div>
       </div>
     </div>

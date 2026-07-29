@@ -112,6 +112,7 @@ const C = {
     foot_priv: "Безопасно и приватно",
     foot_code: "Код на GitHub",
     foot_tester: "Тестировщикам",
+    foot_terms: "Условия",
     design_a: "Классика",
     design_b: "Новый",
   },
@@ -217,6 +218,7 @@ const C = {
     foot_priv: "Safe and private",
     foot_code: "Code on GitHub",
     foot_tester: "For testers",
+    foot_terms: "Terms",
     design_a: "Classic",
     design_b: "New",
   },
@@ -321,6 +323,7 @@ const C = {
     foot_priv: "Безпечно і приватно",
     foot_code: "Код на GitHub",
     foot_tester: "Тестувальникам",
+    foot_terms: "Умови",
     design_a: "Класика",
     design_b: "Новий",
   },
@@ -425,6 +428,7 @@ const C = {
     foot_priv: "Sécurisé et privé",
     foot_code: "Code sur GitHub",
     foot_tester: "Pour les testeurs",
+    foot_terms: "Conditions",
     design_a: "Classique",
     design_b: "Nouveau",
   },
@@ -530,6 +534,7 @@ const C = {
     foot_priv: "Seguro y privado",
     foot_code: "Código en GitHub",
     foot_tester: "Para testers",
+    foot_terms: "Condiciones",
     design_a: "Clásico",
     design_b: "Nuevo",
   },
@@ -1007,6 +1012,7 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
               {t.foot_priv}
             </a>
             <a href={ref ? `/tester.html?ref=${encodeURIComponent(ref)}` : "/tester.html"} style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_tester}</a>
+            <a href="/terms" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_terms}</a>
             <a href={GH} target="_blank" rel="noreferrer" style={{ color: "var(--text-3)", fontSize: 13, textDecoration: "none" }}>{t.foot_code}</a>
           </div>
         </div>

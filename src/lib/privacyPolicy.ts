@@ -10,6 +10,7 @@ export type PolicyContent = {
   updated: string;
   intro: string;
   friendly: string; // ссылка на человеческую версию
+  termsLink: string; // ссылка на условия использования
   sections: PolicySection[];
   back: string;
 };
@@ -24,6 +25,7 @@ const P: Record<string, PolicyContent> = {
     title: "Политика конфиденциальности",
     updated: "Действует с 29 июля 2026 года",
     friendly: "Короткая человеческая версия",
+    termsLink: "Условия использования",
     intro:
       "Этот документ описывает, какие персональные данные обрабатывает LIFE OS (сайт life-os.today, бот в Telegram и мобильное приложение), зачем, на каком основании и какие у тебя есть права.",
     sections: [
@@ -199,6 +201,7 @@ const P: Record<string, PolicyContent> = {
     title: "Privacy Policy",
     updated: "Effective from 29 July 2026",
     friendly: "Short human-readable version",
+    termsLink: "Terms of Service",
     intro:
       "This document explains what personal data LIFE OS (the life-os.today website, the Telegram bot and the mobile app) processes, why, on what legal basis, and what rights you have.",
     sections: [
@@ -374,6 +377,7 @@ const P: Record<string, PolicyContent> = {
     title: "Політика конфіденційності",
     updated: "Діє з 29 липня 2026 року",
     friendly: "Коротка людяна версія",
+    termsLink: "Умови використання",
     intro:
       "Цей документ пояснює, які персональні дані обробляє LIFE OS (сайт life-os.today, бот у Telegram і мобільний застосунок), навіщо, на якій підставі та які права ти маєш.",
     sections: [
@@ -549,6 +553,7 @@ const P: Record<string, PolicyContent> = {
     title: "Politique de confidentialité",
     updated: "En vigueur depuis le 29 juillet 2026",
     friendly: "Version courte et lisible",
+    termsLink: "Conditions d'utilisation",
     intro:
       "Ce document explique quelles données personnelles LIFE OS (le site life-os.today, le bot Telegram et l'application mobile) traite, dans quel but, sur quelle base légale, et quels sont tes droits.",
     sections: [
@@ -724,6 +729,7 @@ const P: Record<string, PolicyContent> = {
     title: "Política de privacidad",
     updated: "En vigor desde el 29 de julio de 2026",
     friendly: "Versión corta y sencilla",
+    termsLink: "Condiciones de uso",
     intro:
       "Este documento explica qué datos personales trata LIFE OS (el sitio life-os.today, el bot de Telegram y la aplicación móvil), para qué, con qué base legal y qué derechos tienes.",
     sections: [

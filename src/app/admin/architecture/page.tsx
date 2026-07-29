@@ -129,9 +129,9 @@ const ROUTING = [
   "У вошедшего есть cookie lifeos_token → middleware пропускает на все страницы приложения.",
 ];
 
-// Публичные маршруты (middleware их НЕ закрывает): /welcome, /login, /about, /privacy,
+// Публичные маршруты (middleware их НЕ закрывает): /welcome, /login, /about, /privacy, /terms,
 // /u/* (вход по ссылке), /i/* (инвайт), /p/* (книга), /w/* (вишлист), /b/* (библиотека), /path/* (путь), /api/*.
-const PUBLIC_ROUTES = "/welcome · /login · /about · /privacy · /u/* · /i/* · /p/* · /w/* · /b/* · /path/* · /api/*";
+const PUBLIC_ROUTES = "/welcome · /login · /about · /privacy · /terms · /u/* · /i/* · /p/* · /w/* · /b/* · /path/* · /api/*";
 
 const TABLES = [
   ["entries", "Записи — центр базы", "id, user_id, raw_text, summary, source, mood, energy, health, sleep_hours, weight, focus, importance, entry_date, entry_time"],

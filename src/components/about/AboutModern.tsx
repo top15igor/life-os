@@ -131,7 +131,7 @@ const D: Record<Locale, Dict> = {
     testimonials: [{ name: "Алексей", role: "Предприниматель", quote: "LIFE OS — как второй мозг. Я больше ничего не забываю и чувствую, что двигаюсь в правильном направлении." }, { name: "Мария", role: "Мама двоих детей", quote: "Теперь все важные моменты сохранены. Через годы это будет бесценная история нашей семьи." }, { name: "Игорь", role: "Путешественник", quote: "AI сам создаёт хронику моих поездок. Места, эмоции, события — всё в одном месте и красиво оформлено." }],
     ctaTitle: "Твоя жизнь заслуживает быть сохранённой", ctaP: "Начни сегодня — скажи первую фразу, и LIFE OS начнёт собирать твою историю.",
     ctaPoints: ["Бесплатно навсегда", "AI включён", "Данные под защитой"],
-    footerLinks: ["О проекте", "Приватность", "Безопасность", "Контакты"], copyright: "© 2026 LIFE OS · Твой архив жизни — второй мозг",
+    footerLinks: ["О проекте", "Приватность", "Условия", "Безопасность", "Контакты"], copyright: "© 2026 LIFE OS · Твой архив жизни — второй мозг",
     inApp: "В приложение", designA: "Классика", designB: "Новый",
   },
   en: {
@@ -163,7 +163,7 @@ const D: Record<Locale, Dict> = {
     testimonials: [{ name: "Alex", role: "Entrepreneur", quote: "LIFE OS is like a second brain. I don't forget anything anymore and feel I'm moving in the right direction." }, { name: "Maria", role: "Mom of two", quote: "Now all the important moments are saved. In years it'll be a priceless story of our family." }, { name: "Igor", role: "Traveler", quote: "AI creates the chronicle of my trips by itself. Places, emotions, events — all in one place, beautifully laid out." }],
     ctaTitle: "Your life deserves to be saved", ctaP: "Start today — say your first sentence, and LIFE OS begins gathering your story.",
     ctaPoints: ["Free forever", "AI included", "Data protected"],
-    footerLinks: ["About", "Privacy", "Security", "Contact"], copyright: "© 2026 LIFE OS · Your personal life diary — a second brain",
+    footerLinks: ["About", "Privacy", "Terms", "Security", "Contact"], copyright: "© 2026 LIFE OS · Your personal life diary — a second brain",
     inApp: "Back to app", designA: "Classic", designB: "New",
   },
   uk: {
@@ -195,7 +195,7 @@ const D: Record<Locale, Dict> = {
     testimonials: [{ name: "Олексій", role: "Підприємець", quote: "LIFE OS — як другий мозок. Я більше нічого не забуваю і відчуваю, що рухаюся в правильному напрямку." }, { name: "Марія", role: "Мама двох дітей", quote: "Тепер усі важливі моменти збережені. За роки це буде безцінна історія нашої родини." }, { name: "Ігор", role: "Мандрівник", quote: "AI сам створює хроніку моїх подорожей. Місця, емоції, події — усе в одному місці й гарно оформлено." }],
     ctaTitle: "Твоє життя заслуговує бути збереженим", ctaP: "Почни сьогодні — скажи першу фразу, і LIFE OS почне збирати твою історію.",
     ctaPoints: ["Безкоштовно назавжди", "AI увімкнено", "Дані під захистом"],
-    footerLinks: ["Про проєкт", "Приватність", "Безпека", "Контакти"], copyright: "© 2026 LIFE OS · Твій архів життя — другий мозок",
+    footerLinks: ["Про проєкт", "Приватність", "Умови", "Безпека", "Контакти"], copyright: "© 2026 LIFE OS · Твій архів життя — другий мозок",
     inApp: "До застосунку", designA: "Класика", designB: "Новий",
   },
   fr: {
@@ -227,7 +227,7 @@ const D: Record<Locale, Dict> = {
     testimonials: [{ name: "Alexis", role: "Entrepreneur", quote: "LIFE OS, c'est comme un second cerveau. Je n'oublie plus rien et je sens que je vais dans la bonne direction." }, { name: "Marie", role: "Maman de deux enfants", quote: "Tous les moments importants sont sauvegardés. Dans quelques années, ce sera une histoire précieuse de notre famille." }, { name: "Igor", role: "Voyageur", quote: "L'IA crée toute seule la chronique de mes voyages. Lieux, émotions, événements — tout au même endroit, joliment présenté." }],
     ctaTitle: "Ta vie mérite d'être sauvegardée", ctaP: "Commence aujourd'hui — dis ta première phrase, et LIFE OS commence à rassembler ton histoire.",
     ctaPoints: ["Gratuit pour toujours", "IA incluse", "Données protégées"],
-    footerLinks: ["À propos", "Confidentialité", "Sécurité", "Contact"], copyright: "© 2026 LIFE OS · Ton journal de vie personnel — un second cerveau",
+    footerLinks: ["À propos", "Confidentialité", "Conditions", "Sécurité", "Contact"], copyright: "© 2026 LIFE OS · Ton journal de vie personnel — un second cerveau",
     inApp: "Vers l'app", designA: "Classique", designB: "Nouveau",
   },
   es: {
@@ -259,7 +259,7 @@ const D: Record<Locale, Dict> = {
     testimonials: [{ name: "Alejo", role: "Emprendedor", quote: "LIFE OS es como un segundo cerebro. Ya no olvido nada y siento que voy en la dirección correcta." }, { name: "María", role: "Mamá de dos hijos", quote: "Ahora todos los momentos importantes están guardados. Con los años será una historia invaluable de nuestra familia." }, { name: "Igor", role: "Viajero", quote: "La IA crea sola la crónica de mis viajes. Lugares, emociones, eventos — todo en un solo lugar y bien presentado." }],
     ctaTitle: "Tu vida merece ser guardada", ctaP: "Empieza hoy — di tu primera frase, y LIFE OS empezará a reunir tu historia.",
     ctaPoints: ["Gratis para siempre", "IA incluida", "Datos protegidos"],
-    footerLinks: ["Acerca de", "Privacidad", "Seguridad", "Contacto"], copyright: "© 2026 LIFE OS · Tu diario de vida personal — un segundo cerebro",
+    footerLinks: ["Acerca de", "Privacidad", "Condiciones", "Seguridad", "Contacto"], copyright: "© 2026 LIFE OS · Tu diario de vida personal — un segundo cerebro",
     inApp: "Ir a la app", designA: "Clásico", designB: "Nuevo",
   },
 };
@@ -567,8 +567,9 @@ export default function AboutModern({ locale, intl, isAuthed, loginHref }: { loc
           </a>
           <a href="/about" className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[0]}</a>
           <a href="/privacy" className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[1]}</a>
-          <a href="/privacy" className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[2]}</a>
-          <a href={startHref} className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[3]}</a>
+          <a href="/terms" className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[2]}</a>
+          <a href="/privacy" className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[3]}</a>
+          <a href={startHref} className="lm-nav" style={{ font: "500 14px 'Onest'", color: "var(--ink2)" }}>{t.footerLinks[4]}</a>
           <span style={{ font: "400 13px 'Onest'", color: "var(--faint)", width: "100%", marginTop: 8 }}>{t.copyright}</span>
         </div>
       </footer>
