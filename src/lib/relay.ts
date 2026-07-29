@@ -102,9 +102,16 @@ type Contact = { id: string; name: string | null; chat_id: number | null; lang: 
 
 // Поиск по настоящему Telegram-@username (users.tg_username). Мягко к отсутствию колонки.
 async function userByTgUsername(uname: string): Promise<Contact | null> {
+  const db = supabaseAdmin();
+  const pick = (rows: any[]) => (rows.find((u) => u.chat_id) as Contact) || null;
   try {
-    const { data } = await supabaseAdmin().from("users").select("id, name, chat_id, lang, relay_off, tg_username").ilike("tg_username", uname);
-    return (((data as any[]) || []).find((u) => u.chat_id) as Contact) || null;
+    // Как и в fetchUsers: если колонки relay_off ещё нет (миграция relay.sql не
+    // применена), запрос падает — повторяем без неё, иначе поиск по @имени
+    // молча не находил НИКОГО, хотя человек есть в базе.
+    let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off, tg_username").ilike("tg_username", uname);
+    if (q.error) q = await db.from("users").select("id, name, chat_id, lang, tg_username").ilike("tg_username", uname);
+    if (q.error) return null;
+    return pick((q.data as any[]) || []);
   } catch {
     return null;
   }
@@ -139,6 +146,7 @@ async function getContacts(fromUserId: string): Promise<Contact[]> {
 async function fetchUsers(ids: string[]): Promise<Contact[]> {
   const db = supabaseAdmin();
   let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off, tg_username").in("id", ids);
+  if (q.error) q = await db.from("users").select("id, name, chat_id, lang, tg_username").in("id", ids);
   if (q.error) q = await db.from("users").select("id, name, chat_id, lang").in("id", ids);
   return (((q.data as any[]) || []).filter((u) => u.chat_id)) as Contact[];
 }
@@ -146,6 +154,7 @@ async function fetchUsers(ids: string[]): Promise<Contact[]> {
 async function fetchUser(id: string): Promise<Contact | null> {
   const db = supabaseAdmin();
   let q: any = await db.from("users").select("id, name, chat_id, lang, relay_off, tg_username").eq("id", id).maybeSingle();
+  if (q.error) q = await db.from("users").select("id, name, chat_id, lang, tg_username").eq("id", id).maybeSingle();
   if (q.error) q = await db.from("users").select("id, name, chat_id, lang").eq("id", id).maybeSingle();
   return (q.data as any) || null;
 }
