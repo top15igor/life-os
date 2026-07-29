@@ -1826,7 +1826,7 @@ export async function POST(req: NextRequest) {
           for (const m of route.more || []) {
             try { texts.push((await runAction(user.id, m.name, m.input, lng0, (user as any).tz_offset)).text); } catch {}
           }
-          await sendMessage(chatId, texts.map((t) => mdToTelegram(t) || t).join("\n"), acqMarkup(lng0));
+          await sendMessage(chatId, texts.map((t) => (res.html ? t : mdToTelegram(t) || t)).join("\n"), acqMarkup(lng0));
           return NextResponse.json({ ok: true });
         }
         if (route.kind === "question") {
@@ -1933,7 +1933,7 @@ export async function POST(req: NextRequest) {
           ]] } };
         }
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
-        const combined = [res.text, ...moreTexts].map((t) => mdToTelegram(t) || t).join("\n");
+        const combined = [res.text, ...moreTexts].map((t) => (res.html ? t : mdToTelegram(t) || t)).join("\n");
         // Действие может отдать файл (выгрузка заметок) — шлём документом.
         if (res.file) {
           await sendDocument(chatId, Buffer.from(res.file.text, "utf8"), res.file.name, { caption: combined, parse_mode: "HTML" });

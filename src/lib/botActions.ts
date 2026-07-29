@@ -511,7 +511,10 @@ const RELAY_OK: Record<Lang, (name: string) => string> = {
   es: (n) => `✅ Entregado a ${n}.`,
 };
 
-export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string } };
+// html:true — текст УЖЕ в HTML для Telegram (например, подсказки relay с <code>);
+// такой ответ нельзя прогонять через mdToTelegram, иначе теги экранируются и
+// пользователь видит «<code>/send …</code>» буквально.
+export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string }; html?: boolean };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
 export async function runAction(userId: string, name: string, input: any, lang: Lang, tzOffset?: number | null): Promise<ActionResult> {
@@ -624,7 +627,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const { data: me } = await db.from("users").select("name").eq("id", userId).maybeSingle();
       const r = await sendRelay({ id: userId, name: (me as any)?.name || null }, to, body, lang);
       // Не доставили (нет такого контакта / отключил приём) — показываем причину как есть.
-      return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(r.toName || to) : (r.error || s.fail) };
+      return { text: r.ok ? (RELAY_OK[lang] || RELAY_OK.ru)(r.toName || to) : (r.error || s.fail), html: true };
     }
     if (name === "export_notes") {
       const N = NOTE_MSG[lang] || NOTE_MSG.ru;

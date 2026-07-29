@@ -171,6 +171,32 @@ function looseEq(a?: string | null, b?: string | null): boolean {
   return i >= 3 && i >= long.length - 2;
 }
 
+// Расстояние Левенштейна (для коротких строк) — чтобы прозвище находилось,
+// даже если распознавание голоса ошиблось в одной букве («Калюня» → «Колюня»).
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 9;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+// Сравнение прозвищ: точное/склонение (looseEq) ИЛИ одна опечатка в длинном слове.
+// Порог длины 5 намеренный: на коротких («Коля»/«Оля») ошибка в букве — уже другой человек.
+function aliasEq(a?: string | null, b?: string | null): boolean {
+  if (looseEq(a, b)) return true;
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return false;
+  return Math.min(x.length, y.length) >= 5 && editDistance(x, y) <= 1;
+}
+
 function nameMatches(full: string | null, query: string): boolean {
   const f = norm(full);
   if (!f) return false;
@@ -229,7 +255,7 @@ async function enrichLines(contacts: Contact[], lang: string): Promise<string[]>
 async function aliasTarget(ownerId: string, name: string): Promise<string | null> {
   try {
     const { data } = await supabaseAdmin().from("relay_aliases").select("target_id, alias").eq("owner_id", ownerId);
-    const hit = ((data as any[]) || []).find((a) => looseEq(a.alias, name));
+    const hit = ((data as any[]) || []).find((a) => aliasEq(a.alias, name));
     return hit ? (hit.target_id as string) : null;
   } catch {
     return null;
