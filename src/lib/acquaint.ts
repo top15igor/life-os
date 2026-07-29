@@ -183,6 +183,9 @@ async function readState(userId: string): Promise<St> {
 async function writeState(userId: string, prefs: any, patch: { active?: boolean; pct?: number; nav?: number }): Promise<void> {
   const next = { ...prefs };
   if (patch.active !== undefined) next.acquaintActive = patch.active;
+  // Отметка времени шага: по ней знакомство само встаёт на паузу, если человек
+  // ушёл и вернулся через полдня (иначе его «список дел» уехал бы в знакомство).
+  if (patch.active === true || patch.pct !== undefined) next.acquaintAt = new Date().toISOString();
   if (patch.pct !== undefined) next.acquaintPct = Math.max(0, Math.min(100, Math.floor(patch.pct)));
   if (patch.nav !== undefined) next.acquaintNav = Math.max(0, Math.floor(patch.nav));
   try {
@@ -307,8 +310,31 @@ ${answers.map((a) => `— ${a.slice(0, 400)}`).join("\n")}
   }
 }
 
+// Через сколько бездействия знакомство само встаёт на паузу (прогресс сохраняется,
+// продолжить можно кнопкой). Иначе режим «залипает»: включил вчера, не вышел —
+// и сегодняшний список дел уходит в диалог знакомства вместо задач.
+const ACQ_IDLE_MS = 3 * 60 * 60 * 1000;
+
 export async function isAcquainting(userId: string): Promise<boolean> {
-  return (await readState(userId)).active;
+  const st = await readState(userId);
+  if (!st.active) return false;
+  let at = Date.parse((st.prefs as any)?.acquaintAt || "");
+  if (Number.isNaN(at)) {
+    // У тех, кто включил знакомство до этой правки, отметки нет — берём время
+    // последней реплики диалога, иначе они остались бы «залипшими» навсегда.
+    try {
+      const { data } = await supabaseAdmin()
+        .from("companion_messages").select("created_at")
+        .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      at = Date.parse((data as any)?.created_at || "");
+    } catch { /* нет таблицы — просто не выходим по таймеру */ }
+    if (Number.isNaN(at)) return true;
+  }
+  if (Date.now() - at > ACQ_IDLE_MS) {
+    await writeState(userId, st.prefs, { active: false }); // тихая пауза, без сообщения
+    return false;
+  }
+  return true;
 }
 
 // Бэкофилл: разовое восстановление прошлых ответов знакомства в записи дневника.

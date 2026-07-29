@@ -31,6 +31,7 @@ export interface MorningPrefs {
   acquaintNudgedOn: string;   // дата последнего пинга-возврата к знакомству ("" = не пинговали)
   acquaintNudges: number;     // сколько раз уже пинговали вернуться (кап, чтобы не надоедать)
   acquaintNav: number;        // курсор навигации по вопросам знакомства (0 = последний/живой край, k = k вопросов назад)
+  acquaintAt: string;         // ISO последнего шага знакомства — для авто-выхода по бездействию
   invitePromptedOn: string;   // дата последнего показа «Позвать друга» под записью ("" = не показывали)
   topics: MorningTopic[];
   length: MorningLength;      // длина утреннего сообщения
@@ -66,7 +67,7 @@ export const DEFAULT_EVENING_PREFS: EveningPrefs = { enabled: true, ai: false, t
 export const DEFAULT_WEEKLY_PREFS: WeeklyPrefs = { enabled: true, day: 0 };
 
 export const DEFAULT_MORNING_PREFS: MorningPrefs = {
-  tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
+  tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, acquaintAt: "", invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
   remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, fullBackupWeekly: false, taskHorizons: {},
@@ -111,6 +112,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   const acquaintNudgedOn: string = (typeof raw.acquaintNudgedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.acquaintNudgedOn)) ? raw.acquaintNudgedOn : "";
   const acquaintNudges: number = (typeof raw.acquaintNudges === "number" && raw.acquaintNudges >= 0) ? Math.floor(raw.acquaintNudges) : 0;
   const acquaintNav: number = (typeof raw.acquaintNav === "number" && raw.acquaintNav >= 0) ? Math.floor(raw.acquaintNav) : 0;
+  const acquaintAt: string = typeof raw.acquaintAt === "string" ? raw.acquaintAt.slice(0, 40) : "";
   const invitePromptedOn: string = (typeof raw.invitePromptedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invitePromptedOn)) ? raw.invitePromptedOn : "";
   const topics: MorningTopic[] = Array.isArray(raw.topics) ? MORNING_TOPICS.filter((t) => raw.topics.includes(t)) : [...DEFAULT_MORNING_PREFS.topics];
   const length: MorningLength = MORNING_LENGTHS.includes(raw.length) ? raw.length : "normal";
@@ -124,7 +126,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     ? { enabled: raw.weekly.enabled !== false, day: validDay(raw.weekly.day, 0) }
     : { ...DEFAULT_WEEKLY_PREFS };
   return {
-    tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, invitePromptedOn, topics, length, address, tz, customStyle,
+    tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, acquaintAt, invitePromptedOn, topics, length, address, tz, customStyle,
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
     worldNews: raw.worldNews !== false,
     morningEnabled: raw.morningEnabled !== false, quietDays, weekly,
