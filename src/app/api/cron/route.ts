@@ -6,6 +6,7 @@ import { sendMessage, sendDocument } from "@/lib/telegram";
 import { buildObsidianZip } from "@/lib/obsidian";
 import { buildFullExport } from "@/lib/fullExport";
 import { sendDbDumpToOwner } from "@/lib/dbDump";
+import { pruneHandledUpdates } from "@/lib/tgDedupe";
 import { monthlyFinanceDigest } from "@/lib/financeCoach";
 import { getDueRecurring, markReminded } from "@/lib/recurring";
 import { shiftMonth, currentMonth } from "@/lib/finance";
@@ -339,6 +340,9 @@ export async function GET(req: NextRequest) {
   }
 
   const db = supabaseAdmin();
+
+  // Отметки обработанных сообщений Telegram нужны только пару дней — чистим.
+  await pruneHandledUpdates(3);
 
   // Подтягиваем свежие данные у всех, кто подключил Fitbit/Google Health (последние 2 дня).
   let fitbitSynced = 0;

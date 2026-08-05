@@ -4,6 +4,11 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 // Получить прямую ссылку на файл (голосовое) по его file_id.
 export async function getFileUrl(fileId: string): Promise<string> {
   const r = await fetch(`${API}/getFile?file_id=${fileId}`).then((x) => x.json());
+  // Боту Telegram отдаёт файлы не больше 20 МБ. Без явной ошибки дальше падало
+  // чтение r.result.file_path, и человек видел невнятное «что-то пошло не так».
+  if (!r?.ok || !r?.result?.file_path) {
+    throw new Error(`telegram getFile failed: ${r?.description || "no file_path"}`);
+  }
   return `https://api.telegram.org/file/bot${TOKEN}/${r.result.file_path}`;
 }
 

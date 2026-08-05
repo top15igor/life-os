@@ -4,6 +4,7 @@ import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answe
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
+import { alreadyHandled } from "@/lib/tgDedupe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction, recentBotContext, renderListMessage } from "@/lib/botActions";
@@ -45,7 +46,10 @@ import { PMF_SCORES, savePmfAnswer, pmfThanks, pmfCallbackOk, type PmfScore } fr
 
 export const runtime = "nodejs";
 // Приветственная серия идёт с паузами (живая подача) — даём функции запас времени.
-export const maxDuration = 60;
+// Длинное голосовое (8+ минут) не укладывалось в 60 секунд: расшифровка плюс
+// AI-разбор занимают больше, функцию убивало на середине — человек видел
+// «Распознаю голос…» и тишину. Даём полный лимит платформы.
+export const maxDuration = 300;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -792,6 +796,10 @@ export async function POST(req: NextRequest) {
   if (!commandsSynced) { commandsSynced = true; syncBotCommands().catch(() => {}); }
 
   const update = await req.json().catch(() => null);
+
+  // Telegram повторяет доставку, если вебхук не ответил вовремя. Без этой
+  // проверки долгое голосовое могло сохраниться в дневник дважды.
+  if (await alreadyHandled(update?.update_id)) return NextResponse.json({ ok: true });
 
   // Нажатие inline-кнопки (выбор языка).
   const cq = update?.callback_query;
@@ -1693,12 +1701,21 @@ export async function POST(req: NextRequest) {
     let voiceFileUrl: string | null = null; // 🎙 для «Голос навсегда» — сохраним оригинал после записи
 
     if (isVoice) {
-      await sendMessage(chatId, "🎧 Распознаю голос…");
+      // Длинное голосовое расшифровывается заметно дольше — предупреждаем честно,
+      // иначе человек видит «Распознаю голос…» и думает, что бот завис.
+      const seconds = Number((msg.voice || msg.audio)?.duration || 0);
+      const isLong = seconds >= 180;
+      await sendMessage(chatId, isLong ? `🎧 Распознаю голос… Оно длинное (${Math.round(seconds / 60)} мин), это займёт около минуты — не уходи.` : "🎧 Распознаю голос…");
       const fileId = (msg.voice || msg.audio).file_id;
       const url = await getFileUrl(fileId);
       voiceFileUrl = url;
       text = await transcribe(url);
       logUsage(user.id, "transcribe", 0, 0, 0.5);
+      // Расшифровку длинного сообщения отдаём сразу: даже если AI-разбор потом
+      // упадёт или не успеет, сказанное человеком уже у него на руках.
+      if (isLong && text?.trim()) {
+        await sendMessage(chatId, `📝 <b>Расшифровал:</b>\n\n${esc(text.slice(0, 3500))}${text.length > 3500 ? "…" : ""}\n\n<i>Раскладываю по полочкам…</i>`);
+      }
     }
 
     if (!text || !text.trim()) {
@@ -2014,7 +2031,15 @@ export async function POST(req: NextRequest) {
     await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
   } catch (e: any) {
     console.error(e);
-    await sendMessage(chatId, "Упс, что-то пошло не так при сохранении. Попробуй ещё раз.");
+    // Telegram не отдаёт боту файлы больше 20 МБ — это не «что-то пошло не так»,
+    // а конкретная причина, и человеку полезно её знать.
+    const tooBig = /getFile failed/i.test(String(e?.message || ""));
+    await sendMessage(
+      chatId,
+      tooBig
+        ? "Не смог забрать этот файл: Telegram отдаёт ботам файлы не больше 20 МБ. Запиши голосовое покороче или пришли текстом — сохраню."
+        : "Упс, что-то пошло не так при сохранении. Попробуй ещё раз."
+    );
   }
 
   return NextResponse.json({ ok: true });
