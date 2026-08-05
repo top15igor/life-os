@@ -26,6 +26,10 @@ import { parseCapsule, createCapsule, listCapsules } from "@/lib/timeCapsule";
 import { askLife, saveChat, ACTION_TAG } from "@/lib/biographer";
 import { getChatMode, setChatMode, talkToCompanion, clearHistory } from "@/lib/companion";
 import { startAcquaint, acquaintReply, acquaintNextQ, acquaintPrevQ, isAcquainting, stopAcquaint, pauseAcquaint, acquaintPortrait, isPortraitAsk, backfillAcquaintEntries, setAcquaintPct } from "@/lib/acquaint";
+import {
+  dayDepthAsk, beginDayCapture, isDayCapturing, dayAnswer, daySkipQuestion, dayFinishNow,
+  dayShorter, dayMoreQuestion, daySaveDraft, stopDayCapture, dayChipText, isStuckPhrase, STUCK_OFFER, START_BTN, BTN as DAY_BTN,
+} from "@/lib/dayCapture";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
@@ -309,6 +313,30 @@ function acqMarkup(lang: string, chips?: { label: string; value: string }[], nav
   return { reply_markup: { inline_keyboard: rows } };
 }
 const acqInline = (lang: string) => acqMarkup(lang);
+
+// Кнопки режима «Помогу зафиксировать день».
+// Фаза вопроса: быстрые ответы одним тапом + «Пропустить»/«Хватит, собери».
+// Фаза черновика: сохранить / дополнить / покороче.
+function dayMarkup(lang: string, phase: "ask" | "draft", chips?: { label: string; value: string }[]) {
+  const b = DAY_BTN[(["ru", "en", "uk", "fr", "es"].includes(lang) ? lang : "ru") as keyof typeof DAY_BTN];
+  const rows: any[] = [];
+  if (phase === "draft") {
+    rows.push([{ text: b.save, callback_data: "day:save" }]);
+    rows.push([{ text: b.more, callback_data: "day:more" }, { text: b.short, callback_data: "day:short" }]);
+    rows.push([{ text: b.stop, callback_data: "day:stop" }]);
+  } else {
+    // В callback_data уходит НОМЕР варианта, а не текст: у Telegram лимит 64 байта,
+    // а кириллический вариант ответа в него не влезает (сам текст лежит в состоянии).
+    (chips || []).forEach((c, i) => rows.push([{ text: c.label, callback_data: `day:opt:${i}` }]));
+    rows.push([{ text: b.skip, callback_data: "day:skip" }, { text: b.finish, callback_data: "day:finish" }]);
+  }
+  return { reply_markup: { inline_keyboard: rows } };
+}
+
+// Кнопка-приглашение «Помоги рассказать» (вечерний пуш, хаб, ответ на ступор).
+const dayStartMarkup = (lang: string) => ({
+  reply_markup: { inline_keyboard: [[{ text: START_BTN[(["ru", "en", "uk", "fr", "es"].includes(lang) ? lang : "ru") as keyof typeof START_BTN], callback_data: "day:start" }]] },
+});
 
 const ACQUAINT_NUDGE: Record<string, string> = {
   ru: "👉 Самый лёгкий способ начать — просто нажми «🌱 Давай познакомимся» внизу. Я задам пару вопросов, а ты отвечай как другу — и незаметно заведёшь свой дневник 🙂",
@@ -900,6 +928,67 @@ export async function POST(req: NextRequest) {
           await sendMessage(cqChat, mdToTelegram(text) || "…", { reply_markup: mainKeyboard(lng, pct) });
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("day:") && cqChat) {
+      // 🌙 «Помогу зафиксировать день»: пошаговый разбор сегодняшнего дня.
+      // Вход — из вечернего пуша, из хаба и из ответа на ступор («не знаю, что писать»).
+      const act = data.slice(4);
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang, morning_prefs").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u) {
+          const uid = (u as any).id as string;
+          const lng = pickLang((u as any).lang);
+          // Процент знакомства — чтобы подпись кнопки-«лестницы» не откатилась к нулю.
+          const acqPct = normalizeMorningPrefs((u as any).morning_prefs).acquaintPct;
+          if (act === "start") {
+            // Знакомство и режим беседы уступают: два ведущих диалога одновременно
+            // перехватывали бы ответы друг друга.
+            await stopAcquaint(uid).catch(() => {});
+            await setChatMode(uid, false).catch(() => {});
+            const { text, chips } = dayDepthAsk(lng);
+            await sendMessage(cqChat, text, {
+              reply_markup: { inline_keyboard: chips.map((c) => [{ text: c.label, callback_data: `day:len:${c.max}` }]) },
+            });
+          } else if (act.startsWith("len:")) {
+            const max = Math.max(0, Math.min(20, parseInt(act.slice(4), 10) || 0));
+            await sendChatAction(cqChat, "typing");
+            const turn = await beginDayCapture(uid, lng, max);
+            await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, "ask", turn.chips));
+          } else if (act.startsWith("opt:")) {
+            const idx = parseInt(act.slice(4), 10);
+            const val = await dayChipText(uid, Number.isFinite(idx) ? idx : -1);
+            if (val && await isDayCapturing(uid)) {
+              await sendChatAction(cqChat, "typing");
+              const turn = await dayAnswer(uid, lng, val);
+              await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, turn.phase === "draft" ? "draft" : "ask", turn.chips));
+            }
+          } else if (act === "skip" && await isDayCapturing(uid)) {
+            await sendChatAction(cqChat, "typing");
+            const turn = await daySkipQuestion(uid, lng);
+            await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, "ask", turn.chips));
+          } else if (act === "finish" && await isDayCapturing(uid)) {
+            await sendChatAction(cqChat, "typing");
+            const turn = await dayFinishNow(uid, lng);
+            await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, turn.phase === "draft" ? "draft" : "ask"));
+          } else if (act === "short" && await isDayCapturing(uid)) {
+            await sendChatAction(cqChat, "typing");
+            const turn = await dayShorter(uid, lng);
+            await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, "draft"));
+          } else if (act === "more" && await isDayCapturing(uid)) {
+            await sendChatAction(cqChat, "typing");
+            const turn = await dayMoreQuestion(uid, lng);
+            await sendMessage(cqChat, mdToTelegram(turn.text) || "…", dayMarkup(lng, "ask", turn.chips));
+          } else if (act === "save") {
+            await sendChatAction(cqChat, "typing");
+            const res = await daySaveDraft(uid, lng);
+            await sendMessage(cqChat, res.text, { reply_markup: mainKeyboard(lng, acqPct) });
+          } else if (act === "stop") {
+            const text = await stopDayCapture(uid, lng);
+            await sendMessage(cqChat, text, { reply_markup: mainKeyboard(lng, acqPct) });
+          }
+        }
+      } catch (e) { console.error("dayCapture cb", e); await answerCallback(cq.id); }
     } else if (data.startsWith("tone:") && cqChat) {
       // Выбор тона общения (онбординг или смена): сохраняем и отвечаем УЖЕ в этом тоне.
       const toneKey = data.slice(5);
@@ -1352,6 +1441,13 @@ export async function POST(req: NextRequest) {
   if (typeof msg.text === "string" && /^\/stop\b/i.test(msg.text.trim())) {
     const lang = langOf(user, msg);
     await setChatMode(user.id, false);
+    // /stop выходит из любого ведущего режима, включая разбор дня, — иначе
+    // человек «вышел», а следующая реплика всё равно ушла бы в буфер разбора.
+    if (await isDayCapturing(user.id)) {
+      const text = await stopDayCapture(user.id, lang);
+      await sendMessage(chatId, text, { reply_markup: mainKeyboard(lang) });
+      return NextResponse.json({ ok: true });
+    }
     await sendMessage(
       chatId,
       lang === "en" || lang === "es"
@@ -1507,12 +1603,15 @@ export async function POST(req: NextRequest) {
     const lang = langOf(user, msg);
     if (ba === "acquaint") {
       await sendChatAction(chatId, "typing");
+      await stopDayCapture(user.id, lang).catch(() => {});
       const opening = await startAcquaint(user.id, user.name ?? null, lang);
       await sendMessage(chatId, opening, acqInline(lang));
       return NextResponse.json({ ok: true });
     }
-    // Любая другая кнопка — выходим из режима знакомства, если он был.
+    // Любая другая кнопка — выходим из ведущих режимов, если они были: человек
+    // ушёл в меню, и его следующая фраза не должна попасть в чужой буфер.
     await stopAcquaint(user.id).catch(() => {});
+    await stopDayCapture(user.id, lang).catch(() => {});
     if (ba === "tasks") {
       // «⏰ Заметки» — хаб «ничего не забыть»: повестка дня + кнопки-разделы.
       await sendChatAction(chatId, "typing");
@@ -1535,7 +1634,15 @@ export async function POST(req: NextRequest) {
       // владельца по одноразовой ссылке /u/<token>. Пересылки не боимся: инлайн-кнопки
       // при форварде отбрасываются, а сам код входа — одноразовый.
       const openUrl = `${origin}/u/${user.token}?next=/`;
-      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, { reply_markup: { inline_keyboard: [[{ text: CRM_OPEN[lang] || CRM_OPEN.ru, web_app: { url: openUrl } }]] } });
+      await sendMessage(chatId, CRM_INTRO[lang] || CRM_INTRO.ru, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: CRM_OPEN[lang] || CRM_OPEN.ru, web_app: { url: openUrl } }],
+            // Второй кнопкой — помощь тем, кто открыл дневник и завис над пустым полем.
+            [{ text: START_BTN[lang as keyof typeof START_BTN] || START_BTN.ru, callback_data: "day:start" }],
+          ],
+        },
+      });
     }
     else await sendMessage(chatId, DIARY_LABEL[lang] || DIARY_LABEL.ru, loginBtn(lang, origin));
     return NextResponse.json({ ok: true });
@@ -1813,6 +1920,36 @@ export async function POST(req: NextRequest) {
     {
       const rp = await relayFromPhrase({ id: user.id, name: user.name ?? null }, text, langOf(user, msg));
       if (rp.handled) { await sendMessage(chatId, rp.reply!); return NextResponse.json({ ok: true }); }
+    }
+
+    // 🌙 Разбор дня: пока идёт — ответы копятся в буфер, а не летят в дневник
+    //    поштучно. Приоритетнее знакомства и чата: человек сам его только что включил.
+    //    Команды (/stop, /save, …) режим НЕ перехватывает — они работают всегда.
+    if (!text.startsWith("/") && await isDayCapturing(user.id)) {
+      const lng = langOf(user, msg);
+      await sendChatAction(chatId, "typing");
+      try {
+        const turn = await dayAnswer(user.id, lng, text);
+        await sendMessage(chatId, mdToTelegram(turn.text) || "…", dayMarkup(lng, turn.phase === "draft" ? "draft" : "ask", turn.chips));
+        // Наговорил голосом — отвечаем голосом, как и везде в боте.
+        if (isVoice && turn.text) {
+          await sendChatAction(chatId, "record_voice");
+          const audio = await speak(mdToPlain(turn.text));
+          if (audio) await sendVoice(chatId, audio);
+        }
+      } catch (e) {
+        console.error("dayCapture", e);
+        await sendMessage(chatId, "…");
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🤷 Ступор чистого листа: «не знаю, что писать». Человек в ступоре кнопку не
+    //    ищет — он закрывает чат, поэтому помощь предлагаем сами.
+    if (isStuckPhrase(text)) {
+      const lng = langOf(user, msg);
+      await sendMessage(chatId, STUCK_OFFER[lng as keyof typeof STUCK_OFFER] || STUCK_OFFER.ru, dayStartMarkup(lng));
+      return NextResponse.json({ ok: true });
     }
 
     // 🌱 Режим знакомства: ведём тёплый диалог (факт о себе ↔ вопрос о тебе),

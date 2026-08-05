@@ -15,6 +15,7 @@ import { personalEvening } from "@/lib/eveningPersonal";
 import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
 import { eveningQuestion } from "@/lib/dailyQuestions";
+import { START_BTN as DAY_START_BTN } from "@/lib/dayCapture";
 import { localParts } from "@/lib/pushSchedule";
 import { peopleDigestMessage } from "@/lib/peopleCrm";
 import { logPush } from "@/lib/pushLog";
@@ -32,6 +33,12 @@ type Lang = "ru" | "en" | "uk" | "fr" | "es";
 function escHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+// «Помоги рассказать» под вечерним «как прошёл день?» — кнопка стоит ровно там,
+// где случается ступор чистого листа. Нажатие ведёт в пошаговый разбор дня.
+const dayHelpBtn = (lang: Lang) => ({
+  reply_markup: { inline_keyboard: [[{ text: DAY_START_BTN[lang] || DAY_START_BTN.ru, callback_data: "day:start" }]] },
+});
 
 const MSG: Record<Lang, {
   reminder: string;
@@ -591,7 +598,7 @@ export async function GET(req: NextRequest) {
         // Активные — мягкое напоминание; если серия жива (писал вчера) — мотивируем не разорвать.
         if (gap === 1 && streak >= 2) {
           if (prefs.remindersEnabled !== false) {
-            await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy));
+            await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy), dayHelpBtn(lang));
             stats.streakReminders++;
           }
         } else {
@@ -603,7 +610,7 @@ export async function GET(req: NextRequest) {
               if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; asked = true; }
             } catch (e) { console.error("book prompt", u.id, e); }
           }
-          if (!asked && prefs.remindersEnabled !== false) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy)); stats.reminders++; }
+          if (!asked && prefs.remindersEnabled !== false) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy), dayHelpBtn(lang)); stats.reminders++; }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.

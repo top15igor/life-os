@@ -32,6 +32,15 @@ export interface MorningPrefs {
   acquaintNudges: number;     // сколько раз уже пинговали вернуться (кап, чтобы не надоедать)
   acquaintNav: number;        // курсор навигации по вопросам знакомства (0 = последний/живой край, k = k вопросов назад)
   acquaintAt: string;         // ISO последнего шага знакомства — для авто-выхода по бездействию
+  // «Помогу зафиксировать день»: пошаговый разбор сегодняшнего дня (dayCapture.ts).
+  dayActive: boolean;         // идёт ли сейчас разбор дня
+  dayMax: number;             // сколько вопросов человек выбрал (0 = «поговорим», пока не скажет хватит)
+  dayAt: string;              // ISO последнего шага — для авто-паузы по бездействию
+  dayAsked: string[];         // заданные вопросы (чтобы не повторяться и собрать пары «вопрос-ответ»)
+  dayChips: string[];         // варианты быстрого ответа на текущий вопрос (в кнопку уходит номер, не текст)
+  dayAnswers: string[];       // ответы человека — буфер, из которого собирается ОДНА запись
+  dayDraft: string;           // собранный черновик записи (пока не сохранён)
+  dayDate: string;            // за какой местный день фиксируем (YYYY-MM-DD)
   invitePromptedOn: string;   // дата последнего показа «Позвать друга» под записью ("" = не показывали)
   topics: MorningTopic[];
   length: MorningLength;      // длина утреннего сообщения
@@ -67,7 +76,9 @@ export const DEFAULT_EVENING_PREFS: EveningPrefs = { enabled: true, ai: false, t
 export const DEFAULT_WEEKLY_PREFS: WeeklyPrefs = { enabled: true, day: 0 };
 
 export const DEFAULT_MORNING_PREFS: MorningPrefs = {
-  tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, acquaintAt: "", invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
+  tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, acquaintAt: "",
+  dayActive: false, dayMax: 3, dayAt: "", dayAsked: [], dayChips: [], dayAnswers: [], dayDraft: "", dayDate: "",
+  invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
   remindersEnabled: true, financeEnabled: true, recurringEnabled: true, backupEnabled: true, fullBackupWeekly: false, taskHorizons: {},
@@ -113,6 +124,16 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   const acquaintNudges: number = (typeof raw.acquaintNudges === "number" && raw.acquaintNudges >= 0) ? Math.floor(raw.acquaintNudges) : 0;
   const acquaintNav: number = (typeof raw.acquaintNav === "number" && raw.acquaintNav >= 0) ? Math.floor(raw.acquaintNav) : 0;
   const acquaintAt: string = typeof raw.acquaintAt === "string" ? raw.acquaintAt.slice(0, 40) : "";
+  const dayActive: boolean = raw.dayActive === true;
+  const dayMax: number = (typeof raw.dayMax === "number" && raw.dayMax >= 0 && raw.dayMax <= 20) ? Math.floor(raw.dayMax) : 3;
+  const dayAt: string = typeof raw.dayAt === "string" ? raw.dayAt.slice(0, 40) : "";
+  const strList = (v: any, maxLen: number): string[] =>
+    Array.isArray(v) ? v.filter((s: any) => typeof s === "string").map((s: string) => s.slice(0, maxLen)).slice(-20) : [];
+  const dayAsked: string[] = strList(raw.dayAsked, 300);
+  const dayChips: string[] = strList(raw.dayChips, 60).slice(0, 3);
+  const dayAnswers: string[] = strList(raw.dayAnswers, 2000);
+  const dayDraft: string = typeof raw.dayDraft === "string" ? raw.dayDraft.slice(0, 4000) : "";
+  const dayDate: string = (typeof raw.dayDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.dayDate)) ? raw.dayDate : "";
   const invitePromptedOn: string = (typeof raw.invitePromptedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invitePromptedOn)) ? raw.invitePromptedOn : "";
   const topics: MorningTopic[] = Array.isArray(raw.topics) ? MORNING_TOPICS.filter((t) => raw.topics.includes(t)) : [...DEFAULT_MORNING_PREFS.topics];
   const length: MorningLength = MORNING_LENGTHS.includes(raw.length) ? raw.length : "normal";
@@ -126,7 +147,9 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     ? { enabled: raw.weekly.enabled !== false, day: validDay(raw.weekly.day, 0) }
     : { ...DEFAULT_WEEKLY_PREFS };
   return {
-    tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, acquaintAt, invitePromptedOn, topics, length, address, tz, customStyle,
+    tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, acquaintAt,
+    dayActive, dayMax, dayAt, dayAsked, dayChips, dayAnswers, dayDraft, dayDate,
+    invitePromptedOn, topics, length, address, tz, customStyle,
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
     worldNews: raw.worldNews !== false,
     morningEnabled: raw.morningEnabled !== false, quietDays, weekly,
