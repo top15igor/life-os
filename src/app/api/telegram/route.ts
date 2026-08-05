@@ -34,6 +34,7 @@ import {
   problemMenu, askProblemDetails, isAwaitingProblem, submitProblem, reopenProblem,
   cancelProblem, attachScreenshot, isProblemPhrase, PROBLEM_KINDS, MORE_BTN, CANCEL_BTN, type ProblemKind,
 } from "@/lib/problemReport";
+import { logError } from "@/lib/errorLog";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
@@ -832,7 +833,14 @@ export async function POST(req: NextRequest) {
     const { sent } = await runCaptured(() => handleUpdate(req));
     return NextResponse.json({ ok: true, sent });
   }
-  return handleUpdate(req);
+  // Любой необработанный сбой попадает в журнал: именно эти случаи человек видит
+  // как «бот молча проглотил сообщение», и раньше о них не знал никто.
+  try {
+    return await handleUpdate(req);
+  } catch (e) {
+    await logError("bot:uncaught", e);
+    return NextResponse.json({ ok: true });
+  }
 }
 
 async function handleUpdate(req: NextRequest) {
@@ -965,7 +973,7 @@ async function handleUpdate(req: NextRequest) {
             await sendMessage(cqChat, text, { reply_markup: mainKeyboard(lng, acqPct) });
           }
         }
-      } catch (e) { console.error("problem cb", e); await answerCallback(cq.id); }
+      } catch (e) { logError("bot:problem-cb", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("day:") && cqChat) {
       // 🌙 «Помогу зафиксировать день»: пошаговый разбор сегодняшнего дня.
       // Вход — из вечернего пуша, из хаба и из ответа на ступор («не знаю, что писать»).
@@ -1026,7 +1034,7 @@ async function handleUpdate(req: NextRequest) {
             await sendMessage(cqChat, text, { reply_markup: mainKeyboard(lng, acqPct) });
           }
         }
-      } catch (e) { console.error("dayCapture cb", e); await answerCallback(cq.id); }
+      } catch (e) { logError("bot:daycapture-cb", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("tone:") && cqChat) {
       // Выбор тона общения (онбординг или смена): сохраняем и отвечаем УЖЕ в этом тоне.
       const toneKey = data.slice(5);
@@ -1543,7 +1551,7 @@ async function handleUpdate(req: NextRequest) {
       const res = await backfillAcquaintEntries(user.id);
       await sendMessage(chatId, `✅ Готово.\nДобавлено записей: ${res.added}\nПросмотрено сообщений: ${res.scanned}\nПропущено (коротких/дублей): ${res.skipped}`, { reply_markup: mainKeyboard(langOf(user, msg)) });
     } catch (e) {
-      console.error("backfill", e);
+      logError("bot:backfill", e, { userId: user.id, chatId });
       await sendMessage(chatId, "Не получилось собрать. Загляни в логи 🙂");
     }
     return NextResponse.json({ ok: true });
@@ -1559,7 +1567,7 @@ async function handleUpdate(req: NextRequest) {
       const res = await broadcastKeyboard();
       await sendMessage(chatId, `✅ Готово.\nОтправлено: ${res.sent}\nПропущено (выкл. пуши): ${res.skipped}\nОшибок: ${res.failed}`);
     } catch (e) {
-      console.error("pushmenu", e);
+      logError("bot:pushmenu", e, { userId: user.id, chatId });
       await sendMessage(chatId, "Не получилось разослать. Загляни в логи 🙂");
     }
     return NextResponse.json({ ok: true });
@@ -1594,7 +1602,7 @@ async function handleUpdate(req: NextRequest) {
       const report = await financeReview(user.id, lang);
       await sendMessage(chatId, report, { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/go?next=/finance` }]] } });
     } catch (e) {
-      console.error("money cmd", e);
+      logError("bot:money", e, { userId: user.id, chatId });
       await sendMessage(chatId, "Не получилось собрать разбор. Попробуй чуть позже 🙂");
     }
     return NextResponse.json({ ok: true });
@@ -1644,7 +1652,7 @@ async function handleUpdate(req: NextRequest) {
       await sendMessage(chatId, `${head}\n💰 <b>${sign}${parsed.amount} ${sym}</b>${cat}${sub}${note}`,
         { reply_markup: { inline_keyboard: [[{ text: L_MONEY[lang] || L_MONEY.ru, url: `${origin}/go?next=/finance` }]] } });
     } catch (e) {
-      console.error("quick finance", e);
+      logError("bot:finance-quick", e, { userId: user.id, chatId });
       await sendMessage(chatId, "Не получилось записать операцию. Попробуй ещё раз 🙂");
     }
     return NextResponse.json({ ok: true });
@@ -1798,7 +1806,7 @@ async function handleUpdate(req: NextRequest) {
           if (book.author) body += `\n${esc(book.author)}`;
           await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [[{ text: B.open, url: `${origin}/go?next=/books` }]] } });
         } catch (e) {
-          console.error("book photo", e);
+          logError("bot:book-photo", e, { userId: user.id, chatId });
           await sendMessage(chatId, B.failed);
         }
         return NextResponse.json({ ok: true });
@@ -1815,7 +1823,7 @@ async function handleUpdate(req: NextRequest) {
         const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
-        console.error("photo", e);
+        logError("bot:photo", e, { userId: user.id, chatId });
         await sendMessage(chatId, L.failed);
       }
       return NextResponse.json({ ok: true });
@@ -1844,7 +1852,7 @@ async function handleUpdate(req: NextRequest) {
           if (error) { await sendMessage(chatId, N.failed); return NextResponse.json({ ok: true }); }
           await sendMessage(chatId, N.done(items.length), { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent("/notes")}` }]] } });
         } catch (e) {
-          console.error("notes import", e);
+          logError("bot:notes-import", e, { userId: user.id, chatId });
           await sendMessage(chatId, N.failed);
         }
         return NextResponse.json({ ok: true });
@@ -1866,7 +1874,7 @@ async function handleUpdate(req: NextRequest) {
         const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
-        console.error("document", e);
+        logError("bot:document", e, { userId: user.id, chatId });
         await sendMessage(chatId, L.failed);
       }
       return NextResponse.json({ ok: true });
@@ -1941,7 +1949,7 @@ async function handleUpdate(req: NextRequest) {
           if (!sent) await sendMessage(chatId, `🎬 <a href="${r.videoUrl}">${L.video}</a>`);
         }
       } catch (e) {
-        console.error("import link", e);
+        logError("bot:import-link", e, { userId: user.id, chatId });
         await sendMessage(chatId, failedMsg);
       }
       return NextResponse.json({ ok: true });
@@ -1978,7 +1986,7 @@ async function handleUpdate(req: NextRequest) {
           : [{ text: "🎁 Открыть Вишлист", url: `${origin}/go?next=/wishlist` }];
         await sendMessage(chatId, body, { reply_markup: { inline_keyboard: [wishBtn] } });
       } catch (e) {
-        console.error("wishlist", e);
+        logError("bot:wishlist", e, { userId: user.id, chatId });
         await sendMessage(chatId, W.failed);
       }
       return NextResponse.json({ ok: true });
@@ -2020,7 +2028,7 @@ async function handleUpdate(req: NextRequest) {
           if (audio) await sendVoice(chatId, audio);
         }
       } catch (e) {
-        console.error("dayCapture", e);
+        logError("bot:daycapture", e, { userId: user.id, chatId });
         await sendMessage(chatId, "…");
       }
       return NextResponse.json({ ok: true });
@@ -2083,7 +2091,7 @@ async function handleUpdate(req: NextRequest) {
           if (audio) await sendVoice(chatId, audio);
         }
       } catch (e) {
-        console.error("acquaint", e);
+        logError("bot:acquaint", e, { userId: user.id, chatId });
         await sendMessage(chatId, "…");
       }
       return NextResponse.json({ ok: true });
@@ -2103,7 +2111,7 @@ async function handleUpdate(req: NextRequest) {
           if (audio) await sendVoice(chatId, audio);
         }
       } catch (e) {
-        console.error("companion", e);
+        logError("bot:companion", e, { userId: user.id, chatId });
         await sendMessage(chatId, "Что-то сбилось, скажи ещё раз 🙂");
       }
       return NextResponse.json({ ok: true });
@@ -2200,7 +2208,7 @@ async function handleUpdate(req: NextRequest) {
     try {
       analysis = await analyze(text, user.id);
     } catch (e) {
-      console.error("analyze failed — saving raw", e);
+      logError("bot:analyze", e, { userId: user.id, chatId });
       analysis = {
         summary: text.slice(0, 800),
         categories: [], tags: [], people: [], places: [], projects: [],

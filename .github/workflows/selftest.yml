@@ -16,6 +16,7 @@ on:
   schedule:
     - cron: "*/15 * * * *" # лёгкий прогон каждые 15 минут
     - cron: "7 */6 * * *"  # полный прогон раз в 6 часов
+    - cron: "20 6 * * *"   # утренний разбор: что сломалось за сутки
   workflow_dispatch:
     inputs:
       mode:
@@ -26,6 +27,7 @@ on:
 jobs:
   selftest:
     runs-on: ubuntu-latest
+    if: github.event.schedule != '20 6 * * *'
     steps:
       - name: Run self-test
         run: |
@@ -36,6 +38,19 @@ jobs:
           curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=$MODE" | tee result.json
           # Падение шага = красный прогон в Actions, чтобы поломка была видна и там.
           python3 -c "import json,sys; d=json.load(open('result.json')); sys.exit(0 if d.get('ok') else 1)"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  # Агент-диагност: раз в сутки читает падения самопроверки, журнал сбоев и жалобы
+  # людей и присылает владельцу разбор — что чинить первым и где искать причину.
+  diagnose:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '20 6 * * *'
+    steps:
+      - name: Daily diagnosis
+        run: |
+          curl -fsS --max-time 300 "${APP_URL}/api/diagnose?key=${CRON_SECRET}&hours=24"
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
