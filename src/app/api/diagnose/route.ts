@@ -25,5 +25,7 @@ export async function GET(req: NextRequest) {
   const hours = Number.isFinite(h) && h > 0 && h <= 168 ? Math.floor(h) : 24;
 
   const res = await runDiagnosis(hours);
-  return NextResponse.json({ ok: true, hours, ...res });
+  return NextResponse.json({ ok: true, hours, ...res }, {
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }

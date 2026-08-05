@@ -29,5 +29,9 @@ export async function GET(req: NextRequest) {
   const res = await runSelftest(req.nextUrl.origin, mode);
   const { alerted } = await reportSelftest(res);
 
-  return NextResponse.json({ ok: res.failed === 0, alerted, ...res });
+  // Явная кодировка: без неё Safari показывает русские названия сценариев
+  // кракозябрами, и отчёт становится нечитаемым именно там, где его читают глазами.
+  return NextResponse.json({ ok: res.failed === 0, alerted, ...res }, {
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
 }
