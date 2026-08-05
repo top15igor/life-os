@@ -1,0 +1,41 @@
+# Самопроверка бота: агент «пишет» боту как живой человек и сверяет ответы.
+# Лёгкий прогон (без AI, бесплатный) — каждые 15 минут: ловит «бот молчит»,
+# «бот отвечает ошибкой», «пропала кнопка».
+# Полный прогон (тратит AI) — раз в 6 часов: плюс сохранение мысли и вопрос
+# ассистенту, то есть весь путь записи целиком.
+#
+# Секреты репозитория те же, что у остальных расписаний:
+#   APP_URL      — https://life-os.today (без слэша в конце)
+#   CRON_SECRET  — то же значение, что в переменных окружения Vercel
+#
+# Владельцу в Telegram пишет только при поломке и при восстановлении — молчит,
+# пока всё хорошо.
+name: Bot self-test
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # лёгкий прогон каждые 15 минут
+    - cron: "7 */6 * * *"  # полный прогон раз в 6 часов
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "light или full"
+        required: false
+        default: "full"
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run self-test
+        run: |
+          MODE="light"
+          if [ "${{ github.event.schedule }}" = "7 */6 * * *" ]; then MODE="full"; fi
+          if [ -n "${{ github.event.inputs.mode }}" ]; then MODE="${{ github.event.inputs.mode }}"; fi
+          echo "mode=$MODE"
+          curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=$MODE" | tee result.json
+          # Падение шага = красный прогон в Actions, чтобы поломка была видна и там.
+          python3 -c "import json,sys; d=json.load(open('result.json')); sys.exit(0 if d.get('ok') else 1)"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

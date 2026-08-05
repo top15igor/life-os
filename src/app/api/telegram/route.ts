@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, editMessageText } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, editMessageText, runCaptured } from "@/lib/telegram";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -825,6 +825,17 @@ export async function POST(req: NextRequest) {
   if (secret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
     return new NextResponse("forbidden", { status: 403 });
   }
+  // 🧪 Самопроверка: тот же обработчик, но ответы не уходят в Telegram, а
+  // возвращаются вызывающему — так автотесты «видят», что ответил бот.
+  // Ключ тот же секретный, что и у вебхука, поэтому снаружи режим недоступен.
+  if (req.headers.get("x-selftest-key") === process.env.TELEGRAM_WEBHOOK_SECRET) {
+    const { sent } = await runCaptured(() => handleUpdate(req));
+    return NextResponse.json({ ok: true, sent });
+  }
+  return handleUpdate(req);
+}
+
+async function handleUpdate(req: NextRequest) {
   if (!commandsSynced) { commandsSynced = true; syncBotCommands().catch(() => {}); }
 
   const update = await req.json().catch(() => null);

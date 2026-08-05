@@ -1,5 +1,43 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const API = `https://api.telegram.org/bot${TOKEN}`;
+
+// ===== Режим самопроверки =====
+//
+// Чтобы бота можно было тестировать автоматически, нужен способ УВИДЕТЬ его ответ,
+// не отправляя его живому человеку. Здесь это сделано перехватом: внутри
+// runCaptured() все отправки не уходят в Telegram, а складываются в список и
+// возвращаются вызывающему. Перехват действует только внутри своего вызова
+// (AsyncLocalStorage), поэтому обычные запросы пользователей он не затрагивает.
+
+export type SentMessage = { method: string; chatId: number; text?: string; buttons: string[] };
+
+const sink = new AsyncLocalStorage<SentMessage[]>();
+
+// Кнопки из reply_markup — по ним сценарий проверяет, что меню действительно пришло.
+function buttonsOf(extra?: Record<string, any>): string[] {
+  const rm = extra?.reply_markup;
+  if (!rm) return [];
+  const rows: any[] = rm.inline_keyboard || rm.keyboard || [];
+  const out: string[] = [];
+  for (const row of rows) for (const b of row || []) if (b?.text) out.push(String(b.text));
+  return out;
+}
+
+function capture(method: string, chatId: number, text?: string, extra?: Record<string, any>): boolean {
+  const store = sink.getStore();
+  if (!store) return false;
+  store.push({ method, chatId, text, buttons: buttonsOf(extra) });
+  return true;
+}
+
+// Выполнить обработчик, перехватывая всё, что бот пытается отправить.
+export async function runCaptured<T>(fn: () => Promise<T>): Promise<{ result: T; sent: SentMessage[] }> {
+  const store: SentMessage[] = [];
+  const result = await sink.run(store, fn);
+  return { result, sent: store };
+}
 
 // Получить прямую ссылку на файл (голосовое) по его file_id.
 export async function getFileUrl(fileId: string): Promise<string> {
@@ -14,6 +52,7 @@ export async function getFileUrl(fileId: string): Promise<string> {
 
 // Отправить голосовое сообщение (OGG/Opus буфер) — «Джарвис отвечает голосом».
 export async function sendVoice(chatId: number, buf: Buffer, extra?: Record<string, any>): Promise<void> {
+  if (capture("sendVoice", chatId, undefined, extra)) return;
   try {
     const form = new FormData();
     form.append("chat_id", String(chatId));
@@ -114,6 +153,7 @@ export async function sendMediaGroup(chatId: number, items: Array<Record<string,
 
 // Ответить на нажатие inline-кнопки (убирает «часики» у кнопки, опц. всплывашка).
 export async function answerCallback(callbackId: string, text?: string): Promise<void> {
+  if (capture("answerCallback", 0, text)) return;
   await fetch(`${API}/answerCallbackQuery`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -123,6 +163,7 @@ export async function answerCallback(callbackId: string, text?: string): Promise
 
 // Показать индикатор «печатает…».
 export async function sendChatAction(chatId: number, action = "typing"): Promise<void> {
+  if (capture("sendChatAction", chatId, action)) return;
   await fetch(`${API}/sendChatAction`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -180,6 +221,7 @@ function humanizeDashes(t: string): string {
 
 // Отправить сообщение пользователю (extra — доп. поля, напр. reply_markup с кнопками).
 export async function sendMessage(chatId: number, text: string, extra?: Record<string, any>): Promise<void> {
+  if (capture("sendMessage", chatId, text, extra)) return;
   await fetch(`${API}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
