@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { addAdminTask, toggleAdminTask, deleteAdminTask } from "@/lib/adminTasks";
+import { addAdminTask, toggleAdminTask, deleteAdminTask, getAdminTasks } from "@/lib/adminTasks";
+import { prepareFix } from "@/lib/fixAgent";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,16 @@ export async function POST(req: NextRequest) {
   if (action === "delete") {
     const ok = await deleteAdminTask(String(body?.id || ""));
     return NextResponse.json({ ok });
+  }
+  // Агент готовит правку и открывает pull request. В main не пишет никогда:
+  // выкатывает владелец, увидев зелёную сборку на ветке.
+  if (action === "fix") {
+    const id = String(body?.id || "");
+    const tasks = await getAdminTasks();
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return NextResponse.json({ ok: false, error: "задача не найдена" }, { status: 404 });
+    const res = await prepareFix({ title: task.title, note: task.note });
+    return NextResponse.json(res);
   }
   return NextResponse.json({ ok: false }, { status: 400 });
 }

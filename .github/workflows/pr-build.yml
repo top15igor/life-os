@@ -1,0 +1,33 @@
+# Проверка сборки на каждом pull request.
+#
+# Смысл: агент-починщик открывает PR с правкой, но код никто не запускал. Этот
+# прогон собирает ветку целиком и проверяет типы. Красный крестик = правку брать
+# нельзя, зелёная галочка = хотя бы проект собирается и типы сходятся.
+#
+# Это не заменяет проверку поведения вживую, но отсекает грубые поломки до того,
+# как они попадут к живым пользователям.
+name: PR build
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - name: Types
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
+        env:
+          # Сборке Next.js реальные ключи не нужны — страницы рендерятся
+          # динамически, а обращения к внешним сервисам происходят в рантайме.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder

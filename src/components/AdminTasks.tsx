@@ -8,6 +8,8 @@ export default function AdminTasks({ initial }: { initial: AdminTask[] }) {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [adding, setAdding] = useState(false);
+  const [fixing, setFixing] = useState<string | null>(null);
+  const [fixRes, setFixRes] = useState<Record<string, string>>({});
 
   async function api(payload: any) {
     return fetch("/api/admin/tasks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) }).then((r) => r.json()).catch(() => ({ ok: false }));
@@ -29,6 +31,17 @@ export default function AdminTasks({ initial }: { initial: AdminTask[] }) {
     await api({ action: "delete", id });
   }
 
+  // Агент готовит правку и открывает pull request. В main он не пишет никогда —
+  // ссылка ведёт на PR, где видно каждую изменённую строку и результат сборки.
+  async function fix(t: AdminTask) {
+    if (fixing) return;
+    setFixing(t.id);
+    setFixRes((r) => ({ ...r, [t.id]: "" }));
+    const res = await api({ action: "fix", id: t.id });
+    setFixing(null);
+    setFixRes((r) => ({ ...r, [t.id]: res?.ok ? `PR готов: ${res.url}` : `Не вышло: ${res?.error || "неизвестная ошибка"}` }));
+  }
+
   const open = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
 
@@ -40,7 +53,22 @@ export default function AdminTasks({ initial }: { initial: AdminTask[] }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, textDecoration: t.done ? "line-through" : "none" }}>{t.title}</div>
         {t.note && <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginTop: 3, whiteSpace: "pre-wrap" }}>{t.note}</div>}
-        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>{new Date(t.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</div>
+        <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span>{new Date(t.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</span>
+          {!t.done && (
+            <button onClick={() => fix(t)} disabled={fixing === t.id} title="Агент подготовит правку и откроет pull request"
+              style={{ background: "none", border: "none", padding: 0, cursor: fixing === t.id ? "default" : "pointer", color: "var(--accent)", fontSize: 11.5 }}>
+              <i className="ti ti-wand" style={{ verticalAlign: "-2px" }} /> {fixing === t.id ? "Готовлю правку…" : "Подготовить фикс"}
+            </button>
+          )}
+        </div>
+        {fixRes[t.id] && (
+          <div style={{ fontSize: 11.5, marginTop: 6, color: fixRes[t.id].startsWith("PR") ? "var(--positive)" : "var(--text-2)", wordBreak: "break-all" }}>
+            {fixRes[t.id].startsWith("PR готов: ")
+              ? <a href={fixRes[t.id].slice(10)} target="_blank" rel="noreferrer" style={{ color: "var(--positive)" }}>PR готов — открыть и посмотреть правку</a>
+              : fixRes[t.id]}
+          </div>
+        )}
       </div>
       <button onClick={() => del(t.id)} title="Удалить" style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: 15, flexShrink: 0 }}><i className="ti ti-trash" /></button>
     </div>
