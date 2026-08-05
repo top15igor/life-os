@@ -30,6 +30,10 @@ import {
   dayDepthAsk, beginDayCapture, isDayCapturing, dayAnswer, daySkipQuestion, dayFinishNow,
   dayShorter, dayMoreQuestion, daySaveDraft, stopDayCapture, dayChipText, isStuckPhrase, STUCK_OFFER, START_BTN, BTN as DAY_BTN,
 } from "@/lib/dayCapture";
+import {
+  problemMenu, askProblemDetails, isAwaitingProblem, submitProblem, reopenProblem,
+  cancelProblem, attachScreenshot, isProblemPhrase, PROBLEM_KINDS, MORE_BTN, CANCEL_BTN, type ProblemKind,
+} from "@/lib/problemReport";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
@@ -480,11 +484,11 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
 }
 
 const HELP: Record<string, (o: string) => string> = {
-  ru: (o) => `Что я умею:\n• 🎤 Зажми микрофон справа от поля ввода и наговори — я расшифрую и сохраню.\n• ✍️ Или просто напиши, что произошло.\n• 🧠 Задай вопрос — отвечу по твоему дневнику.\n\nВсе разделы и команды — в Инструкции:\n${o}/guide`,
-  en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
-  uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
-  fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n\nTout est dans le Guide :\n${o}/guide`,
-  es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
+  ru: (o) => `Что я умею:\n• 🎤 Зажми микрофон справа от поля ввода и наговори — я расшифрую и сохраню.\n• ✍️ Или просто напиши, что произошло.\n• 🧠 Задай вопрос — отвечу по твоему дневнику.\n• 🛠 Что-то сломалось — /problem, разберусь.\n\nВсе разделы и команды — в Инструкции:\n${o}/guide`,
+  en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n• 🛠 Something broke — /problem, I'll look into it.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
+  uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n• 🛠 Щось зламалося — /problem, розберуся.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
+  fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n• 🛠 Quelque chose est cassé — /problem, je regarde.\n\nTout est dans le Guide :\n${o}/guide`,
+  es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n• 🛠 ¿Algo se rompió? — /problem, lo reviso.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
 };
 
 const LINK_WARN: Record<string, string> = {
@@ -928,6 +932,29 @@ export async function POST(req: NextRequest) {
           await sendMessage(cqChat, mdToTelegram(text) || "…", { reply_markup: mainKeyboard(lng, pct) });
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("pb:") && cqChat) {
+      // 🛠 «Сообщить о проблеме»: выбор типа → описание своими словами.
+      const act = data.slice(3);
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang, morning_prefs").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u) {
+          const uid = (u as any).id as string;
+          const lng = pickLang((u as any).lang);
+          const acqPct = normalizeMorningPrefs((u as any).morning_prefs).acquaintPct;
+          if ((PROBLEM_KINDS as readonly string[]).includes(act)) {
+            const text = await askProblemDetails(uid, lng, act as ProblemKind);
+            await sendMessage(cqChat, text, { reply_markup: { inline_keyboard: [[{ text: CANCEL_BTN[lng as keyof typeof CANCEL_BTN] || CANCEL_BTN.ru, callback_data: "pb:cancel" }]] } });
+          } else if (act === "more") {
+            const text = await reopenProblem(uid, lng);
+            await sendMessage(cqChat, text, { reply_markup: { inline_keyboard: [[{ text: CANCEL_BTN[lng as keyof typeof CANCEL_BTN] || CANCEL_BTN.ru, callback_data: "pb:cancel" }]] } });
+          } else if (act === "cancel") {
+            const text = await cancelProblem(uid, lng);
+            await sendMessage(cqChat, text, { reply_markup: mainKeyboard(lng, acqPct) });
+          }
+        }
+      } catch (e) { console.error("problem cb", e); await answerCallback(cq.id); }
     } else if (data.startsWith("day:") && cqChat) {
       // 🌙 «Помогу зафиксировать день»: пошаговый разбор сегодняшнего дня.
       // Вход — из вечернего пуша, из хаба и из ответа на ступор («не знаю, что писать»).
@@ -1438,6 +1465,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // 🛠 «Сообщить о проблеме»: /problem, /bug или живая фраза («бот завис», «баг»).
+  //    Открывается меню типов — дальше человек описывает своими словами или голосом.
+  if (typeof msg.text === "string" && (/^\/(problem|bug)\b/i.test(msg.text.trim()) || isProblemPhrase(msg.text))) {
+    // Если описание уже ждём — меню НЕ открываем заново: эта фраза и есть описание
+    // («бот завис вчера вечером» иначе гоняло бы человека по кругу).
+    if (!(await isAwaitingProblem(user.id))) {
+      const lang = langOf(user, msg);
+      const menu = problemMenu(lang);
+      await sendMessage(chatId, menu.text, {
+        reply_markup: { inline_keyboard: menu.kinds.map((k) => [{ text: k.label, callback_data: `pb:${k.key}` }]) },
+      });
+      return NextResponse.json({ ok: true });
+    }
+  }
+
   if (typeof msg.text === "string" && /^\/stop\b/i.test(msg.text.trim())) {
     const lang = langOf(user, msg);
     await setChatMode(user.id, false);
@@ -1713,6 +1755,22 @@ export async function POST(req: NextRequest) {
     // 📸 Фото/документ → «Визуальная память» (AI понимает смысл и извлекает данные)
     if (msg.photo && Array.isArray(msg.photo) && msg.photo.length) {
       const lang = langOf(user, msg);
+      // 🛠 Скриншот к обращению: если ждём описание проблемы, картинка идёт владельцу,
+      //    а не в дневник как воспоминание.
+      if (await isAwaitingProblem(user.id)) {
+        const ph = msg.photo[msg.photo.length - 1];
+        const ok = await attachScreenshot(user.id, lang, ph.file_id, { name: user.name });
+        await sendMessage(chatId, ok);
+        // Подпись к скриншоту, если она есть, засчитываем как описание проблемы.
+        const cap = String(msg.caption || "").trim();
+        if (cap.length >= 10) {
+          const res = await submitProblem(user.id, lang, cap, { name: user.name, username: (msg.from as any)?.username || null, chatId });
+          await sendMessage(chatId, res.text, res.ticket
+            ? { reply_markup: { inline_keyboard: [[{ text: MORE_BTN[lang as keyof typeof MORE_BTN] || MORE_BTN.ru, callback_data: "pb:more" }]] } }
+            : undefined);
+        }
+        return NextResponse.json({ ok: true });
+      }
       const L = MEM_MSG[lang] || MEM_MSG.ru;
       // 📚 Фото с подписью «книга/book» → в библиотеку (обложку или штрих-код читает AI).
       const bookMode = /книг|book|прочит|читаю|читаю/i.test(msg.caption || "");
@@ -1924,6 +1982,19 @@ export async function POST(req: NextRequest) {
 
     // 🌙 Разбор дня: пока идёт — ответы копятся в буфер, а не летят в дневник
     //    поштучно. Приоритетнее знакомства и чата: человек сам его только что включил.
+    // 🛠 Ждём описание проблемы — оно идёт владельцу, а НЕ в дневник.
+    if (!text.startsWith("/") && await isAwaitingProblem(user.id)) {
+      const lng = langOf(user, msg);
+      const res = await submitProblem(user.id, lng, text, {
+        name: user.name, username: (msg.from as any)?.username || null, chatId,
+      });
+      await sendMessage(chatId, res.text, res.ticket
+        ? { reply_markup: { inline_keyboard: [[{ text: MORE_BTN[lng as keyof typeof MORE_BTN] || MORE_BTN.ru, callback_data: "pb:more" }]] } }
+        : undefined);
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🌙 Разбор дня продолжается ниже.
     //    Команды (/stop, /save, …) режим НЕ перехватывает — они работают всегда.
     if (!text.startsWith("/") && await isDayCapturing(user.id)) {
       const lng = langOf(user, msg);
