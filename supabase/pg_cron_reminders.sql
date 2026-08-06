@@ -21,20 +21,31 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- Re-running the file should not create a second job.
-select cron.unschedule('lifeos-reminders')
-where exists (select 1 from cron.job where jobname = 'lifeos-reminders');
+-- Replace PUT_YOUR_REMINDER_KEY_HERE on the line below. Nothing else to edit.
+--
+-- The check exists because a forgotten placeholder installs a job that silently
+-- gets 401 every minute and delivers nothing — the failure looks exactly like
+-- success. Better to refuse loudly right here than to debug it an hour later.
+do $$
+declare
+  k text := 'PUT_YOUR_REMINDER_KEY_HERE';
+begin
+  if k = 'PUT_YOUR_REMINDER_KEY_HERE' or length(k) < 8 then
+    raise exception 'Сначала замени PUT_YOUR_REMINDER_KEY_HERE на значение переменной REMINDER_KEY из Vercel, потом запусти снова';
+  end if;
 
-select cron.schedule(
-  'lifeos-reminders',
-  '* * * * *',
-  $$
-    select net.http_get(
-      url := 'https://life-os.today/api/cron-reminders?key=PUT_YOUR_REMINDER_KEY_HERE',
-      timeout_milliseconds := 20000
-    );
-  $$
-);
+  -- Re-running the file should not create a second job.
+  if exists (select 1 from cron.job where jobname = 'lifeos-reminders') then
+    perform cron.unschedule('lifeos-reminders');
+  end if;
+
+  perform cron.schedule(
+    'lifeos-reminders',
+    '* * * * *',
+    format('select net.http_get(url := %L, timeout_milliseconds := 20000);',
+           'https://life-os.today/api/cron-reminders?key=' || k)
+  );
+end $$;
 
 -- Check it exists:            select jobname, schedule, active from cron.job;
 -- Check the last runs:        select status, return_message, start_time
