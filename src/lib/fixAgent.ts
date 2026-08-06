@@ -42,6 +42,22 @@ function allowedPath(p: string): boolean {
   return true;
 }
 
+// Имя ветки — только латиницей: кириллица в ref формально работает, но GitHub
+// ругается на «скрытые символы», а часть инструментов такие ветки не тянет.
+// Просто выбросить кириллицу нельзя — от русского заголовка не останется ничего,
+// и все ветки станут называться одинаково. Поэтому транслитерируем.
+const TRANSLIT: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i",
+  й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
+  у: "u", ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sch", ъ: "", ы: "y", ь: "",
+  э: "e", ю: "yu", я: "ya", і: "i", ї: "yi", є: "ye", ґ: "g",
+};
+
+export function branchSlug(title: string): string {
+  const latin = [...title.toLowerCase()].map((c) => (c in TRANSLIT ? TRANSLIT[c] : c)).join("");
+  return latin.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "") || "issue";
+}
+
 // ===== GitHub =====
 
 function gh(token: string) {
@@ -219,7 +235,7 @@ export async function prepareFix(issue: { title: string; note?: string | null })
     }
 
     // 5. Ветка, коммиты, PR.
-    const slug = issue.title.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 40) || "issue";
+    const slug = branchSlug(issue.title);
     const branch = `fix/${slug}-${baseSha.slice(0, 6)}`;
     try {
       await g.post(`/repos/${REPO}/git/refs`, { ref: `refs/heads/${branch}`, sha: baseSha });
