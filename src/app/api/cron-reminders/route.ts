@@ -16,7 +16,18 @@ export async function GET(req: NextRequest) {
   // потому что остальные секреты в Vercel помечены Sensitive: их значение нельзя
   // подсмотреть даже владельцу, а в задание планировщика ключ надо вписать руками.
   const okKey = !!key && (key === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.REMINDER_KEY && key === process.env.REMINDER_KEY));
-  if (!okBearer && !okKey) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!okBearer && !okKey) {
+    // Отказ должен объяснять себя: голое {"ok":false} не различает «переменной
+    // нет на проде» и «ключ не совпал», а это лечится по-разному. Значения не
+    // раскрываем — только факт наличия и длину, чтобы поймать лишний пробел.
+    return NextResponse.json({
+      ok: false,
+      error: "key rejected",
+      reminderKeyConfigured: !!process.env.REMINDER_KEY,
+      gotKeyLength: key ? key.length : 0,
+      expectedKeyLength: process.env.REMINDER_KEY ? process.env.REMINDER_KEY.length : 0,
+    }, { status: 401 });
+  }
 
   try {
     const stats = await deliverDueReminders();
