@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const key = req.nextUrl.searchParams.get("key");
   const okBearer = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
-  const okKey = !!key && key === process.env.TELEGRAM_WEBHOOK_SECRET;
+  // REMINDER_KEY — отдельный ключ для планировщика Supabase (pg_cron). Нужен свой,
+  // потому что остальные секреты в Vercel помечены Sensitive: их значение нельзя
+  // подсмотреть даже владельцу, а в задание планировщика ключ надо вписать руками.
+  const okKey = !!key && (key === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.REMINDER_KEY && key === process.env.REMINDER_KEY));
   if (!okBearer && !okKey) return NextResponse.json({ ok: false }, { status: 401 });
 
   try {
