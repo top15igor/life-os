@@ -7,7 +7,7 @@ import { archiveVoice } from "@/lib/voiceArchive";
 import { alreadyHandled } from "@/lib/tgDedupe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
-import { routeMessage, runAction, recentBotContext, renderListMessage } from "@/lib/botActions";
+import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
@@ -2164,7 +2164,12 @@ async function handleUpdate(req: NextRequest) {
     // уводит в askLife, и запись в базе не меняется (бот «поговорил», но не исправил).
     // Исправление имени человека — НЕ правка последней записи: пропускаем к роутеру,
     // у которого есть действие rename_person (правит имя во всей базе).
-    if (!forceSave && isCorrection(text) && !isNameCorrection(text)) {
+    // Но если прошлым ходом бот СДЕЛАЛ ДЕЙСТВИЕ (поставил напоминание, добавил
+    // задачу), то «измени дату на 7.08» относится к нему, а не к записи дневника.
+    // Без этой проверки просьба перенести напоминание уходила в правку записи:
+    // напоминание оставалось на старой дате, а в дневник дописывался выдуманный
+    // факт («сходил постричься», хотя стрижка ещё предстоит).
+    if (!forceSave && isCorrection(text) && !isNameCorrection(text) && !(await lastReplyWasAction(user.id))) {
       const amended = await amendLastEntry(user.id, text);
       if (amended) {
         const lang = langOf(user, msg);
