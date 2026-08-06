@@ -6,6 +6,10 @@ import { transcribeFile } from "@/lib/transcribe";
 import { logUsage } from "@/lib/usage";
 import { sendMessage } from "@/lib/telegram";
 import { deviceByToken, touchDevice, localStampFromEpoch, type Device } from "@/lib/devices";
+import { routeMessage, runAction } from "@/lib/botActions";
+import { askLife } from "@/lib/biographer";
+import { mdToTelegram } from "@/lib/telegram";
+import { logError } from "@/lib/errorLog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -118,32 +122,85 @@ export async function POST(req: NextRequest) {
   // Когда мысль была записана: брелок с офлайн-буфером заливает её позже.
   let stamp: { entry_date: string; entry_time: string } | null = null;
   let chatId: number | null = null;
+  let lang = "ru";
+  let tzOffset: number | null = null;
   // Двумя запросами нарочно: если колонки tz_offset нет, единый select падает
   // целиком и вместе с ним теряется chat_id — то есть и подтверждение в Telegram.
   try {
-    const { data: u } = await supabaseAdmin().from("users").select("chat_id").eq("id", device.user_id).maybeSingle();
+    const { data: u } = await supabaseAdmin().from("users").select("chat_id, lang").eq("id", device.user_id).maybeSingle();
     chatId = (u as any)?.chat_id ?? null;
+    if ((u as any)?.lang) lang = String((u as any).lang);
   } catch { /* нет пользователя — просто не подтверждаем */ }
+  try {
+    const { data: u } = await supabaseAdmin().from("users").select("tz_offset").eq("id", device.user_id).maybeSingle();
+    tzOffset = (u as any)?.tz_offset ?? null;
+    if (at) stamp = localStampFromEpoch(at, tzOffset);
+  } catch { /* нет колонки tz_offset — время по умолчанию */ }
+
+  // Что человек имел в виду: действие («напомни завтра про стрижку»), вопрос
+  // («что у меня сегодня?») или мысль в дневник. Раньше с устройства ВСЁ падало
+  // записью — сказанное в телефон вело себя не так, как сказанное боту, хотя
+  // человек не видит между ними разницы: он просто говорит.
+  //
+  // Порядок гарантий: если роутер недоступен или сбоит — сохраняем записью.
+  // Мысль, сказанная в телефон, не имеет права пропасть.
+  let entryId: string | null = null;
+  let kind: "entry" | "action" | "answer" = "entry";
+  let reply = "";
+
+  let route: any = null;
   if (at) {
+    // Офлайн-буфер брелка: запись сделана давно, а залилась сейчас. Ставить по
+    // ней напоминания и отвечать на вопросы поздно — это всегда запись в дневник.
+    route = { kind: "save_entry" };
+  } else {
     try {
-      const { data: u } = await supabaseAdmin().from("users").select("tz_offset").eq("id", device.user_id).maybeSingle();
-      stamp = localStampFromEpoch(at, (u as any)?.tz_offset);
-    } catch { /* нет колонки tz_offset — время по умолчанию */ }
+      route = await routeMessage(text, device.user_id, tzOffset);
+    } catch (e) {
+      await logError("device:route", e, { userId: device.user_id });
+    }
   }
 
-  let entryId: string | null = null;
-  try {
-    const analysis = await analyze(text, device.user_id);
-    const entry = await saveEntry({
-      userId: device.user_id,
-      raw_text: text,
-      source: "device",
-      analysis,
-      ...(stamp || {}),
-    });
-    entryId = entry.id;
-  } catch {
-    return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+  if (route?.kind === "action") {
+    try {
+      const res = await runAction(device.user_id, route.name, route.input, lang as any, tzOffset);
+      reply = res.html ? res.text : (mdToTelegram(res.text) || res.text);
+      for (const m of route.more || []) {
+        try {
+          const r = await runAction(device.user_id, m.name, m.input, lang as any, tzOffset);
+          reply += "\n" + (r.html ? r.text : (mdToTelegram(r.text) || r.text));
+        } catch { /* дополнительное действие не вышло — основное уже сделано */ }
+      }
+      kind = "action";
+    } catch (e) {
+      await logError("device:action", e, { userId: device.user_id });
+      route = null; // не вышло — падаем в запись, чтобы сказанное не потерялось
+    }
+  } else if (route?.kind === "question") {
+    try {
+      reply = mdToTelegram(await askLife(device.user_id, text, lang)) || "";
+      kind = "answer";
+    } catch (e) {
+      await logError("device:question", e, { userId: device.user_id });
+      route = null;
+    }
+  }
+
+  if (kind === "entry") {
+    try {
+      const analysis = await analyze(text, device.user_id);
+      const entry = await saveEntry({
+        userId: device.user_id,
+        raw_text: text,
+        source: "device",
+        analysis,
+        ...(stamp || {}),
+      });
+      entryId = entry.id;
+    } catch (e) {
+      await logError("device:save", e, { userId: device.user_id });
+      return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+    }
   }
 
   // Ждём оба: на Vercel функция замирает сразу после ответа, и «отправлю потом»
@@ -151,12 +208,15 @@ export async function POST(req: NextRequest) {
   await touchDevice(device.id, battery).catch(() => {});
 
   // Подтверждение в Telegram — чтобы ты видел, что мысль дошла и как её услышали.
+  // Если это было действие или вопрос, показываем и результат: иначе человек не
+  // узнает, поставилось ли напоминание, пока не откроет приложение.
   if (chatId) {
     const short = text.length > 400 ? text.slice(0, 400) + "…" : text;
-    await sendMessage(chatId, `🎙 ${deviceLabel(device)}: ${esc(short)}`).catch(() => {});
+    const head = `🎙 ${deviceLabel(device)}: ${esc(short)}`;
+    await sendMessage(chatId, reply ? `${head}\n\n${reply}` : head).catch(() => {});
   }
 
-  return NextResponse.json({ ok: true, text, id: entryId });
+  return NextResponse.json({ ok: true, text, kind, id: entryId });
 }
 
 // Проверка «работает ли мой токен» — прямо из браузера или из прошивки.
