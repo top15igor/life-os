@@ -313,7 +313,12 @@ async function saveRun(res: RunResult): Promise<{ prevFailed: number | null }> {
   const db = supabaseAdmin();
   let prevFailed: number | null = null;
   try {
-    const { data } = await db.from("selftest_runs").select("failed").order("started_at", { ascending: false }).limit(1).maybeSingle();
+    // Сравниваем ТОЛЬКО с прогоном того же режима. Иначе выходит качели: полный
+    // прогон (14 сценариев) находит слабый ответ, следующий лёгкий (7 сценариев,
+    // без проверок качества) рапортует «бот снова в порядке», и так по кругу —
+    // уведомления начинают врать и их перестают читать.
+    const { data } = await db.from("selftest_runs").select("failed")
+      .eq("mode", res.mode).order("started_at", { ascending: false }).limit(1).maybeSingle();
     if (data) prevFailed = Number((data as any).failed);
   } catch { /* таблицы нет — просто без истории */ }
   try {
