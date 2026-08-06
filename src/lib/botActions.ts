@@ -11,6 +11,7 @@ import { notesToText } from "./notesIO";
 import { sendRelay } from "./relay";
 import { birthdayISO, BDAY_UNKNOWN_YEAR } from "./birthday";
 import { ACTION_TAG } from "./botTags";
+import { logError } from "./errorLog";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -351,6 +352,7 @@ const M: Record<Lang, any> = {
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
     rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
     renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
+    renameUnclear: "Не понял, какое имя на какое поменять. Скажи прямо, например: «переименуй Эстелика в Эстелька».",
     open: "Открыть",
     mvKind: { film: "🎬 фильм", series: "📺 сериал", book: "📚 книгу" } as Record<string, string>,
     mvStatusWatch: { want: "хочу посмотреть", reading: "смотрю", read: "посмотрел" } as Record<string, string>,
@@ -377,6 +379,7 @@ const M: Record<Lang, any> = {
     fail: "Couldn't do it — try again a bit later.",
     rename: (a: string, b: string) => `✏️ Fixed: “${a}” → “${b}” — in people and insights.`,
     renameNone: (a: string) => `Couldn't find “${a}” in people or insights. How is the name written now?`,
+    renameUnclear: "I couldn't tell which name to change into which. Say it directly, e.g. “rename Estelika to Estelka”.",
     open: "Open",
     mvKind: { film: "🎬 film", series: "📺 series", book: "📚 book" } as Record<string, string>,
     mvStatusWatch: { want: "want to watch", reading: "watching", read: "watched" } as Record<string, string>,
@@ -403,6 +406,7 @@ const M: Record<Lang, any> = {
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
     rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
     renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
+    renameUnclear: "Не зрозумів, яке ім'я на яке змінити. Скажи прямо, наприклад: «перейменуй Естеліка в Естелька».",
     open: "Відкрити",
     mvKind: { film: "🎬 фільм", series: "📺 серіал", book: "📚 книгу" } as Record<string, string>,
     mvStatusWatch: { want: "хочу подивитися", reading: "дивлюся", read: "переглянув" } as Record<string, string>,
@@ -429,6 +433,7 @@ const M: Record<Lang, any> = {
     fail: "Échec — réessaie un peu plus tard.",
     rename: (a: string, b: string) => `✏️ Corrigé : « ${a} » → « ${b} » — dans les personnes et les insights.`,
     renameNone: (a: string) => `Je n'ai pas trouvé « ${a} ». Comment le nom est-il écrit actuellement ?`,
+    renameUnclear: "Je n'ai pas compris quel nom remplacer par quel autre. Dis-le directement, par exemple : « renomme Estelika en Estelka ».",
     open: "Ouvrir",
     mvKind: { film: "🎬 film", series: "📺 série", book: "📚 livre" } as Record<string, string>,
     mvStatusWatch: { want: "à voir", reading: "en cours", read: "vu" } as Record<string, string>,
@@ -900,7 +905,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
     if (name === "rename_person") {
       const from = String(input?.from || "").trim();
       const to = String(input?.to || "").trim();
-      if (!from || !to || normName(from) === normName(to)) return { text: s.fail };
+      // Раньше здесь было глухое «не получилось выполнить» — и человек, повторяя
+      // просьбу другими словами, четыре раза подряд получал одну и ту же стену.
+      // Ничего не сломалось: просто не видно, какое имя на какое менять.
+      if (!from || !to || normName(from) === normName(to)) return { text: (s as any).renameUnclear || s.fail };
 
       // 1) Человек в базе людей: переименовать (или слить со уже существующим правильным).
       let renamed = false;
@@ -992,7 +1000,9 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       return { text: s.delAsk(preview), confirmDelete: { entryId: row.id, preview } };
     }
   } catch (e) {
-    console.error("runAction", name, e);
+    // В журнал, а не только в консоль: «не получилось выполнить» — это то, что
+    // видит человек, и до сих пор причина такого ответа нигде не оседала.
+    await logError(`bot:action:${name}`, e, { userId });
     return { text: s.fail };
   }
   return { text: s.fail };
