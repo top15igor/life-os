@@ -35,6 +35,7 @@ import {
   cancelProblem, attachScreenshot, isProblemPhrase, PROBLEM_KINDS, MORE_BTN, CANCEL_BTN, type ProblemKind,
 } from "@/lib/problemReport";
 import { logError } from "@/lib/errorLog";
+import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
 import { syncBotCommands } from "@/lib/botCommands";
@@ -318,6 +319,15 @@ function acqMarkup(lang: string, chips?: { label: string; value: string }[], nav
   return { reply_markup: { inline_keyboard: rows } };
 }
 const acqInline = (lang: string) => acqMarkup(lang);
+
+// 💡 Если бот честно ответил «не умею» — предлагаем записать просьбу. Кнопка, а не
+// тихий сбор: содержимое переписки не уходит владельцу без явного тапа человека.
+async function gapMarkup(userId: string, request: string, reply: string, lang: string) {
+  if (!looksLikeRefusal(reply)) return undefined;
+  await rememberGap(userId, request);
+  const label = (WANT_BTN as any)[lang] || WANT_BTN.ru;
+  return { reply_markup: { inline_keyboard: [[{ text: label, callback_data: "cap:want" }]] } };
+}
 
 // Кнопки режима «Помогу зафиксировать день».
 // Фаза вопроса: быстрые ответы одним тапом + «Пропустить»/«Хватит, собери».
@@ -951,6 +961,18 @@ async function handleUpdate(req: NextRequest) {
           await sendMessage(cqChat, mdToTelegram(text) || "…", { reply_markup: mainKeyboard(lng, pct) });
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data === "cap:want" && cqChat) {
+      // 💡 «Хочу, чтобы умел»: просьба уходит владельцу — но только сейчас, по тапу.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, name, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u) {
+          const lng = pickLang((u as any).lang);
+          const text = await confirmGap((u as any).id, lng, (u as any).name ?? null);
+          await sendMessage(cqChat, text);
+        }
+      } catch (e) { await logError("bot:cap-want", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("pb:") && cqChat) {
       // 🛠 «Сообщить о проблеме»: выбор типа → описание своими словами.
       const act = data.slice(3);
@@ -2111,7 +2133,7 @@ async function handleUpdate(req: NextRequest) {
       await sendChatAction(chatId, "typing");
       try {
         const reply = await talkToCompanion(user.id, user.name ?? null, text, langOf(user, msg), (user as any).tz_offset);
-        await sendMessage(chatId, mdToTelegram(reply) || "…");
+        await sendMessage(chatId, mdToTelegram(reply) || "…", await gapMarkup(user.id, text, reply, langOf(user, msg)));
         // Джарвис отвечает голосом, если к нему обратились голосом.
         if (isVoice && reply) {
           await sendChatAction(chatId, "record_voice");
@@ -2205,7 +2227,7 @@ async function handleUpdate(req: NextRequest) {
         await sendChatAction(chatId, "typing");
         const ans = await askLife(user.id, text, langOf(user, msg));
         await saveChat(user.id, text, ans);
-        await sendMessage(chatId, mdToTelegram(ans) || "—");
+        await sendMessage(chatId, mdToTelegram(ans) || "—", await gapMarkup(user.id, text, ans, langOf(user, msg)));
         return NextResponse.json({ ok: true });
       }
     }

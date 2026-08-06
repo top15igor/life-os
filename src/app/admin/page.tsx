@@ -297,7 +297,7 @@ export default async function AdminPage() {
               {d.feedback.map((f: any, i: number) => (
                 <div key={i} className="card" style={{ padding: "11px 13px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 500 }}>{f.kind === "idea" ? "💡 Идея" : f.kind === "bug" ? "🐞 Проблема" : "💬 Отзыв"} · {f.name}</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 500 }}>{f.kind === "idea" ? "💡 Идея" : f.kind === "bug" ? "🐞 Проблема" : f.kind === "gap" ? "🙋 Бот не умеет" : "💬 Отзыв"} · {f.name}</span>
                     <span style={{ fontSize: 11.5, color: "var(--text-3)", whiteSpace: "nowrap" }}>{new Date(f.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</span>
                   </div>
                   <div style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{f.text}</div>

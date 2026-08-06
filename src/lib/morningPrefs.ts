@@ -45,6 +45,10 @@ export interface MorningPrefs {
   pbKind: string;             // выбранный тип проблемы ("" = не ждём описание)
   pbAt: string;               // ISO выбора типа — ожидание само сбрасывается через час
   pbTicket: string;           // номер последнего обращения (для кнопки «Добавить детали»)
+  // «Хочу, чтобы умел» (capabilityGap.ts): просьба, на которую бот ответил «не умею».
+  // Лежит в настройках самого человека и уходит владельцу ТОЛЬКО по тапу кнопки.
+  gapText: string;            // текст просьбы ("" = нечего записывать)
+  gapAt: string;              // ISO — просьба живёт сутки
   invitePromptedOn: string;   // дата последнего показа «Позвать друга» под записью ("" = не показывали)
   topics: MorningTopic[];
   length: MorningLength;      // длина утреннего сообщения
@@ -82,7 +86,7 @@ export const DEFAULT_WEEKLY_PREFS: WeeklyPrefs = { enabled: true, day: 0 };
 export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, acquaintAt: "",
   dayActive: false, dayMax: 3, dayAt: "", dayAsked: [], dayChips: [], dayAnswers: [], dayDraft: "", dayDate: "",
-  pbKind: "", pbAt: "", pbTicket: "",
+  pbKind: "", pbAt: "", pbTicket: "", gapText: "", gapAt: "",
   invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
   quietDays: [], weekly: { ...DEFAULT_WEEKLY_PREFS }, evening: { ...DEFAULT_EVENING_PREFS },
@@ -142,6 +146,8 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   const pbKind: string = typeof raw.pbKind === "string" ? raw.pbKind.slice(0, 20) : "";
   const pbAt: string = typeof raw.pbAt === "string" ? raw.pbAt.slice(0, 40) : "";
   const pbTicket: string = typeof raw.pbTicket === "string" ? raw.pbTicket.slice(0, 12) : "";
+  const gapText: string = typeof raw.gapText === "string" ? raw.gapText.slice(0, 500) : "";
+  const gapAt: string = typeof raw.gapAt === "string" ? raw.gapAt.slice(0, 40) : "";
   const invitePromptedOn: string = (typeof raw.invitePromptedOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.invitePromptedOn)) ? raw.invitePromptedOn : "";
   const topics: MorningTopic[] = Array.isArray(raw.topics) ? MORNING_TOPICS.filter((t) => raw.topics.includes(t)) : [...DEFAULT_MORNING_PREFS.topics];
   const length: MorningLength = MORNING_LENGTHS.includes(raw.length) ? raw.length : "normal";
@@ -157,7 +163,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   return {
     tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, acquaintAt,
     dayActive, dayMax, dayAt, dayAsked, dayChips, dayAnswers, dayDraft, dayDate,
-    pbKind, pbAt, pbTicket,
+    pbKind, pbAt, pbTicket, gapText, gapAt,
     invitePromptedOn, topics, length, address, tz, customStyle,
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
     worldNews: raw.worldNews !== false,
