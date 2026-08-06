@@ -49,6 +49,17 @@ const STR: Record<string, any> = {
       "Теперь дважды стукни по задней крышке айфона — начнётся диктовка. Телефон может лежать в кармане: доставать и разблокировать не надо.",
     ],
     phoneTip: "На iPhone 15 Pro и новее ту же команду удобнее повесить на «Кнопку действия» — Настройки → Кнопка действия → Команда.",
+    sayTitle: "Что можно говорить",
+    sayLead: "Устройство понимает всё то же, что и бот в переписке: он сам решает, мысль это, дело или трата. Говори обычными словами — формулировка не важна, важно только назвать время, если оно есть.",
+    sayRows: [
+      ["Мысль или идея", "«Пришла идея: сделать разбор дня голосом»", "Ляжет записью в дневник"],
+      ["Напоминание", "«Напомни завтра в 15:30 про стрижку, предупреди за час»", "Придёт в срок в Telegram"],
+      ["Задача без времени", "«Добавь задачу заказать воду»", "В «Цели и задачи»"],
+      ["Расход или доход", "«Потратил 500 на бензин»", "В «Деньги» и в дневник"],
+      ["Список покупок", "«Добавь в список покупок молоко и хлеб»", "В список"],
+      ["Вопрос", "«Что у меня сегодня?»", "Ответ придёт в Telegram"],
+    ],
+    sayTip: "Если сомневаешься — просто расскажи как есть. По умолчанию всё становится записью в дневнике, а не теряется.",
     watchTip: "Это тот же путь, что и на айфоне: команда одна, просто показывается ещё и на часах.",
     howFob: "Для своего брелка (железо)",
     fobLead: "Устройство шлёт запись одним запросом. Если интернета в этот момент нет — пусть сохранит у себя и отправит позже, а в параметре at укажет момент записи: мысль ляжет в дневник тем временем, когда ты её наговорил.",
@@ -91,6 +102,17 @@ const STR: Record<string, any> = {
       "Now double-tap the back of the iPhone and dictation starts. The phone can stay in your pocket — no need to take it out or unlock it.",
     ],
     phoneTip: "On iPhone 15 Pro and newer the Action Button is even handier — Settings → Action Button → Shortcut.",
+    sayTitle: "What you can say",
+    sayLead: "The device understands everything the bot does in chat: it decides on its own whether this is a thought, a to-do or an expense. Speak normally — wording doesn't matter, only naming the time when there is one.",
+    sayRows: [
+      ["A thought or idea", "“Idea: add a voice walk-through of the day”", "Lands as a diary entry"],
+      ["A reminder", "“Remind me tomorrow at 3:30pm about the haircut, warn me an hour before”", "Arrives on time in Telegram"],
+      ["A task with no time", "“Add a task: order water”", "Into Goals & tasks"],
+      ["Expense or income", "“Spent 500 on fuel”", "Into Money and the diary"],
+      ["Shopping list", "“Add milk and bread to the shopping list”", "Into the list"],
+      ["A question", "“What's on for me today?”", "The answer comes in Telegram"],
+    ],
+    sayTip: "When in doubt — just say it as it is. By default everything becomes a diary entry rather than getting lost.",
     watchTip: "It's the same path as on iPhone: one shortcut, it just also shows up on the watch.",
     howFob: "For your own keyfob (hardware)",
     fobLead: "The device sends a recording in a single request. With no connection at that moment it can store the clip and upload it later, passing at with the moment of recording — the entry lands in the diary at the time you actually spoke it.",
@@ -177,6 +199,23 @@ function DeviceCard({ d, s, locale, origin }: { d: Device; s: any; locale: strin
             {[...s.shortcutSteps, ...(d.kind === "watch" ? s.watchSteps : s.phoneSteps)].map((x: string, i: number) => <li key={i}>{x}</li>)}
           </ol>
           <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>{d.kind === "watch" ? s.watchTip : s.phoneTip}</div>
+
+          {/* Что говорить: без этого люди используют запись только как «дневник голосом»
+              и не догадываются, что тем же касанием ставится напоминание или трата. */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{s.sayTitle}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.55, marginBottom: 9 }}>{s.sayLead}</div>
+            <div style={{ display: "grid", gap: 7 }}>
+              {s.sayRows.map((r: string[], i: number) => (
+                <div key={i} style={{ background: "var(--surface-2)", borderRadius: 9, padding: "9px 11px" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 2 }}>{r[0]}</div>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.45 }}>{r[1]}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--accent)", marginTop: 2 }}>{r[2]}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginTop: 9 }}>{s.sayTip}</div>
+          </div>
         </div>
       ) : (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>

@@ -197,6 +197,17 @@ export async function POST(req: NextRequest) {
         ...(stamp || {}),
       });
       entryId = entry.id;
+      // Коротко про то, что бот вычленил из сказанного. Особенно важно для трат:
+      // без этой строки человек не понимает, учлась ли покупка, и идёт проверять
+      // в приложение — то есть ради этого и доставал телефон, которого не хотел.
+      const bits: string[] = [];
+      if ((entry as any).financeSaved > 0) {
+        bits.push(...(analysis.finance || []).slice(0, 3).map((f) =>
+          `${f.kind === "income" ? "💰 Доход" : "💸 Расход"}: ${f.amount}${f.currency ? " " + f.currency : ""}${f.category || f.note ? " · " + esc(String(f.category || f.note)) : ""}`));
+      }
+      if (analysis.tasks?.length) bits.push(`✅ Задач: ${analysis.tasks.length}`);
+      if (analysis.promises?.length) bits.push(`🤝 Обещаний: ${analysis.promises.length}`);
+      if (bits.length) reply = bits.join("\n");
     } catch (e) {
       await logError("device:save", e, { userId: device.user_id });
       return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
