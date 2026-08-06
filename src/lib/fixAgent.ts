@@ -18,7 +18,12 @@ const REPO = process.env.GITHUB_REPO || "top15igor/life-os";
 const API = "https://api.github.com";
 
 const MAX_FILES = 3;
-const MAX_FILE_BYTES = 120_000;
+// Читать можно и большие файлы: главный файл бота — 175 КБ, и именно в нём живёт
+// большинство багов. А вот ПЕРЕПИСЫВАТЬ такой файл целиком нельзя — ответ модели
+// оборвётся на середине и превратит рабочий код в мусор. Поэтому агент возвращает
+// не файл, а точечные замены «этот кусок → на этот».
+const MAX_FILE_BYTES = 400_000;
+const MIN_ANCHOR = 20; // слишком короткий кусок найдётся в файле десять раз
 
 let _client: Anthropic | null = null;
 const client = () => (_client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! }));
@@ -60,15 +65,23 @@ function gh(token: string) {
   };
 }
 
-async function readFile(token: string, path: string, ref: string): Promise<{ text: string; sha: string } | null> {
+// Без объединения типов: в проекте нестрогий TypeScript, и сужение по
+// discriminated union здесь не работает — компилятор не поймёт, какая половина.
+type ReadResult = { ok: boolean; text: string; sha: string; why: string };
+
+const readFail = (why: string): ReadResult => ({ ok: false, text: "", sha: "", why });
+
+async function readFile(token: string, path: string, ref: string): Promise<ReadResult> {
   try {
     const j: any = await gh(token).get(`/repos/${REPO}/contents/${encodeURI(path)}?ref=${encodeURIComponent(ref)}`);
-    if (!j?.content) return null;
+    if (!j?.content) return readFail(`${path}: файл пустой или недоступен`);
     const text = Buffer.from(j.content, "base64").toString("utf8");
-    if (text.length > MAX_FILE_BYTES) return null;
-    return { text, sha: j.sha };
-  } catch {
-    return null;
+    if (text.length > MAX_FILE_BYTES) {
+      return readFail(`${path}: слишком большой (${Math.round(text.length / 1024)} КБ, предел ${Math.round(MAX_FILE_BYTES / 1024)} КБ)`);
+    }
+    return { ok: true, text, sha: j.sha, why: "" };
+  } catch (e: any) {
+    return readFail(`${path}: ${String(e?.message || e).slice(0, 120)}`);
   }
 }
 
@@ -83,16 +96,24 @@ const PICK_SYS = `Ты — инженер, который по описанию 
 
 const FIX_SYS = `Ты — аккуратный инженер, который чинит один конкретный баг в работающем продукте. Продуктом пользуются живые люди прямо сейчас.
 
-ПРАВИЛА:
-— Минимальная правка. Чинишь ТОЛЬКО описанный баг, ничего не рефакторишь и не улучшаешь по дороге.
-— Если из данных не видно причины — НЕ выдумывай правку. Верни пустой files и объясни в summary, чего не хватает.
+Ты НЕ переписываешь файлы целиком. Ты возвращаешь точечные замены: кусок кода, который надо заменить, и то, на что его заменить.
+
+ПРАВИЛА ЗАМЕН:
+— В поле "old" — точная копия куска из файла, СИМВОЛ В СИМВОЛ, вместе с отступами и переносами строк. Любое расхождение — и замена не применится.
+— Кусок в "old" должен встречаться в файле РОВНО ОДИН РАЗ. Если строка не уникальна, захвати вокруг неё побольше контекста.
+— Кусок должен быть не короче 20 символов.
+— Меняй как можно меньше: не трогай строки, которые не относятся к багу.
+— Чтобы создать НОВЫЙ файл, верни замену с "old": "" и полным содержимым в "new".
+
+ПРАВИЛА ПРАВКИ:
+— Чинишь ТОЛЬКО описанный баг, ничего не рефакторишь и не улучшаешь по дороге.
+— Если из данных не видно причины — НЕ выдумывай правку. Верни пустой edits и объясни в summary, чего именно не хватает.
 — Сохраняй стиль файла: те же отступы, тот же язык комментариев, та же манера именования.
 — Комментарий пиши только там, где объясняет ПОЧЕМУ, а не что делает строка.
 — Не ломай публичные сигнатуры функций, если это не суть правки.
-— Для каждого изменённого файла верни его ПОЛНОЕ новое содержимое.
 
 Верни ТОЛЬКО JSON:
-{"summary":"что и почему изменено, 1-3 предложения","risk":"чем это может аукнуться и как проверить","files":[{"path":"src/...","content":"полное новое содержимое"}]}`;
+{"summary":"что и почему изменено, 1-3 предложения","risk":"чем это может аукнуться и как проверить","edits":[{"path":"src/...","old":"точный кусок из файла","new":"чем заменить"}]}`;
 
 async function askModel(system: string, prompt: string, maxTokens: number): Promise<any> {
   const models = ["claude-sonnet-5", "claude-sonnet-4-6"];
@@ -140,22 +161,56 @@ export async function prepareFix(issue: { title: string; note?: string | null })
 
     // 4. Читаем их и просим правку.
     const files: { path: string; text: string; sha: string }[] = [];
+    const skipped: string[] = [];
     for (const p of wanted) {
       const f = await readFile(token, p, base);
-      if (f) files.push({ path: p, text: f.text, sha: f.sha });
+      if (f.ok) files.push({ path: p, text: f.text, sha: f.sha });
+      else skipped.push(f.why);
     }
-    if (!files.length) return { ok: false, error: "файлы не читаются (слишком большие или их нет)" };
+    if (!files.length) return { ok: false, error: `не удалось прочитать файлы — ${skipped.join("; ")}` };
 
     const body = files.map((f) => `=== ${f.path} ===\n${f.text}`).join("\n\n");
-    const fix = await askModel(FIX_SYS, `ПРОБЛЕМА:\n${description}\n\nФАЙЛЫ:\n\n${body}`, 16000);
-    const changed: { path: string; content: string }[] = (Array.isArray(fix?.files) ? fix.files : [])
-      .filter((f: any) => f && typeof f.path === "string" && typeof f.content === "string" && allowedPath(f.path))
-      .slice(0, MAX_FILES);
+    const fix = await askModel(FIX_SYS, `ПРОБЛЕМА:\n${description}\n\nФАЙЛЫ:\n\n${body}`, 8000);
+
+    const edits: { path: string; old: string; new: string }[] = (Array.isArray(fix?.edits) ? fix.edits : [])
+      .filter((e: any) => e && typeof e.path === "string" && typeof e.old === "string" && typeof e.new === "string" && allowedPath(e.path));
 
     const summary = String(fix?.summary || "").slice(0, 1000);
-    if (!changed.length) return { ok: false, error: `агент не стал менять код: ${summary || "причина не установлена по имеющимся данным"}` };
+    if (!edits.length) return { ok: false, error: `агент не стал менять код: ${summary || "причина не установлена по имеющимся данным"}` };
 
-    // Подозрительно пустой результат — верный признак, что модель «съела» файл.
+    // Применяем замены к тексту файлов. Каждый кусок обязан найтись ровно один
+    // раз: не нашёлся — модель придумала код, которого нет; нашёлся дважды —
+    // непонятно, какое из мест чинить. И то и другое лучше отклонить, чем
+    // угадывать и молча испортить рабочий файл.
+    const edited = new Map<string, string>();
+    for (const e of edits) {
+      if (e.old === "") {
+        // Создание нового файла — только если такого ещё нет.
+        if (files.some((f) => f.path === e.path) || edited.has(e.path)) {
+          return { ok: false, error: `агент пытается создать файл ${e.path}, который уже существует` };
+        }
+        if (!e.new.trim()) return { ok: false, error: `пустое содержимое нового файла ${e.path}` };
+        edited.set(e.path, e.new);
+        continue;
+      }
+      if (e.old.length < MIN_ANCHOR) {
+        return { ok: false, error: `слишком короткий кусок для замены в ${e.path} — по нему нельзя понять место однозначно` };
+      }
+      const current = edited.get(e.path) ?? files.find((f) => f.path === e.path)?.text;
+      if (current === undefined) return { ok: false, error: `агент правит файл ${e.path}, которого не читал` };
+      const first = current.indexOf(e.old);
+      if (first === -1) {
+        return { ok: false, error: `в файле ${e.path} нет куска, который агент собрался заменить — правка отклонена` };
+      }
+      if (current.indexOf(e.old, first + 1) !== -1) {
+        return { ok: false, error: `кусок для замены встречается в ${e.path} несколько раз — непонятно, какое место чинить` };
+      }
+      edited.set(e.path, current.slice(0, first) + e.new + current.slice(first + e.old.length));
+    }
+
+    const changed = [...edited.entries()].map(([path, content]) => ({ path, content })).slice(0, MAX_FILES);
+
+    // Страховка от потери содержимого: точечные замены не могут вдвое укоротить файл.
     for (const c of changed) {
       const before = files.find((f) => f.path === c.path);
       if (before && c.content.length < before.text.length * 0.5) {
