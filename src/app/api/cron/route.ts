@@ -14,7 +14,7 @@ import { bookPromptMessage } from "@/lib/bookPrompts";
 import { personalEvening } from "@/lib/eveningPersonal";
 import { getAnticipation } from "@/lib/anticipation";
 import { normalizeMorningPrefs } from "@/lib/morningPrefs";
-import { eveningQuestion } from "@/lib/dailyQuestions";
+import { eveningQuestion, eveningQuestionPick } from "@/lib/dailyQuestions";
 import { START_BTN as DAY_START_BTN } from "@/lib/dayCapture";
 import { localParts } from "@/lib/pushSchedule";
 import { peopleDigestMessage } from "@/lib/peopleCrm";
@@ -568,7 +568,7 @@ export async function GET(req: NextRequest) {
         if (ev.enabled && isBookQuestionDay && !isWeeklyDay) {
           try {
             const q = await personalEvening(u.id, lang, prefs);
-            if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; bookFired = true; }
+            if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q.question)); logPush(u.id, "evening", { question: q.question, qKey: q.key, qSource: q.source }).catch(() => {}); stats.bookQuestions++; bookFired = true; }
           } catch (e) { console.error("book prompt active", u.id, e); }
         }
         // Иначе — мягкий вопрос про настроение (только если сегодня нет сигнала).
@@ -598,7 +598,9 @@ export async function GET(req: NextRequest) {
         // Активные — мягкое напоминание; если серия жива (писал вчера) — мотивируем не разорвать.
         if (gap === 1 && streak >= 2) {
           if (prefs.remindersEnabled !== false) {
-            await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eveningQuestion(lang, doy), dayHelpBtn(lang));
+            const eq = eveningQuestionPick(lang, doy);
+            await sendMessage(u.chat_id, m.reminderStreak(streak) + "\n\n" + eq.text, dayHelpBtn(lang));
+            logPush(u.id, "evening", { question: eq.text, qKey: eq.key, qSource: "daily" }).catch(() => {});
             stats.streakReminders++;
           }
         } else {
@@ -607,10 +609,15 @@ export async function GET(req: NextRequest) {
           if (ev.enabled && isBookQuestionDay) {
             try {
               const q = await personalEvening(u.id, lang, prefs);
-              if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q)); logPush(u.id, "evening").catch(() => {}); stats.bookQuestions++; asked = true; }
+              if (q) { await sendMessage(u.chat_id, bookPromptMessage(lang, q.question)); logPush(u.id, "evening", { question: q.question, qKey: q.key, qSource: q.source }).catch(() => {}); stats.bookQuestions++; asked = true; }
             } catch (e) { console.error("book prompt", u.id, e); }
           }
-          if (!asked && prefs.remindersEnabled !== false) { await sendMessage(u.chat_id, m.reminder + "\n\n" + eveningQuestion(lang, doy), dayHelpBtn(lang)); stats.reminders++; }
+          if (!asked && prefs.remindersEnabled !== false) {
+            const eq = eveningQuestionPick(lang, doy);
+            await sendMessage(u.chat_id, m.reminder + "\n\n" + eq.text, dayHelpBtn(lang));
+            logPush(u.id, "evening", { question: eq.text, qKey: eq.key, qSource: "daily" }).catch(() => {});
+            stats.reminders++;
+          }
         }
       } else if (m.back[gap]) {
         // Разнесённый возврат — только на 3/7/14/30 день тишины, дальше не беспокоим.

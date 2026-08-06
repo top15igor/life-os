@@ -111,3 +111,13 @@ export function morningQuestion(lang: string, seed: number): string {
 export function eveningQuestion(lang: string, seed: number): string {
   return pick(EVENING[(lang as Lang)] || EVENING.ru, seed);
 }
+
+// Тот же вопрос, но со стабильным ключом — по нему недельный агент-редактор
+// считает, на какие вопросы люди отвечают, а какие молча пролистывают.
+// Ключ не зависит от языка: одна и та же формулировка на пяти языках — один
+// вопрос, и статистику по нему честнее считать вместе.
+export function eveningQuestionPick(lang: string, seed: number): { text: string; key: string } {
+  const list = EVENING[(lang as Lang)] || EVENING.ru;
+  const i = ((Math.floor(seed) % list.length) + list.length) % list.length;
+  return { text: list[i], key: `daily:${i}` };
+}

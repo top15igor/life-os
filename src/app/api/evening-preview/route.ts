@@ -20,6 +20,6 @@ export async function POST(req: NextRequest) {
   const lang = pickLang(body?.locale);
 
   const q = await personalEvening(user.id, lang, prefs);
-  const text = q ? bookPromptMessage(lang, q) : "—";
+  const text = q ? bookPromptMessage(lang, q.question) : "—";
   return NextResponse.json({ ok: true, text });
 }

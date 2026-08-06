@@ -17,6 +17,7 @@ on:
     - cron: "*/15 * * * *" # лёгкий прогон каждые 15 минут
     - cron: "7 */6 * * *"  # полный прогон раз в 6 часов
     - cron: "20 6 * * *"   # утренний разбор: что сломалось за сутки
+    - cron: "40 7 * * 1"   # понедельник: разбор вопросов бота — что работает, что нет
   workflow_dispatch:
     inputs:
       mode:
@@ -27,7 +28,7 @@ on:
 jobs:
   selftest:
     runs-on: ubuntu-latest
-    if: github.event.schedule != '20 6 * * *'
+    if: github.event.schedule != '20 6 * * *' && github.event.schedule != '40 7 * * 1'
     steps:
       - name: Run self-test
         run: |
@@ -51,6 +52,19 @@ jobs:
       - name: Daily diagnosis
         run: |
           curl -fsS --max-time 300 "${APP_URL}/api/diagnose?key=${CRON_SECRET}&hours=24"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  # Агент-редактор вопросов: раз в неделю смотрит, на какие вечерние вопросы люди
+  # отвечают, а какие пролистывают, и кладёт предложения на одобрение в админку.
+  questions:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '40 7 * * 1'
+    steps:
+      - name: Weekly question review
+        run: |
+          curl -fsS --max-time 300 "${APP_URL}/api/question-coach?key=${CRON_SECRET}&days=60"
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

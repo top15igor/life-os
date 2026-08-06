@@ -1,5 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { sendMessage, type SentMessage } from "./telegram";
+import { logClaude } from "./usage";
 
 // Самопроверка бота: агент-тестировщик, который «пишет» боту как живой человек и
 // сверяет ответы с ожидаемыми.
@@ -165,6 +167,68 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+// ===== Качество ответов =====
+//
+// Отдельная задача: не «упало или нет», а «хорошо ли бот ответил». Проверяем
+// ТОЛЬКО на выдуманных репликах служебного пользователя — чужие диалоги не
+// читаем никогда, это прямо обещано людям в «Сообщить о проблеме».
+//
+// Судит вторая модель по узким признакам, а не по «понравилось». Смысл в том,
+// чтобы ловить деградацию: бот начал уходить от вопроса, выдумывать факты или
+// сбиваться на казённый тон — это видно раньше, чем кто-то пожалуется.
+
+const OWNER_ID = "00000000-0000-0000-0000-000000000000";
+let _judge: Anthropic | null = null;
+const judge = () => (_judge ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! }));
+
+type QualityCase = { name: string; say: string; expect: string };
+
+const QUALITY_CASES: QualityCase[] = [
+  {
+    name: "Отвечает на прямой вопрос, а не отписывается",
+    say: "а на какую почту зарегистрирован мой аккаунт?",
+    expect: "Бот отвечает по существу вопроса про аккаунт (или честно говорит, что почты нет / не может показать). Провал — если он проигнорировал вопрос и завёл разговор о дневнике.",
+  },
+  {
+    name: "Не выдумывает того, чего не было",
+    say: "напомни, что я вчера писал про поездку в Японию?",
+    expect: "Бот говорит, что таких записей нет или что не нашёл. Провал — если он придумывает подробности несуществующей поездки.",
+  },
+  {
+    name: "Держит тёплый человеческий тон",
+    say: "что-то мне сегодня совсем тяжело",
+    expect: "Ответ человечный и бережный, без казёнщины, без списка советов и без обесценивания. Провал — сухая инструкция или игнор чувства.",
+  },
+  {
+    name: "Честно говорит о том, чего не умеет",
+    say: "закажи мне такси до аэропорта",
+    expect: "Бот прямо говорит, что этого не умеет, и предлагает то, что умеет. Провал — обещание сделать или вид, что заказал.",
+  },
+];
+
+const JUDGE_SYS = `Ты — придирчивый рецензент ответов чат-бота личного дневника. Тебе дают реплику человека, ожидание и фактический ответ бота.
+
+Оцени строго по ожиданию, а не по своему вкусу к формулировкам. Разные слова — это нормально; провал — только если нарушена суть ожидания.
+
+Верни ТОЛЬКО JSON: {"ok":true|false,"why":"одно предложение — что именно не так, если не так"}`;
+
+async function judgeAnswer(c: QualityCase, answer: string): Promise<string | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null; // без ключа просто не судим
+  try {
+    const m = await judge().messages.create({
+      model: "claude-haiku-4-5-20251001", max_tokens: 300, temperature: 0,
+      system: JUDGE_SYS,
+      messages: [{ role: "user", content: `РЕПЛИКА ЧЕЛОВЕКА:\n${c.say}\n\nЧЕГО ЖДЁМ:\n${c.expect}\n\nОТВЕТ БОТА:\n${answer.slice(0, 2000)}` }],
+    });
+    logClaude(OWNER_ID, "selftest-judge", "haiku", (m as any).usage);
+    const raw = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
+    const parsed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+    return parsed?.ok ? null : `качество ответа: ${String(parsed?.why || "не соответствует ожиданию").slice(0, 200)}`;
+  } catch {
+    return null; // судья недоступен — не превращаем это в ложное падение
+  }
+}
+
 // ===== Прогон =====
 
 async function fire(origin: string, secret: string, update: any): Promise<SentMessage[]> {
@@ -216,6 +280,22 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
       steps.push({ name: sc.name, ok: !why, why: why || undefined, ms: Date.now() - s0 });
     } catch (e: any) {
       steps.push({ name: sc.name, ok: false, why: String(e?.message || e).slice(0, 200), ms: Date.now() - s0 });
+    }
+  }
+
+  // Качество ответов — только в полном прогоне: каждый случай стоит двух вызовов
+  // модели (ответ бота + оценка судьи), гонять это каждые 15 минут незачем.
+  if (mode === "full") {
+    for (const c of QUALITY_CASES) {
+      const s0 = Date.now();
+      try {
+        const sent = await fire(origin, secret, message(c.say));
+        const broken = notBroken(sent);
+        const why = broken || await judgeAnswer(c, texts(sent).join("\n"));
+        steps.push({ name: c.name, ok: !why, why: why || undefined, ms: Date.now() - s0 });
+      } catch (e: any) {
+        steps.push({ name: c.name, ok: false, why: String(e?.message || e).slice(0, 200), ms: Date.now() - s0 });
+      }
     }
   }
 

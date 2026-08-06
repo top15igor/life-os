@@ -199,6 +199,14 @@ export default async function AdminPage() {
             </div>
             <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
           </Link>
+          <Link href="/admin/questions" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
+            <i className="ti ti-message-question" style={{ fontSize: 24, color: "var(--accent)" }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--accent-text)" }}>Вопросы бота</div>
+              <div style={{ fontSize: 12.5, color: "var(--text-2)" }}>Отклик на вечерние вопросы и предложения агента-редактора — одобрить одним тапом</div>
+            </div>
+            <i className="ti ti-arrow-right" style={{ color: "var(--accent)", fontSize: 18 }} />
+          </Link>
           <Link href="/admin/pmf" className="card" style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--accent-bg)", border: "1px solid var(--accent)" }}>
             <i className="ti ti-target-arrow" style={{ fontSize: 24, color: "var(--accent)" }} />
             <div style={{ flex: 1 }}>

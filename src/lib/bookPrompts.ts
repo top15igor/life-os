@@ -262,7 +262,7 @@ export async function getBookPrompt(
   locale: string,
   seed: number,
   opts?: { themes?: Theme[]; customPrompts?: string[] }
-): Promise<{ theme: Theme; title: string; question: string } | null> {
+): Promise<{ theme: Theme; title: string; question: string; key: string; source: string } | null> {
   const l = loc(locale);
   const year = new Date().getFullYear();
   const counts: Record<string, number> = {};
@@ -289,11 +289,25 @@ export async function getBookPrompt(
   const thin = totals.filter((x) => x.n === min).map((x) => x.t);
   const theme = thin[Math.abs(seed) % thin.length];
 
-  // Свои подсказки пользователя подмешиваем в пул выбранной темы.
+  // Пул темы: вопросы из кода + свои подсказки пользователя + одобренные владельцем
+  // вопросы из банка в базе. Банк нужен, чтобы удачный вопрос от недельного
+  // агента-редактора попадал к людям сразу, без выкатки новой версии.
   const custom = (opts?.customPrompts || []).filter(Boolean);
-  const candidates = [...QUESTIONS[l][theme], ...custom];
-  const question = candidates[Math.abs(seed) % candidates.length];
-  return { theme, title: TITLES[l][theme], question };
+  let fromBank: { text: string; id: string }[] = [];
+  try {
+    const { data } = await supabaseAdmin()
+      .from("question_bank").select("id, text")
+      .eq("lang", l).eq("theme", theme).eq("active", true).limit(50);
+    fromBank = ((data as any[]) || []).map((r) => ({ text: String(r.text), id: String(r.id) })).filter((r) => r.text);
+  } catch { /* нет таблицы — работаем на вопросах из кода */ }
+
+  const candidates: { text: string; key: string; source: string }[] = [
+    ...QUESTIONS[l][theme].map((q, i) => ({ text: q, key: `${theme}:${i}`, source: "bank" })),
+    ...custom.map((q, i) => ({ text: q, key: `custom:${i}`, source: "custom" })),
+    ...fromBank.map((r) => ({ text: r.text, key: `db:${r.id.slice(0, 8)}`, source: "db" })),
+  ];
+  const pickd = candidates[Math.abs(seed) % candidates.length];
+  return { theme, title: TITLES[l][theme], question: pickd.text, key: pickd.key, source: pickd.source };
 }
 
 // Текст вопроса-пуша для Telegram-бота.

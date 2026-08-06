@@ -1316,7 +1316,15 @@ async function handleUpdate(req: NextRequest) {
   const link = `${origin}/u/${user.token}`;
 
   // Пользователь что-то прислал → засчитываем отклик на недавние пуши (аналитика).
-  markPushResponded(user.id).catch(() => {});
+  // Длину ответа передаём как меру вовлечённости: по ней агент-редактор отличает
+  // вопрос, на который отвечают абзацем, от того, на который бросают «норм».
+  // Голосовые считаем по длительности (текста расшифровки здесь ещё нет).
+  {
+    const replyLen = typeof msg.text === "string"
+      ? msg.text.trim().length
+      : (msg.voice?.duration ? msg.voice.duration * 15 : 0); // ~15 символов речи в секунду
+    markPushResponded(user.id, replyLen).catch(() => {});
+  }
 
   if (msg.text === "/start" || (typeof msg.text === "string" && msg.text.startsWith("/start "))) {
     const lang = langOf(user, msg);

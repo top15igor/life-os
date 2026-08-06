@@ -7,12 +7,17 @@ import type { MorningPrefs } from "./morningPrefs";
 // Вечерний «вопрос для книги». По умолчанию — из банка (по самой тонкой главе
 // и темам/подсказкам пользователя). Если включён режим AI — генерируем тёплый
 // личный вопрос под эту тему. Возвращает текст вопроса или null.
-export async function personalEvening(userId: string, lang: string, prefs: MorningPrefs): Promise<string | null> {
+// Возвращает вопрос вместе с ключом и источником: по ним недельный агент-редактор
+// считает отклик и понимает, что именно работает — вопрос из банка, свой вопрос
+// пользователя или сгенерированный AI.
+export type EveningPick = { question: string; key: string; source: string };
+
+export async function personalEvening(userId: string, lang: string, prefs: MorningPrefs): Promise<EveningPick | null> {
   const seed = Math.floor(Date.now() / 86400000);
   const bp = await getBookPrompt(userId, lang, seed, { themes: prefs.evening.themes, customPrompts: prefs.evening.customPrompts });
   if (!bp) return null;
   // Не AI (или нет ключа) → банковый/кастомный вопрос как есть.
-  if (!prefs.evening.ai || !process.env.ANTHROPIC_API_KEY) return bp.question;
+  if (!prefs.evening.ai || !process.env.ANTHROPIC_API_KEY) return { question: bp.question, key: bp.key, source: bp.source };
 
   try {
     const db = supabaseAdmin();
@@ -36,9 +41,12 @@ ${recent}`;
     });
     logClaude(userId, "evening", "haiku", (m as any).usage);
     const text = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
-    return text || bp.question;
+    // Ключ AI-вопроса — по теме: сами формулировки каждый раз новые, и считать
+    // отклик по ним поштучно бессмысленно. Зато видно, работает ли AI-режим
+    // в принципе и на каких темах.
+    return text ? { question: text, key: `ai:${bp.theme}`, source: "ai" } : { question: bp.question, key: bp.key, source: bp.source };
   } catch (e) {
     console.error("personalEvening", userId, e);
-    return bp.question; // фолбэк на банковый вопрос
+    return { question: bp.question, key: bp.key, source: bp.source }; // фолбэк на банковый вопрос
   }
 }
