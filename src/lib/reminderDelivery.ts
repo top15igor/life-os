@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { sendMessage } from "./telegram";
 import { userTzOffsetMin } from "./pushSchedule";
+import { logError } from "./errorLog";
 
 // Доставка напоминаний ботом точно в срок. До этого напоминание уведомляло
 // только через Google Календарь (если подключён) — без него «напомни в 9»
@@ -69,20 +70,32 @@ const isRepeating = (r?: string | null) =>
   !!r && (["daily", "weekly", "monthly", "yearly"].includes(r) || !!parseHourly(r));
 
 // Пройти по просроченным неотправленным напоминаниям и доставить их в Telegram.
-export async function deliverDueReminders(): Promise<{ sent: number; rolled: number; expired: number; skipped: number }> {
+export async function deliverDueReminders(): Promise<{ sent: number; rolled: number; expired: number; skipped: number; error?: string }> {
   const db = supabaseAdmin();
   const now = Date.now();
-  const stats = { sent: 0, rolled: 0, expired: 0, skipped: 0 };
+  const stats: { sent: number; rolled: number; expired: number; skipped: number; error?: string } = { sent: 0, rolled: 0, expired: 0, skipped: 0 };
 
   // Запас 24ч: всё, что старше, считаем пропущенным окном (например, накопилось
   // до включения доставки) — гасим без рассылки, чтобы не бомбить людей старьём.
-  const { data: rows } = await db
+  const { data: rows, error } = await db
     .from("reminders")
     .select("id, user_id, text, due_at, recurrence, all_day, remind_min, done, notified_at")
     .eq("done", false)
     .is("notified_at", null)
     .lte("due_at", new Date(now + 60 * 60000).toISOString()) // с запасом: remind_min может сдвинуть раньше
     .limit(300);
+
+  // Раньше ошибка запроса выглядела как «просто нечего слать»: колонки notified_at
+  // нет — выборка падает, rows пустой, доставка молча делает вид, что всё хорошо.
+  // Напоминания при этом не приходят вообще, и понять это можно только вручную.
+  if (error) {
+    const why = String((error as any)?.message || error).slice(0, 300);
+    stats.error = /notified_at/.test(why)
+      ? `не применён supabase/reminders_notify.sql — колонки notified_at нет (${why})`
+      : why;
+    await logError("cron:reminders", error, { detail: stats.error });
+    return stats;
+  }
   if (!rows?.length) return stats;
 
   const userIds = [...new Set(rows.map((r: any) => r.user_id))];

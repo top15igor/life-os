@@ -167,6 +167,42 @@ const SCENARIOS: Scenario[] = [
   },
 ];
 
+// ===== Готовность базы =====
+//
+// Самая коварная поломка этого проекта: миграция не применена, код мягко
+// деградирует — и фича молча не работает. Так пропали напоминания (нет колонки
+// notified_at → выборка падает → «слать нечего»). Снаружи всё выглядит здоровым.
+// Поэтому проверяем прямо: есть ли то, на что код рассчитывает.
+
+const SCHEMA_CHECKS: { table: string; column?: string; sql: string; why: string }[] = [
+  { table: "reminders", column: "notified_at", sql: "reminders_notify.sql", why: "напоминания не доставляются вообще" },
+  { table: "tg_updates", sql: "tg_updates.sql", why: "длинное голосовое может сохраниться дважды" },
+  { table: "feedback", sql: "feedback.sql", why: "жалобы из /problem не сохраняются" },
+  { table: "error_log", sql: "error_log.sql", why: "сбои не пишутся, диагносту нечего читать" },
+  { table: "selftest_runs", sql: "selftest.sql", why: "нет истории самопроверки" },
+  { table: "push_log", column: "question", sql: "question_quality.sql", why: "не считается отклик на вопросы" },
+];
+
+async function checkSchema(): Promise<StepResult[]> {
+  const db = supabaseAdmin();
+  const out: StepResult[] = [];
+  for (const c of SCHEMA_CHECKS) {
+    const t0 = Date.now();
+    try {
+      const { error } = await db.from(c.table).select(c.column ? `id, ${c.column}` : "*").limit(1);
+      out.push({
+        name: `База готова: ${c.sql}`,
+        ok: !error,
+        why: error ? `не применён supabase/${c.sql} — ${c.why}` : undefined,
+        ms: Date.now() - t0,
+      });
+    } catch (e: any) {
+      out.push({ name: `База готова: ${c.sql}`, ok: false, why: `не применён supabase/${c.sql} — ${c.why}`, ms: Date.now() - t0 });
+    }
+  }
+  return out;
+}
+
 // ===== Качество ответов =====
 //
 // Отдельная задача: не «упало или нет», а «хорошо ли бот ответил». Проверяем
@@ -283,6 +319,10 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
     }
   }
 
+  // Готовность базы — в любом режиме: проверка дешёвая, а цена пропущенной
+  // миграции высокая (у людей молча не работает целая фича).
+  steps.push(...await checkSchema());
+
   // Качество ответов — только в полном прогоне: каждый случай стоит двух вызовов
   // модели (ответ бота + оценка судьи), гонять это каждые 15 минут незачем.
   if (mode === "full") {
@@ -309,17 +349,21 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
 
 // Пишем прогон в базу (если применён selftest.sql) и возвращаем прошлый результат —
 // по нему решаем, когда писать владельцу: при поломке и при восстановлении.
-async function saveRun(res: RunResult): Promise<{ prevFailed: number | null }> {
+async function saveRun(res: RunResult): Promise<{ prevFailed: number | null; prevNames: string[] }> {
   const db = supabaseAdmin();
   let prevFailed: number | null = null;
+  let prevNames: string[] = [];
   try {
     // Сравниваем ТОЛЬКО с прогоном того же режима. Иначе выходит качели: полный
     // прогон (14 сценариев) находит слабый ответ, следующий лёгкий (7 сценариев,
     // без проверок качества) рапортует «бот снова в порядке», и так по кругу —
     // уведомления начинают врать и их перестают читать.
-    const { data } = await db.from("selftest_runs").select("failed")
+    const { data } = await db.from("selftest_runs").select("failed, failures")
       .eq("mode", res.mode).order("started_at", { ascending: false }).limit(1).maybeSingle();
-    if (data) prevFailed = Number((data as any).failed);
+    if (data) {
+      prevFailed = Number((data as any).failed);
+      prevNames = (((data as any).failures as any[]) || []).map((f) => String(f?.name || "")).sort();
+    }
   } catch { /* таблицы нет — просто без истории */ }
   try {
     await db.from("selftest_runs").insert({
@@ -327,15 +371,22 @@ async function saveRun(res: RunResult): Promise<{ prevFailed: number | null }> {
       failures: res.steps.filter((s) => !s.ok).map((s) => ({ name: s.name, why: s.why })),
     });
   } catch { /* таблицы нет — не мешаем прогону */ }
-  return { prevFailed };
+  return { prevFailed, prevNames };
 }
 
 export async function reportSelftest(res: RunResult): Promise<{ alerted: boolean }> {
-  const { prevFailed } = await saveRun(res);
+  const { prevFailed, prevNames } = await saveRun(res);
   const owner = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
   if (!owner) return { alerted: false };
 
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Пишем только когда картина ИЗМЕНИЛАСЬ. Иначе один незакрытый баг слал бы
+  // одно и то же сообщение каждые 15 минут — и уведомления перестали бы читать
+  // ровно тогда, когда сломается что-то новое.
+  const names = res.steps.filter((s) => !s.ok).map((s) => s.name).sort();
+  const sameAsBefore = prevFailed !== null && prevFailed > 0 && names.join("|") === prevNames.join("|");
+  if (res.failed > 0 && sameAsBefore) return { alerted: false };
 
   if (res.failed > 0) {
     const lines = res.steps.filter((s) => !s.ok).map((s) => `• <b>${esc(s.name)}</b>\n  ${esc(s.why || "")}`);
