@@ -312,6 +312,26 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
 // Нормализация имени для сравнения (регистр, ё→е, пробелы).
 const normName = (x: string) => (x || "").toLowerCase().replace(/ё/g, "е").trim();
 
+// Слова-команды: в поиске напоминания/задачи они только мешают. «Отмени все
+// напоминания про воду» — искать надо «воду», а не «отмени» и «напоминания».
+const SEARCH_STOP = new Set([
+  "отмени", "отменить", "убери", "убрать", "удали", "удалить", "сними", "снять", "все", "всё", "про", "напоминание",
+  "напоминания", "напоминаний", "напомни", "перенеси", "перенести", "измени", "изменить", "сдвинь", "поставь",
+  "скасуй", "скасувати", "прибери", "видали", "усі", "нагадування", "перенеси", "зміни",
+  "cancel", "delete", "remove", "all", "the", "reminder", "reminders", "move", "reschedule", "change",
+  "annule", "supprime", "tous", "rappel", "rappels", "cancela", "elimina", "todos", "recordatorio", "recordatorios",
+]);
+
+// Основа слова для нестрогого поиска. Четыре буквы — слишком грубо для русского:
+// «воду» и «воды» расходятся ровно на четвёртой, и напоминание не находится.
+// Поэтому у коротких слов отрезаем ещё одну букву — падежное окончание.
+function searchStems(q: string): string[] {
+  return normName(q)
+    .split(/[^a-zа-яіїєґ0-9]+/i)
+    .filter((w) => w.length >= 3 && !SEARCH_STOP.has(w))
+    .map((w) => w.slice(0, w.length <= 4 ? 3 : 4));
+}
+
 const escRx = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Заменить имя в тексте с учётом падежных окончаний: если оба имени кончаются
@@ -651,7 +671,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!q) return { text: L.notFound };
       const key = normListKey(input?.list);
       const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
-      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const stems = searchStems(q);
       const { data, error } = await db.from("list_items").select("id, text").eq("user_id", userId).eq("list", key).eq("done", false).limit(100);
       if (error) return { text: s.fail };
       const hit = ((data || []) as any[])
@@ -720,7 +740,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         return { text: `${N.ovHead(total)}\n${lines.join("\n")}${tail}`, openNext: "/notes" };
       }
       const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
-      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const stems = searchStems(q);
       const { data: rows, error } = await db.from("notes").select("text, created_at")
         .eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
       if (error) return { text: N.none };
@@ -780,7 +800,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const A = AGENDA_MSG[lang] || AGENDA_MSG.ru;
       if (!q) return { text: A.cancelNone };
       const norm = (x: string) => x.toLowerCase().replace(/ё/g, "е");
-      const stems = norm(q).split(/[^a-zа-я0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+      const stems = searchStems(q);
       const { data: rems } = await db.from("reminders").select("id, text, due_at")
         .eq("user_id", userId).eq("done", false)
         .gte("due_at", new Date(Date.now() - 86400000).toISOString())
@@ -822,7 +842,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       let target = list[0]; // последнее созданное
       if (q) {
         const norm = (x: string) => x.toLowerCase().replace(/\u0451/g, "\u0435");
-        const stems = norm(q).split(/[^a-z\u0430-\u044f0-9]+/i).filter((w) => w.length >= 3).map((w) => w.slice(0, 4));
+        const stems = searchStems(q);
         const scored = list
           .map((r) => ({ r, score: stems.filter((st) => norm(String(r.text)).includes(st)).length }))
           .filter((x) => x.score > 0)
