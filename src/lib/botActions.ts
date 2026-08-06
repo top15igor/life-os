@@ -948,7 +948,9 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // 3) «Мой след»: поле «кому помог».
       try { await db.from("good_deeds").update({ person: to }).eq("user_id", userId).ilike("person", from); } catch {}
 
-      if (!renamed && !fixed) return { text: s.renameNone(from) };
+      // Имя показываем с заглавной: модель нередко отдаёт его в нижнем регистре,
+      // и «не нашёл „естелика"» выглядит неряшливо там, где речь о живом человеке.
+      if (!renamed && !fixed) return { text: s.renameNone(from.charAt(0).toUpperCase() + from.slice(1)) };
       return { text: s.rename(from, to), openNext: "/people" };
     }
     if (name === "ask_knowledge") {
