@@ -199,7 +199,7 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
-  "Просьба ИЗМЕНИТЬ уже созданное напоминание («перенеси», «измени дату», «не в 9, а в 11», «сдвинь на час») → move_reminder, а НЕ set_reminder и НЕ правка записи дневника. " +
+  "Просьба ИЗМЕНИТЬ ВРЕМЯ уже созданного напоминания → move_reminder. Сюда же любые поправки времени: «перенеси», «измени дату», «не в 9, а в 11», «давай не в 9 утра, а в 9.30», «ошибся, надо на час позже», «сдвинь на завтра». Это НЕ cancel_reminder (человек не просит убрать напоминание — он просит другое время) и НЕ set_reminder (новое заводить не нужно). " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
   "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
   "«Передай/скажи/напиши <кому> …» (сообщение ДРУГОМУ человеку) → send_message. Ты УМЕЕШЬ это: бот доставит сообщение получателю в его чат. Никогда не отвечай «я не могу написать другому человеку». " +
@@ -478,23 +478,23 @@ const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: st
 // Строки для «что у меня сегодня/завтра» и «отмени напоминание».
 const AGENDA_MSG: Record<Lang, {
   head: Record<string, string>; empty: Record<string, string>;
-  allDay: string; taskTag: string; moved: (t: string, d: string, tm: string) => string; canceled: (t: string) => string; canceledMany: (n: number) => string; cancelNone: string; cancelMany: string;
+  allDay: string; taskTag: string; moved: (t: string, d: string, tm: string) => string; canceled: (t: string) => string; canceledMany: (n: number) => string; cancelNone: string; cancelSame: (n: number, t: string) => string; cancelMany: string;
 }> = {
   ru: { head: { today: "📅 Сегодня", tomorrow: "📅 Завтра", week: "📅 Ближайшая неделя", all: "📅 Ближайшие планы" },
     empty: { today: "На сегодня напоминаний и задач с датой нет — день свободен 🙂", tomorrow: "На завтра пока ничего не запланировано.", week: "На этой неделе напоминаний нет.", all: "Ближайших напоминаний нет." },
-    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Перенёс: «${t}» — ${d} в ${tm}.`, canceled: (t) => `Отменил напоминание: «${t}».`, canceledMany: (n) => `Отменил напоминания: ${n}.`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
+    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Перенёс: «${t}» — ${d} в ${tm}.`, canceled: (t) => `Отменил напоминание: «${t}».`, canceledMany: (n) => `Отменил напоминания: ${n}.`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelSame: (n: number, t: string) => `Нашёл ${n} одинаковых напоминания «${t}» — их не различить. Сказать «отмени все» — сниму разом.`, cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
   en: { head: { today: "📅 Today", tomorrow: "📅 Tomorrow", week: "📅 This week", all: "📅 Upcoming" },
     empty: { today: "No reminders or dated tasks today — the day is free 🙂", tomorrow: "Nothing planned for tomorrow yet.", week: "No reminders this week.", all: "No upcoming reminders." },
-    allDay: "all day", taskTag: "task", moved: (t: string, d: string, tm: string) => `⏰ Moved: “${t}” — ${d} at ${tm}.`, canceled: (t) => `Canceled the reminder: “${t}”.`, canceledMany: (n) => `Canceled ${n} reminders.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelMany: "Found several similar ones — which should I cancel?" },
+    allDay: "all day", taskTag: "task", moved: (t: string, d: string, tm: string) => `⏰ Moved: “${t}” — ${d} at ${tm}.`, canceled: (t) => `Canceled the reminder: “${t}”.`, canceledMany: (n) => `Canceled ${n} reminders.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelSame: (n: number, t: string) => `Found ${n} identical reminders “${t}” — there's no telling them apart. Say “cancel all” and I'll remove them together.`, cancelMany: "Found several similar ones — which should I cancel?" },
   uk: { head: { today: "📅 Сьогодні", tomorrow: "📅 Завтра", week: "📅 Найближчий тиждень", all: "📅 Найближчі плани" },
     empty: { today: "На сьогодні нагадувань і задач із датою немає — день вільний 🙂", tomorrow: "На завтра поки нічого не заплановано.", week: "На цьому тижні нагадувань немає.", all: "Найближчих нагадувань немає." },
-    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Переніс: «${t}» — ${d} о ${tm}.`, canceled: (t) => `Скасував нагадування: «${t}».`, canceledMany: (n) => `Скасував нагадування: ${n}.`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
+    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Переніс: «${t}» — ${d} о ${tm}.`, canceled: (t) => `Скасував нагадування: «${t}».`, canceledMany: (n) => `Скасував нагадування: ${n}.`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelSame: (n: number, t: string) => `Знайшов ${n} однакових нагадування «${t}» — їх не розрізнити. Скажи «скасуй усі» — зніму разом.`, cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
   fr: { head: { today: "📅 Aujourd'hui", tomorrow: "📅 Demain", week: "📅 Cette semaine", all: "📅 À venir" },
     empty: { today: "Aucun rappel ni tâche datée aujourd'hui — journée libre 🙂", tomorrow: "Rien de prévu pour demain.", week: "Aucun rappel cette semaine.", all: "Aucun rappel à venir." },
-    allDay: "toute la journée", taskTag: "tâche", moved: (t: string, d: string, tm: string) => `⏰ Déplacé : « ${t} » — ${d} à ${tm}.`, canceled: (t) => `Rappel annulé : « ${t} ».`, canceledMany: (n) => `${n} rappels annulés.`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
+    allDay: "toute la journée", taskTag: "tâche", moved: (t: string, d: string, tm: string) => `⏰ Déplacé : « ${t} » — ${d} à ${tm}.`, canceled: (t) => `Rappel annulé : « ${t} ».`, canceledMany: (n) => `${n} rappels annulés.`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelSame: (n: number, t: string) => `J'ai trouvé ${n} rappels identiques « ${t} » — impossible de les distinguer. Dis « annule tout » et je les enlève ensemble.`, cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
   es: { head: { today: "📅 Hoy", tomorrow: "📅 Mañana", week: "📅 Esta semana", all: "📅 Próximos" },
     empty: { today: "Hoy no hay recordatorios ni tareas con fecha — día libre 🙂", tomorrow: "Nada planeado para mañana todavía.", week: "No hay recordatorios esta semana.", all: "No hay próximos recordatorios." },
-    allDay: "todo el día", taskTag: "tarea", moved: (t: string, d: string, tm: string) => `⏰ Movido: «${t}» — ${d} a las ${tm}.`, canceled: (t) => `Cancelé el recordatorio: «${t}».`, canceledMany: (n) => `Cancelé ${n} recordatorios.`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
+    allDay: "todo el día", taskTag: "tarea", moved: (t: string, d: string, tm: string) => `⏰ Movido: «${t}» — ${d} a las ${tm}.`, canceled: (t) => `Cancelé el recordatorio: «${t}».`, canceledMany: (n) => `Cancelé ${n} recordatorios.`, cancelNone: "No encontré ese recordatorio entre los próximos.", cancelSame: (n: number, t: string) => `Encontré ${n} recordatorios idénticos «${t}» — no hay forma de distinguirlos. Di «cancela todos» y los quito juntos.`, cancelMany: "Encontré varios parecidos — ¿cuál cancelo?" },
 };
 
 // Строки для заметок (save_note / find_note).
@@ -798,6 +798,11 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         return { text: A.canceledMany(ids.length), openNext: "/reminders" };
       }
       if (top.length > 1) {
+        // Если все найденные называются одинаково, «уточни, какое» — тупик:
+        // человек различает их не лучше бота. Честнее сказать, сколько их,
+        // и предложить снять все разом.
+        const sameName = new Set(top.map((x) => String(x.r.text).trim().toLowerCase())).size === 1;
+        if (sameName) return { text: (A as any).cancelSame(top.length, String(top[0].r.text).slice(0, 100)) };
         return { text: `${A.cancelMany}\n${top.slice(0, 3).map((x) => `• ${String(x.r.text).slice(0, 100)}`).join("\n")}` };
       }
       const ok = await deleteReminder(userId, scored[0].r.id);
@@ -823,10 +828,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
           .filter((x) => x.score > 0)
           .sort((a, b) => b.score - a.score);
         if (!scored.length) return { text: A.cancelNone };
-        const top = scored.filter((x) => x.score === scored[0].score);
-        if (top.length > 1) {
-          return { text: `${A.cancelMany}\n${top.slice(0, 3).map((x) => `\u2022 ${String(x.r.text).slice(0, 100)}`).join("\n")}` };
-        }
+        // Уточняющий вопрос имеет смысл, только если человек СМОЖЕТ выбрать.
+        // Три одинаковых «выпить стакан воды» не различит никто — такой вопрос
+        // тупик. Берём самое свежее (список отсортирован по created_at) и прямо
+        // говорим в подтверждении, что именно перенесли.
         target = scored[0].r;
       }
 
