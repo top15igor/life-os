@@ -13,7 +13,7 @@
 --  BEFORE RUNNING:
 --   1. In Vercel add env var  REMINDER_KEY  with a value YOU invent
 --      (any long random string, e.g. r7k2-life-os-9x4m). Redeploy.
---   2. Replace PUT_YOUR_REMINDER_KEY_HERE below with that same value.
+--   2. Replace ВСТАВЬ_КЛЮЧ_СЮДА below with that same value.
 --
 --  Run in Supabase: SQL Editor -> New query -> paste -> Run. Idempotent.
 -- ============================================================
@@ -21,17 +21,18 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- Replace PUT_YOUR_REMINDER_KEY_HERE on the line below. Nothing else to edit.
+-- Replace ВСТАВЬ_КЛЮЧ_СЮДА on the line below. Nothing else to edit.
 --
 -- The check exists because a forgotten placeholder installs a job that silently
 -- gets 401 every minute and delivers nothing — the failure looks exactly like
 -- success. Better to refuse loudly right here than to debug it an hour later.
 do $$
 declare
-  k text := 'PUT_YOUR_REMINDER_KEY_HERE';
+  k text := 'ВСТАВЬ_КЛЮЧ_СЮДА';
 begin
-  if k = 'PUT_YOUR_REMINDER_KEY_HERE' or length(k) < 8 then
-    raise exception 'Сначала замени PUT_YOUR_REMINDER_KEY_HERE на значение переменной REMINDER_KEY из Vercel, потом запусти снова';
+  -- Placeholder is Cyrillic and the real key is not: one place to edit, no ambiguity.
+  if length(k) < 8 or k ~ '[А-яЁё]' then
+    raise exception 'Сначала замени ВСТАВЬ_КЛЮЧ_СЮДА на значение переменной REMINDER_KEY из Vercel, потом запусти снова';
   end if;
 
   -- Re-running the file should not create a second job.
