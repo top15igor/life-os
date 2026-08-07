@@ -1132,6 +1132,34 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("del2:") && cqChat) {
+      // Выбор кнопкой, что именно убрать: задачу, заметку или цель.
+      const [, kindKey, itemId] = data.split(":");
+      const TBL: Record<string, { table: string; field: string }> = {
+        t: { table: "tasks", field: "text" },
+        n: { table: "notes", field: "text" },
+        g: { table: "goals", field: "title" },
+      };
+      const cfg = TBL[kindKey];
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const R = REM_CB[lng] || REM_CB.ru;
+        if (u && cfg && /^[0-9a-f-]{16,}$/i.test(itemId || "")) {
+          const { data: item } = await db.from(cfg.table).select(`id, ${cfg.field}`).eq("id", itemId).eq("user_id", (u as any).id).maybeSingle();
+          if (item) {
+            await db.from(cfg.table).delete().eq("id", itemId).eq("user_id", (u as any).id);
+            await answerCallback(cq.id, R.canceled);
+            if (mid) await editMessageText(cqChat, mid, `🗑 ${esc(String((item as any)[cfg.field] || "").slice(0, 150))}`);
+          } else {
+            await answerCallback(cq.id, R.gone);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch (e) { await logError("bot:del2", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("remdel:") && cqChat) {
       // Выбор из нескольких похожих напоминаний при отмене — один тап вместо
       // переписки. Раньше бот спрашивал списком, человек отвечал текстом, ответ

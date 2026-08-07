@@ -40,6 +40,20 @@ type Scenario = {
 
 // Маркер тестовой записи: по нему проверяем, что мысль реально легла в дневник.
 const ENTRY_MARK = "набережной";
+// Тестовая задача: заводим её командой и следом убираем командой же.
+const TASK_MARK = "заказать воду для самопроверки";
+
+async function testTaskExists(): Promise<boolean> {
+  try {
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+    if (!(u as any)?.id) return false;
+    const { data } = await db.from("tasks").select("id").eq("user_id", (u as any).id).ilike("text", `%${TASK_MARK}%`).limit(1);
+    return (((data as any[]) || []).length > 0);
+  } catch {
+    return false;
+  }
+}
 
 // ===== Помощники для сборки обновлений =====
 
@@ -158,6 +172,22 @@ const SCENARIOS: Scenario[] = [
       const { data } = await db.from("entries").select("id").eq("user_id", id).ilike("raw_text", `%${ENTRY_MARK}%`).limit(1);
       return ((data as any[]) || []).length ? null : "бот ответил, но записи в дневнике нет";
     },
+  },
+  {
+    name: "Команда «добавь задачу» заводит задачу",
+    heavy: true,
+    send: () => message(`добавь задачу ${TASK_MARK}`),
+    check: (sent) => notBroken(sent),
+    verifyDb: async () => (await testTaskExists()) ? null : "задача не появилась в базе",
+  },
+  {
+    name: "Команда «убери задачу» действительно её убирает",
+    heavy: true,
+    send: () => message(`убери задачу ${TASK_MARK}`),
+    check: (sent) => notBroken(sent),
+    // Именно тут раньше был провал: удаления задач не существовало, и бот в
+    // лучшем случае помечал её выполненной — то есть делал не то, о чём просят.
+    verifyDb: async () => (await testTaskExists()) ? "задача осталась в базе — «убери» не сработало" : null,
   },
   {
     name: "«Что у меня сегодня?» отвечает",
@@ -312,7 +342,7 @@ async function cleanup(): Promise<void> {
   const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
   const id = (u as any)?.id;
   if (!id) return;
-  for (const t of ["entries", "reminders", "companion_messages", "feedback"]) {
+  for (const t of ["entries", "reminders", "companion_messages", "feedback", "tasks", "notes", "goals"]) {
     try { await db.from(t).delete().eq("user_id", id); } catch { /* таблицы может не быть */ }
   }
   // Сбрасываем ведущие режимы, чтобы следующий прогон стартовал с чистого листа.

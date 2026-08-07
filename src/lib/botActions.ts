@@ -177,6 +177,19 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   {
+    name: "delete_item",
+    description:
+      "УБРАТЬ/УДАЛИТЬ задачу, заметку или цель: «убери задачу купить воду», «удали заметку про пароль», «убери цель про английский», «сотри задачу…», «мне это больше не нужно». kind — что именно: task | note | goal. query — слова для поиска. ВАЖНО: «отметь задачу выполненной», «сделал» — это complete_task, а не удаление; напоминания удаляет cancel_reminder; последнюю запись дневника — delete_last_entry.",
+    input_schema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["task", "note", "goal"], description: "task — задача, note — заметка, goal — цель" },
+        query: { type: "string", description: "слова для поиска того, что убрать" },
+      },
+      required: ["kind", "query"],
+    },
+  },
+  {
     name: "set_pushes",
     description:
       "Включить, выключить или перенести СООБЩЕНИЯ БОТА ПО РАСПИСАНИЮ. Примеры: «пиши мне каждое утро», «пиши в 7 утра», «не пиши по утрам», «не пиши мне пока», «не трогай меня по выходным», «не присылай вечерние вопросы», «хватит напоминать записать день», «не шли недельный итог», «включи всё обратно». Это НЕ set_style: тот меняет МАНЕРУ речи, а здесь включается и выключается сама отправка. Заполняй только те поля, о которых человек сказал.",
@@ -216,6 +229,7 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
+  "«Убери/удали задачу», «удали заметку», «убери цель» → delete_item с нужным kind. Не путать: «сделал», «отметь выполненной» → complete_task; «отмени напоминание» → cancel_reminder. "
   "«Пиши мне по утрам», «не пиши», «не трогай по выходным», «хватит вечерних вопросов», «пиши в 7» → set_pushes (это включение/выключение РАССЫЛКИ, а не манера речи и не напоминание). "
   "Просьба ИЗМЕНИТЬ ВРЕМЯ уже созданного напоминания → move_reminder. Сюда же любые поправки времени: «перенеси», «измени дату», «не в 9, а в 11», «давай не в 9 утра, а в 9.30», «ошибся, надо на час позже», «сдвинь на завтра». Это НЕ cancel_reminder (человек не просит убрать напоминание — он просит другое время) и НЕ set_reminder (новое заводить не нужно). " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
@@ -388,6 +402,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    del: { task: "задачу", note: "заметку", goal: "цель", unclear: "Не понял, что убрать. Скажи, например: «убери задачу заказать воду».", none: (l: string) => `Не нашёл такую ${l} — возможно, она называется иначе.`, which: (l: string) => `Нашёл несколько. Какую ${l} убрать?`, done: (l: string, t: string) => `🗑 Убрал ${l}: «${t}».` },
     push: { morning: "утренние сообщения", evening: "вечерние вопросы", reminders: "напоминание записать день", weekly: "недельный итог", quiet: "тихие дни", on: "включил", off: "выключил", at: (h: number) => `утро в ${h}:00`, none: "Ничего не понял про рассылку — скажи, например: «не пиши мне по утрам».", saved: (p: string) => `⚙️ Готово: ${p}. Изменить можно в любой момент — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
     renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
@@ -416,6 +431,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    del: { task: "task", note: "note", goal: "goal", unclear: "I didn\u2019t catch what to remove. Say something like \u201cdelete the task order water\u201d.", none: (l: string) => `Couldn\u2019t find that ${l} \u2014 maybe it\u2019s worded differently.`, which: (l: string) => `Found several. Which ${l} should I remove?`, done: (l: string, t: string) => `\ud83d\uddd1 Removed the ${l}: \u201c${t}\u201d.` },
     push: { morning: "morning messages", evening: "evening questions", reminders: "the nudge to write your day", weekly: "the weekly recap", quiet: "quiet days", on: "on", off: "off", at: (h: number) => `morning at ${h}:00`, none: "I didn\u2019t catch what to change \u2014 say something like \u201cdon\u2019t write to me in the mornings\u201d.", saved: (p: string) => `\u2699\ufe0f Done: ${p}. You can change it anytime \u2014 just say so.` },
     rename: (a: string, b: string) => `✏️ Fixed: “${a}” → “${b}” — in people and insights.`,
     renameNone: (a: string) => `Couldn't find “${a}” in people or insights. How is the name written now?`,
@@ -444,6 +460,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    del: { task: "завдання", note: "нотатку", goal: "ціль", unclear: "Не зрозумів, що прибрати. Скажи, наприклад: «прибери завдання замовити воду».", none: (l: string) => `Не знайшов таке — можливо, названо інакше.`, which: (l: string) => `Знайшов кілька. Що саме прибрати?`, done: (l: string, t: string) => `🗑 Прибрав: «${t}».` },
     push: { morning: "ранкові повідомлення", evening: "вечірні питання", reminders: "нагадування записати день", weekly: "тижневий підсумок", quiet: "тихі дні", on: "увімкнув", off: "вимкнув", at: (h: number) => `ранок о ${h}:00`, none: "Не зрозумів, що змінити — скажи, наприклад: «не пиши мені зранку».", saved: (p: string) => `⚙️ Готово: ${p}. Змінити можна будь-коли — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
     renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
@@ -472,6 +489,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    del: { task: "t\u00e2che", note: "note", goal: "objectif", unclear: "Je n\u2019ai pas compris quoi supprimer. Dis par exemple \u00ab supprime la t\u00e2che commander de l\u2019eau \u00bb.", none: (l: string) => `Je n\u2019ai pas trouv\u00e9 ce ${l}.`, which: (l: string) => `J\u2019en ai trouv\u00e9 plusieurs. Lequel supprimer ?`, done: (l: string, t: string) => `\ud83d\uddd1 Supprim\u00e9 : \u00ab ${t} \u00bb.` },
     push: { morning: "les messages du matin", evening: "les questions du soir", reminders: "le rappel d\u2019\u00e9crire ta journ\u00e9e", weekly: "le bilan hebdo", quiet: "les jours silencieux", on: "activ\u00e9", off: "d\u00e9sactiv\u00e9", at: (h: number) => `matin \u00e0 ${h}h`, none: "Je n\u2019ai pas compris quoi changer \u2014 dis par exemple \u00ab ne m\u2019\u00e9cris pas le matin \u00bb.", saved: (p: string) => `\u2699\ufe0f C\u2019est fait : ${p}. Modifiable \u00e0 tout moment \u2014 dis-le simplement.` },
     rename: (a: string, b: string) => `✏️ Corrigé : « ${a} » → « ${b} » — dans les personnes et les insights.`,
     renameNone: (a: string) => `Je n'ai pas trouvé « ${a} ». Comment le nom est-il écrit actuellement ?`,
@@ -500,6 +518,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    del: { task: "tarea", note: "nota", goal: "objetivo", unclear: "No entend\u00ed qu\u00e9 quitar. Di por ejemplo \u00abelimina la tarea pedir agua\u00bb.", none: (l: string) => `No encontr\u00e9 esa ${l}.`, which: (l: string) => `Encontr\u00e9 varias. \u00bfCu\u00e1l ${l} quito?`, done: (l: string, t: string) => `\ud83d\uddd1 Quit\u00e9 la ${l}: \u00ab${t}\u00bb.` },
     push: { morning: "los mensajes de la ma\u00f1ana", evening: "las preguntas de la noche", reminders: "el recordatorio de escribir tu d\u00eda", weekly: "el resumen semanal", quiet: "los d\u00edas en silencio", on: "activado", off: "desactivado", at: (h: number) => `ma\u00f1ana a las ${h}:00`, none: "No entend\u00ed qu\u00e9 cambiar \u2014 di algo como \u00abno me escribas por las ma\u00f1anas\u00bb.", saved: (p: string) => `\u2699\ufe0f Listo: ${p}. Puedes cambiarlo cuando quieras \u2014 solo d\u00edmelo.` },
     open: "Abrir",
     mvKind: { film: "🎬 película", series: "📺 serie", book: "📚 libro" } as Record<string, string>,
@@ -1034,6 +1053,47 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const created = (data as any)?.created_at ? String((data as any).created_at).slice(0, 10) : null;
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
+    }
+    if (name === "delete_item") {
+      // «Убери задачу», «удали заметку», «убери цель». До этого удалять бот умел
+      // только напоминания и последнюю запись: на «убери задачу» он в лучшем
+      // случае помечал её выполненной — то есть делал не то, о чём просили.
+      const D = (s as any).del;
+      const kind = String(input?.kind || "").trim();
+      const q = String(input?.query || "").trim();
+      const cfg: Record<string, { table: string; field: string; label: string; open: string }> = {
+        task: { table: "tasks", field: "text", label: D.task, open: "/goals?tab=tasks" },
+        note: { table: "notes", field: "text", label: D.note, open: "/notes" },
+        goal: { table: "goals", field: "title", label: D.goal, open: "/goals" },
+      };
+      const c = cfg[kind];
+      if (!c || !q) return { text: D.unclear };
+
+      const { data: rows, error } = await db.from(c.table).select(`id, ${c.field}`).eq("user_id", userId).limit(300);
+      if (error) return { text: s.fail };
+      const list = ((rows || []) as any[]).filter((r) => String(r[c.field] || "").trim());
+      if (!list.length) return { text: D.none(c.label) };
+
+      const stems = searchStems(q);
+      const scored = list
+        .map((r) => ({ r, score: stems.filter((st) => normName(String(r[c.field])).includes(st)).length }))
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+      if (!scored.length) return { text: D.none(c.label) };
+
+      const top = scored.filter((x) => x.score === scored[0].score);
+      if (top.length > 1) {
+        // Тот же принцип, что и с напоминаниями: выбор кнопкой, а не перепиской.
+        const rowsKb = top.slice(0, 5).map((x) => [{
+          text: `❌ ${String(x.r[c.field]).slice(0, 45)}`,
+          callback_data: `del2:${kind[0]}:${x.r.id}`,
+        }]);
+        return { text: D.which(c.label), markup: { inline_keyboard: rowsKb } };
+      }
+
+      const { error: delErr } = await db.from(c.table).delete().eq("id", top[0].r.id).eq("user_id", userId);
+      if (delErr) return { text: s.fail };
+      return { text: D.done(c.label, String(top[0].r[c.field]).slice(0, 120)), openNext: c.open };
     }
     if (name === "set_pushes") {
       // Включение/выключение рассылки. До этого такого действия не было вовсе:
