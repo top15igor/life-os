@@ -176,6 +176,23 @@ export const ACTION_TOOLS: any[] = [
       "Пользователь просит ИЗМЕНИТЬ МАНЕРУ ОБЩЕНИЯ бота или содержание его сообщений: «пиши короче», «меньше эмодзи», «без пафоса», «обращайся на вы», «не называй меня…», «не пиши мне про…», «хватит спрашивать про…», «пиши по-украински». Пожелание СОХРАНЯЕТСЯ и реально влияет на будущие сообщения (утренние и чат). wish — суть пожелания одной короткой фразой-инструкцией.",
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
+  {
+    name: "set_pushes",
+    description:
+      "Включить, выключить или перенести СООБЩЕНИЯ БОТА ПО РАСПИСАНИЮ. Примеры: «пиши мне каждое утро», «пиши в 7 утра», «не пиши по утрам», «не пиши мне пока», «не трогай меня по выходным», «не присылай вечерние вопросы», «хватит напоминать записать день», «не шли недельный итог», «включи всё обратно». Это НЕ set_style: тот меняет МАНЕРУ речи, а здесь включается и выключается сама отправка. Заполняй только те поля, о которых человек сказал.",
+    input_schema: {
+      type: "object",
+      properties: {
+        morning: { type: "boolean", description: "утренние сообщения вкл/выкл" },
+        morning_hour: { type: "number", description: "час утреннего сообщения по местному времени, 0-23" },
+        evening: { type: "boolean", description: "вечерние вопросы для книги вкл/выкл" },
+        reminders: { type: "boolean", description: "вечернее напоминание записать день вкл/выкл" },
+        weekly: { type: "boolean", description: "недельный итог вкл/выкл" },
+        quiet_days: { type: "array", items: { type: "number" }, description: "дни без сообщений: 0=воскресенье … 6=суббота; выходные = [0,6]; пустой массив снимает тишину" },
+        all: { type: "boolean", description: "true/false — включить или выключить ВСЕ сообщения бота разом" },
+      },
+    },
+  },
   { name: "delete_last_entry", description: "Удалить ПОСЛЕДНЮЮ запись дневника. ТОЛЬКО при явной команде удаления, где прямо сказано «удали/убери/сотри» + «(последнюю) запись»: «удали последнюю запись», «убери предыдущую запись», «сотри последнее». НЕ выбирай на фразы-поправки и недовольство («не то записал», «не надо было это добавлять», «надо было иначе», «неправильно», «зачем ты…») — это НЕ команда удаления, для них save_entry.", input_schema: { type: "object", properties: {} } },
   { name: "ask_question", description: "Пользователь СПРАШИВАЕТ ассистента о своей жизни / просит найти, вспомнить, проанализировать — ИЛИ возмущается/уточняет по поводу уже записанного («почему трату не учёл?», «где сегодняшний расход?», «чего не показал?»). Сюда же: вопросы про СВОИ ЦИФРЫ И СТАТИСТИКУ («сколько у меня записей/голосовых сообщений», «сколько слов я написал за всё время», «когда я зарегистрировался») и вопросы ПРО ПРИЛОЖЕНИЕ («как зайти в приложение», «как работает…», «где найти…», «что ты умеешь») — у ассистента есть эти данные и инструкция. Это НЕ новая запись, повторно данные (в т.ч. траты) записывать не нужно.", input_schema: { type: "object", properties: {} } },
   { name: "save_entry", description: "Обычная дневниковая запись: рассказ о дне, мысли, чувства, событие, идея. ПО УМОЛЧАНИЮ выбирай это.", input_schema: { type: "object", properties: {} } },
@@ -199,6 +216,7 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
+  "«Пиши мне по утрам», «не пиши», «не трогай по выходным», «хватит вечерних вопросов», «пиши в 7» → set_pushes (это включение/выключение РАССЫЛКИ, а не манера речи и не напоминание). "
   "Просьба ИЗМЕНИТЬ ВРЕМЯ уже созданного напоминания → move_reminder. Сюда же любые поправки времени: «перенеси», «измени дату», «не в 9, а в 11», «давай не в 9 утра, а в 9.30», «ошибся, надо на час позже», «сдвинь на завтра». Это НЕ cancel_reminder (человек не просит убрать напоминание — он просит другое время) и НЕ set_reminder (новое заводить не нужно). " +
   "«Запиши/запомни» + СПРАВОЧНЫЙ факт без повествования (код, номер, адрес, размер, wifi) → save_note, а НЕ save_entry: это справка, её будут искать, а не перечитывать как дневник. Рассказ о дне со словом «запиши» — по-прежнему save_entry. " +
   "СПИСКИ (чек-листы): «добавь … в список (покупок/подарков)» → add_list_item (несколько пунктов — массивом items в ОДИН вызов), «что в списке / что купить» → show_list, «вычеркни … / купил, убери» → check_list_item, «очисти список» → clear_list. Это НЕ add_task и НЕ save_note. " +
@@ -370,6 +388,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    push: { morning: "утренние сообщения", evening: "вечерние вопросы", reminders: "напоминание записать день", weekly: "недельный итог", quiet: "тихие дни", on: "включил", off: "выключил", at: (h: number) => `утро в ${h}:00`, none: "Ничего не понял про рассылку — скажи, например: «не пиши мне по утрам».", saved: (p: string) => `⚙️ Готово: ${p}. Изменить можно в любой момент — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
     renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
     renameUnclear: "Не понял, какое имя на какое поменять. Скажи прямо, например: «переименуй Эстелика в Эстелька».",
@@ -397,6 +416,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    push: { morning: "morning messages", evening: "evening questions", reminders: "the nudge to write your day", weekly: "the weekly recap", quiet: "quiet days", on: "on", off: "off", at: (h: number) => `morning at ${h}:00`, none: "I didn\u2019t catch what to change \u2014 say something like \u201cdon\u2019t write to me in the mornings\u201d.", saved: (p: string) => `\u2699\ufe0f Done: ${p}. You can change it anytime \u2014 just say so.` },
     rename: (a: string, b: string) => `✏️ Fixed: “${a}” → “${b}” — in people and insights.`,
     renameNone: (a: string) => `Couldn't find “${a}” in people or insights. How is the name written now?`,
     renameUnclear: "I couldn't tell which name to change into which. Say it directly, e.g. “rename Estelika to Estelka”.",
@@ -424,6 +444,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    push: { morning: "ранкові повідомлення", evening: "вечірні питання", reminders: "нагадування записати день", weekly: "тижневий підсумок", quiet: "тихі дні", on: "увімкнув", off: "вимкнув", at: (h: number) => `ранок о ${h}:00`, none: "Не зрозумів, що змінити — скажи, наприклад: «не пиши мені зранку».", saved: (p: string) => `⚙️ Готово: ${p}. Змінити можна будь-коли — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
     renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
     renameUnclear: "Не зрозумів, яке ім'я на яке змінити. Скажи прямо, наприклад: «перейменуй Естеліка в Естелька».",
@@ -451,6 +472,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    push: { morning: "les messages du matin", evening: "les questions du soir", reminders: "le rappel d\u2019\u00e9crire ta journ\u00e9e", weekly: "le bilan hebdo", quiet: "les jours silencieux", on: "activ\u00e9", off: "d\u00e9sactiv\u00e9", at: (h: number) => `matin \u00e0 ${h}h`, none: "Je n\u2019ai pas compris quoi changer \u2014 dis par exemple \u00ab ne m\u2019\u00e9cris pas le matin \u00bb.", saved: (p: string) => `\u2699\ufe0f C\u2019est fait : ${p}. Modifiable \u00e0 tout moment \u2014 dis-le simplement.` },
     rename: (a: string, b: string) => `✏️ Corrigé : « ${a} » → « ${b} » — dans les personnes et les insights.`,
     renameNone: (a: string) => `Je n'ai pas trouvé « ${a} ». Comment le nom est-il écrit actuellement ?`,
     renameUnclear: "Je n'ai pas compris quel nom remplacer par quel autre. Dis-le directement, par exemple : « renomme Estelika en Estelka ».",
@@ -478,6 +500,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    push: { morning: "los mensajes de la ma\u00f1ana", evening: "las preguntas de la noche", reminders: "el recordatorio de escribir tu d\u00eda", weekly: "el resumen semanal", quiet: "los d\u00edas en silencio", on: "activado", off: "desactivado", at: (h: number) => `ma\u00f1ana a las ${h}:00`, none: "No entend\u00ed qu\u00e9 cambiar \u2014 di algo como \u00abno me escribas por las ma\u00f1anas\u00bb.", saved: (p: string) => `\u2699\ufe0f Listo: ${p}. Puedes cambiarlo cuando quieras \u2014 solo d\u00edmelo.` },
     open: "Abrir",
     mvKind: { film: "🎬 película", series: "📺 serie", book: "📚 libro" } as Record<string, string>,
     mvStatusWatch: { want: "quiero ver", reading: "viendo", read: "vista" } as Record<string, string>,
@@ -1011,6 +1034,49 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const created = (data as any)?.created_at ? String((data as any).created_at).slice(0, 10) : null;
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
+    }
+    if (name === "set_pushes") {
+      // Включение/выключение рассылки. До этого такого действия не было вовсе:
+      // «не пиши мне по утрам» уходило в манеру речи — бот отвечал «запомнил»
+      // и продолжал писать. Обещание, которое не выполняется, хуже отказа.
+      const P = (s as any).push;
+      const { data: row } = await db.from("users").select("morning_prefs").eq("id", userId).maybeSingle();
+      const prefs: any = { ...normalizeMorningPrefs((row as any)?.morning_prefs) };
+      const changed: string[] = [];
+      const flag = (v: boolean) => (v ? P.on : P.off);
+
+      if (typeof input?.all === "boolean") {
+        prefs.morningEnabled = input.all;
+        prefs.remindersEnabled = input.all;
+        prefs.evening = { ...prefs.evening, enabled: input.all };
+        prefs.weekly = { ...prefs.weekly, enabled: input.all };
+        changed.push(`${flag(input.all)} ${P.morning}, ${P.evening}, ${P.reminders}, ${P.weekly}`);
+      } else {
+        if (typeof input?.morning === "boolean") { prefs.morningEnabled = input.morning; changed.push(`${flag(input.morning)} ${P.morning}`); }
+        if (typeof input?.evening === "boolean") { prefs.evening = { ...prefs.evening, enabled: input.evening }; changed.push(`${flag(input.evening)} ${P.evening}`); }
+        if (typeof input?.reminders === "boolean") { prefs.remindersEnabled = input.reminders; changed.push(`${flag(input.reminders)} ${P.reminders}`); }
+        if (typeof input?.weekly === "boolean") { prefs.weekly = { ...prefs.weekly, enabled: input.weekly }; changed.push(`${flag(input.weekly)} ${P.weekly}`); }
+      }
+
+      const h = Number(input?.morning_hour);
+      if (Number.isFinite(h) && h >= 0 && h <= 23) {
+        prefs.hour = Math.floor(h);
+        // Просьба «пиши в 7» бессмысленна при выключенном утре — включаем заодно.
+        if (prefs.morningEnabled === false && input?.morning !== false) prefs.morningEnabled = true;
+        changed.push(P.at(Math.floor(h)));
+      }
+
+      if (Array.isArray(input?.quiet_days)) {
+        const days = [...new Set(input.quiet_days.filter((d: any) => typeof d === "number" && d >= 0 && d <= 6).map((d: number) => Math.floor(d)))] as number[];
+        prefs.quietDays = days;
+        const names = (P as any).dayNames || ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+        changed.push(days.length ? `${P.quiet}: ${days.map((d) => names[d]).join(", ")}` : `${P.off} ${P.quiet}`);
+      }
+
+      if (!changed.length) return { text: P.none };
+      const { error } = await db.from("users").update({ morning_prefs: prefs }).eq("id", userId);
+      if (error) return { text: s.fail };
+      return { text: P.saved(changed.join(", ")), openNext: "/profile" };
     }
     if (name === "set_style") {
       const wish = String(input?.wish || "").trim().slice(0, 200);
