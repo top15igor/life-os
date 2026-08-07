@@ -38,7 +38,7 @@ import {
 import { logError } from "@/lib/errorLog";
 import { entryToVault, vaultToEntry, placePendingShelf, saveFileToVault, SHELF_LABEL } from "@/lib/shelfMove";
 import { undoLast, recordAction } from "@/lib/agentJournal";
-import { focusLine, rememberFocus } from "@/lib/dialogFocus";
+import { focusLine, rememberFocus, hasReference } from "@/lib/dialogFocus";
 import { kindOf, extractText } from "@/lib/docText";
 import { WORKING as DEEP_WORKING } from "@/lib/deepTask";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
@@ -207,6 +207,19 @@ const UNDO_MSG: Record<string, { done: (w: string) => string; none: string; fail
   uk: { done: (w) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв.", failed: "Не вдалося повернути — дані змінилися. Скажи, що відновити." },
   fr: { done: (w) => `↩️ C'est restauré${w ? ` : ${w}` : ""}.`, none: "Rien à annuler — je n'ai rien supprimé cette semaine.", failed: "Impossible de restaurer — les données ont changé depuis." },
   es: { done: (w) => `↩️ Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer — esta semana no borré nada.", failed: "No pude restaurarlo — los datos cambiaron desde entonces." },
+};
+
+
+// «Добавь это в дневник» без самого содержания. Агент-исследователь поймал:
+// бот уверенно сохранял ПУСТУЮ запись и придумывал ей теги «#пустая_запись».
+// Команда без предмета — это не запись, это недосказанная фраза.
+const EMPTY_ADD_RE = /^(?:а\s+)?(?:добавь|запиши|запишите|сохрани|сохраните|занеси|внеси)\s*(?:это|то|этот|эту|всё|все)?\s*(?:в\s+(?:дневник|заметк[\p{L}]*|хранилище))?\s*[.!?]*$/iu;
+const EMPTY_ADD_ASK: Record<string, string> = {
+  ru: "А что именно записать? Скажи текст — и я сохраню.",
+  en: "What exactly should I write down? Say the text and I'll save it.",
+  uk: "А що саме записати? Скажи текст — і я збережу.",
+  fr: "Qu'est-ce que je note exactement ? Dis-moi le texte et je l'enregistre.",
+  es: "¿Qué anoto exactamente? Dime el texto y lo guardo.",
 };
 
 const REM_CB: Record<string, { done: string; snoozed: string; gone: string; canceled: string }> = {
@@ -2247,6 +2260,13 @@ async function handleUpdate(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // Команда добавить без предмета: не выдумываем пустую запись, а спрашиваем.
+    if (EMPTY_ADD_RE.test(text.trim())) {
+      const lng = langOf(user, msg);
+      await sendMessage(chatId, EMPTY_ADD_ASK[lng] || EMPTY_ADD_ASK.ru);
+      return NextResponse.json({ ok: true });
+    }
+
     // 🌙 Разбор дня продолжается ниже.
     //    Команды (/stop, /save, …) режим НЕ перехватывает — они работают всегда.
     if (!text.startsWith("/") && await isDayCapturing(user.id)) {
@@ -2297,7 +2317,7 @@ async function handleUpdate(req: NextRequest) {
         // зарегистрирован аккаунт?» три раза подряд игнорировался сценарием) —
         // сначала отвечаем по существу, и только обычные ответы идут в знакомство.
         const lng0 = langOf(user, msg);
-        const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), await focusLine(user.id));
+        const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), hasReference(text) ? await focusLine(user.id) : null);
         if (route.kind === "action") {
           // Долгий разбор идёт до минуты — молчать нельзя, человек решит, что бот завис.
           if (route.name === "deep_summary") {
@@ -2396,7 +2416,7 @@ async function handleUpdate(req: NextRequest) {
     // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
     // порог был 160 — из-за этого голосовой ВОПРОС на ~190 символов молча уходил в дневник)
     if (!forceSave && (!isVoice || text.length < 400)) {
-      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), await focusLine(user.id));
+      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), hasReference(text) ? await focusLine(user.id) : null);
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         if (route.name === "deep_summary") {
