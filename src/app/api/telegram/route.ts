@@ -36,6 +36,7 @@ import {
   cancelProblem, attachScreenshot, isProblemPhrase, PROBLEM_KINDS, MORE_BTN, CANCEL_BTN, type ProblemKind,
 } from "@/lib/problemReport";
 import { logError } from "@/lib/errorLog";
+import { entryToVault, vaultToEntry, placePendingShelf, SHELF_LABEL } from "@/lib/shelfMove";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
@@ -1132,6 +1133,49 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("put:") && cqChat) {
+      // Человек сам выбрал полку в редком спорном случае.
+      const shelf = data.slice(4) === "d" ? "diary" : "vault";
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const SH = SHELF_LABEL[lng] || SHELF_LABEL.ru;
+        if (u) {
+          const text = await placePendingShelf((u as any).id, shelf as any);
+          const label = shelf === "diary" ? SH.movedToDiary : SH.movedToVault;
+          await answerCallback(cq.id, text ? label : SH.gone);
+          if (mid && text) await editMessageText(cqChat, mid, `${label}\n\n${esc(text.slice(0, 500))}`);
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch (e) { await logError("bot:shelf-put", e, { chatId: cqChat }); await answerCallback(cq.id); }
+    } else if (data.startsWith("shelf:") && cqChat) {
+      // Переложить между полками: shelf:v — запись дневника в хранилище,
+      // shelf:d — заметку из хранилища в дневник.
+      const [, dir, itemId] = data.split(":");
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const SH = SHELF_LABEL[lng] || SHELF_LABEL.ru;
+        if (u && /^[0-9a-f-]{16,}$/i.test(itemId || "")) {
+          const res = dir === "v"
+            ? await entryToVault((u as any).id, itemId)
+            : await vaultToEntry((u as any).id, itemId);
+          if (res.ok) {
+            const label = dir === "v" ? SH.movedToVault : SH.movedToDiary;
+            await answerCallback(cq.id, label);
+            if (mid) await editMessageText(cqChat, mid, `${label}\n\n${esc(String(res.text || "").slice(0, 500))}`);
+          } else {
+            await answerCallback(cq.id, SH.gone);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch (e) { await logError("bot:shelf-move", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("fin:") && cqChat) {
       // Выбор кнопкой, какую именно трату поправить или убрать.
       // Во второй части — либо новая сумма, либо "d" (удалить).
@@ -2366,11 +2410,16 @@ async function handleUpdate(req: NextRequest) {
     // Тёплый отклик друга под разбором (в выбранном тоне) — отдельной строкой, факты не трогает.
     const reaction = await reactionP;
     if (reaction) body += `\n\n💬 ${esc(reaction)}`;
+    // Куда положили — видно, и одним тапом можно переложить. Не спрашиваем
+    // заранее: человек диктует на ходу, развилка его останавливает, а ошибается
+    // бот редко. Каждый тап заодно показывает, где роутер промахивается.
+    const SH = SHELF_LABEL[lang] || SHELF_LABEL.ru;
     const rows: any[] = [
       [
         { text: L.book, callback_data: "lifebook" },
       ],
     ];
+    if (entry?.id) rows.unshift([{ text: SH.toVault, callback_data: `shelf:v:${entry.id}` }]);
     if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/go?next=/finance` }]);
     // «Позвать друга» — не под каждой записью, а в момент-пик: майлстоун или
     // настроение 9+, и не чаще раза в 3 дня (иначе кнопка становится обоями).

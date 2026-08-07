@@ -13,6 +13,7 @@ import { birthdayISO, BDAY_UNKNOWN_YEAR } from "./birthday";
 import { ACTION_TAG } from "./botTags";
 import { logError } from "./errorLog";
 import { rememberGap, WANT_BTN } from "./capabilityGap";
+import { SHELF_LABEL, rememberPendingShelf } from "./shelfMove";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -98,7 +99,14 @@ export const ACTION_TOOLS: any[] = [
     name: "save_note",
     description:
       "Сохранить ЗАМЕТКУ — справочную информацию, которую надо потом НАЙТИ: код (домофон, шкафчик), номер (счёта, размера, документа), адрес, wifi, марку/модель, список. Команды: «запиши код от домофона 4582», «сохрани заметку: …», «запомни: размер фильтра 60×40». НЕ для рассказов о дне/чувствах/событиях (это save_entry). text — сама заметка, без слов «запиши/запомни/заметка».",
-    input_schema: { type: "object", properties: { text: { type: "string" } }, required: ["text"] },
+    input_schema: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
+        unsure: { type: "boolean", description: "true ТОЛЬКО если ты честно не можешь решить, справка это или рассказ о жизни (дневник). Тогда спросим человека. Не ставь из вежливости — при малейшем перевесе выбирай сам." },
+      },
+      required: ["text"],
+    },
   },
   {
     name: "send_message",
@@ -424,6 +432,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
     cant: { text: (w: string) => `Честно: ${w ? `«${w}» — этого` : "этого"} я не умею. Я живу внутри LIFE OS и не могу действовать во внешнем мире.\n\nЗато могу записать это, поставить напоминание или задачу — скажи, что из этого нужно.` },
     fin: { unclear: "Не понял, что поправить. Скажи, например: «я потратил не 500, а 300 на бензин».", none: (q: string) => `Не нашёл трату про «${q}» за последний месяц.`, which: "Нашёл несколько подходящих. Какую поправить?", fixed: (a: string, b: string, n: string) => `💸 Поправил: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Убрал операцию ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "задачу", note: "заметку", goal: "цель", unclear: "Не понял, что убрать. Скажи, например: «убери задачу заказать воду».", none: (l: string) => `Не нашёл такую ${l} — возможно, она называется иначе.`, which: (l: string) => `Нашёл несколько. Какую ${l} убрать?`, done: (l: string, t: string) => `🗑 Убрал ${l}: «${t}».` },
@@ -455,6 +464,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
     cant: { text: (w: string) => `Honestly: ${w ? `\u201c${w}\u201d is` : "that\u2019s"} something I can\u2019t do. I live inside LIFE OS and can\u2019t act in the outside world.\n\nWhat I can do: save it, set a reminder or a task \u2014 tell me which.` },
     fin: { unclear: "I didn\u2019t catch what to fix. Say something like \u201cit was 300, not 500, for fuel\u201d.", none: (q: string) => `No transaction about \u201c${q}\u201d in the last month.`, which: "Found several. Which one should I fix?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Fixed: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Removed ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "task", note: "note", goal: "goal", unclear: "I didn\u2019t catch what to remove. Say something like \u201cdelete the task order water\u201d.", none: (l: string) => `Couldn\u2019t find that ${l} \u2014 maybe it\u2019s worded differently.`, which: (l: string) => `Found several. Which ${l} should I remove?`, done: (l: string, t: string) => `\ud83d\uddd1 Removed the ${l}: \u201c${t}\u201d.` },
@@ -486,6 +496,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
     cant: { text: (w: string) => `Чесно: ${w ? `«${w}» — цього` : "цього"} я не вмію. Я живу всередині LIFE OS і не можу діяти в зовнішньому світі.\n\nЗате можу записати це, поставити нагадування чи задачу — скажи, що саме потрібно.` },
     fin: { unclear: "Не зрозумів, що виправити. Скажи, наприклад: «я витратив не 500, а 300 на бензин».", none: (q: string) => `Не знайшов витрату про «${q}» за останній місяць.`, which: "Знайшов кілька. Яку виправити?", fixed: (a: string, b: string, n: string) => `💸 Виправив: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Прибрав операцію ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "завдання", note: "нотатку", goal: "ціль", unclear: "Не зрозумів, що прибрати. Скажи, наприклад: «прибери завдання замовити воду».", none: (l: string) => `Не знайшов таке — можливо, названо інакше.`, which: (l: string) => `Знайшов кілька. Що саме прибрати?`, done: (l: string, t: string) => `🗑 Прибрав: «${t}».` },
@@ -517,6 +528,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
     cant: { text: (w: string) => `Honn\u00eatement : ${w ? `\u00ab ${w} \u00bb, je` : "je"} ne sais pas faire \u00e7a. Je vis dans LIFE OS et je ne peux pas agir dans le monde ext\u00e9rieur.\n\nEn revanche je peux le noter, cr\u00e9er un rappel ou une t\u00e2che \u2014 dis-moi ce qu\u2019il te faut.` },
     fin: { unclear: "Je n\u2019ai pas compris quoi corriger. Dis par exemple \u00ab c\u2019\u00e9tait 300, pas 500, pour l\u2019essence \u00bb.", none: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois.`, which: "J\u2019en ai trouv\u00e9 plusieurs. Laquelle corriger ?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corrig\u00e9 : ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Supprim\u00e9 : ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "t\u00e2che", note: "note", goal: "objectif", unclear: "Je n\u2019ai pas compris quoi supprimer. Dis par exemple \u00ab supprime la t\u00e2che commander de l\u2019eau \u00bb.", none: (l: string) => `Je n\u2019ai pas trouv\u00e9 ce ${l}.`, which: (l: string) => `J\u2019en ai trouv\u00e9 plusieurs. Lequel supprimer ?`, done: (l: string, t: string) => `\ud83d\uddd1 Supprim\u00e9 : \u00ab ${t} \u00bb.` },
@@ -548,6 +560,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
     cant: { text: (w: string) => `Con sinceridad: ${w ? `\u00ab${w}\u00bb es algo que` : "eso"} no s\u00e9 hacer. Vivo dentro de LIFE OS y no puedo actuar en el mundo exterior.\n\nLo que s\u00ed puedo: anotarlo, poner un recordatorio o una tarea \u2014 dime qu\u00e9 prefieres.` },
     fin: { unclear: "No entend\u00ed qu\u00e9 corregir. Di por ejemplo \u00abfueron 300, no 500, de gasolina\u00bb.", none: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes.`, which: "Encontr\u00e9 varios. \u00bfCu\u00e1l corrijo?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corregido: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Quit\u00e9 ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "tarea", note: "nota", goal: "objetivo", unclear: "No entend\u00ed qu\u00e9 quitar. Di por ejemplo \u00abelimina la tarea pedir agua\u00bb.", none: (l: string) => `No encontr\u00e9 esa ${l}.`, which: (l: string) => `Encontr\u00e9 varias. \u00bfCu\u00e1l ${l} quito?`, done: (l: string, t: string) => `\ud83d\uddd1 Quit\u00e9 la ${l}: \u00ab${t}\u00bb.` },
@@ -791,9 +804,32 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const t = String(input?.text || "").trim().slice(0, 2000);
       const N = NOTE_MSG[lang] || NOTE_MSG.ru;
       if (!t) return { text: s.fail };
-      const { error } = await db.from("notes").insert({ user_id: userId, text: t });
+      // Роутер честно сказал, что не может решить, — вот это тот редкий случай,
+      // когда вопрос уместен: цена ошибки заметна (справка в ленте жизни или
+      // событие в справочнике), а бот действительно не знает.
+      if (input?.unsure === true) {
+        const SH0 = (SHELF_LABEL as any)[lang] || SHELF_LABEL.ru;
+        // Текст кладём в настройки человека, а не в кнопку: в callback_data
+        // помещается 64 байта, и длинная заметка туда просто не влезет.
+        await rememberPendingShelf(userId, t);
+        return {
+          text: (s as any).shelfAsk(t.slice(0, 300)),
+          markup: { inline_keyboard: [
+            [{ text: SH0.diary, callback_data: "put:d" }],
+            [{ text: SH0.vault, callback_data: "put:v" }],
+          ] },
+        };
+      }
+      const { data: created, error } = await db.from("notes").insert({ user_id: userId, text: t }).select("id").maybeSingle();
       if (error) return { text: s.fail }; // таблицы может не быть до миграции notes.sql
-      return { text: N.saved(t.slice(0, 150)), openNext: "/notes" };
+      // Зеркально записи дневника: показываем полку и даём переложить одним тапом.
+      const SH = (SHELF_LABEL as any)[lang] || SHELF_LABEL.ru;
+      const noteId = (created as any)?.id;
+      return {
+        text: N.saved(t.slice(0, 150)),
+        openNext: "/notes",
+        ...(noteId ? { markup: { inline_keyboard: [[{ text: SH.toDiary, callback_data: `shelf:d:${noteId}` }]] } } : {}),
+      };
     }
     if (name === "find_note") {
       const q = String(input?.query || "").trim();
