@@ -230,6 +230,19 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "«Верни как было» восстанавливает удалённое",
+    heavy: true,
+    send: () => message("отмени последнее, верни как было"),
+    check: (sent) => notBroken(sent),
+    // Задачу убрали предыдущим сценарием — после отмены она обязана вернуться.
+    // Это главная защита от нашей же новой способности удалять по команде.
+    verifyDb: async () => {
+      const st = await testTaskState();
+      if (st === "gone") return "отмена не вернула удалённую задачу";
+      return null;
+    },
+  },
+  {
     name: "«Перебери всё про…» даёт разбор, а не отписку",
     heavy: true,
     send: () => message("перебери всё, что у меня есть про пробежки, и дай саммари"),
@@ -265,6 +278,7 @@ const SCHEMA_CHECKS: { table: string; column?: string; sql: string; why: string 
   { table: "error_log", sql: "error_log.sql", why: "сбои не пишутся, диагносту нечего читать" },
   { table: "selftest_runs", sql: "selftest.sql", why: "нет истории самопроверки" },
   { table: "push_log", column: "question", sql: "question_quality.sql", why: "не считается отклик на вопросы" },
+  { table: "agent_actions", sql: "agent_actions.sql", why: "нельзя отменить удаление — «верни как было» не работает" },
 ];
 
 async function checkSchema(): Promise<StepResult[]> {

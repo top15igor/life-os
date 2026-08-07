@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { analyze } from "./ai";
 import { saveEntry, clearDerived } from "./saveEntry";
+import { recordAction } from "./agentJournal";
 
 // Две полки: «Дневник» — жизнь, события, чувства; «Хранилище» — справка, которую
 // надо будет найти (коды, номера, адреса, инструкции).
@@ -52,13 +53,21 @@ export const SHELF_LABEL: Record<string, { diary: string; vault: string; toDiary
 // висеть задачей.
 export async function entryToVault(userId: string, entryId: string): Promise<{ ok: boolean; text?: string }> {
   const db = supabaseAdmin();
-  const { data: e } = await db.from("entries").select("id, raw_text").eq("id", entryId).eq("user_id", userId).maybeSingle();
+  const { data: e } = await db.from("entries").select("id, raw_text, entry_date").eq("id", entryId).eq("user_id", userId).maybeSingle();
   if (!e) return { ok: false };
   const text = String((e as any).raw_text || "").trim();
   if (!text) return { ok: false };
 
-  const { error } = await db.from("notes").insert({ user_id: userId, text: text.slice(0, 4000) });
+  const { data: note, error } = await db.from("notes").insert({ user_id: userId, text: text.slice(0, 4000) }).select("id").maybeSingle();
   if (error) return { ok: false };
+
+  // Пишем в журнал ДО удаления: запись дневника — самое дорогое, что тут теряется,
+  // и вернуть её должно быть можно даже если следующий шаг упадёт.
+  await recordAction(userId, "move_to_vault", `📚 ${text.slice(0, 80)}`, {
+    raw_text: text,
+    entry_date: (e as any).entry_date ?? null,
+    noteId: (note as any)?.id ?? null,
+  });
 
   await clearDerived(entryId).catch(() => {});
   await db.from("entries").delete().eq("id", entryId).eq("user_id", userId);
@@ -69,17 +78,20 @@ export async function entryToVault(userId: string, entryId: string): Promise<{ o
 // настроение, люди, задачи — без него она ляжет в ленту пустой.
 export async function vaultToEntry(userId: string, noteId: string): Promise<{ ok: boolean; text?: string }> {
   const db = supabaseAdmin();
-  const { data: n } = await db.from("notes").select("id, text").eq("id", noteId).eq("user_id", userId).maybeSingle();
+  const { data: n } = await db.from("notes").select("*").eq("id", noteId).eq("user_id", userId).maybeSingle();
   if (!n) return { ok: false };
   const text = String((n as any).text || "").trim();
   if (!text) return { ok: false };
 
+  let entryId: string | null = null;
   try {
     const analysis = await analyze(text, userId);
-    await saveEntry({ userId, raw_text: text, source: "moved_from_vault", analysis });
+    const created = await saveEntry({ userId, raw_text: text, source: "moved_from_vault", analysis });
+    entryId = (created as any)?.id ?? null;
   } catch {
     return { ok: false };
   }
+  await recordAction(userId, "move_to_diary", `📓 ${text.slice(0, 80)}`, { row: n, entryId });
   await db.from("notes").delete().eq("id", noteId).eq("user_id", userId);
   return { ok: true, text };
 }

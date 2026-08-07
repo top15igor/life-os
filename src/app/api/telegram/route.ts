@@ -37,6 +37,7 @@ import {
 } from "@/lib/problemReport";
 import { logError } from "@/lib/errorLog";
 import { entryToVault, vaultToEntry, placePendingShelf, saveFileToVault, SHELF_LABEL } from "@/lib/shelfMove";
+import { undoLast, recordAction } from "@/lib/agentJournal";
 import { kindOf, extractText } from "@/lib/docText";
 import { WORKING as DEEP_WORKING } from "@/lib/deepTask";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
@@ -195,6 +196,16 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
   uk: { reading: "📄 Читаю файл…", saved: (n, p) => `📚 Зберіг у сховище: <b>${n}</b>${p > 1 ? ` · ${p} частин` : ""}`, searchable: "Тепер це шукається — просто запитай, наприклад «що там було про…».", empty: "У файлі не знайшлося тексту, який я можу прочитати." },
   fr: { reading: "📄 Je lis le fichier…", saved: (n, p) => `📚 Enregistré dans ton coffre : <b>${n}</b>${p > 1 ? ` · ${p} parties` : ""}`, searchable: "C'est maintenant cherchable — demande simplement « qu'est-ce qu'il y avait sur… ».", empty: "Je n'ai pas trouvé de texte lisible dans ce fichier." },
   es: { reading: "📄 Leyendo el archivo…", saved: (n, p) => `📚 Guardado en tu baúl: <b>${n}</b>${p > 1 ? ` · ${p} partes` : ""}`, searchable: "Ya se puede buscar — solo pregunta, p. ej. «qué había sobre…».", empty: "No encontré texto legible en ese archivo." },
+};
+
+
+// «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
+const UNDO_MSG: Record<string, { done: (w: string) => string; none: string; failed: string }> = {
+  ru: { done: (w) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились. Скажи, что восстановить, и сделаю руками." },
+  en: { done: (w) => `↩️ Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo — I haven't deleted or rewritten anything this week.", failed: "Couldn't restore it — the data has changed since. Tell me what to bring back." },
+  uk: { done: (w) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв.", failed: "Не вдалося повернути — дані змінилися. Скажи, що відновити." },
+  fr: { done: (w) => `↩️ C'est restauré${w ? ` : ${w}` : ""}.`, none: "Rien à annuler — je n'ai rien supprimé cette semaine.", failed: "Impossible de restaurer — les données ont changé depuis." },
+  es: { done: (w) => `↩️ Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer — esta semana no borré nada.", failed: "No pude restaurarlo — los datos cambiaron desde entonces." },
 };
 
 const REM_CB: Record<string, { done: string; snoozed: string; gone: string; canceled: string }> = {
@@ -1145,6 +1156,19 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data === "undo:last" && cqChat) {
+      // «Вернуть как было» — кнопка под только что выполненным разрушающим действием.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u) {
+          const lng = pickLang((u as any).lang);
+          const res = await undoLast((u as any).id);
+          const U = UNDO_MSG[lng] || UNDO_MSG.ru;
+          await sendMessage(cqChat, res.ok ? U.done(res.summary || "") : res.reason === "failed" ? U.failed : U.none);
+        }
+      } catch (e) { await logError("bot:undo", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("put:") && cqChat) {
       // Человек сам выбрал полку в редком спорном случае.
       const shelf = data.slice(4) === "d" ? "diary" : "vault";
@@ -1204,12 +1228,15 @@ async function handleUpdate(req: NextRequest) {
             const label = `${Number((tx as any).amount)}${(tx as any).currency ? " " + (tx as any).currency : ""}`;
             const note = String((tx as any).note || (tx as any).category || "");
             if (what === "d") {
+              const { data: full } = await db.from("finance_tx").select("*").eq("id", txId).eq("user_id", (u as any).id).maybeSingle();
+              await recordAction((u as any).id, "remove_finance", `🗑 ${label}`, { row: full || null });
               await db.from("finance_tx").delete().eq("id", txId).eq("user_id", (u as any).id);
               await answerCallback(cq.id, R.canceled);
               if (mid) await editMessageText(cqChat, mid, `🗑 ${esc(label)}${note ? ` (${esc(note)})` : ""}`);
             } else {
               const amt = Number(what);
               if (Number.isFinite(amt) && amt > 0) {
+                await recordAction((u as any).id, "fix_finance", `💸 ${label} → ${amt}`, { id: txId, oldAmount: Number((tx as any).amount) });
                 await db.from("finance_tx").update({ amount: amt }).eq("id", txId).eq("user_id", (u as any).id);
                 await answerCallback(cq.id, R.done);
                 if (mid) await editMessageText(cqChat, mid, `💸 ${esc(label)} → ${amt}${(tx as any).currency ? " " + esc(String((tx as any).currency)) : ""}${note ? ` (${esc(note)})` : ""}`);
@@ -1240,8 +1267,11 @@ async function handleUpdate(req: NextRequest) {
         const lng = pickLang((u as any)?.lang);
         const R = REM_CB[lng] || REM_CB.ru;
         if (u && cfg && /^[0-9a-f-]{16,}$/i.test(itemId || "")) {
-          const { data: item } = await db.from(cfg.table).select(`id, ${cfg.field}`).eq("id", itemId).eq("user_id", (u as any).id).maybeSingle();
+          // Строку берём целиком: кнопочное удаление тоже должно быть обратимым.
+          const { data: item } = await db.from(cfg.table).select("*").eq("id", itemId).eq("user_id", (u as any).id).maybeSingle();
           if (item) {
+            const jKind = kindKey === "t" ? "delete_task" : kindKey === "n" ? "delete_note" : "delete_goal";
+            await recordAction((u as any).id, jKind as any, `🗑 ${String((item as any)[cfg.field] || "").slice(0, 80)}`, { row: item });
             await db.from(cfg.table).delete().eq("id", itemId).eq("user_id", (u as any).id);
             await answerCallback(cq.id, R.canceled);
             if (mid) await editMessageText(cqChat, mid, `🗑 ${esc(String((item as any)[cfg.field] || "").slice(0, 150))}`);

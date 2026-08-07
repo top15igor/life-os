@@ -16,6 +16,7 @@ import { rememberGap, WANT_BTN } from "./capabilityGap";
 import { SHELF_LABEL, rememberPendingShelf } from "./shelfMove";
 import { answerFromEverything } from "./vaultSearch";
 import { deepSummary } from "./deepTask";
+import { recordAction, undoLast } from "./agentJournal";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -188,6 +189,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   {
+    name: "undo_last",
+    description:
+      "ОТМЕНИТЬ последнее изменение данных: «отмени последнее», «верни как было», «я не то удалил», «верни задачу», «отмени изменение». Возвращает то, что агент удалил или переписал последней командой. НЕ путать с cancel_reminder (отменить напоминание) и delete_item (убрать что-то).",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "deep_summary",
     description:
       "ДОЛГИЙ РАЗБОР по теме: человек просит перебрать ВСЁ, что у него есть, и дать сводку. Примеры: «перебери всё про здоровье и дай саммари», «собери, что я писал про Вовчика за год», «проанализируй мои траты на еду», «сделай выжимку по работе». Отличать от search_all: там ищут ОДИН факт («где я записывал код»), здесь просят КАРТИНУ по теме. topic — тема словами человека.",
@@ -272,6 +279,7 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
+  "«Отмени последнее», «верни как было», «я не то удалил» → undo_last. "
   "«Перебери всё про…», «дай саммари по…», «собери, что я писал о…» → deep_summary (картина по теме). Один факт («где я записывал код») → search_all. "
   "«Где я записывал…», «что у меня есть про…», «я где-то сохранял…» → search_all: ищет по всем полкам сразу, потому что человек не помнит, куда положил. "
   "Поправка по ДЕНЬГАМ («потратил не 500, а 300», «удали трату на кофе», «исправь сумму») → fix_finance, а не правка записи дневника и не новая трата. "
@@ -390,6 +398,15 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
 // Нормализация имени для сравнения (регистр, ё→е, пробелы).
 const normName = (x: string) => (x || "").toLowerCase().replace(/ё/g, "е").trim();
 
+// Кнопка «вернуть» под каждым разрушающим действием. Отмена должна быть под
+// рукой ровно в тот момент, когда человек видит результат и понимает, что это
+// не то: искать команду в справке он не пойдёт.
+const UNDO_BTN: Record<string, string> = {
+  ru: "↩️ Вернуть как было", en: "↩️ Undo that", uk: "↩️ Повернути як було",
+  fr: "↩️ Annuler ça", es: "↩️ Deshacer",
+};
+const undoMarkup = (lang: string) => ({ inline_keyboard: [[{ text: UNDO_BTN[lang] || UNDO_BTN.ru, callback_data: "undo:last" }]] });
+
 // Слова-команды: в поиске напоминания/задачи они только мешают. «Отмени все
 // напоминания про воду» — искать надо «воду», а не «отмени» и «напоминания».
 const SEARCH_STOP = new Set([
@@ -448,6 +465,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    undo: { done: (w: string) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились с тех пор. Расскажи, что восстановить, и я сделаю руками." },
     shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
     cant: { text: (w: string) => `Честно: ${w ? `«${w}» — этого` : "этого"} я не умею. Я живу внутри LIFE OS и не могу действовать во внешнем мире.\n\nЗато могу записать это, поставить напоминание или задачу — скажи, что из этого нужно.` },
     fin: { unclear: "Не понял, что поправить. Скажи, например: «я потратил не 500, а 300 на бензин».", none: (q: string) => `Не нашёл трату про «${q}» за последний месяц.`, which: "Нашёл несколько подходящих. Какую поправить?", fixed: (a: string, b: string, n: string) => `💸 Поправил: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Убрал операцию ${a}${n ? ` (${n})` : ""}.` },
@@ -480,6 +498,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
     cant: { text: (w: string) => `Honestly: ${w ? `\u201c${w}\u201d is` : "that\u2019s"} something I can\u2019t do. I live inside LIFE OS and can\u2019t act in the outside world.\n\nWhat I can do: save it, set a reminder or a task \u2014 tell me which.` },
     fin: { unclear: "I didn\u2019t catch what to fix. Say something like \u201cit was 300, not 500, for fuel\u201d.", none: (q: string) => `No transaction about \u201c${q}\u201d in the last month.`, which: "Found several. Which one should I fix?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Fixed: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Removed ${a}${n ? ` (${n})` : ""}.` },
@@ -512,6 +531,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    undo: { done: (w: string) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв і не переписував.", failed: "Не вдалося повернути — дані відтоді змінилися. Скажи, що відновити, і я зроблю руками." },
     shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
     cant: { text: (w: string) => `Чесно: ${w ? `«${w}» — цього` : "цього"} я не вмію. Я живу всередині LIFE OS і не можу діяти в зовнішньому світі.\n\nЗате можу записати це, поставити нагадування чи задачу — скажи, що саме потрібно.` },
     fin: { unclear: "Не зрозумів, що виправити. Скажи, наприклад: «я витратив не 500, а 300 на бензин».", none: (q: string) => `Не знайшов витрату про «${q}» за останній місяць.`, which: "Знайшов кілька. Яку виправити?", fixed: (a: string, b: string, n: string) => `💸 Виправив: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Прибрав операцію ${a}${n ? ` (${n})` : ""}.` },
@@ -544,6 +564,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
     cant: { text: (w: string) => `Honn\u00eatement : ${w ? `\u00ab ${w} \u00bb, je` : "je"} ne sais pas faire \u00e7a. Je vis dans LIFE OS et je ne peux pas agir dans le monde ext\u00e9rieur.\n\nEn revanche je peux le noter, cr\u00e9er un rappel ou une t\u00e2che \u2014 dis-moi ce qu\u2019il te faut.` },
     fin: { unclear: "Je n\u2019ai pas compris quoi corriger. Dis par exemple \u00ab c\u2019\u00e9tait 300, pas 500, pour l\u2019essence \u00bb.", none: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois.`, which: "J\u2019en ai trouv\u00e9 plusieurs. Laquelle corriger ?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corrig\u00e9 : ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Supprim\u00e9 : ${a}${n ? ` (${n})` : ""}.` },
@@ -576,6 +597,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
     cant: { text: (w: string) => `Con sinceridad: ${w ? `\u00ab${w}\u00bb es algo que` : "eso"} no s\u00e9 hacer. Vivo dentro de LIFE OS y no puedo actuar en el mundo exterior.\n\nLo que s\u00ed puedo: anotarlo, poner un recordatorio o una tarea \u2014 dime qu\u00e9 prefieres.` },
     fin: { unclear: "No entend\u00ed qu\u00e9 corregir. Di por ejemplo \u00abfueron 300, no 500, de gasolina\u00bb.", none: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes.`, which: "Encontr\u00e9 varios. \u00bfCu\u00e1l corrijo?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corregido: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Quit\u00e9 ${a}${n ? ` (${n})` : ""}.` },
@@ -1138,6 +1160,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
     }
+    if (name === "undo_last") {
+      const U = (s as any).undo;
+      const res = await undoLast(userId);
+      if (res.ok) return { text: U.done(res.summary || "") };
+      return { text: res.reason === "failed" ? U.failed : U.none };
+    }
     if (name === "deep_summary") {
       // Долгая работа: сбор по всем полкам, сжатие пачками, сборка отчёта.
       // Запускается только по явной просьбе — она дороже обычного ответа.
@@ -1207,13 +1235,18 @@ export async function runAction(userId: string, name: string, input: any, lang: 
 
       const t = top[0].r;
       if (remove) {
+        const { data: full } = await db.from("finance_tx").select("*").eq("id", t.id).eq("user_id", userId).maybeSingle();
         const { error: e2 } = await db.from("finance_tx").delete().eq("id", t.id).eq("user_id", userId);
         if (e2) return { text: s.fail };
-        return { text: F.removed(money(t), String(t.note || t.category || "")), openNext: "/finance" };
+        const msg = F.removed(money(t), String(t.note || t.category || ""));
+        await recordAction(userId, "remove_finance", msg, { row: full || null });
+        return { text: msg, openNext: "/finance", markup: undoMarkup(lang) };
       }
       const { error: e3 } = await db.from("finance_tx").update({ amount: newAmount }).eq("id", t.id).eq("user_id", userId);
       if (e3) return { text: s.fail };
-      return { text: F.fixed(money(t), `${newAmount}${t.currency ? " " + t.currency : ""}`, String(t.note || t.category || "")), openNext: "/finance" };
+      const msg2 = F.fixed(money(t), `${newAmount}${t.currency ? " " + t.currency : ""}`, String(t.note || t.category || ""));
+      await recordAction(userId, "fix_finance", msg2, { id: t.id, oldAmount: Number(t.amount) });
+      return { text: msg2, openNext: "/finance", markup: undoMarkup(lang) };
     }
     if (name === "delete_item") {
       // «Убери задачу», «удали заметку», «убери цель». До этого удалять бот умел
@@ -1230,7 +1263,8 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const c = cfg[kind];
       if (!c || !q) return { text: D.unclear };
 
-      const { data: rows, error } = await db.from(c.table).select(`id, ${c.field}`).eq("user_id", userId).limit(300);
+      // Выбираем строку целиком: для отмены нужна не пара полей, а всё, что было.
+      const { data: rows, error } = await db.from(c.table).select("*").eq("user_id", userId).limit(300);
       if (error) return { text: s.fail };
       const list = ((rows || []) as any[]).filter((r) => String(r[c.field] || "").trim());
       if (!list.length) return { text: D.none(c.label) };
@@ -1252,9 +1286,12 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         return { text: D.which(c.label), markup: { inline_keyboard: rowsKb } };
       }
 
-      const { error: delErr } = await db.from(c.table).delete().eq("id", top[0].r.id).eq("user_id", userId);
+      const victim = top[0].r;
+      const { error: delErr } = await db.from(c.table).delete().eq("id", victim.id).eq("user_id", userId);
       if (delErr) return { text: s.fail };
-      return { text: D.done(c.label, String(top[0].r[c.field]).slice(0, 120)), openNext: c.open };
+      const title = String(victim[c.field]).slice(0, 120);
+      await recordAction(userId, `delete_${kind}` as any, D.done(c.label, title), { row: victim });
+      return { text: D.done(c.label, title), openNext: c.open, markup: undoMarkup(lang) };
     }
     if (name === "set_pushes") {
       // Включение/выключение рассылки. До этого такого действия не было вовсе:
