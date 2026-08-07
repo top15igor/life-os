@@ -18,6 +18,7 @@ import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
 import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
+import { deleteReminder } from "@/lib/reminders";
 import { saveEntry } from "@/lib/saveEntry";
 import { getOrCreateUser, getInviteCode, noteTgUsername, getVoiceTextPref, setVoiceTextPref, linkTelegramToWebUser } from "@/lib/users";
 import { getHandle } from "@/lib/handle";
@@ -183,12 +184,12 @@ const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB:
 const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir", es: "↗️ Abrir" };
 // Подтверждение удаления записи.
 // Ответы на кнопки под доставленным напоминанием.
-const REM_CB: Record<string, { done: string; snoozed: string; gone: string }> = {
-  ru: { done: "Готово ✅", snoozed: "Отложил на час ⏰", gone: "Это напоминание уже удалено." },
-  en: { done: "Done ✅", snoozed: "Snoozed for an hour ⏰", gone: "This reminder is already gone." },
-  uk: { done: "Готово ✅", snoozed: "Відклав на годину ⏰", gone: "Це нагадування вже видалено." },
-  fr: { done: "Fait ✅", snoozed: "Reporté d'une heure ⏰", gone: "Ce rappel n'existe plus." },
-  es: { done: "Hecho ✅", snoozed: "Pospuesto una hora ⏰", gone: "Este recordatorio ya no existe." },
+const REM_CB: Record<string, { done: string; snoozed: string; gone: string; canceled: string }> = {
+  ru: { done: "Готово ✅", snoozed: "Отложил на час ⏰", gone: "Это напоминание уже удалено.", canceled: "Отменено" },
+  en: { done: "Done ✅", snoozed: "Snoozed for an hour ⏰", gone: "This reminder is already gone.", canceled: "Canceled" },
+  uk: { done: "Готово ✅", snoozed: "Відклав на годину ⏰", gone: "Це нагадування вже видалено.", canceled: "Скасовано" },
+  fr: { done: "Fait ✅", snoozed: "Reporté d'une heure ⏰", gone: "Ce rappel n'existe plus.", canceled: "Annulé" },
+  es: { done: "Hecho ✅", snoozed: "Pospuesto una hora ⏰", gone: "Este recordatorio ya no existe.", canceled: "Cancelado" },
 };
 
 const DEL_BTN: Record<string, { yes: string; no: string; done: string; kept: string; gone: string }> = {
@@ -1131,6 +1132,30 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("remdel:") && cqChat) {
+      // Выбор из нескольких похожих напоминаний при отмене — один тап вместо
+      // переписки. Раньше бот спрашивал списком, человек отвечал текстом, ответ
+      // уходил как новая просьба и снова упирался в тот же вопрос — по кругу.
+      const remId = data.slice(7);
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const R = REM_CB[lng] || REM_CB.ru;
+        if (u && /^[0-9a-f-]{16,}$/i.test(remId)) {
+          const { data: rem } = await db.from("reminders").select("id, text").eq("id", remId).eq("user_id", (u as any).id).maybeSingle();
+          if (rem) {
+            const ok = await deleteReminder((u as any).id, remId);
+            await answerCallback(cq.id, ok ? R.canceled : R.gone);
+            if (mid) await editMessageText(cqChat, mid, `🗑 ${esc(String((rem as any).text || "").slice(0, 150))} — ${R.canceled.toLowerCase()}`);
+          } else {
+            await answerCallback(cq.id, R.gone);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch (e) { await logError("bot:remdel", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if ((data.startsWith("remok:") || data.startsWith("remsn:")) && cqChat) {
       // Кнопки под доставленным напоминанием: «✅ Готово» / «⏰ Через час».
       const remId = data.slice(6);

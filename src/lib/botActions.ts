@@ -502,13 +502,13 @@ const AGENDA_MSG: Record<Lang, {
 }> = {
   ru: { head: { today: "📅 Сегодня", tomorrow: "📅 Завтра", week: "📅 Ближайшая неделя", all: "📅 Ближайшие планы" },
     empty: { today: "На сегодня напоминаний и задач с датой нет — день свободен 🙂", tomorrow: "На завтра пока ничего не запланировано.", week: "На этой неделе напоминаний нет.", all: "Ближайших напоминаний нет." },
-    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Перенёс: «${t}» — ${d} в ${tm}.`, canceled: (t) => `Отменил напоминание: «${t}».`, canceledMany: (n) => `Отменил напоминания: ${n}.`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelSame: (n: number, t: string) => `Нашёл ${n} одинаковых напоминания «${t}» — их не различить. Сказать «отмени все» — сниму разом.`, cancelMany: "Нашёл несколько похожих — уточни, какое отменить:" },
+    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Перенёс: «${t}» — ${d} в ${tm}.`, canceled: (t) => `Отменил напоминание: «${t}».`, canceledMany: (n) => `Отменил напоминания: ${n}.`, cancelNone: "Не нашёл такого напоминания среди ближайших.", cancelSame: (n: number, t: string) => `Нашёл ${n} одинаковых напоминания «${t}» — их не различить. Сказать «отмени все» — сниму разом.`, cancelMany: "Нашёл несколько похожих. Какое отменить?" },
   en: { head: { today: "📅 Today", tomorrow: "📅 Tomorrow", week: "📅 This week", all: "📅 Upcoming" },
     empty: { today: "No reminders or dated tasks today — the day is free 🙂", tomorrow: "Nothing planned for tomorrow yet.", week: "No reminders this week.", all: "No upcoming reminders." },
-    allDay: "all day", taskTag: "task", moved: (t: string, d: string, tm: string) => `⏰ Moved: “${t}” — ${d} at ${tm}.`, canceled: (t) => `Canceled the reminder: “${t}”.`, canceledMany: (n) => `Canceled ${n} reminders.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelSame: (n: number, t: string) => `Found ${n} identical reminders “${t}” — there's no telling them apart. Say “cancel all” and I'll remove them together.`, cancelMany: "Found several similar ones — which should I cancel?" },
+    allDay: "all day", taskTag: "task", moved: (t: string, d: string, tm: string) => `⏰ Moved: “${t}” — ${d} at ${tm}.`, canceled: (t) => `Canceled the reminder: “${t}”.`, canceledMany: (n) => `Canceled ${n} reminders.`, cancelNone: "Couldn't find such a reminder among the upcoming ones.", cancelSame: (n: number, t: string) => `Found ${n} identical reminders “${t}” — there's no telling them apart. Say “cancel all” and I'll remove them together.`, cancelMany: "Found several similar ones. Which should I cancel?" },
   uk: { head: { today: "📅 Сьогодні", tomorrow: "📅 Завтра", week: "📅 Найближчий тиждень", all: "📅 Найближчі плани" },
     empty: { today: "На сьогодні нагадувань і задач із датою немає — день вільний 🙂", tomorrow: "На завтра поки нічого не заплановано.", week: "На цьому тижні нагадувань немає.", all: "Найближчих нагадувань немає." },
-    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Переніс: «${t}» — ${d} о ${tm}.`, canceled: (t) => `Скасував нагадування: «${t}».`, canceledMany: (n) => `Скасував нагадування: ${n}.`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelSame: (n: number, t: string) => `Знайшов ${n} однакових нагадування «${t}» — їх не розрізнити. Скажи «скасуй усі» — зніму разом.`, cancelMany: "Знайшов кілька схожих — уточни, яке скасувати:" },
+    allDay: "весь день", taskTag: "задача", moved: (t: string, d: string, tm: string) => `⏰ Переніс: «${t}» — ${d} о ${tm}.`, canceled: (t) => `Скасував нагадування: «${t}».`, canceledMany: (n) => `Скасував нагадування: ${n}.`, cancelNone: "Не знайшов такого нагадування серед найближчих.", cancelSame: (n: number, t: string) => `Знайшов ${n} однакових нагадування «${t}» — їх не розрізнити. Скажи «скасуй усі» — зніму разом.`, cancelMany: "Знайшов кілька схожих. Яке скасувати?" },
   fr: { head: { today: "📅 Aujourd'hui", tomorrow: "📅 Demain", week: "📅 Cette semaine", all: "📅 À venir" },
     empty: { today: "Aucun rappel ni tâche datée aujourd'hui — journée libre 🙂", tomorrow: "Rien de prévu pour demain.", week: "Aucun rappel cette semaine.", all: "Aucun rappel à venir." },
     allDay: "toute la journée", taskTag: "tâche", moved: (t: string, d: string, tm: string) => `⏰ Déplacé : « ${t} » — ${d} à ${tm}.`, canceled: (t) => `Rappel annulé : « ${t} ».`, canceledMany: (n) => `${n} rappels annulés.`, cancelNone: "Je n'ai pas trouvé ce rappel parmi les prochains.", cancelSame: (n: number, t: string) => `J'ai trouvé ${n} rappels identiques « ${t} » — impossible de les distinguer. Dis « annule tout » et je les enlève ensemble.`, cancelMany: "J'en ai trouvé plusieurs — lequel annuler ?" },
@@ -818,12 +818,23 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         return { text: A.canceledMany(ids.length), openNext: "/reminders" };
       }
       if (top.length > 1) {
-        // Если все найденные называются одинаково, «уточни, какое» — тупик:
-        // человек различает их не лучше бота. Честнее сказать, сколько их,
-        // и предложить снять все разом.
+        // Вопрос СПИСКОМ был тупиком: человек отвечал текстом, ответ уходил как
+        // новая просьба и снова упирался в ту же развилку — четыре круга подряд.
+        // Поэтому спрашиваем КНОПКАМИ: один тап выбирает конкретное напоминание,
+        // и никакого угадывания по тексту.
         const sameName = new Set(top.map((x) => String(x.r.text).trim().toLowerCase())).size === 1;
         if (sameName) return { text: (A as any).cancelSame(top.length, String(top[0].r.text).slice(0, 100)) };
-        return { text: `${A.cancelMany}\n${top.slice(0, 3).map((x) => `• ${String(x.r.text).slice(0, 100)}`).join("\n")}` };
+        const off = typeof tzOffset === "number" ? tzOffset : 0;
+        const when = (iso: string) => {
+          const d = new Date(Date.parse(iso) + off * 60000);
+          const p2 = (n: number) => String(n).padStart(2, "0");
+          return `${p2(d.getUTCDate())}.${p2(d.getUTCMonth() + 1)} ${p2(d.getUTCHours())}:${p2(d.getUTCMinutes())}`;
+        };
+        const rows = top.slice(0, 5).map((x) => [{
+          text: `❌ ${when(x.r.due_at)} — ${String(x.r.text).slice(0, 40)}`,
+          callback_data: `remdel:${x.r.id}`,
+        }]);
+        return { text: A.cancelMany, markup: { inline_keyboard: rows } };
       }
       const ok = await deleteReminder(userId, scored[0].r.id);
       return ok ? { text: A.canceled(String(scored[0].r.text).slice(0, 150)), openNext: "/reminders" } : { text: s.fail };
