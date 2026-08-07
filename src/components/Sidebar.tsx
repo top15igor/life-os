@@ -13,11 +13,11 @@ const NAV_BY: Record<string, { key: string; href: string; icon: string }> = Obje
 const DEFAULT_ORDER = NAV.map((n) => n.key);
 
 const GROUPS_L: Record<string, Record<string, string>> = {
-  ru: { main: "Главное", life: "Жизнь и цели", memory: "Память и люди", ai: "AI-помощники", more: "Ещё" },
-  en: { main: "Main", life: "Life & goals", memory: "Memory & people", ai: "AI helpers", more: "More" },
-  uk: { main: "Головне", life: "Життя та цілі", memory: "Пам'ять і люди", ai: "AI-помічники", more: "Ще" },
-  fr: { main: "Principal", life: "Vie & objectifs", memory: "Mémoire & gens", ai: "Assistants IA", more: "Plus" },
-  es: { main: "Principal", life: "Vida y metas", memory: "Memoria y gente", ai: "Asistentes IA", more: "Más" },
+  ru: { main: "Главное", life: "Моя жизнь", vault: "Моё хранилище", memory: "Память и люди", ai: "AI-помощники", more: "Ещё" },
+  en: { main: "Main", life: "My life", vault: "My vault", memory: "Memory & people", ai: "AI helpers", more: "More" },
+  uk: { main: "Головне", life: "Моє життя", vault: "Моє сховище", memory: "Пам'ять і люди", ai: "AI-помічники", more: "Ще" },
+  fr: { main: "Principal", life: "Ma vie", vault: "Mon coffre", memory: "Mémoire & gens", ai: "Assistants IA", more: "Plus" },
+  es: { main: "Principal", life: "Mi vida", vault: "Mi baúl", memory: "Memoria y gente", ai: "Asistentes IA", more: "Más" },
 };
 const ED_L: Record<string, Record<string, string>> = {
   ru: { customize: "Настроить меню", done: "Готово", reset: "Сбросить", title: "Порядок и видимость" },
@@ -28,7 +28,7 @@ const ED_L: Record<string, Record<string, string>> = {
 };
 
 // Цветовые акценты разделов — чтобы блоки меню различались не только интервалом.
-const GROUP_COLORS: Record<string, string> = { main: "#6366f1", life: "#22c55e", memory: "#a855f7", ai: "#3b82f6", more: "#f59e0b" };
+const GROUP_COLORS: Record<string, string> = { main: "#6366f1", life: "#22c55e", vault: "#a855f7", memory: "#a855f7", ai: "#3b82f6", more: "#f59e0b" };
 
 const K_ORDER = "lifeos_nav_order", K_HIDDEN = "lifeos_nav_hidden", K_COLLAPSED = "lifeos_nav_collapsed";
 const miniBtn = (dis: boolean): any => ({ background: "none", border: "none", cursor: dis ? "default" : "pointer", color: "var(--text-3)", padding: 2, opacity: dis ? 0.3 : 1, display: "inline-flex", flexShrink: 0 });

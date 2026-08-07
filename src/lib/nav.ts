@@ -26,12 +26,20 @@ export const NAV: { key: string; href: string; icon: string }[] = [
 ];
 
 // Смысловые блоки бокового меню (порядок по умолчанию).
+//
+// Две полки — та же модель, что в боте: «Моя жизнь» это события, чувства и люди,
+// «Моё хранилище» — справка, которую потом ищут. Раньше здесь было пять блоков
+// по случайным признакам («Жизнь и цели», «Память и люди»), и человек не понимал,
+// куда что кладётся: в боте одна картина мира, на сайте другая.
+//
+// «Главное» оставлено сверху как быстрый доступ к трём самым частым экранам —
+// это не третья полка, а ярлыки.
 export const NAV_GROUPS: { id: string; keys: string[] }[] = [
   { id: "main", keys: ["today", "diary", "wellness"] },
-  { id: "life", keys: ["plans", "reminders", "notes", "finance", "trace", "family", "projects"] },
-  { id: "memory", keys: ["lifebook", "knowledge", "books", "memory", "people", "places"] },
+  { id: "life", keys: ["plans", "reminders", "finance", "family", "people", "places", "projects", "trace", "lifebook"] },
+  { id: "vault", keys: ["notes", "knowledge", "memory", "books", "wishlist"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
-  { id: "more", keys: ["wishlist", "share", "paths", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
+  { id: "more", keys: ["share", "paths", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
 ];
 
 // Главные разделы для нижнего таб-бара на мобильном.
