@@ -230,6 +230,20 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "«Перебери всё про…» даёт разбор, а не отписку",
+    heavy: true,
+    send: () => message("перебери всё, что у меня есть про пробежки, и дай саммари"),
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      // Материала у тестового пользователя мало — важно, что бот честно ответил
+      // по теме, а не промолчал и не свалился в общий разговор.
+      const joined = texts(sent).join("\n");
+      if (joined.length < 60) return "разбор вышел пустым";
+      return /пробеж|бег|км|набережной|мало|нет запис/i.test(joined) ? null : "ответ не про запрошенную тему";
+    },
+  },
+  {
     name: "«Что у меня сегодня?» отвечает",
     heavy: true,
     send: () => message("что у меня сегодня?"),

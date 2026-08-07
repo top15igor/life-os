@@ -15,6 +15,7 @@ import { logError } from "./errorLog";
 import { rememberGap, WANT_BTN } from "./capabilityGap";
 import { SHELF_LABEL, rememberPendingShelf } from "./shelfMove";
 import { answerFromEverything } from "./vaultSearch";
+import { deepSummary } from "./deepTask";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -187,6 +188,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   {
+    name: "deep_summary",
+    description:
+      "ДОЛГИЙ РАЗБОР по теме: человек просит перебрать ВСЁ, что у него есть, и дать сводку. Примеры: «перебери всё про здоровье и дай саммари», «собери, что я писал про Вовчика за год», «проанализируй мои траты на еду», «сделай выжимку по работе». Отличать от search_all: там ищут ОДИН факт («где я записывал код»), здесь просят КАРТИНУ по теме. topic — тема словами человека.",
+    input_schema: { type: "object", properties: { topic: { type: "string", description: "тема разбора, словами человека" } }, required: ["topic"] },
+  },
+  {
     name: "search_all",
     description:
       "НАЙТИ что-то среди всего, что человек когда-либо сохранял, когда неизвестно, на какой полке это лежит: «где я записывал код от домофона?», «что у меня есть про анализы?», «найди, где я писал про Японию», «я где-то сохранял рецепт — найди». Ищет сразу в дневнике, заметках, базе знаний и документах. Выбирай это, когда человек ИЩЕТ уже сохранённое и не говорит, где именно. Если он спрашивает про свою жизнь в целом («как у меня с настроением в мае») — это ask_question.",
@@ -265,6 +272,7 @@ const SYS =
   "Если человек сообщает СВОЙ день рождения («мой др 15 марта», «я родился 07.03.1990», «запомни мой день рождения») → set_birthday; дни рождения ДРУГИХ людей — set_reminder (если просит напомнить) или save_entry. " +
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
+  "«Перебери всё про…», «дай саммари по…», «собери, что я писал о…» → deep_summary (картина по теме). Один факт («где я записывал код») → search_all. "
   "«Где я записывал…», «что у меня есть про…», «я где-то сохранял…» → search_all: ищет по всем полкам сразу, потому что человек не помнит, куда положил. "
   "Поправка по ДЕНЬГАМ («потратил не 500, а 300», «удали трату на кофе», «исправь сумму») → fix_finance, а не правка записи дневника и не новая трата. "
   "«Убери/удали задачу», «удали заметку», «убери цель» → delete_item с нужным kind. Не путать: «сделал», «отметь выполненной» → complete_task; «отмени напоминание» → cancel_reminder. "
@@ -1129,6 +1137,15 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const created = (data as any)?.created_at ? String((data as any).created_at).slice(0, 10) : null;
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
+    }
+    if (name === "deep_summary") {
+      // Долгая работа: сбор по всем полкам, сжатие пачками, сборка отчёта.
+      // Запускается только по явной просьбе — она дороже обычного ответа.
+      const topic = String(input?.topic || "").trim();
+      if (!topic) return { text: s.fail };
+      const res = await deepSummary(userId, topic, lang);
+      const foot = res.items ? `\n\n<i>Просмотрено материалов: ${res.items}${res.sources ? ` (${res.sources})` : ""}</i>` : "";
+      return { text: res.text + foot, openNext: "/diary" };
     }
     if (name === "search_all") {
       // Единый поиск по всем полкам сразу. Человек не помнит, куда положил, —

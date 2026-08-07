@@ -38,6 +38,7 @@ import {
 import { logError } from "@/lib/errorLog";
 import { entryToVault, vaultToEntry, placePendingShelf, saveFileToVault, SHELF_LABEL } from "@/lib/shelfMove";
 import { kindOf, extractText } from "@/lib/docText";
+import { WORKING as DEEP_WORKING } from "@/lib/deepTask";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
@@ -2267,6 +2268,10 @@ async function handleUpdate(req: NextRequest) {
         const lng0 = langOf(user, msg);
         const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
         if (route.kind === "action") {
+          // Долгий разбор идёт до минуты — молчать нельзя, человек решит, что бот завис.
+          if (route.name === "deep_summary") {
+            await sendMessage(chatId, (DEEP_WORKING[lng0] || DEEP_WORKING.ru)(String(route.input?.topic || "").slice(0, 60)));
+          }
           const res = await runAction(user.id, route.name, route.input, lng0, (user as any).tz_offset);
           // html-флаг у каждого ответа свой: одно действие может вернуть готовый
           // HTML (подсказки relay), другое — markdown. Общий флаг ломал бы одно из них.
@@ -2363,6 +2368,9 @@ async function handleUpdate(req: NextRequest) {
       const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
       if (route.kind === "action") {
         const lang = langOf(user, msg);
+        if (route.name === "deep_summary") {
+          await sendMessage(chatId, (DEEP_WORKING[lang] || DEEP_WORKING.ru)(String(route.input?.topic || "").slice(0, 60)));
+        }
         const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
         // Несколько объектов в одной команде («добавь два фильма») → несколько вызовов:
         // выполняем все, подтверждения склеиваем в одно сообщение.
