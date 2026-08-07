@@ -129,3 +129,34 @@ export async function placePendingShelf(userId: string, shelf: Shelf): Promise<s
     return null;
   }
 }
+
+// ===== Файл в хранилище =====
+//
+// Текст файла кладём заметками: так его сразу находит единый поиск, и не нужен
+// ещё один вид хранилища. Длинные документы режем на части — заметка на сто
+// тысяч знаков нечитаема, а по частям и ищется точнее, и показывается понятнее.
+
+const PART_MAX = 3500;
+const PARTS_MAX = 12;
+
+export async function saveFileToVault(userId: string, fileName: string, text: string): Promise<{ parts: number; chars: number }> {
+  const clean = (text || "").replace(/\n{3,}/g, "\n\n").trim();
+  if (!clean) return { parts: 0, chars: 0 };
+  const name = (fileName || "файл").slice(0, 120);
+
+  const chunks: string[] = [];
+  for (let i = 0; i < clean.length && chunks.length < PARTS_MAX; i += PART_MAX) {
+    chunks.push(clean.slice(i, i + PART_MAX));
+  }
+  const rows = chunks.map((c, i) => ({
+    user_id: userId,
+    text: `📄 ${name}${chunks.length > 1 ? ` (${i + 1}/${chunks.length})` : ""}\n\n${c}`,
+  }));
+  try {
+    const { error } = await supabaseAdmin().from("notes").insert(rows);
+    if (error) return { parts: 0, chars: 0 };
+  } catch {
+    return { parts: 0, chars: 0 };
+  }
+  return { parts: rows.length, chars: clean.length };
+}

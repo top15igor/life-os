@@ -36,7 +36,8 @@ import {
   cancelProblem, attachScreenshot, isProblemPhrase, PROBLEM_KINDS, MORE_BTN, CANCEL_BTN, type ProblemKind,
 } from "@/lib/problemReport";
 import { logError } from "@/lib/errorLog";
-import { entryToVault, vaultToEntry, placePendingShelf, SHELF_LABEL } from "@/lib/shelfMove";
+import { entryToVault, vaultToEntry, placePendingShelf, saveFileToVault, SHELF_LABEL } from "@/lib/shelfMove";
+import { kindOf, extractText } from "@/lib/docText";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
 import { autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import { financeReview } from "@/lib/financeCoach";
@@ -185,6 +186,16 @@ const CUR_SYM: Record<string, string> = { USD: "$", EUR: "€", UAH: "₴", RUB:
 const ACT_OPEN: Record<string, string> = { ru: "↗️ Открыть", en: "↗️ Open", uk: "↗️ Відкрити", fr: "↗️ Ouvrir", es: "↗️ Abrir" };
 // Подтверждение удаления записи.
 // Ответы на кнопки под доставленным напоминанием.
+
+// 📄 Офисные файлы в хранилище: что ответить человеку.
+const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: number) => string; searchable: string; empty: string }> = {
+  ru: { reading: "📄 Читаю файл…", saved: (n, p) => `📚 Сохранил в хранилище: <b>${n}</b>${p > 1 ? ` · ${p} частей` : ""}`, searchable: "Теперь это ищется — просто спроси, например «что там было про…».", empty: "В файле не нашлось текста, который я могу прочитать." },
+  en: { reading: "📄 Reading the file…", saved: (n, p) => `📚 Saved to your vault: <b>${n}</b>${p > 1 ? ` · ${p} parts` : ""}`, searchable: "It's searchable now — just ask, e.g. “what was in there about…”.", empty: "I couldn't find readable text in that file." },
+  uk: { reading: "📄 Читаю файл…", saved: (n, p) => `📚 Зберіг у сховище: <b>${n}</b>${p > 1 ? ` · ${p} частин` : ""}`, searchable: "Тепер це шукається — просто запитай, наприклад «що там було про…».", empty: "У файлі не знайшлося тексту, який я можу прочитати." },
+  fr: { reading: "📄 Je lis le fichier…", saved: (n, p) => `📚 Enregistré dans ton coffre : <b>${n}</b>${p > 1 ? ` · ${p} parties` : ""}`, searchable: "C'est maintenant cherchable — demande simplement « qu'est-ce qu'il y avait sur… ».", empty: "Je n'ai pas trouvé de texte lisible dans ce fichier." },
+  es: { reading: "📄 Leyendo el archivo…", saved: (n, p) => `📚 Guardado en tu baúl: <b>${n}</b>${p > 1 ? ` · ${p} partes` : ""}`, searchable: "Ya se puede buscar — solo pregunta, p. ej. «qué había sobre…».", empty: "No encontré texto legible en ese archivo." },
+};
+
 const REM_CB: Record<string, { done: string; snoozed: string; gone: string; canceled: string }> = {
   ru: { done: "Готово ✅", snoozed: "Отложил на час ⏰", gone: "Это напоминание уже удалено.", canceled: "Отменено" },
   en: { done: "Done ✅", snoozed: "Snoozed for an hour ⏰", gone: "This reminder is already gone.", canceled: "Canceled" },
@@ -2017,6 +2028,34 @@ async function handleUpdate(req: NextRequest) {
         } catch (e) {
           logError("bot:notes-import", e, { userId: user.id, chatId });
           await sendMessage(chatId, N.failed);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      // 📄 Офисные файлы (docx, xlsx): вытаскиваем текст и кладём в хранилище,
+      // чтобы он попал в единый поиск. Раньше бот их просто не принимал —
+      // человек получал «формат не поддерживаю» и уносил документ обратно.
+      const office = kindOf(mime, doc.file_name);
+      if (office === "docx" || office === "xlsx") {
+        const F = FILE_MSG[lang] || FILE_MSG.ru;
+        await sendMessage(chatId, F.reading);
+        try {
+          const fileUrl = await getFileUrl(doc.file_id);
+          const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
+          const got = await extractText(buf, mime, doc.file_name);
+          const body = (got?.text || "").trim();
+          if (!body) { await sendMessage(chatId, F.empty); return NextResponse.json({ ok: true }); }
+          const res = await saveFileToVault(user.id, doc.file_name || "", body);
+          if (!res.parts) { await sendMessage(chatId, L.failed); return NextResponse.json({ ok: true }); }
+          const peek = body.slice(0, 300).replace(/\s+/g, " ");
+          await sendMessage(
+            chatId,
+            `${F.saved(esc(doc.file_name || "файл"), res.parts)}\n\n<i>${esc(peek)}${body.length > 300 ? "…" : ""}</i>\n\n${F.searchable}`,
+            { reply_markup: { inline_keyboard: [[{ text: ACT_OPEN[lang] || ACT_OPEN.ru, url: `${origin}/go?next=${encodeURIComponent("/notes")}` }]] } },
+          );
+        } catch (e) {
+          logError("bot:office-file", e, { userId: user.id, chatId });
+          await sendMessage(chatId, L.failed);
         }
         return NextResponse.json({ ok: true });
       }
