@@ -1132,6 +1132,42 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("fin:") && cqChat) {
+      // Выбор кнопкой, какую именно трату поправить или убрать.
+      // Во второй части — либо новая сумма, либо "d" (удалить).
+      const [, what, txId] = data.split(":");
+      const mid = cq.message?.message_id;
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        const lng = pickLang((u as any)?.lang);
+        const R = REM_CB[lng] || REM_CB.ru;
+        if (u && /^[0-9a-f-]{16,}$/i.test(txId || "")) {
+          const { data: tx } = await db.from("finance_tx").select("id, amount, currency, note, category").eq("id", txId).eq("user_id", (u as any).id).maybeSingle();
+          if (tx) {
+            const label = `${Number((tx as any).amount)}${(tx as any).currency ? " " + (tx as any).currency : ""}`;
+            const note = String((tx as any).note || (tx as any).category || "");
+            if (what === "d") {
+              await db.from("finance_tx").delete().eq("id", txId).eq("user_id", (u as any).id);
+              await answerCallback(cq.id, R.canceled);
+              if (mid) await editMessageText(cqChat, mid, `🗑 ${esc(label)}${note ? ` (${esc(note)})` : ""}`);
+            } else {
+              const amt = Number(what);
+              if (Number.isFinite(amt) && amt > 0) {
+                await db.from("finance_tx").update({ amount: amt }).eq("id", txId).eq("user_id", (u as any).id);
+                await answerCallback(cq.id, R.done);
+                if (mid) await editMessageText(cqChat, mid, `💸 ${esc(label)} → ${amt}${(tx as any).currency ? " " + esc(String((tx as any).currency)) : ""}${note ? ` (${esc(note)})` : ""}`);
+              } else {
+                await answerCallback(cq.id);
+              }
+            }
+          } else {
+            await answerCallback(cq.id, R.gone);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch (e) { await logError("bot:fin-fix", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("del2:") && cqChat) {
       // Выбор кнопкой, что именно убрать: задачу, заметку или цель.
       const [, kindKey, itemId] = data.split(":");
