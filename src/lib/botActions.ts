@@ -17,6 +17,7 @@ import { SHELF_LABEL, rememberPendingShelf } from "./shelfMove";
 import { answerFromEverything } from "./vaultSearch";
 import { deepSummary } from "./deepTask";
 import { recordAction, undoLast, listActions } from "./agentJournal";
+import { rememberFocus } from "./dialogFocus";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -364,7 +365,7 @@ export async function lastReplyWasAction(userId: string, withinMs = 30 * 60 * 10
 // Один haiku-проход: действие / вопрос / запись. lastBot — последнее сообщение
 // бота пользователю (если недавнее): без него короткая отсылка «а скинь мне рецепт»
 // после утреннего пуша про гречневый хлеб превращалась в поиск «рецепт» вообще.
-export async function routeMessage(text: string, userId?: string, tzOffset?: number | null, lastBot?: string | null): Promise<Route> {
+export async function routeMessage(text: string, userId?: string, tzOffset?: number | null, lastBot?: string | null, focus?: string | null): Promise<Route> {
   try {
     const resp = await client().messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -375,6 +376,9 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
         { type: "text", text: SYS, cache_control: { type: "ephemeral" } },
         { type: "text", text: nowLocalLine(tzOffset) },
         ...(lastBot ? [{ type: "text" as const, text: `Последнее сообщение бота пользователю (контекст для коротких отсылок «его», «этот», «а скинь…»):\n«${lastBot}»` }] : []),
+        // Сами объекты, а не пересказ реплики: из «Нашёл несколько похожих»
+        // невозможно понять, что было в списке, и «убери второй» повисает.
+        ...(focus ? [{ type: "text" as const, text: focus }] : []),
       ],
       messages: [{ role: "user", content: text }],
       tools: ACTION_TOOLS,
@@ -734,12 +738,14 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const title = String(input?.title || "").trim();
       if (!title) return { text: s.fail };
       await db.from("goals").insert({ user_id: userId, title, year: new Date().getFullYear(), progress: 0 });
+      await rememberFocus(userId, [{ kind: "goal", label: title }]);
       return { text: s.goal(title), openNext: "/goals" };
     }
     if (name === "add_task") {
       const t = String(input?.text || "").trim();
       if (!t) return { text: s.fail };
       await db.from("tasks").insert({ user_id: userId, text: t, done: false });
+      await rememberFocus(userId, [{ kind: "task", label: t }]);
       return { text: s.task(t), openNext: "/goals?tab=tasks" };
     }
     if (name === "set_reminder") {
@@ -777,6 +783,8 @@ export async function runAction(userId: string, name: string, input: any, lang: 
 
       const res = await createReminder(userId, { text: t, dueISO, dateStr: date, allDay: input?.recurrence === "hourly" ? false : allDay, recurrence, remindMin });
       if (!res.ok) return { text: s.fail };
+      // В фокус: сразу после создания звучит «перенеси его на завтра».
+      await rememberFocus(userId, [{ kind: "reminder", label: t, id: (res as any)?.reminder?.id ?? null }]);
       const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
       const [, mm, dd] = date.split("-");
       const when = firstLocal
@@ -873,7 +881,8 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         };
       }
       const { data: created, error } = await db.from("notes").insert({ user_id: userId, text: t }).select("id").maybeSingle();
-      if (error) return { text: s.fail }; // таблицы может не быть до миграции notes.sql
+      if (error) return { text: s.fail };
+      await rememberFocus(userId, [{ kind: "note", label: t, id: (created as any)?.id ?? null }]); // таблицы может не быть до миграции notes.sql
       // Зеркально записи дневника: показываем полку и даём переложить одним тапом.
       const SH = (SHELF_LABEL as any)[lang] || SHELF_LABEL.ru;
       const noteId = (created as any)?.id;
@@ -996,6 +1005,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
           text: `❌ ${when(x.r.due_at)} — ${String(x.r.text).slice(0, 40)}`,
           callback_data: `remdel:${x.r.id}`,
         }]);
+        await rememberFocus(userId, top.slice(0, 5).map((x) => ({ kind: "reminder", label: String(x.r.text), id: x.r.id })));
         return { text: A.cancelMany, markup: { inline_keyboard: rows } };
       }
       const ok = await deleteReminder(userId, scored[0].r.id);
@@ -1208,6 +1218,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const q = String(input?.query || "").trim();
       if (!q) return { text: s.fail };
       const ans = await answerFromEverything(userId, q, lang);
+      if (ans.sources.length) await rememberFocus(userId, ans.sources.map((sr) => ({ kind: "found", label: sr.label })));
       return { text: ans.text, sources: ans.sources };
     }
     if (name === "cannot_do") {
@@ -1310,6 +1321,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
           text: `❌ ${String(x.r[c.field]).slice(0, 45)}`,
           callback_data: `del2:${kind[0]}:${x.r.id}`,
         }]);
+        await rememberFocus(userId, top.slice(0, 5).map((x) => ({ kind, label: String(x.r[c.field]), id: x.r.id })));
         return { text: D.which(c.label), markup: { inline_keyboard: rowsKb } };
       }
 

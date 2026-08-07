@@ -38,6 +38,7 @@ import {
 import { logError } from "@/lib/errorLog";
 import { entryToVault, vaultToEntry, placePendingShelf, saveFileToVault, SHELF_LABEL } from "@/lib/shelfMove";
 import { undoLast, recordAction } from "@/lib/agentJournal";
+import { focusLine, rememberFocus } from "@/lib/dialogFocus";
 import { kindOf, extractText } from "@/lib/docText";
 import { WORKING as DEEP_WORKING } from "@/lib/deepTask";
 import { looksLikeRefusal, rememberGap, confirmGap, WANT_BTN } from "@/lib/capabilityGap";
@@ -2296,7 +2297,7 @@ async function handleUpdate(req: NextRequest) {
         // зарегистрирован аккаунт?» три раза подряд игнорировался сценарием) —
         // сначала отвечаем по существу, и только обычные ответы идут в знакомство.
         const lng0 = langOf(user, msg);
-        const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
+        const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), await focusLine(user.id));
         if (route.kind === "action") {
           // Долгий разбор идёт до минуты — молчать нельзя, человек решит, что бот завис.
           if (route.name === "deep_summary") {
@@ -2395,7 +2396,7 @@ async function handleUpdate(req: NextRequest) {
     // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
     // порог был 160 — из-за этого голосовой ВОПРОС на ~190 символов молча уходил в дневник)
     if (!forceSave && (!isVoice || text.length < 400)) {
-      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id));
+      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), await focusLine(user.id));
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         if (route.name === "deep_summary") {
@@ -2497,6 +2498,12 @@ async function handleUpdate(req: NextRequest) {
     // Тёплый отклик друга под разбором (в выбранном тоне) — отдельной строкой, факты не трогает.
     const reaction = await reactionP;
     if (reaction) body += `\n\n💬 ${esc(reaction)}`;
+    // Запись — в память разговора: следом часто звучит «переложи это»,
+    // «убери последнюю», «а добавь туда ещё».
+    if (entry?.id) {
+      await rememberFocus(user.id, [{ kind: "entry", label: (analysis.summary || text).slice(0, 100), id: entry.id }]).catch(() => {});
+    }
+
     // Куда положили — видно, и одним тапом можно переложить. Не спрашиваем
     // заранее: человек диктует на ходу, развилка его останавливает, а ошибается
     // бот редко. Каждый тап заодно показывает, где роутер промахивается.
