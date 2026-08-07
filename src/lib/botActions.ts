@@ -16,7 +16,7 @@ import { rememberGap, WANT_BTN } from "./capabilityGap";
 import { SHELF_LABEL, rememberPendingShelf } from "./shelfMove";
 import { answerFromEverything } from "./vaultSearch";
 import { deepSummary } from "./deepTask";
-import { recordAction, undoLast } from "./agentJournal";
+import { recordAction, undoLast, listActions } from "./agentJournal";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -189,6 +189,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   {
+    name: "agent_log",
+    description:
+      "Показать, ЧТО АГЕНТ ДЕЛАЛ С ДАННЫМИ человека: «что ты делал с моими данными?», «покажи, что ты менял», «журнал действий», «ты ничего не удалял?». Список последних изменений с датами и отметкой, что уже отменено.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
     name: "undo_last",
     description:
       "ОТМЕНИТЬ последнее изменение данных: «отмени последнее», «верни как было», «я не то удалил», «верни задачу», «отмени изменение». Возвращает то, что агент удалил или переписал последней командой. НЕ путать с cancel_reminder (отменить напоминание) и delete_item (убрать что-то).",
@@ -280,6 +286,7 @@ const SYS =
   "Просьбы дать/найти рецепт, совет, тренировку или материал из сохранённого («дай рецепт…», «найди тот рилс про…», «что я сохранял о…») → ask_knowledge, а НЕ save_entry: человек ждёт ОТВЕТ, а не запись в дневник. " +
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
   "«Отмени последнее», «верни как было», «я не то удалил» → undo_last. "
+  "«Что ты делал с моими данными», «покажи, что менял» → agent_log. "
   "«Перебери всё про…», «дай саммари по…», «собери, что я писал о…» → deep_summary (картина по теме). Один факт («где я записывал код») → search_all. "
   "«Где я записывал…», «что у меня есть про…», «я где-то сохранял…» → search_all: ищет по всем полкам сразу, потому что человек не помнит, куда положил. "
   "Поправка по ДЕНЬГАМ («потратил не 500, а 300», «удали трату на кофе», «исправь сумму») → fix_finance, а не правка записи дневника и не новая трата. "
@@ -465,6 +472,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    jrn: { head: "📋 <b>Что я менял в твоих данных</b>", empty: "Я ничего не удалял и не переписывал — журнал пуст.", undoneMark: "(отменено)", foot: "Любое из этого можно вернуть: скажи «отмени последнее»." },
     undo: { done: (w: string) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились с тех пор. Расскажи, что восстановить, и я сделаю руками." },
     shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
     cant: { text: (w: string) => `Честно: ${w ? `«${w}» — этого` : "этого"} я не умею. Я живу внутри LIFE OS и не могу действовать во внешнем мире.\n\nЗато могу записать это, поставить напоминание или задачу — скажи, что из этого нужно.` },
@@ -498,6 +506,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    jrn: { head: "\ud83d\udccb <b>What I changed in your data</b>", empty: "I haven\u2019t deleted or rewritten anything \u2014 the log is empty.", undoneMark: "(undone)", foot: "Any of it can be brought back: say \u201cundo the last one\u201d." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
     cant: { text: (w: string) => `Honestly: ${w ? `\u201c${w}\u201d is` : "that\u2019s"} something I can\u2019t do. I live inside LIFE OS and can\u2019t act in the outside world.\n\nWhat I can do: save it, set a reminder or a task \u2014 tell me which.` },
@@ -531,6 +540,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    jrn: { head: "📋 <b>Що я змінював у твоїх даних</b>", empty: "Я нічого не видаляв і не переписував — журнал порожній.", undoneMark: "(скасовано)", foot: "Будь-що з цього можна повернути: скажи «скасуй останнє»." },
     undo: { done: (w: string) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв і не переписував.", failed: "Не вдалося повернути — дані відтоді змінилися. Скажи, що відновити, і я зроблю руками." },
     shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
     cant: { text: (w: string) => `Чесно: ${w ? `«${w}» — цього` : "цього"} я не вмію. Я живу всередині LIFE OS і не можу діяти в зовнішньому світі.\n\nЗате можу записати це, поставити нагадування чи задачу — скажи, що саме потрібно.` },
@@ -564,6 +574,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    jrn: { head: "\ud83d\udccb <b>Ce que j\u2019ai modifi\u00e9 dans tes donn\u00e9es</b>", empty: "Je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit \u2014 le journal est vide.", undoneMark: "(annul\u00e9)", foot: "Tout \u00e7a peut \u00eatre restaur\u00e9 : dis \u00ab annule la derni\u00e8re \u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
     cant: { text: (w: string) => `Honn\u00eatement : ${w ? `\u00ab ${w} \u00bb, je` : "je"} ne sais pas faire \u00e7a. Je vis dans LIFE OS et je ne peux pas agir dans le monde ext\u00e9rieur.\n\nEn revanche je peux le noter, cr\u00e9er un rappel ou une t\u00e2che \u2014 dis-moi ce qu\u2019il te faut.` },
@@ -597,6 +608,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    jrn: { head: "\ud83d\udccb <b>Lo que cambi\u00e9 en tus datos</b>", empty: "No he borrado ni reescrito nada \u2014 el registro est\u00e1 vac\u00edo.", undoneMark: "(deshecho)", foot: "Todo esto se puede recuperar: di \u00abdeshaz lo \u00faltimo\u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
     cant: { text: (w: string) => `Con sinceridad: ${w ? `\u00ab${w}\u00bb es algo que` : "eso"} no s\u00e9 hacer. Vivo dentro de LIFE OS y no puedo actuar en el mundo exterior.\n\nLo que s\u00ed puedo: anotarlo, poner un recordatorio o una tarea \u2014 dime qu\u00e9 prefieres.` },
@@ -709,7 +721,9 @@ const RELAY_OK: Record<Lang, (name: string, msg: string) => string> = {
 // html:true — текст УЖЕ в HTML для Telegram (например, подсказки relay с <code>);
 // такой ответ нельзя прогонять через mdToTelegram, иначе теги экранируются и
 // пользователь видит «<code>/send …</code>» буквально.
-export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string }; html?: boolean };
+export type ActionResult = { text: string; openNext?: string; confirmDelete?: { entryId: string; preview: string }; markup?: any; file?: { name: string; text: string }; html?: boolean;
+  // Откуда взят ответ. Ссылки собирает вебхук: только он знает адрес сайта.
+  sources?: { label: string; path: string }[] };
 
 // Выполняет распознанное действие. Возвращает текст подтверждения (+ опц. куда открыть на сайте).
 export async function runAction(userId: string, name: string, input: any, lang: Lang, tzOffset?: number | null): Promise<ActionResult> {
@@ -1160,6 +1174,19 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
     }
+    if (name === "agent_log") {
+      // Прозрачность: человек должен видеть, что агент трогал в его данных.
+      // Без этого «бот сам разложил по полочкам» звучит как «бот что-то сделал
+      // с моими записями, а что — неизвестно».
+      const J = (s as any).jrn;
+      const rows = await listActions(userId, 15);
+      if (!rows.length) return { text: J.empty };
+      const lines = rows.map((r) => {
+        const d = String(r.created_at || "").slice(0, 10).split("-").reverse().slice(0, 2).join(".");
+        return `${r.undone ? "↩️" : "•"} ${d} — ${r.summary}${r.undone ? ` ${J.undoneMark}` : ""}`;
+      });
+      return { text: `${J.head}\n\n${lines.join("\n")}\n\n${J.foot}`, html: true };
+    }
     if (name === "undo_last") {
       const U = (s as any).undo;
       const res = await undoLast(userId);
@@ -1181,7 +1208,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const q = String(input?.query || "").trim();
       if (!q) return { text: s.fail };
       const ans = await answerFromEverything(userId, q, lang);
-      return { text: ans, openNext: "/notes" };
+      return { text: ans.text, sources: ans.sources };
     }
     if (name === "cannot_do") {
       // Честный отказ вместо тихой записи в дневник. Раньше «закажи такси»

@@ -17,7 +17,11 @@ import { searchMemories } from "./semanticMemory";
 
 type Src = "diary" | "note" | "knowledge" | "doc";
 
-export type Found = { src: Src; date: string | null; title: string; text: string; score: number };
+export type Found = { src: Src; date: string | null; title: string; text: string; score: number; path?: string };
+
+// Куда ведёт источник. У записи дневника есть своя страница, у остальных полок —
+// только раздел: точнее не сделать, но и это лучше, чем ничего.
+export type Source = { label: string; path: string };
 
 const SRC_LABEL: Record<Src, string> = {
   diary: "дневник",
@@ -48,7 +52,7 @@ async function fromNotes(userId: string, st: string[]): Promise<Found[]> {
   try {
     const { data } = await supabaseAdmin().from("notes").select("text, created_at").eq("user_id", userId).limit(500);
     return ((data as any[]) || [])
-      .map((n) => ({ src: "note" as Src, date: String(n.created_at || "").slice(0, 10), title: "", text: String(n.text || ""), score: scoreOf(n.text || "", st) }))
+      .map((n) => ({ src: "note" as Src, date: String(n.created_at || "").slice(0, 10), title: "", text: String(n.text || ""), score: scoreOf(n.text || "", st), path: "/notes" }))
       .filter((x) => x.score > 0);
   } catch {
     return [];
@@ -62,7 +66,7 @@ async function fromKnowledge(userId: string, st: string[]): Promise<Found[]> {
     return ((data as any[]) || [])
       .map((d) => {
         const hay = [d.title, d.topic, d.summary, ...(Array.isArray(d.key_points) ? d.key_points : []), ...(Array.isArray(d.tags) ? d.tags : [])].join(" ");
-        return { src: "knowledge" as Src, date: String(d.created_at || "").slice(0, 10), title: String(d.title || ""), text: String(d.summary || hay).slice(0, 600), score: scoreOf(hay, st) };
+        return { src: "knowledge" as Src, date: String(d.created_at || "").slice(0, 10), title: String(d.title || ""), text: String(d.summary || hay).slice(0, 600), score: scoreOf(hay, st), path: "/knowledge" };
       })
       .filter((x) => x.score > 0);
   } catch {
@@ -78,7 +82,7 @@ async function fromDocs(userId: string, st: string[]): Promise<Found[]> {
       .map((m) => {
         const flds = Array.isArray(m.fields) ? m.fields.map((f: any) => `${f?.label ?? ""} ${f?.value ?? ""}`).join(" ") : "";
         const hay = [m.title, m.summary, flds].join(" ");
-        return { src: "doc" as Src, date: String(m.mem_date || m.created_at || "").slice(0, 10), title: String(m.title || ""), text: [m.summary, flds].filter(Boolean).join(" · ").slice(0, 600), score: scoreOf(hay, st) };
+        return { src: "doc" as Src, date: String(m.mem_date || m.created_at || "").slice(0, 10), title: String(m.title || ""), text: [m.summary, flds].filter(Boolean).join(" · ").slice(0, 600), score: scoreOf(hay, st), path: "/memory" };
       })
       .filter((x) => x.score > 0);
   } catch {
@@ -92,14 +96,14 @@ async function fromDiary(userId: string, query: string, st: string[]): Promise<F
   if (hits.length) {
     return hits
       .filter((h) => h.similarity >= 0.15)
-      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: Math.round(h.similarity * 10) + 1 }));
+      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: Math.round(h.similarity * 10) + 1, path: h.id ? `/entry/${h.id}` : "/diary" }));
   }
   try {
     const { data } = await supabaseAdmin().from("entries")
-      .select("raw_text, summary, entry_date").eq("user_id", userId)
+      .select("id, raw_text, summary, entry_date").eq("user_id", userId)
       .order("entry_date", { ascending: false }).limit(400);
     return ((data as any[]) || [])
-      .map((e) => ({ src: "diary" as Src, date: String(e.entry_date || ""), title: "", text: String(e.raw_text || e.summary || "").slice(0, 700), score: scoreOf(`${e.raw_text || ""} ${e.summary || ""}`, st) }))
+      .map((e) => ({ src: "diary" as Src, date: String(e.entry_date || ""), title: "", text: String(e.raw_text || e.summary || "").slice(0, 700), score: scoreOf(`${e.raw_text || ""} ${e.summary || ""}`, st), path: e.id ? `/entry/${e.id}` : "/diary" }))
       .filter((x) => x.score > 0);
   } catch {
     return [];
@@ -142,11 +146,24 @@ const SYS = `Ты отвечаешь человеку по ЕГО СОБСТВЕ
 — Если куски противоречат друг другу, скажи об этом и покажи оба.
 — Коротко. Без markdown, списков со звёздочками и заголовков.`;
 
-export async function answerFromEverything(userId: string, query: string, locale = "ru"): Promise<string> {
+export async function answerFromEverything(userId: string, query: string, locale = "ru"): Promise<{ text: string; sources: Source[] }> {
   const found = await searchEverything(userId, query);
-  if (!found.length) return NOTHING[locale] || NOTHING.ru;
+  if (!found.length) return { text: NOTHING[locale] || NOTHING.ru, sources: [] };
+
+  // До трёх ссылок на то, откуда взят ответ: человек должен иметь возможность
+  // открыть первоисточник, а не верить пересказу на слово.
+  const seen = new Set<string>();
+  const sources: Source[] = [];
+  for (const f of found) {
+    const path = f.path || "";
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    sources.push({ label: `${SRC_LABEL[f.src]}${f.date ? ` · ${f.date}` : ""}`, path });
+    if (sources.length >= 3) break;
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
-    return found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n");
+    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources };
   }
 
   const ctx = found
@@ -164,8 +181,8 @@ export async function answerFromEverything(userId: string, query: string, locale
     });
     logClaude(userId, "vault-search", "haiku", (m as any).usage);
     const t = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
-    return t || (NOTHING[locale] || NOTHING.ru);
+    return { text: t || (NOTHING[locale] || NOTHING.ru), sources };
   } catch {
-    return found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n");
+    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources };
   }
 }

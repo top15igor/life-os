@@ -2415,6 +2415,16 @@ async function handleUpdate(req: NextRequest) {
         if (res.markup?.inline_keyboard) {
           extra = { reply_markup: { inline_keyboard: [...res.markup.inline_keyboard, ...(extra?.reply_markup?.inline_keyboard || [])] } };
         }
+        // Источники ответа: человек должен иметь возможность открыть первоисточник,
+        // а не верить пересказу на слово. Ссылки строим здесь — только вебхук
+        // знает адрес сайта, а входить надо через /go (без токена в ссылке).
+        if (res.sources?.length) {
+          const srcRows = res.sources.slice(0, 3).map((sr) => [{
+            text: `🔗 ${sr.label}`,
+            url: `${origin}/go?next=${encodeURIComponent(sr.path)}`,
+          }]);
+          extra = { reply_markup: { inline_keyboard: [...(extra?.reply_markup?.inline_keyboard || []), ...srcRows] } };
+        }
         // Удаление записи — с подтверждением (кнопки Да/Отмена), чтобы не потерять данные случайно.
         if (res.confirmDelete) {
           const D = DEL_BTN[lang] || DEL_BTN.ru;
