@@ -43,6 +43,20 @@ const ENTRY_MARK = "набережной";
 // Тестовая задача: заводим её командой и следом убираем командой же.
 const TASK_MARK = "заказать воду для самопроверки";
 
+async function testTaskState(): Promise<"gone" | "done" | "open"> {
+  try {
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+    if (!(u as any)?.id) return "gone";
+    const { data } = await db.from("tasks").select("id, done").eq("user_id", (u as any).id).ilike("text", `%${TASK_MARK}%`).limit(1);
+    const row = ((data as any[]) || [])[0];
+    if (!row) return "gone";
+    return row.done ? "done" : "open";
+  } catch {
+    return "gone";
+  }
+}
+
 async function testTaskExists(): Promise<boolean> {
   try {
     const db = supabaseAdmin();
@@ -187,7 +201,14 @@ const SCENARIOS: Scenario[] = [
     check: (sent) => notBroken(sent),
     // Именно тут раньше был провал: удаления задач не существовало, и бот в
     // лучшем случае помечал её выполненной — то есть делал не то, о чём просят.
-    verifyDb: async () => (await testTaskExists()) ? "задача осталась в базе — «убери» не сработало" : null,
+    verifyDb: async () => {
+      const st = await testTaskState();
+      if (st === "gone") return null;
+      // Разделяем два разных провала: бот вообще не понял команду или понял её
+      // как «отметить выполненной». Лечится это по-разному.
+      if (st === "done") return "бот отметил задачу выполненной вместо удаления";
+      return "задача осталась в базе — «убери» не сработало";
+    },
   },
   {
     name: "«Что у меня сегодня?» отвечает",
