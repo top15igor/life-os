@@ -171,6 +171,7 @@ export async function importTiktok(userId: string, url: string, locale = "ru"): 
     console.error("tt video", e);
   }
 
+  let saveError: string | null = null;
   const id = await insertSavedItem({
     user_id: userId,
     source: "tiktok",
@@ -189,12 +190,12 @@ export async function importTiktok(userId: string, url: string, locale = "ru"): 
     video_url,
     video_size,
     status: "ok",
-  });
+  }, (m) => { saveError = m; });
   const saved = !!id;
 
   const item = saved
     ? { id, source: "tiktok", url, author: media.author, kind: "video", title: analysis.title, topic: analysis.topic, summary: analysis.summary, key_points: analysis.key_points, tags: analysis.tags, image_url, video_url, note: null, favorite: false, done: false, position: 0, created_at: new Date().toISOString() }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false, videoUrl: video_url };
+  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false, videoUrl: video_url, saveError };
 }

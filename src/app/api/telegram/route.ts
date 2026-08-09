@@ -2190,7 +2190,12 @@ async function handleUpdate(req: NextRequest) {
         }
         // Разбор удался, но запись в базу упала — честно предупреждаем, а не врём «сохранил».
         if (!r.saved) {
-          await sendMessage(chatId, L.saveFail);
+          // Владельцу дописываем настоящую причину отказа базы: иначе такие сбои
+          // приходится чинить вслепую, гадая по чужому скриншоту.
+          const why = (r as any).saveError;
+          const isOwner = String(chatId) === String(process.env.TELEGRAM_ALLOWED_CHAT_ID || "");
+          const extra = why && isOwner ? `\n\n<code>${esc(String(why).slice(0, 400))}</code>` : "";
+          await sendMessage(chatId, L.saveFail + extra);
           return NextResponse.json({ ok: true });
         }
         const a = r.analysis;

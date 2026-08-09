@@ -115,6 +115,7 @@ export async function importFacebook(userId: string, url: string, locale = "ru")
     }
   }
 
+  let saveError: string | null = null;
   const id = await insertSavedItem({
     user_id: userId,
     source: "facebook",
@@ -133,12 +134,12 @@ export async function importFacebook(userId: string, url: string, locale = "ru")
     video_url: null,
     video_size: null,
     status: "ok",
-  });
+  }, (m) => { saveError = m; });
   const saved = !!id;
 
   const item = saved
     ? { id, source: "facebook", url, author: media.author, kind: media.kind, title: analysis.title, topic: analysis.topic, summary: analysis.summary, key_points: analysis.key_points, tags: analysis.tags, image_url, video_url: null, note: null, favorite: false, done: false, position: 0, created_at: new Date().toISOString() }
     : null;
 
-  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false };
+  return { ok: true, id, saved, item, analysis, kind: "post", hadTranscript: false, saveError };
 }
