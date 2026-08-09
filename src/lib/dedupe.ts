@@ -14,11 +14,18 @@ import { logClaude } from "./usage";
 // только СПИСОК ИМЁН, без единой строчки дневника, — и она группирует
 // уменьшительные и полные формы, которые буквами не совпадают никак.
 
+// Кусочек записи, где это имя встречается. Без него решение принять нельзя:
+// «Коля» и «Коля Яровенко» — это один человек или два? Ответ не в имени, а в
+// том, что про них написано. Показываем ровно столько, чтобы вспомнить.
+export type Mention = { date: string; text: string };
+
+export type Ent = { id: number; name: string; count: number; mentions: Mention[] };
+
 export type DupGroup = {
   kind: "people" | "places";
   // кого оставляем — тот, кто чаще встречается в записях
-  keep: { id: number; name: string; count: number };
-  merge: { id: number; name: string; count: number }[];
+  keep: Ent;
+  merge: Ent[];
   // почему считаем дублями — человеку это важно, он принимает решение
   why: "same" | "similar";
 };
@@ -35,7 +42,7 @@ const CFG = {
   places: { table: "places", link: "entry_places", fk: "place_id" },
 } as const;
 
-type Row = { id: number; name: string; count: number };
+type Row = { id: number; name: string; count: number; mentions: Mention[] };
 
 async function loadRows(userId: string, kind: "people" | "places"): Promise<Row[]> {
   const c = CFG[kind];
@@ -54,7 +61,37 @@ async function loadRows(userId: string, kind: "people" | "places"): Promise<Row[
   } catch {
     /* связей может не быть — тогда все по нулям, порядок решит длина имени */
   }
-  return rows.map((r) => ({ id: Number(r.id), name: String(r.name), count: counts.get(Number(r.id)) || 0 }));
+  return rows.map((r) => ({ id: Number(r.id), name: String(r.name), count: counts.get(Number(r.id)) || 0, mentions: [] }));
+}
+
+// Подтянуть по паре записей на каждое имя — только для тех, кто попал в
+// группы. Тянуть на всех подряд незачем: людей могут быть сотни.
+async function addMentions(kind: "people" | "places", ids: number[]): Promise<Map<number, Mention[]>> {
+  const c = CFG[kind];
+  const out = new Map<number, Mention[]>();
+  if (!ids.length) return out;
+  try {
+    const { data } = await supabaseAdmin()
+      .from(c.link)
+      .select(`${c.fk}, entries ( entry_date, summary, raw_text )`)
+      .in(c.fk, ids)
+      .limit(400);
+    const rows = ((data as any[]) || [])
+      .map((l) => ({ id: Number(l[c.fk]), e: l.entries }))
+      .filter((x) => x.e)
+      .sort((a, b) => String(b.e.entry_date || "").localeCompare(String(a.e.entry_date || "")));
+    for (const r of rows) {
+      const list = out.get(r.id) || [];
+      if (list.length >= 2) continue;
+      const text = String(r.e.raw_text || r.e.summary || "").replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      list.push({ date: String(r.e.entry_date || "").slice(0, 10), text: text.slice(0, 160) });
+      out.set(r.id, list);
+    }
+  } catch {
+    /* связей нет — карточки просто останутся без цитат */
+  }
+  return out;
 }
 
 // Кого оставить: у кого больше записей; при равенстве — более полное имя
@@ -185,7 +222,16 @@ export async function findDuplicates(userId: string, kind: "people" | "places"):
   }
 
   // Сначала точные совпадения, потом догадки: очевидное решается не думая.
-  return groups.sort((a, b) => (a.why === b.why ? 0 : a.why === "same" ? -1 : 1)).slice(0, 12);
+  const top = groups.sort((a, b) => (a.why === b.why ? 0 : a.why === "same" ? -1 : 1)).slice(0, 12);
+
+  // И только теперь — цитаты, ровно для тех, кто остался на экране.
+  const ids = top.flatMap((g) => [g.keep.id, ...g.merge.map((m) => m.id)]);
+  const mentions = await addMentions(kind, ids);
+  for (const g of top) {
+    g.keep.mentions = mentions.get(g.keep.id) || [];
+    for (const m of g.merge) m.mentions = mentions.get(m.id) || [];
+  }
+  return top;
 }
 
 // Объединение. Записи переезжают на оставшуюся карточку, лишние исчезают.

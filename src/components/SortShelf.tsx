@@ -11,7 +11,8 @@ import { useState } from "react";
 
 type Item = { id: string; title: string; summary: string; category: string; folder: string | null; image_url: string | null; file_url: string | null; created_at: string; why: "unsure" | "unknown" | "empty" };
 type Rule = { id: string; subject: string; should_be: string; times: number };
-type Ent = { id: number; name: string; count: number };
+type Mention = { date: string; text: string };
+type Ent = { id: number; name: string; count: number; mentions?: Mention[] };
 type Dup = { kind: "people" | "places"; keep: Ent; merge: Ent[]; why: "same" | "similar" };
 
 const CATS = [
@@ -48,6 +49,7 @@ const STR: Record<string, any> = {
     dupSkip: "Разные",
     dupKeep: "останется",
     dupMentions: "упом.",
+    dupNoMentions: "нет записей",
   },
   en: {
     empty: "Nothing to sort — the wardrobe figured it all out.",
@@ -71,6 +73,7 @@ const STR: Record<string, any> = {
     dupSkip: "Different",
     dupKeep: "stays",
     dupMentions: "ment.",
+    dupNoMentions: "no entries",
   },
 };
 
@@ -180,18 +183,32 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
           <div style={{ display: "grid", gap: 9 }}>
             {dupes.map((d) => (
               <div key={dupKey(d)} className="card" style={{ padding: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <i className={`ti ${d.kind === "people" ? "ti-user-heart" : "ti-map-pin"}`} style={{ fontSize: 17, color: "var(--accent)" }} />
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>{d.keep.name}</span>
-                  <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>({s.dupKeep}{d.keep.count ? `, ${d.keep.count} ${s.dupMentions}` : ""})</span>
-                  <i className="ti ti-arrow-left" style={{ fontSize: 15, color: "var(--text-3)" }} />
-                  <span style={{ fontSize: 13.5, color: "var(--text-2)" }}>
-                    {d.merge.map((m) => `${m.name}${m.count ? ` · ${m.count}` : ""}`).join(", ")}
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                  <i className={`ti ${d.kind === "people" ? "ti-user-heart" : "ti-map-pin"}`} style={{ fontSize: 16, color: "var(--accent)" }} />
+                  <span style={{ fontSize: 11.5, color: "#854F0B", background: "#FAEEDA", padding: "2px 8px", borderRadius: 999 }}>
+                    {d.why === "same" ? s.dupSame : s.dupSimilar}
                   </span>
                 </div>
-                <div style={{ fontSize: 11.5, color: "#854F0B", background: "#FAEEDA", display: "inline-block", padding: "2px 8px", borderRadius: 999, marginTop: 7 }}>
-                  {d.why === "same" ? s.dupSame : s.dupSimilar}
-                </div>
+                {/* Каждое имя со своими записями: решение принимается по ним,
+                    а не по написанию. «Коля» и «Коля Яровенко» отличаются не
+                    буквами, а тем, что про них написано. */}
+                {[{ e: d.keep, keep: true }, ...d.merge.map((e) => ({ e, keep: false }))].map(({ e, keep }) => (
+                  <div key={e.id} style={{ padding: "7px 0 5px", borderTop: keep ? "none" : "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: keep ? 600 : 400 }}>{e.name}</span>
+                      <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
+                        {e.count ? `${e.count} ${s.dupMentions}` : s.dupNoMentions}
+                        {keep ? ` · ${s.dupKeep}` : ""}
+                      </span>
+                    </div>
+                    {(e.mentions || []).map((mn, i) => (
+                      <div key={i} style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 3, display: "flex", gap: 7 }}>
+                        <span style={{ color: "var(--text-3)", flexShrink: 0 }}>{mn.date?.slice(5) || ""}</span>
+                        <span>«{mn.text}»</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button onClick={() => merge(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
                     <i className="ti ti-arrows-join" style={{ fontSize: 15 }} />{s.dupMerge}
