@@ -236,6 +236,46 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
     );
   };
 
+  // Разбить набор на стопки-папки: {folderKeys, groups, loose}. Папка заводится,
+  // только если в ней 2+ вещи — одиночки остаются обычными карточками.
+  function folderize(arr: Memory[]) {
+    const order: string[] = [];
+    const groups = new Map<string, Memory[]>();
+    for (const m of arr) {
+      const key = folderOf(m) || "__none__";
+      if (!groups.has(key)) { groups.set(key, []); order.push(key); }
+      groups.get(key)!.push(m);
+    }
+    const folderKeys = order.filter((k) => k !== "__none__" && groups.get(k)!.length >= 2);
+    const loose = order.filter((k) => !folderKeys.includes(k)).flatMap((k) => groups.get(k)!);
+    return { folderKeys, groups, loose };
+  }
+
+  // Плитка-папка: стопка карточек с обложкой первого фото, названием и счётчиком.
+  // Клик открывает категорию (там папка раскрыта секцией).
+  const FolderTile = (catKey: string, name: string, arr: Memory[]) => {
+    const cm = catMeta(catKey);
+    const cover = arr.find((m) => m.image_url)?.image_url || null;
+    return (
+      <div key={`${catKey}:${name}`} style={{ position: "relative", width: 232, flexShrink: 0 }}>
+        <div style={{ position: "absolute", inset: 0, transform: "translate(7px,7px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
+        <div style={{ position: "absolute", inset: 0, transform: "translate(3.5px,3.5px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
+        <button onClick={() => setActiveCat(catKey)} className="card" style={{ position: "relative", display: "block", width: "100%", padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", border: "1px solid var(--border)" }}>
+          <div style={{ height: 150, background: cover ? `center/cover no-repeat url(${cover})` : cm.bg, display: "flex", alignItems: cover ? "flex-start" : "center", justifyContent: cover ? "flex-start" : "center", position: "relative" }}>
+            {!cover && <i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} />}
+            <span style={{ position: "absolute", top: 8, left: 8, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#fff", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, backdropFilter: "blur(2px)" }}><i className="ti ti-folder" style={{ fontSize: 12 }} />{arr.length}</span>
+          </div>
+          <div style={{ padding: "10px 12px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className="ti ti-folder" style={{ fontSize: 14, color: cm.c }} /></span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
@@ -284,29 +324,24 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
                     <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>{inCat.length}</span>
                     <i className="ti ti-chevron-right" style={{ fontSize: 15, color: "var(--text-3)" }} />
                   </button>
-                  <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "thin" }}>
-                    {inCat.map((m) => (
-                      <div key={m.id} style={{ width: 232, flexShrink: 0 }}>{Card(m)}</div>
-                    ))}
-                  </div>
+                  {(() => {
+                    const { folderKeys, groups, loose } = folderize(inCat);
+                    return (
+                      <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "thin" }}>
+                        {folderKeys.map((k) => FolderTile(c.key, k, groups.get(k)!))}
+                        {loose.map((m) => (
+                          <div key={m.id} style={{ width: 232, flexShrink: 0 }}>{Card(m)}</div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })
           ) : (
             (() => {
               const inCat = items.filter((m) => m.category === activeCat);
-              // Стопки-папки: собираем по folderOf, порядок — по первому появлению.
-              const order: string[] = [];
-              const groups = new Map<string, Memory[]>();
-              for (const m of inCat) {
-                const key = folderOf(m) || "__none__";
-                if (!groups.has(key)) { groups.set(key, []); order.push(key); }
-                groups.get(key)!.push(m);
-              }
-              // Папки с одним элементом не заводим — они уходят в «Разное».
-              const foldered = order.filter((k) => k !== "__none__" && groups.get(k)!.length >= 2);
-              const looseKeys = order.filter((k) => !foldered.includes(k));
-              const loose = looseKeys.flatMap((k) => groups.get(k)!);
+              const { folderKeys: foldered, groups, loose } = folderize(inCat);
               const cm = catMeta(activeCat);
               const Grid = (arr: Memory[]) => (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>{arr.map(Card)}</div>
