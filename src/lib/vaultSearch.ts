@@ -75,22 +75,29 @@ const SIM_SPREAD = 1.12;
 // «зелёного жирафа на велосипеде». Отличить находку от вежливого шума можно
 // не по абсолютной величине, а по ОТРЫВУ лидера от середины списка: если все
 // восемь ответов кучкуются рядом, значит на полке просто нет ничего про это.
-type Shelf = { best: number; ok: boolean };
+type Shelf = { best: number; ok: boolean; conf: number };
 
 function shelfStat(sim: Sim): Shelf {
   const v = [...sim.values()].sort((a, b) => b - a);
-  if (!v.length) return { best: 0, ok: false };
+  if (!v.length) return { best: 0, ok: false, conf: 0 };
   const best = v[0];
   const mid = v[Math.floor(v.length / 2)] || best;
-  return { best, ok: best >= SIM_FLOOR && (v.length < 3 || best >= mid * SIM_SPREAD) };
+  const spread = mid > 0 ? best / mid : 1;
+  // Уверенность полки: насколько лидер оторвался от середины. Полка с ясным
+  // победителем заслуживает доверия, полка с восемью одинаково тёплыми
+  // ответами — нет, даже если числа у неё крупнее.
+  const conf = Math.max(0, Math.min(1, (spread - 1) / 0.5));
+  return { best, ok: best >= SIM_FLOOR && (v.length < 3 || spread >= SIM_SPREAD), conf };
 }
 
+// Сравнивать сырые похожести РАЗНЫХ полок нельзя: у записи дневника текст
+// длиннее и «плотнее», её числа систематически крупнее, и дневник перебивал
+// документ даже там, где спрашивали про документ. Поэтому балл считается от
+// места ВНУТРИ полки, умноженного на доверие к самой полке.
 function simScore(sim: number | undefined, sh: Shelf): number {
   if (!sh.ok || !sim || sim < SIM_FLOOR) return 0;
   if (sim < sh.best * SIM_REL) return 0;
-  // Чем дальше от пола, тем весомее: сильное совпадение должно перебивать
-  // случайное совпадение пары слов, а слабое — нет.
-  return (sim - SIM_FLOOR) * 25 + 1.5;
+  return 1 + sh.conf * 6 * (sim / sh.best);
 }
 
 // Сколько находок пускаем с одной полки. Без этого полка, где вещей на порядок
