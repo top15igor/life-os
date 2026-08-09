@@ -48,7 +48,7 @@ const STR: Record<string, any> = {
     dupSimilar: "похоже на одно и то же",
     dupMerge: "Объединить",
     dupSkip: "Разные", dupRename: "Переименовать", dupRenameHint: "Разные люди? Переименуй, чтобы не путать в будущем.", save: "Сохранить", 
-    dupKeep: "останется",
+    dupKeep: "останется", dupChoose: "Оставить это имя",
     dupMentions: "упом.",
     dupNoMentions: "нет записей",
     thTitle: "Похоже, это одна тема",
@@ -79,7 +79,7 @@ const STR: Record<string, any> = {
     dupSimilar: "looks like the same",
     dupMerge: "Merge",
     dupSkip: "Different", dupRename: "Rename", dupRenameHint: "Different people? Rename so you won't confuse them later.", save: "Save", 
-    dupKeep: "stays",
+    dupKeep: "stays", dupChoose: "Keep this name",
     dupMentions: "ment.",
     dupNoMentions: "no entries",
     thTitle: "Looks like one story",
@@ -115,6 +115,7 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
   const dupKey = (d: Dup) => `${d.kind}:${d.keep.id}`;
 
   const [editEnt, setEditEnt] = useState<string | null>(null); // "kind:id"
+  const [keepSel, setKeepSel] = useState<Record<string, number>>({}); // dupKey -> выбранный id «останется»
   const [entDraft, setEntDraft] = useState("");
   async function renameEnt(kind: "people" | "places", id: number, name: string) {
     const nm = name.trim();
@@ -125,12 +126,15 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
   }
 
   async function merge(d: Dup) {
+    const all = [d.keep, ...d.merge];
+    const keepId = keepSel[dupKey(d)] ?? d.keep.id; // какой вариант оставить
+    const mergeIds = all.filter((e) => e.id !== keepId).map((e) => e.id);
     setDupes((p) => p.filter((x) => dupKey(x) !== dupKey(d)));
     try {
       await fetch("/api/sort", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "merge", kind: d.kind, keepId: d.keep.id, mergeIds: d.merge.map((m) => m.id) }),
+        body: JSON.stringify({ action: "merge", kind: d.kind, keepId, mergeIds }),
       });
     } catch {}
   }
@@ -229,9 +233,10 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                 {/* Каждое имя со своими записями: решение принимается по ним,
                     а не по написанию. «Коля» и «Коля Яровенко» отличаются не
                     буквами, а тем, что про них написано. */}
-                {[{ e: d.keep, keep: true }, ...d.merge.map((e) => ({ e, keep: false }))].map(({ e, keep }) => (
-                  <div key={e.id} style={{ padding: "7px 0 5px", borderTop: keep ? "none" : "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
+                {[d.keep, ...d.merge].map((e, idx) => { const keep = (keepSel[dupKey(d)] ?? d.keep.id) === e.id; return (
+                  <div key={e.id} style={{ padding: "7px 0 5px", borderTop: idx === 0 ? "none" : "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                      <button onClick={() => setKeepSel((p) => ({ ...p, [dupKey(d)]: e.id }))} title={s.dupChoose} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "inline-flex", color: keep ? "var(--accent)" : "var(--text-3)" }}><i className={`ti ${keep ? "ti-circle-check-filled" : "ti-circle"}`} style={{ fontSize: 16 }} /></button>
                       {editEnt === `${d.kind}:${e.id}` ? (
                         <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
                           <input value={entDraft} onChange={(ev) => setEntDraft(ev.target.value)} autoFocus
@@ -257,10 +262,10 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                       </div>
                     ))}
                   </div>
-                ))}
+                ); })}
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                   <button onClick={() => merge(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
-                    <i className="ti ti-arrows-join" style={{ fontSize: 15 }} />{s.dupMerge}
+                    <i className="ti ti-arrows-join" style={{ fontSize: 15 }} />{s.dupMerge} → «{([d.keep, ...d.merge].find((e) => e.id === (keepSel[dupKey(d)] ?? d.keep.id))?.name) || d.keep.name}»
                   </button>
                   <button onClick={() => skip(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" }}>
                     <i className="ti ti-x" style={{ fontSize: 15 }} />{s.dupSkip}
