@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { listToSort, keepAsIs, fixCategory, listRules, forgetRule } from "@/lib/sortShelf";
+import { listToSort, keepAsIs, fixCategory, listRules, forgetRule, rulesHint } from "@/lib/sortShelf";
 import { MEM_CATEGORIES } from "@/lib/vision";
 
 export const runtime = "nodejs";
@@ -10,8 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
-  const [items, rules] = await Promise.all([listToSort(user.id), listRules(user.id)]);
-  return NextResponse.json({ ok: true, items, rules });
+  const [items, rules, hint] = await Promise.all([listToSort(user.id), listRules(user.id), rulesHint(user.id)]);
+  // hint — ровно та строка, которую видит разбор. Пусть будет видна и здесь:
+  // «правило записано» и «правило доходит до разбора» — разные вещи.
+  return NextResponse.json({ ok: true, items, rules, hint });
 }
 
 export async function POST(req: NextRequest) {
