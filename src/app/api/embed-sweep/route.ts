@@ -28,8 +28,13 @@ export async function GET(req: NextRequest) {
   }
   if (!allowed) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
 
+  // ?reindex=memories|notes|saved_items|books|all — пересобрать указатель
+  // заново (нужно, когда поменялся рецепт текста для вектора).
+  const rq = req.nextUrl.searchParams.get("reindex");
+  const reindex = rq && ["memories", "notes", "saved_items", "books", "all"].includes(rq) ? (rq as any) : undefined;
+
   // По сотне на полку за раз: укладываемся в минуту и не жжём лимиты OpenAI.
-  const rows = await backfillShelves(100);
+  const rows = await backfillShelves(100, reindex);
   const done = rows.reduce((s, r) => s + r.done, 0);
   const left = rows.reduce((s, r) => s + r.left, 0);
   return NextResponse.json({ ok: true, done, left, shelves: rows });

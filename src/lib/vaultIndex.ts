@@ -18,9 +18,26 @@ export type Shelf = "memories" | "notes" | "saved_items" | "books";
 // Из какой строки собирается текст для вектора. Важно: кладём то, ЧТО человек
 // будет вспоминать — заголовок, суть, поля документа, — а не служебные поля.
 const TEXT_OF: Record<Shelf, (r: any) => string> = {
+  // Документ описываем в первую очередь тем, ЧТО ЭТО ЗА ВЕЩЬ, и только потом
+  // подробностями. Если валить всё вперемешку, вектор документа определяют
+  // имена, номера и даты — и «удостоверение личности» не находит паспорт,
+  // потому что в паспорте больше фамилии, чем паспорта. Значения полей режем:
+  // длинный номер не делает документ понятнее, а вектор смещает.
   memories: (m) => {
-    const flds = Array.isArray(m.fields) ? m.fields.map((f: any) => `${f?.label ?? ""}: ${f?.value ?? ""}`).join("\n") : "";
-    return [m.category, m.title, m.summary, flds, m.note].filter(Boolean).join("\n");
+    const labels = Array.isArray(m.fields) ? m.fields.map((f: any) => String(f?.label ?? "").trim()).filter(Boolean) : [];
+    const values = Array.isArray(m.fields)
+      ? m.fields.map((f: any) => `${String(f?.label ?? "").trim()}: ${String(f?.value ?? "").trim().slice(0, 60)}`).filter((x: string) => x.length > 2)
+      : [];
+    return [
+      m.title,
+      m.category ? `Категория: ${m.category}` : "",
+      m.summary,
+      labels.length ? `Что внутри: ${labels.join(", ")}` : "",
+      values.join("\n"),
+      m.note,
+    ]
+      .filter(Boolean)
+      .join("\n");
   },
   notes: (n) => String(n.text || ""),
   saved_items: (s) =>
@@ -120,10 +137,23 @@ export type BackfillResult = { shelf: Shelf; done: number; left: number }[];
 
 // Индексирует пачками всё, у чего вектора ещё нет. Возвращает, сколько
 // осталось: вызывающий сам решает, звать ли ещё раз.
-export async function backfillShelves(limitPerShelf = 100): Promise<BackfillResult> {
+export async function backfillShelves(limitPerShelf = 100, reindex?: Shelf | "all"): Promise<BackfillResult> {
   const db = supabaseAdmin();
   const shelves: Shelf[] = ["memories", "notes", "saved_items", "books"];
   const out: BackfillResult = [];
+
+  // Пересборка: когда меняется рецепт текста, старые векторы описывают вещь
+  // по-старому. Сбрасываем их, дальше обычное подметание досчитает заново.
+  if (reindex) {
+    for (const shelf of shelves) {
+      if (reindex !== "all" && reindex !== shelf) continue;
+      try {
+        await db.from(shelf).update({ embedding: null }).not("embedding", "is", null);
+      } catch {
+        /* колонки нет — нечего сбрасывать */
+      }
+    }
+  }
 
   for (const shelf of shelves) {
     let done = 0;
