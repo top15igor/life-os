@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const type = file.type || "";
   const ext = type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : type.includes("webm") ? "webm" : "m4a";
   try {
-    const text = await transcribeFile(buf, `voice.${ext}`);
+    const text = await transcribeFile(buf, `voice.${ext}`, { userId: user.id });
     logUsage(user.id, "transcribe", 0, 0, 0.5);
     return NextResponse.json({ ok: true, text: text || "" });
   } catch {

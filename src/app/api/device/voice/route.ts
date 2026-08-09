@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "too_big" }, { status: 413 });
     }
     try {
-      text = await transcribeFile(audio.buf, audio.filename);
+      text = await transcribeFile(audio.buf, audio.filename, { userId: device.user_id });
       logUsage(device.user_id, "transcribe", 0, 0, 0.5);
     } catch {
       return NextResponse.json({ ok: false, error: "transcribe_failed" }, { status: 502 });

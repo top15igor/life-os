@@ -46,6 +46,7 @@ export type Analysis = {
   promises: { text: string; person?: string }[];
   dreams: { text: string; sphere?: string; emoji?: string }[];
   finance?: { kind: "income" | "expense"; amount: number; currency?: string; category?: string; note?: string }[];
+  entry_date?: string | null;
 };
 
 const TOOL: Anthropic.Tool = {
@@ -62,6 +63,7 @@ const TOOL: Anthropic.Tool = {
       importance: { type: "integer", description: "Важность записи 1–5." },
       sleep_hours: { type: "number", description: "Часы сна, если названы." },
       weight: { type: "number", description: "Вес в кг, если назван." },
+      entry_date: { type: "string", description: "ТОЛЬКО если пользователь ЯВНО описывает НЕ сегодняшний день («вчера», «позавчера», «в субботу», «15 июля», «на прошлой неделе в пятницу») — дата того дня в формате YYYY-MM-DD, вычисленная от строки «Сегодня: …». Сегодняшние события, планы на будущее и записи без явного указания дня — НЕ заполняй." },
       categories: { type: "array", items: { type: "string", enum: CATEGORY_SLUGS } },
       tags: { type: "array", items: { type: "string" }, description: "3–7 коротких тегов без #." },
       people: { type: "array", items: { type: "string" } },
@@ -147,18 +149,27 @@ const SYS_ANALYZE = `Ты — аналитик личного дневника L
 - promises: явные обещания людям (позвонить, помочь, отправить, вернуть). Указывай person, если назван. НЕ ДУБЛИРУЙ: если поступок уже совершён (это доброе дело) — не добавляй его ещё и в promises.
 - dreams: мечты/желания на будущее («мечтаю…», «хочу когда-нибудь…», «когда-нибудь…»). Для каждой укажи sphere (из списка) и emoji. НЕ путай с задачами на сегодня и рабочими целями.
 - finance: ТОЛЬКО реальная трата/доход, совершённые сейчас/сегодня и названные как факт: «потратил 500 на продукты», «кофе за 80», «заплатил за аренду 12000» → expense; «получил зарплату 50000», «заработал 3000» → income. Укажи amount, category, currency (если ясна). ВАЖНО: не превращай в операцию суммы из рассказа — итоги за годы («вложили 200 тысяч за 7 лет»), планы («хочу вложить»), стоимость бизнеса, долги, крупные инвестиции-воспоминания. Нет реальной операции прямо сейчас или сомневаешься — НЕ добавляй.
-- sleep_hours/weight: только если названы числом.`;
+- sleep_hours/weight: только если названы числом.
+- entry_date: если человек ЯВНО помечает, что рассказывает про другой (прошедший) день — «вчера…», «позавчера…», «в субботу…», «15 июля…» — вычисли дату того дня по строке «Сегодня: …» и верни YYYY-MM-DD. Обычные записи о сегодняшнем, «на днях» без конкретики и будущее — НЕ заполняй.`;
 
 // Динамическая часть запроса (проекты пользователя + сам текст) — идёт ПОСЛЕ
 // кэш-точки, поэтому меняется свободно, не ломая кэш «шапки».
-function userPrompt(text: string, projectNames?: string[]): string {
+function userPrompt(text: string, projectNames?: string[], peopleNames?: string[], todayLine?: string): string {
   const projectsHint = projectNames?.length
     ? `Уже существующие проекты пользователя: ${projectNames.map((n) => `«${n}»`).join(", ")}.
 ВАЖНО про projects: если запись относится к одному из этих проектов — верни его ТОЧНОЕ название из списка (тот же регистр и написание), НЕ придумывай новый вариант («LIFE OS», «Life OS», «LifeOS», «суперапп» — это один проект, не создавай синонимы). Новый проект добавляй только если это действительно другой, новый проект.
 
 `
     : "";
-  return `${projectsHint}Запись:
+  // Записи часто приходят из распознавания голоса, а оно ломает редкие имена
+  // («Эстельку» слышится как «стельку»). Канон имени — список «Люди».
+  const peopleHint = peopleNames?.length
+    ? `Уже известные люди пользователя: ${peopleNames.map((n) => `«${n}»`).join(", ")}.
+ВАЖНО про people: если в записи упомянут кто-то из этого списка — верни его ТОЧНОЕ имя из списка, а не вариант написания из текста. Запись могла прийти из распознавания голоса, где имя расслышано криво (например «Эстельку» → «стельку», «у Оли» → «Уоли»): если слово по смыслу явно означает известного человека, считай это им и используй каноническое имя — и в people, и в summary, и в promises/good_deeds. Нового человека добавляй, только если это правда другой человек.
+
+`
+    : "";
+  return `${todayLine ? todayLine + "\n\n" : ""}${projectsHint}${peopleHint}Запись:
 """
 ${text}
 """`;
@@ -195,11 +206,18 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
   // Подтягиваем существующие проекты пользователя, чтобы модель переиспользовала их
   // и не плодила дубли-синонимы (авто-дедуп на уровне разбора).
   let projectNames: string[] = [];
+  let peopleNames: string[] = [];
   let customCats: { slug: string; label: string }[] = [];
   if (userId) {
     try {
       const { data } = await supabaseAdmin().from("projects").select("name").eq("user_id", userId).limit(80);
       projectNames = ((data as any[]) ?? []).map((r) => r.name).filter(Boolean);
+    } catch {
+      // нет таблицы/колонки — просто без подсказки
+    }
+    try {
+      const { data } = await supabaseAdmin().from("people").select("name").eq("user_id", userId).eq("hidden", false).limit(80);
+      peopleNames = ((data as any[]) ?? []).map((r) => r.name).filter(Boolean);
     } catch {
       // нет таблицы/колонки — просто без подсказки
     }
@@ -210,6 +228,19 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
       // нет таблицы — без пользовательских категорий
     }
   }
+  // Локальное «сегодня» пользователя (по tz_offset) + день недели — чтобы модель
+  // могла посчитать дату для «вчера» / «в субботу» (записи прошлым числом).
+  let tzOff = 0;
+  if (userId) {
+    try {
+      const { data: u } = await supabaseAdmin().from("users").select("tz_offset").eq("id", userId).maybeSingle();
+      if (typeof (u as any)?.tz_offset === "number") tzOff = (u as any).tz_offset;
+    } catch {}
+  }
+  const localNow = new Date(Date.now() + tzOff * 60000);
+  const WEEKDAYS_RU = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
+  const todayLine = `Сегодня: ${localNow.toISOString().slice(0, 10)} (${WEEKDAYS_RU[localNow.getUTCDay()]}).`;
+
   // Кастомные категории пользователя подмешиваем в enum + описание, чтобы модель
   // раскладывала траты в них (напр. «штраф» → пользовательская «Штрафы»).
   let tool: any = TOOL;
@@ -229,7 +260,7 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
       system: [{ type: "text", text: SYS_ANALYZE, cache_control: { type: "ephemeral" } }],
       tools: [tool],
       tool_choice: { type: "tool", name: "save_analysis" },
-      messages: [{ role: "user", content: userPrompt(text, projectNames) }],
+      messages: [{ role: "user", content: userPrompt(text, projectNames, peopleNames, todayLine) }],
     });
     logClaude(userId, "analyze", model.includes("haiku") ? "haiku" : "sonnet", (msg as any).usage);
     const block = msg.content.find((b) => b.type === "tool_use");

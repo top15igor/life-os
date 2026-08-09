@@ -18,6 +18,8 @@ import { answerFromEverything } from "./vaultSearch";
 import { deepSummary } from "./deepTask";
 import { recordAction, undoLast, listActions } from "./agentJournal";
 import { rememberFocus } from "./dialogFocus";
+import { amendLastEntry } from "./amendEntry";
+import { resetVoiceHint } from "./voiceHints";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
 // routeMessage решает за ОДИН вызов: это действие, вопрос или дневниковая запись.
@@ -190,6 +192,12 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { wish: { type: "string", description: "пожелание кратко, напр. «писать короче, без эмодзи»" } }, required: ["wish"] },
   },
   {
+    name: "amend_entry",
+    description:
+      "ИСПРАВИТЬ ПОСЛЕДНЮЮ ЗАПИСЬ ДНЕВНИКА, когда человек уточняет или поправляет уже сказанное: «я ошибся, это было не вчера, а сегодня», «уточню: сумма была 300», «ты неправильно записал», «не так понял», «на самом деле мы ходили втроём». correction — сама поправка словами человека. НЕ выбирай, если поправка относится к НАПОМИНАНИЮ (move_reminder), к ТРАТЕ (fix_finance), к ИМЕНИ человека (rename_person) или к настройкам (set_pushes) — там свои действия.",
+    input_schema: { type: "object", properties: { correction: { type: "string" } }, required: ["correction"] },
+  },
+  {
     name: "agent_log",
     description:
       "Показать, ЧТО АГЕНТ ДЕЛАЛ С ДАННЫМИ человека: «что ты делал с моими данными?», «покажи, что ты менял», «журнал действий», «ты ничего не удалял?». Список последних изменений с датами и отметкой, что уже отменено.",
@@ -288,6 +296,7 @@ const SYS =
   "Вопросы про ПЛАНЫ и НАПОМИНАНИЯ («что у меня сегодня/завтра?», «какие планы на неделю?», «покажи напоминания», «что я должен сделать сегодня?») → list_reminders, а НЕ ask_question. "
   "«Отмени последнее», «верни как было», «я не то удалил» → undo_last. "
   "«Что ты делал с моими данными», «покажи, что менял» → agent_log. "
+  "Поправка к УЖЕ СКАЗАННОМУ («я ошибся», «уточню», «ты неправильно записал») → amend_entry, если речь о записи дневника. "
   "«Перебери всё про…», «дай саммари по…», «собери, что я писал о…» → deep_summary (картина по теме). Один факт («где я записывал код») → search_all. "
   "«Где я записывал…», «что у меня есть про…», «я где-то сохранял…» → search_all: ищет по всем полкам сразу, потому что человек не помнит, куда положил. "
   "Поправка по ДЕНЬГАМ («потратил не 500, а 300», «удали трату на кофе», «исправь сумму») → fix_finance, а не правка записи дневника и не новая трата. "
@@ -476,6 +485,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
+    amendOk: "✏️ Поправил последнюю запись.", amendNone: "Не нашёл сегодняшней записи, которую можно поправить. Расскажи заново — сохраню как новую.",
     jrn: { head: "📋 <b>Что я менял в твоих данных</b>", empty: "Я ничего не удалял и не переписывал — журнал пуст.", undoneMark: "(отменено)", foot: "Любое из этого можно вернуть: скажи «отмени последнее»." },
     undo: { done: (w: string) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились с тех пор. Расскажи, что восстановить, и я сделаю руками." },
     shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
@@ -510,6 +520,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
+    amendOk: "\u270f\ufe0f Fixed the last entry.", amendNone: "No entry from today to fix. Tell me again and I\u2019ll save it as a new one.",
     jrn: { head: "\ud83d\udccb <b>What I changed in your data</b>", empty: "I haven\u2019t deleted or rewritten anything \u2014 the log is empty.", undoneMark: "(undone)", foot: "Any of it can be brought back: say \u201cundo the last one\u201d." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
@@ -544,6 +555,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
+    amendOk: "✏️ Виправив останній запис.", amendNone: "Не знайшов сьогоднішнього запису, який можна виправити. Розкажи знову — збережу як новий.",
     jrn: { head: "📋 <b>Що я змінював у твоїх даних</b>", empty: "Я нічого не видаляв і не переписував — журнал порожній.", undoneMark: "(скасовано)", foot: "Будь-що з цього можна повернути: скажи «скасуй останнє»." },
     undo: { done: (w: string) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв і не переписував.", failed: "Не вдалося повернути — дані відтоді змінилися. Скажи, що відновити, і я зроблю руками." },
     shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
@@ -578,6 +590,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
+    amendOk: "\u270f\ufe0f J\u2019ai corrig\u00e9 la derni\u00e8re entr\u00e9e.", amendNone: "Aucune entr\u00e9e d\u2019aujourd\u2019hui \u00e0 corriger. Redis-le et je l\u2019enregistre.",
     jrn: { head: "\ud83d\udccb <b>Ce que j\u2019ai modifi\u00e9 dans tes donn\u00e9es</b>", empty: "Je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit \u2014 le journal est vide.", undoneMark: "(annul\u00e9)", foot: "Tout \u00e7a peut \u00eatre restaur\u00e9 : dis \u00ab annule la derni\u00e8re \u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
@@ -612,6 +625,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
+    amendOk: "\u270f\ufe0f Corregí la última entrada.", amendNone: "No hay entrada de hoy que corregir. Cuéntamelo otra vez y la guardo.",
     jrn: { head: "\ud83d\udccb <b>Lo que cambi\u00e9 en tus datos</b>", empty: "No he borrado ni reescrito nada \u2014 el registro est\u00e1 vac\u00edo.", undoneMark: "(deshecho)", foot: "Todo esto se puede recuperar: di \u00abdeshaz lo \u00faltimo\u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
@@ -1140,6 +1154,9 @@ export async function runAction(userId: string, name: string, input: any, lang: 
           renamed = true;
         }
       } catch (e) { console.error("rename_person people", e); }
+      // Правильное имя должно сразу попасть в подсказку Whisper, иначе следующее
+      // голосовое опять расслышит его криво и создаст тот же дубль.
+      if (renamed) resetVoiceHint(userId);
 
       // 2) Инсайты: правим имя в тексте (с учётом падежных окончаний — «Стельку» → «Эстельку»).
       let fixed = 0;
@@ -1183,6 +1200,16 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const created = (data as any)?.created_at ? String((data as any).created_at).slice(0, 10) : null;
       const since = created ? created.split("-").reverse().join(".") : null;
       return { text: s.account((data as any)?.email || null, (data as any)?.tg_username || null, since), openNext: "/profile" };
+    }
+    if (name === "amend_entry") {
+      // Раньше это решала регулярка ДО роутера — и «измени дату» на напоминании
+      // уходило править дневник. Теперь выбор делает один мозг вместе со всеми
+      // остальными: у него на виду и напоминания, и траты, и имена.
+      const c = String(input?.correction || "").trim();
+      if (!c) return { text: s.fail };
+      const res = await amendLastEntry(userId, c);
+      if (!res) return { text: (s as any).amendNone };
+      return { text: (s as any).amendOk, openNext: "/diary" };
     }
     if (name === "agent_log") {
       // Прозрачность: человек должен видеть, что агент трогал в его данных.

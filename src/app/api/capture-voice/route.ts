@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const buf = Buffer.from(await file.arrayBuffer());
     const filename = (file as any).name || "voice.m4a";
-    const text = await transcribeFile(buf, filename);
+    const text = await transcribeFile(buf, filename, { userId: user.id });
     logUsage(user.id, "transcribe", 0, 0, 0.5);
     if (!text || !text.trim()) return NextResponse.json({ ok: false, error: "empty" });
 

@@ -2141,7 +2141,7 @@ async function handleUpdate(req: NextRequest) {
       const fileId = (msg.voice || msg.audio).file_id;
       const url = await getFileUrl(fileId);
       voiceFileUrl = url;
-      text = await transcribe(url);
+      text = await transcribe(url, user.id);
       logUsage(user.id, "transcribe", 0, 0, 0.5);
       // Расшифровку длинного сообщения отдаём сразу: даже если AI-разбор потом
       // упадёт или не успеет, сказанное человеком уже у него на руках.
