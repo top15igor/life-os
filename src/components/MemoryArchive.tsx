@@ -19,11 +19,11 @@ const CATS = [
 const catMeta = (k: string) => CATS.find((x) => x.key === k) || CATS[7];
 
 const STR: Record<string, any> = {
-  ru: { expMonths: "через ~{n} мес.", expTitle: "Скоро истекают сроки", expLeft: "через {n} дн.", expToday: "сегодня", expOver: "истёк {n} дн. назад", send: "Отправить", sendDownload: "Скачать файл", sendLink: "Ссылка", sendTg: "В Telegram", copied: "Ссылка скопирована", tgSent: "Отправил в Telegram", tgNo: "Сначала подключи Telegram-бота", failMsg: "Не получилось, попробуй ещё раз", rootFolder: "Все папки", newSub: "Новая подпапка здесь…", manage: "Выбрать", manageDone: "Готово", selected: "выбрано", moveTo: "В папку", newFolder: "Новая папка…", delSel: "Удалить", delAsk: "Удалить выбранные безвозвратно?", rename: "Переименовать", renameAsk: "Новое имя папки:", delFolder: "Убрать папку", delFolderAsk: "Убрать эту папку? Файлы останутся, просто выйдут из папки.", cancel2: "Отмена", tidy: "Разложить по папкам", tidyBusy: "Раскладываю…", tidyDone: "Готово — разложил по папкам", misc: "Разное", all: "Все", add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
-  en: { expMonths: "in ~{n} mo.", expTitle: "Expiring soon", expLeft: "in {n} d.", expToday: "today", expOver: "expired {n} d. ago", send: "Send", sendDownload: "Download", sendLink: "Link", sendTg: "To Telegram", copied: "Link copied", tgSent: "Sent to Telegram", tgNo: "Connect the Telegram bot first", failMsg: "Didn't work, try again", rootFolder: "All folders", newSub: "New subfolder here…", manage: "Select", manageDone: "Done", selected: "selected", moveTo: "To folder", newFolder: "New folder…", delSel: "Delete", delAsk: "Delete selected permanently?", rename: "Rename", renameAsk: "New folder name:", delFolder: "Remove folder", delFolderAsk: "Remove this folder? Files stay, just leave the folder.", cancel2: "Cancel", tidy: "Sort into folders", tidyBusy: "Sorting…", tidyDone: "Done — sorted into folders", misc: "Other", all: "All", add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
-  uk: { expMonths: "через ~{n} міс.", expTitle: "Скоро спливають терміни", expLeft: "через {n} дн.", expToday: "сьогодні", expOver: "сплив {n} дн. тому", send: "Надіслати", sendDownload: "Завантажити", sendLink: "Посилання", sendTg: "У Telegram", copied: "Посилання скопійовано", tgSent: "Надіслав у Telegram", tgNo: "Спершу підключи Telegram-бота", failMsg: "Не вийшло, спробуй ще раз", rootFolder: "Усі папки", newSub: "Нова підпапка тут…", manage: "Вибрати", manageDone: "Готово", selected: "вибрано", moveTo: "У папку", newFolder: "Нова папка…", delSel: "Видалити", delAsk: "Видалити вибрані безповоротно?", rename: "Перейменувати", renameAsk: "Нове ім'я папки:", delFolder: "Прибрати папку", delFolderAsk: "Прибрати цю папку? Файли залишаться, просто вийдуть із папки.", cancel2: "Скасувати", tidy: "Розкласти по папках", tidyBusy: "Розкладаю…", tidyDone: "Готово — розклав по папках", misc: "Інше", all: "Усі", add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
-  fr: { expMonths: "dans ~{n} mois", expTitle: "Expire bientot", expLeft: "dans {n} j.", expToday: "aujourd'hui", expOver: "expire il y a {n} j.", send: "Envoyer", sendDownload: "Télécharger", sendLink: "Lien", sendTg: "Vers Telegram", copied: "Lien copié", tgSent: "Envoyé sur Telegram", tgNo: "Connecte d'abord le bot Telegram", failMsg: "Échec, réessaie", rootFolder: "Tous les dossiers", newSub: "Nouveau sous-dossier ici…", manage: "Sélectionner", manageDone: "Terminé", selected: "sélectionné(s)", moveTo: "Vers dossier", newFolder: "Nouveau dossier…", delSel: "Supprimer", delAsk: "Supprimer définitivement la sélection ?", rename: "Renommer", renameAsk: "Nouveau nom du dossier :", delFolder: "Retirer le dossier", delFolderAsk: "Retirer ce dossier ? Les fichiers restent, ils quittent juste le dossier.", cancel2: "Annuler", tidy: "Ranger par dossiers", tidyBusy: "Rangement…", tidyDone: "Terminé — rangé par dossiers", misc: "Divers", all: "Tout", add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
-  es: { expMonths: "en ~{n} meses", expTitle: "Vencen pronto", expLeft: "en {n} d.", expToday: "hoy", expOver: "vencio hace {n} d.", send: "Enviar", sendDownload: "Descargar", sendLink: "Enlace", sendTg: "A Telegram", copied: "Enlace copiado", tgSent: "Enviado a Telegram", tgNo: "Primero conecta el bot de Telegram", failMsg: "No funcionó, intenta de nuevo", rootFolder: "Todas las carpetas", newSub: "Nueva subcarpeta aquí…", manage: "Seleccionar", manageDone: "Listo", selected: "seleccionado(s)", moveTo: "A carpeta", newFolder: "Nueva carpeta…", delSel: "Eliminar", delAsk: "¿Eliminar la selección permanentemente?", rename: "Renombrar", renameAsk: "Nuevo nombre de carpeta:", delFolder: "Quitar carpeta", delFolderAsk: "¿Quitar esta carpeta? Los archivos quedan, solo salen de la carpeta.", cancel2: "Cancelar", tidy: "Ordenar en carpetas", tidyBusy: "Ordenando…", tidyDone: "Listo — ordenado en carpetas", misc: "Otros", all: "Todo", add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
+  ru: { tooBig: "слишком большой (до 25 МБ)", badType: "такой формат не понимаю", dropHere: "Отпусти — разберу", bulkHint: "Можно выбрать сразу много: фото, PDF, docx, xlsx, txt. Или перетащи их сюда.", queueTitle: "Разбираю", queueDone: "готово", expMonths: "через ~{n} мес.", expTitle: "Скоро истекают сроки", expLeft: "через {n} дн.", expToday: "сегодня", expOver: "истёк {n} дн. назад", send: "Отправить", sendDownload: "Скачать файл", sendLink: "Ссылка", sendTg: "В Telegram", copied: "Ссылка скопирована", tgSent: "Отправил в Telegram", tgNo: "Сначала подключи Telegram-бота", failMsg: "Не получилось, попробуй ещё раз", rootFolder: "Все папки", newSub: "Новая подпапка здесь…", manage: "Выбрать", manageDone: "Готово", selected: "выбрано", moveTo: "В папку", newFolder: "Новая папка…", delSel: "Удалить", delAsk: "Удалить выбранные безвозвратно?", rename: "Переименовать", renameAsk: "Новое имя папки:", delFolder: "Убрать папку", delFolderAsk: "Убрать эту папку? Файлы останутся, просто выйдут из папки.", cancel2: "Отмена", tidy: "Разложить по папкам", tidyBusy: "Раскладываю…", tidyDone: "Готово — разложил по папкам", misc: "Разное", all: "Все", add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
+  en: { tooBig: "too big (25 MB max)", badType: "format I can't read", dropHere: "Drop it — I'll sort it out", bulkHint: "Pick many at once: photos, PDF, docx, xlsx, txt. Or drag them here.", queueTitle: "Sorting", queueDone: "done", expMonths: "in ~{n} mo.", expTitle: "Expiring soon", expLeft: "in {n} d.", expToday: "today", expOver: "expired {n} d. ago", send: "Send", sendDownload: "Download", sendLink: "Link", sendTg: "To Telegram", copied: "Link copied", tgSent: "Sent to Telegram", tgNo: "Connect the Telegram bot first", failMsg: "Didn't work, try again", rootFolder: "All folders", newSub: "New subfolder here…", manage: "Select", manageDone: "Done", selected: "selected", moveTo: "To folder", newFolder: "New folder…", delSel: "Delete", delAsk: "Delete selected permanently?", rename: "Rename", renameAsk: "New folder name:", delFolder: "Remove folder", delFolderAsk: "Remove this folder? Files stay, just leave the folder.", cancel2: "Cancel", tidy: "Sort into folders", tidyBusy: "Sorting…", tidyDone: "Done — sorted into folders", misc: "Other", all: "All", add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
+  uk: { tooBig: "завеликий (до 25 МБ)", badType: "такий формат не розумію", dropHere: "Відпусти — розберу", bulkHint: "Можна вибрати одразу багато: фото, PDF, docx, xlsx, txt. Або перетягни сюди.", queueTitle: "Розбираю", queueDone: "готово", expMonths: "через ~{n} міс.", expTitle: "Скоро спливають терміни", expLeft: "через {n} дн.", expToday: "сьогодні", expOver: "сплив {n} дн. тому", send: "Надіслати", sendDownload: "Завантажити", sendLink: "Посилання", sendTg: "У Telegram", copied: "Посилання скопійовано", tgSent: "Надіслав у Telegram", tgNo: "Спершу підключи Telegram-бота", failMsg: "Не вийшло, спробуй ще раз", rootFolder: "Усі папки", newSub: "Нова підпапка тут…", manage: "Вибрати", manageDone: "Готово", selected: "вибрано", moveTo: "У папку", newFolder: "Нова папка…", delSel: "Видалити", delAsk: "Видалити вибрані безповоротно?", rename: "Перейменувати", renameAsk: "Нове ім'я папки:", delFolder: "Прибрати папку", delFolderAsk: "Прибрати цю папку? Файли залишаться, просто вийдуть із папки.", cancel2: "Скасувати", tidy: "Розкласти по папках", tidyBusy: "Розкладаю…", tidyDone: "Готово — розклав по папках", misc: "Інше", all: "Усі", add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
+  fr: { tooBig: "trop lourd (25 Mo max)", badType: "format que je ne lis pas", dropHere: "Lâche — je m'en occupe", bulkHint: "Choisis-en plusieurs d'un coup : photos, PDF, docx, xlsx, txt. Ou glisse-les ici.", queueTitle: "Je range", queueDone: "fait", expMonths: "dans ~{n} mois", expTitle: "Expire bientot", expLeft: "dans {n} j.", expToday: "aujourd'hui", expOver: "expire il y a {n} j.", send: "Envoyer", sendDownload: "Télécharger", sendLink: "Lien", sendTg: "Vers Telegram", copied: "Lien copié", tgSent: "Envoyé sur Telegram", tgNo: "Connecte d'abord le bot Telegram", failMsg: "Échec, réessaie", rootFolder: "Tous les dossiers", newSub: "Nouveau sous-dossier ici…", manage: "Sélectionner", manageDone: "Terminé", selected: "sélectionné(s)", moveTo: "Vers dossier", newFolder: "Nouveau dossier…", delSel: "Supprimer", delAsk: "Supprimer définitivement la sélection ?", rename: "Renommer", renameAsk: "Nouveau nom du dossier :", delFolder: "Retirer le dossier", delFolderAsk: "Retirer ce dossier ? Les fichiers restent, ils quittent juste le dossier.", cancel2: "Annuler", tidy: "Ranger par dossiers", tidyBusy: "Rangement…", tidyDone: "Terminé — rangé par dossiers", misc: "Divers", all: "Tout", add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
+  es: { tooBig: "demasiado grande (25 MB máx.)", badType: "formato que no leo", dropHere: "Suéltalo — yo lo ordeno", bulkHint: "Elige varios a la vez: fotos, PDF, docx, xlsx, txt. O arrástralos aquí.", queueTitle: "Ordenando", queueDone: "listo", expMonths: "en ~{n} meses", expTitle: "Vencen pronto", expLeft: "en {n} d.", expToday: "hoy", expOver: "vencio hace {n} d.", send: "Enviar", sendDownload: "Descargar", sendLink: "Enlace", sendTg: "A Telegram", copied: "Enlace copiado", tgSent: "Enviado a Telegram", tgNo: "Primero conecta el bot de Telegram", failMsg: "No funcionó, intenta de nuevo", rootFolder: "Todas las carpetas", newSub: "Nueva subcarpeta aquí…", manage: "Seleccionar", manageDone: "Listo", selected: "seleccionado(s)", moveTo: "A carpeta", newFolder: "Nueva carpeta…", delSel: "Eliminar", delAsk: "¿Eliminar la selección permanentemente?", rename: "Renombrar", renameAsk: "Nuevo nombre de carpeta:", delFolder: "Quitar carpeta", delFolderAsk: "¿Quitar esta carpeta? Los archivos quedan, solo salen de la carpeta.", cancel2: "Cancelar", tidy: "Ordenar en carpetas", tidyBusy: "Ordenando…", tidyDone: "Listo — ordenado en carpetas", misc: "Otros", all: "Todo", add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
 };
 
 function resizeImage(file: File, max = 1568): Promise<Blob> {
@@ -176,18 +176,71 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  async function onFile(f: File) {
+  // Загрузка пачкой: вывалил в шкаф хоть полсотни вещей — разбирает сам.
+  //
+  // Файлы уходят в хранилище НАПРЯМУЮ по временной ссылке, минуя наш сервер:
+  // у хостинга предел около 4,5 МБ на запрос, и один договор в PDF его уже
+  // пробивает. Разбираем по два за раз — быстрее, чем по одному, и не
+  // устраиваем шторм из запросов к AI.
+  const [queue, setQueue] = useState<{ name: string; state: "wait" | "work" | "done" | "fail"; why?: string }[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+
+  async function onFiles(list: File[]) {
+    const files = list.slice(0, 60);
+    if (!files.length) return;
     setBusy(true);
+    setQueue(files.map((f) => ({ name: f.name, state: "wait" })));
+    const mark = (i: number, state: "wait" | "work" | "done" | "fail", why?: string) =>
+      setQueue((p) => p.map((x, j) => (j === i ? { ...x, state, why } : x)));
+
     try {
-      const blob = await resizeImage(f);
-      const fd = new FormData();
-      fd.append("image", blob, "photo.jpg");
-      const res = await fetch("/api/memory-upload", { method: "POST", body: fd });
-      const j = await res.json().catch(() => null);
-      if (res.ok && j?.ok && j.memory) setItems((p) => [j.memory, ...p]);
+      // Картинки ужимаем ДО отправки: и грузится быстрее, и в хранилище
+      // не оседают сорокамегабайтные снимки с телефона.
+      const prepared = await Promise.all(
+        files.map(async (f) => (f.type.startsWith("image/") ? new File([await resizeImage(f)], f.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }) : f))
+      );
+
+      const r = await fetch("/api/memory/bulk", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "urls", files: prepared.map((f) => ({ name: f.name, type: f.type, size: f.size })) }),
+      }).then((x) => x.json());
+      const slots: any[] = r?.files || [];
+
+      let next = 0;
+      const worker = async () => {
+        while (next < prepared.length) {
+          const i = next++;
+          const slot = slots[i];
+          const file = prepared[i];
+          if (!slot?.url) {
+            mark(i, "fail", slot?.error === "big" ? s.tooBig : slot?.error === "type" ? s.badType : s.failMsg);
+            continue;
+          }
+          mark(i, "work");
+          try {
+            const up = await fetch(slot.url, { method: "PUT", headers: { "content-type": file.type || "application/octet-stream" }, body: file });
+            if (!up.ok) { mark(i, "fail", s.failMsg); continue; }
+            const ing = await fetch("/api/memory/bulk", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "ingest", path: slot.path, name: file.name, type: file.type }),
+            }).then((x) => x.json());
+            if (ing?.ok && ing.memory) {
+              setItems((p) => [ing.memory, ...p]);
+              mark(i, "done");
+            } else mark(i, "fail", s.failMsg);
+          } catch {
+            mark(i, "fail", s.failMsg);
+          }
+        }
+      };
+      await Promise.all([worker(), worker()]);
     } catch {}
     setBusy(false);
   }
+
+  const onFile = (f: File) => onFiles([f]);
   async function del(id: string) {
     setItems((p) => p.filter((x) => x.id !== id));
     try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "delete", id }) }); } catch {}
@@ -419,7 +472,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
 
   return (
     <div>
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+      <input ref={fileRef} type="file" multiple accept="image/*,application/pdf,.pdf,.docx,.xlsx,.txt,.md,.csv" style={{ display: "none" }} onChange={(e) => { const fs = Array.from(e.target.files || []); if (fs.length) onFiles(fs); e.target.value = ""; }} />
       {toast && (
         <div style={{ position: "fixed", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 50, background: "var(--text)", color: "var(--surface)", padding: "10px 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 500, boxShadow: "0 6px 20px rgba(0,0,0,.22)" }}>{toast}</div>
       )}
@@ -447,10 +500,44 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
       )}
 
       <div style={{ marginBottom: 18 }}>
-        <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", justifyContent: "center", padding: "13px", borderRadius: 13, border: "1px dashed var(--border)", background: "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", fontSize: 14.5, fontWeight: 500, cursor: busy ? "default" : "pointer" }}>
-          {busy ? <><i className="ti ti-loader-2" style={{ fontSize: 17 }} />{s.analyzing}</> : <><i className="ti ti-camera" style={{ fontSize: 18 }} />{s.add}</>}
+        {/* Перетаскивание: самый естественный способ вывалить в шкаф папку целиком. */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+          onDragOver={(e) => { e.preventDefault(); if (!busy) setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); const fs = Array.from(e.dataTransfer?.files || []); if (fs.length && !busy) onFiles(fs); }}
+          style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", justifyContent: "center", padding: "13px", borderRadius: 13, border: `1px dashed ${dragOver ? "var(--accent)" : "var(--border)"}`, background: dragOver ? "var(--accent-bg)" : "var(--surface)", color: busy ? "var(--text-3)" : "var(--accent)", fontSize: 14.5, fontWeight: 500, cursor: busy ? "default" : "pointer" }}
+        >
+          {dragOver ? <><i className="ti ti-download" style={{ fontSize: 18 }} />{s.dropHere}</> : busy ? <><i className="ti ti-loader-2" style={{ fontSize: 17 }} />{s.analyzing}</> : <><i className="ti ti-camera" style={{ fontSize: 18 }} />{s.add}</>}
         </button>
-        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginTop: 8, textAlign: "center" }}>{s.sub}</div>
+
+        {/* Очередь: видно, что уже разобрано, что в работе и что не пошло. */}
+        {queue.length > 0 && (
+          <div style={{ marginTop: 10, border: "1px solid var(--border)", borderRadius: 12, padding: "10px 12px", background: "var(--surface)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--text-2)", marginBottom: 7 }}>
+              <span>{s.queueTitle}</span>
+              <span>{queue.filter((q) => q.state === "done").length} / {queue.length} {s.queueDone}</span>
+            </div>
+            <div style={{ display: "grid", gap: 4, maxHeight: 190, overflowY: "auto" }}>
+              {queue.map((q, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                  <i
+                    className={`ti ${q.state === "done" ? "ti-circle-check" : q.state === "fail" ? "ti-alert-circle" : q.state === "work" ? "ti-loader-2" : "ti-circle"}`}
+                    style={{ fontSize: 15, flexShrink: 0, color: q.state === "done" ? "#0F6E56" : q.state === "fail" ? "#ef4444" : "var(--text-3)" }}
+                  />
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-2)" }}>{q.name}</span>
+                  {q.why && <span style={{ color: "#ef4444", flexShrink: 0 }}>{q.why}</span>}
+                </div>
+              ))}
+            </div>
+            {!busy && (
+              <button onClick={() => setQueue([])} style={{ marginTop: 8, background: "none", border: "none", color: "var(--accent)", fontSize: 12.5, cursor: "pointer", padding: 0 }}>{s.cancel2}</button>
+            )}
+          </div>
+        )}
+
+        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginTop: 8, textAlign: "center" }}>{s.bulkHint}</div>
         {items.length > 1 && (
           <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 8 }}>
             <button onClick={tidyFolders} disabled={tidying} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: tidying ? "var(--text-3)" : "var(--accent)", cursor: tidying ? "default" : "pointer", fontSize: 12.5, padding: 0 }}>

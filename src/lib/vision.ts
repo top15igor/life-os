@@ -32,6 +32,34 @@ const TOOL: Anthropic.Tool = {
   },
 };
 
+// Разбор ТЕКСТОВОГО файла (docx, xlsx, txt, csv). Claude читает напрямую только
+// PDF и картинки, а офисные файлы — это zip с XML внутри: текст из них достаёт
+// docText, а осмысляет уже эта функция. Без неё договор в .docx попадал бы в
+// хранилище безымянным «Документом».
+export async function analyzeText(text: string, fileName: string | undefined, userId?: string): Promise<VisionResult> {
+  const body = (text || "").trim().slice(0, 24000);
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Ниже ТЕКСТ файла${fileName ? ` «${fileName}»` : ""}. Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence.\n\nТЕКСТ:\n${body}`;
+  const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1500,
+    tools: [TOOL],
+    tool_choice: { type: "tool", name: "describe_image" },
+    messages: [{ role: "user", content: prompt }],
+  });
+  logClaude(userId, "vision_text", "sonnet", (m as any).usage);
+  const block = m.content.find((b) => b.type === "tool_use");
+  const d = (block && block.type === "tool_use" ? block.input : {}) as any;
+  return {
+    category: MEM_CATEGORIES.includes(d.category) ? d.category : "document",
+    title: d.title || fileName || "Документ",
+    summary: d.summary || "",
+    fields: Array.isArray(d.fields) ? d.fields.filter((f: any) => f?.label && f?.value).slice(0, 12) : [],
+    folder: (typeof d.folder === "string" && d.folder.trim()) ? d.folder.trim().slice(0, 60) : deriveFolder("document", d.title, d.fields),
+    date: d.date || null,
+    confidence: d.confidence,
+  };
+}
+
 // Разбор загруженного ДОКУМЕНТА (PDF). Claude читает PDF напрямую — отдельный парсер не нужен.
 export async function analyzeDocument(base64: string, userId?: string): Promise<VisionResult> {
   const prompt = `Ты — «Визуальная память» дневника LIFE OS. Перед тобой документ (PDF). Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence.`;
