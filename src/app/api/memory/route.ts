@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { signForExport, tempFileUrl, isPdfUrl } from "@/lib/fileLink";
+import { sendPhoto, sendDocumentUrl } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -35,6 +37,28 @@ export async function POST(req: NextRequest) {
 
   const id = String(body?.id || "");
   if (!id) return NextResponse.json({ ok: false }, { status: 400 });
+
+  // Отправка файла: ссылка (на 7 дней) или прямо в Telegram владельцу.
+  if (action === "share" || action === "telegram") {
+    const { data: row } = await db.from("memories").select("image_url, file_url, file_name, title").eq("id", id).eq("user_id", user.id).maybeSingle();
+    const raw = (row as any)?.file_url || (row as any)?.image_url || null;
+    if (!raw) return NextResponse.json({ ok: false, error: "no file" }, { status: 404 });
+    if (action === "share") {
+      const url = await signForExport(raw);
+      return NextResponse.json({ ok: !!url, url });
+    }
+    // Telegram: шлём в личный чат владельца (chat_id), файлом.
+    const { data: u } = await db.from("users").select("chat_id").eq("id", user.id).maybeSingle();
+    const chatId = Number((u as any)?.chat_id || 0);
+    if (!chatId) return NextResponse.json({ ok: false, error: "no_telegram" }, { status: 400 });
+    const link = await tempFileUrl(raw);
+    if (!link) return NextResponse.json({ ok: false }, { status: 500 });
+    const caption = String((row as any)?.title || "").slice(0, 900);
+    const ok = (row as any)?.file_url || isPdfUrl(raw)
+      ? await sendDocumentUrl(chatId, link, caption ? { caption } : undefined)
+      : await sendPhoto(chatId, link, caption ? { caption } : undefined);
+    return NextResponse.json({ ok });
+  }
 
   if (action === "delete") {
     await db.from("memories").delete().eq("id", id).eq("user_id", user.id);
