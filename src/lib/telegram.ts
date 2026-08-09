@@ -120,6 +120,23 @@ export async function sendPhoto(chatId: number, photo: string, extra?: Record<st
   }
 }
 
+// Отправить документ по ССЫЛКЕ (Telegram скачает сам). Нужно для файлов из
+// хранилища: держать PDF в памяти сервера ради пересылки незачем.
+export async function sendDocumentUrl(chatId: number, url: string, extra?: Record<string, any>): Promise<boolean> {
+  if (capture("sendDocument", chatId, url, extra)) return true;
+  try {
+    const r = await fetch(`${API}/sendDocument`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, document: url, ...(extra || {}) }),
+    });
+    return r.ok;
+  } catch (e) {
+    console.error("sendDocumentUrl", e);
+    return false;
+  }
+}
+
 // Отправить альбом фото/видео одним сообщением (как «Save As Bot» присылает карусель).
 // Telegram допускает 2–10 элементов в группе — на входе режем на пачки по 10.
 // items: [{ type: 'photo'|'video', media: <url|file_id>, caption?, parse_mode? }].

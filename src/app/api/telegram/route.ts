@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, editMessageText, runCaptured } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
+import { tempFileUrl, isPdfUrl } from "@/lib/fileLink";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -2484,6 +2485,24 @@ async function handleUpdate(req: NextRequest) {
             { text: D.no, callback_data: "delno" },
           ]] } };
         }
+        // Сами файлы: человек просит документ, а не пересказ его содержимого.
+        // Ссылку выписываем временную и подписанную — она живёт пару минут,
+        // Telegram успевает скачать, дальше мертва. Публичный адрес скана
+        // паспорта в переписке жить не должен.
+        if (res.files2?.length) {
+          for (const f of res.files2.slice(0, 2)) {
+            try {
+              const link = await tempFileUrl(f.url);
+              if (!link) continue;
+              const cap = esc(String(f.title || "").slice(0, 200));
+              const ok = isPdfUrl(f.url)
+                ? await sendDocumentUrl(chatId, link, { caption: cap })
+                : await sendPhoto(chatId, link, { caption: cap });
+              if (!ok) await sendDocumentUrl(chatId, link, { caption: cap });
+            } catch (e) { await logError("bot:send-file", e, { userId: user.id, chatId }); }
+          }
+        }
+
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
         const combined = [{ text: res.text, html: res.html }, ...moreParts]
           .map((p) => (p.html ? p.text : mdToTelegram(p.text) || p.text)).join("\n");

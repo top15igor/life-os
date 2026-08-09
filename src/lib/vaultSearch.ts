@@ -17,7 +17,9 @@ import { searchMemories } from "./semanticMemory";
 
 type Src = "diary" | "note" | "knowledge" | "doc";
 
-export type Found = { src: Src; date: string | null; title: string; text: string; score: number; path?: string };
+export type Found = { src: Src; date: string | null; title: string; text: string; score: number; path?: string;
+  // Сам файл (скан, фото, PDF), если он есть: человек чаще просит документ, а не пересказ.
+  fileUrl?: string | null };
 
 // Куда ведёт источник. У записи дневника есть своя страница, у остальных полок —
 // только раздел: точнее не сделать, но и это лучше, чем ничего.
@@ -77,12 +79,12 @@ async function fromKnowledge(userId: string, st: string[]): Promise<Found[]> {
 async function fromDocs(userId: string, st: string[]): Promise<Found[]> {
   try {
     const { data } = await supabaseAdmin().from("memories")
-      .select("title, summary, fields, mem_date, created_at").eq("user_id", userId).limit(300);
+      .select("title, summary, fields, mem_date, created_at, image_url").eq("user_id", userId).limit(300);
     return ((data as any[]) || [])
       .map((m) => {
         const flds = Array.isArray(m.fields) ? m.fields.map((f: any) => `${f?.label ?? ""} ${f?.value ?? ""}`).join(" ") : "";
         const hay = [m.title, m.summary, flds].join(" ");
-        return { src: "doc" as Src, date: String(m.mem_date || m.created_at || "").slice(0, 10), title: String(m.title || ""), text: [m.summary, flds].filter(Boolean).join(" · ").slice(0, 600), score: scoreOf(hay, st), path: "/memory" };
+        return { src: "doc" as Src, date: String(m.mem_date || m.created_at || "").slice(0, 10), title: String(m.title || ""), text: [m.summary, flds].filter(Boolean).join(" · ").slice(0, 600), score: scoreOf(hay, st), path: "/memory", fileUrl: m.image_url || null };
       })
       .filter((x) => x.score > 0);
   } catch {
@@ -146,9 +148,9 @@ const SYS = `Ты отвечаешь человеку по ЕГО СОБСТВЕ
 — Если куски противоречат друг другу, скажи об этом и покажи оба.
 — Коротко. Без markdown, списков со звёздочками и заголовков.`;
 
-export async function answerFromEverything(userId: string, query: string, locale = "ru"): Promise<{ text: string; sources: Source[] }> {
+export async function answerFromEverything(userId: string, query: string, locale = "ru"): Promise<{ text: string; sources: Source[]; files: { url: string; title: string }[] }> {
   const found = await searchEverything(userId, query);
-  if (!found.length) return { text: NOTHING[locale] || NOTHING.ru, sources: [] };
+  if (!found.length) return { text: NOTHING[locale] || NOTHING.ru, sources: [], files: [] };
 
   // До трёх ссылок на то, откуда взят ответ: человек должен иметь возможность
   // открыть первоисточник, а не верить пересказу на слово.
@@ -162,8 +164,15 @@ export async function answerFromEverything(userId: string, query: string, locale
     if (sources.length >= 3) break;
   }
 
+  // Сами файлы: если нашлись документы со сканом, человеку нужен ОРИГИНАЛ,
+  // а не пересказ его содержимого. Больше двух не шлём — это уже свалка.
+  const files = found
+    .filter((f) => f.src === "doc" && f.fileUrl)
+    .slice(0, 2)
+    .map((f) => ({ url: String(f.fileUrl), title: f.title || "документ" }));
+
   if (!process.env.ANTHROPIC_API_KEY) {
-    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources };
+    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources, files };
   }
 
   const ctx = found
@@ -181,8 +190,8 @@ export async function answerFromEverything(userId: string, query: string, locale
     });
     logClaude(userId, "vault-search", "haiku", (m as any).usage);
     const t = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
-    return { text: t || (NOTHING[locale] || NOTHING.ru), sources };
+    return { text: t || (NOTHING[locale] || NOTHING.ru), sources, files };
   } catch {
-    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources };
+    return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources, files };
   }
 }
