@@ -7,6 +7,7 @@ import { recallContext } from "./semanticMemory";
 import { TONE_PROMPT } from "./morningPrefs";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
+import { getLifeFacts } from "./lifeFacts";
 import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
@@ -95,7 +96,7 @@ export async function getCompanionHistory(userId: string, limit = 40): Promise<{
 // ===== Контекст «что я знаю о тебе» (дневник + база знаний + финансы) =====
 async function gatherContext(userId: string): Promise<string> {
   const db = supabaseAdmin();
-  const [{ data: entries }, finance, facts] = await Promise.all([
+  const [{ data: entries }, finance, facts, life] = await Promise.all([
     db
       .from("entries")
       .select("entry_date, summary, raw_text")
@@ -104,6 +105,9 @@ async function gatherContext(userId: string): Promise<string> {
       .limit(200),
     getFinanceSummary(userId).catch(() => ""),
     getAccountFacts(userId),
+    // Те же точные данные, что и у «Спроси свою жизнь»: AI-друг не должен
+    // отвечать хуже только потому, что разговор идёт в другом режиме.
+    getLifeFacts(userId).catch(() => ""),
   ]);
 
   const diary =
@@ -139,7 +143,9 @@ ${saved}
 ${finance || "ФИНАНСЫ: операций пока нет."}
 
 АККАУНТ И СТАТИСТИКА (профиль и точные цифры по данным собеседника — вопросы «когда я зарегистрировался», «сколько у меня записей/голосовых/слов», «какая у меня почта», «какой тариф» закрывай именно этим, не оценивай на глаз):
-${facts}${isOwner(userId) ? "\n\n" + architectureFacts() : ""}`;
+${facts}
+
+${life}${isOwner(userId) ? "\n\n" + architectureFacts() : ""}`;
 }
 
 function nowLocal(off?: number | null): string {

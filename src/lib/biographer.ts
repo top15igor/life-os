@@ -6,6 +6,7 @@ import { getBiographerHistory } from "./queries";
 import { recallContext } from "./semanticMemory";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
+import { getLifeFacts } from "./lifeFacts";
 import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
@@ -13,7 +14,7 @@ const ASK_LANG: Record<string, string> = { ru: "русском", en: "англи
 
 export async function askLife(userId: string, question: string, lang: string = "ru"): Promise<string> {
   const db = supabaseAdmin();
-  const [{ data: entries }, finance, facts] = await Promise.all([
+  const [{ data: entries }, finance, facts, life] = await Promise.all([
     db
       .from("entries")
       .select("entry_date, summary, raw_text")
@@ -22,6 +23,9 @@ export async function askLife(userId: string, question: string, lang: string = "
       .limit(200),
     getFinanceSummary(userId).catch(() => ""),
     getAccountFacts(userId),
+    // Здоровье, настроение, вес, задачи, обещания, напоминания, люди, книги.
+    // Без этого на «сколько раз я бегал» агент отвечал по упоминаниям в тексте.
+    getLifeFacts(userId).catch(() => ""),
   ]);
 
   const list = (entries || []).map((e) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 800)}`).join("\n") || "(записей пока нет)";
@@ -127,6 +131,8 @@ ${finance || "ФИНАНСЫ: операций пока нет."}
 
 АККАУНТ И СТАТИСТИКА (точные данные, отвечай именно ими):
 ${facts}
+
+${life}
 
 ПРИЛОЖЕНИЕ LIFE OS (что умеет и как пользоваться):
 ${appCheatsheet((lang as any) || "ru")}
