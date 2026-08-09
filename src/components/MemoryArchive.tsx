@@ -172,9 +172,6 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
     await rewriteSubtree(catKey, parentPath, seg, (segs) => segs.filter((_, i) => i !== parentPath.length));
   }
 
-  // Имена уже существующих папок (для меню «В папку»).
-  const allFolders = [...new Set(items.map((m) => folderOf(m)).filter(Boolean) as string[])];
-
   const fileRef = useRef<HTMLInputElement | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -246,6 +243,11 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   // Путь вещи как массив сегментов: «Документы/Паспорта» → ["Документы","Паспорта"].
   const pathOf = (m: Memory): string[] => (folderOf(m) || "").split("/").map((x) => x.trim()).filter(Boolean);
   const eqPath = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+
+  // Имена уже существующих папок (для меню «В папку»).
+  // ВАЖНО: строго ПОСЛЕ folderOf. Стрелочные const не поднимаются, и вычисление
+  // выше по файлу падало на каждом заходе — «Память» просто не открывалась.
+  const allFolders = [...new Set(items.map((m) => folderOf(m)).filter(Boolean) as string[])];
   // Установить путь как строку папки для набора id (переименование/перемещение по дереву).
   async function setFolderForIds(ids: string[], folder: string | null) {
     if (!ids.length) return;
