@@ -912,6 +912,18 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Ответ на кнопку, который должен пройти весь обычный путь сообщения.
+// Собираем такое же обновление, какое прислал бы Telegram, и отдаём его
+// тому же обработчику — чтобы не заводить второй, расходящийся путь.
+function fakeUpdate(chatId: number, text: string): any {
+  const body = { message: { chat: { id: chatId }, text, date: Math.floor(Date.now() / 1000), message_id: 0, from: { id: chatId } } };
+  return {
+    headers: new Headers({ "x-telegram-bot-api-secret-token": process.env.TELEGRAM_WEBHOOK_SECRET || "" }),
+    json: async () => body,
+    nextUrl: new URL("https://life-os.today/api/telegram"),
+  };
+}
+
 async function handleUpdate(req: NextRequest) {
   if (!commandsSynced) { commandsSynced = true; syncBotCommands().catch(() => {}); }
 
@@ -1190,6 +1202,14 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("clar:") && cqChat) {
+      // Ответ на уточняющий вопрос. Прогоняем его как обычную реплику: у мозга
+      // в контексте остаётся исходная просьба, и он доводит дело до конца.
+      try {
+        await answerCallback(cq.id);
+        const said = data.slice(5);
+        await handleUpdate(fakeUpdate(cqChat, said));
+      } catch (e) { await logError("bot:clarify", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if ((data === "bulk:go" || data === "bulk:no") && cqChat) {
       // Подтверждение массового изменения. Отдельная кнопка именно потому, что
       // одна фраза здесь трогает десятки строк — молча такое делать нельзя.

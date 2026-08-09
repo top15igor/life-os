@@ -229,6 +229,19 @@ export const ACTION_TOOLS: any[] = [
     input_schema: { type: "object", properties: { query: { type: "string", description: "что ищем, словами человека" } }, required: ["query"] },
   },
   {
+    name: "ask_clarify",
+    description:
+      "ПЕРЕСПРОСИТЬ, когда просьба понятна по смыслу, но неоднозначна ИМЕННО В ТОМ, что нужно менять или удалять, и ошибка будет стоить дорого. Примеры: «удали запись про Колю», а Коль в дневнике двое; «перенеси встречу», а встреч на неделе три; «убери ту трату», а трат с такой суммой несколько.\n\nquestion — один короткий вопрос. options — 2-4 варианта короткими подписями для кнопок.\n\nНЕ злоупотребляй: если понятно из последней реплики или из недавнего разговора — действуй, не переспрашивай. Переспрос уместен только там, где неверная догадка ПОРТИТ ДАННЫЕ. Для поиска и вопросов переспрашивать не нужно — покажи, что нашёл.",
+    input_schema: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "один короткий вопрос" },
+        options: { type: "array", items: { type: "string" }, description: "2-4 коротких варианта для кнопок" },
+      },
+      required: ["question", "options"],
+    },
+  },
+  {
     name: "cannot_do",
     description:
       "Человек просит СДЕЛАТЬ во внешнем мире то, чего бот не умеет: заказать такси или еду, купить что-то, позвонить, отправить письмо, забронировать, включить музыку, перевести деньги, открыть сайт, написать кому-то вне LIFE OS. Выбирай ТОЛЬКО когда это просьба выполнить действие, которого нет среди инструментов. РАССКАЗ о событии («вызвал такси», «купил хлеб», «позвонил маме») — это save_entry, а не cannot_do. what — суть просьбы 2-4 словами, как сказал человек.",
@@ -1462,6 +1475,21 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       await recordAction(userId, `delete_${kind}` as any, D.done(c.label, title), { row: victim });
       return { text: D.done(c.label, title), openNext: c.open, markup: undoMarkup(lang) };
     }
+    if (name === "ask_clarify") {
+      // Один вопрос вместо тихой ошибки. Раньше при неоднозначности агент
+      // молча выбирал сам — и «удали запись про Колю» могло стереть не ту.
+      const q = String(input?.question || "").trim();
+      const opts = (Array.isArray(input?.options) ? input.options : []).map((x: any) => String(x).trim()).filter(Boolean).slice(0, 4);
+      if (!q || opts.length < 2) return { text: s.fail };
+      // Кнопки ПОД сообщением, а не обычная клавиатура: та затирает постоянное
+      // меню бота. Нажатие возвращается тем же путём, что и обычная реплика, —
+      // мозг получит ответ и доведёт дело до конца.
+      return {
+        text: q,
+        markup: { inline_keyboard: opts.map((o: string) => [{ text: o, callback_data: `clar:${o.slice(0, 50)}` }]) },
+      };
+    }
+
     if (name === "user_rule") {
       // Правила «если — то». Раньше на такое бот отвечал «запомнил» и ничего
       // не менял — обещание, которое не выполняется, хуже честного отказа.
