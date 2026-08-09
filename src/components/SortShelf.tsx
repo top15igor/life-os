@@ -11,6 +11,8 @@ import { useState } from "react";
 
 type Item = { id: string; title: string; summary: string; category: string; folder: string | null; image_url: string | null; file_url: string | null; created_at: string; why: "unsure" | "unknown" | "empty" };
 type Rule = { id: string; subject: string; should_be: string; times: number };
+type Ent = { id: number; name: string; count: number };
+type Dup = { kind: "people" | "places"; keep: Ent; merge: Ent[]; why: "same" | "similar" };
 
 const CATS = [
   { key: "document", icon: "ti-file-text", c: "#185FA5", bg: "#E6F1FB" },
@@ -38,6 +40,14 @@ const STR: Record<string, any> = {
     forget: "забыть",
     left: "осталось",
     cats: { document: "Документ", moment: "Момент", thing: "Вещь", person: "Люди", place: "Место", project: "Проект", info: "Инфо", other: "Другое" },
+    dupTitle: "Похоже, это одно и то же",
+    dupHint: "Один человек записан несколькими карточками — записи о нём разбросаны. Объединишь — всё соберётся в одну.",
+    dupSame: "написано одинаково",
+    dupSimilar: "похоже на одно и то же",
+    dupMerge: "Объединить",
+    dupSkip: "Разные",
+    dupKeep: "останется",
+    dupMentions: "упом.",
   },
   en: {
     empty: "Nothing to sort — the wardrobe figured it all out.",
@@ -53,14 +63,39 @@ const STR: Record<string, any> = {
     forget: "forget",
     left: "left",
     cats: { document: "Document", moment: "Moment", thing: "Thing", person: "People", place: "Place", project: "Project", info: "Info", other: "Other" },
+    dupTitle: "Looks like the same thing",
+    dupHint: "One person recorded as several cards — their entries are scattered. Merge and it all comes together.",
+    dupSame: "written the same",
+    dupSimilar: "looks like the same",
+    dupMerge: "Merge",
+    dupSkip: "Different",
+    dupKeep: "stays",
+    dupMentions: "ment.",
   },
 };
 
-export default function SortShelf({ initial, rules: initialRules, locale }: { initial: Item[]; rules: Rule[]; locale: string }) {
+export default function SortShelf({ initial, rules: initialRules, dupes: initialDupes, locale }: { initial: Item[]; rules: Rule[]; dupes: Dup[]; locale: string }) {
   const s = STR[locale] || STR.ru;
   const [items, setItems] = useState<Item[]>(initial);
   const [rules, setRules] = useState<Rule[]>(initialRules);
+  const [dupes, setDupes] = useState<Dup[]>(initialDupes || []);
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // Ключ группы: у людей и мест номера свои, поэтому берём и то и другое.
+  const dupKey = (d: Dup) => `${d.kind}:${d.keep.id}`;
+
+  async function merge(d: Dup) {
+    setDupes((p) => p.filter((x) => dupKey(x) !== dupKey(d)));
+    try {
+      await fetch("/api/sort", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "merge", kind: d.kind, keepId: d.keep.id, mergeIds: d.merge.map((m) => m.id) }),
+      });
+    } catch {}
+  }
+  // «Разные» — просто убираем с глаз: ничего не меняем в данных.
+  const skip = (d: Dup) => setDupes((p) => p.filter((x) => dupKey(x) !== dupKey(d)));
 
   async function act(id: string, action: string, category?: string) {
     setItems((p) => p.filter((x) => x.id !== id));
@@ -136,6 +171,39 @@ export default function SortShelf({ initial, rules: initialRules, locale }: { in
             })}
           </div>
         </>
+      )}
+
+      {dupes.length > 0 && (
+        <div style={{ marginTop: items.length ? 22 : 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{s.dupTitle}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 10 }}>{s.dupHint}</div>
+          <div style={{ display: "grid", gap: 9 }}>
+            {dupes.map((d) => (
+              <div key={dupKey(d)} className="card" style={{ padding: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <i className={`ti ${d.kind === "people" ? "ti-user-heart" : "ti-map-pin"}`} style={{ fontSize: 17, color: "var(--accent)" }} />
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{d.keep.name}</span>
+                  <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>({s.dupKeep}{d.keep.count ? `, ${d.keep.count} ${s.dupMentions}` : ""})</span>
+                  <i className="ti ti-arrow-left" style={{ fontSize: 15, color: "var(--text-3)" }} />
+                  <span style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+                    {d.merge.map((m) => `${m.name}${m.count ? ` · ${m.count}` : ""}`).join(", ")}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11.5, color: "#854F0B", background: "#FAEEDA", display: "inline-block", padding: "2px 8px", borderRadius: 999, marginTop: 7 }}>
+                  {d.why === "same" ? s.dupSame : s.dupSimilar}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => merge(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
+                    <i className="ti ti-arrows-join" style={{ fontSize: 15 }} />{s.dupMerge}
+                  </button>
+                  <button onClick={() => skip(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" }}>
+                    <i className="ti ti-x" style={{ fontSize: 15 }} />{s.dupSkip}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {rules.length > 0 && (

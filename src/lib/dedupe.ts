@@ -1,0 +1,192 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { supabaseAdmin } from "./supabaseAdmin";
+import { logClaude } from "./usage";
+
+// Склейка одинакового: «Женя», «Евгения» и «жена» — один человек.
+//
+// Объединять людей и места руками приложение умело и раньше. Не хватало
+// главного: заметить, что дубли ВООБЩЕ есть. Человек не ходит по списку людей
+// с ревизией — он просто однажды видит, что про жену есть три карточки, и
+// перестаёт доверять разделу целиком.
+//
+// Ищем в два прохода. Сначала дешёвый и точный: одинаковые после огрубления
+// («Женя» и «женя», «Одесса» и «Одеса»). Потом умный: имена отдаёт модели —
+// только СПИСОК ИМЁН, без единой строчки дневника, — и она группирует
+// уменьшительные и полные формы, которые буквами не совпадают никак.
+
+export type DupGroup = {
+  kind: "people" | "places";
+  // кого оставляем — тот, кто чаще встречается в записях
+  keep: { id: number; name: string; count: number };
+  merge: { id: number; name: string; count: number }[];
+  // почему считаем дублями — человеку это важно, он принимает решение
+  why: "same" | "similar";
+};
+
+const norm = (s: string) =>
+  (s || "")
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-яіїєґ0-9]+/gi, "")
+    .trim();
+
+const CFG = {
+  people: { table: "people", link: "entry_people", fk: "person_id" },
+  places: { table: "places", link: "entry_places", fk: "place_id" },
+} as const;
+
+type Row = { id: number; name: string; count: number };
+
+async function loadRows(userId: string, kind: "people" | "places"): Promise<Row[]> {
+  const c = CFG[kind];
+  const db = supabaseAdmin();
+  const { data } = await db.from(c.table).select("id, name").eq("user_id", userId).limit(400);
+  const rows = ((data as any[]) || []).filter((r) => String(r.name || "").trim());
+  if (!rows.length) return [];
+  // Сколько раз встречается — по этому выбираем, какую карточку оставить.
+  const counts = new Map<number, number>();
+  try {
+    const { data: links } = await db.from(c.link).select(c.fk).in(c.fk, rows.map((r) => r.id)).limit(5000);
+    for (const l of (links as any[]) || []) {
+      const id = Number((l as any)[c.fk]);
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+  } catch {
+    /* связей может не быть — тогда все по нулям, порядок решит длина имени */
+  }
+  return rows.map((r) => ({ id: Number(r.id), name: String(r.name), count: counts.get(Number(r.id)) || 0 }));
+}
+
+// Кого оставить: у кого больше записей; при равенстве — более полное имя
+// («Евгения» вместо «Женя»), потому что его потом понятнее читать.
+function pickKeep(group: Row[]): { keep: Row; merge: Row[] } {
+  const sorted = [...group].sort((a, b) => b.count - a.count || b.name.length - a.name.length);
+  return { keep: sorted[0], merge: sorted.slice(1) };
+}
+
+// ===== Проход 1: одинаковые после огрубления =====
+
+function exactGroups(rows: Row[]): Row[][] {
+  const by = new Map<string, Row[]>();
+  for (const r of rows) {
+    const k = norm(r.name);
+    if (!k) continue;
+    (by.get(k) || by.set(k, []).get(k)!).push(r);
+  }
+  return [...by.values()].filter((g) => g.length > 1);
+}
+
+// ===== Проход 2: разные слова, один человек =====
+
+const SYS = `Тебе дают список имён из личного дневника одного человека. Найди среди них те, что означают ОДНО И ТО ЖЕ.
+
+Что объединять:
+— уменьшительные и полные формы одного имени: Женя / Евгения, Вова / Владимир / Вовчик, Саша / Александр;
+— имя и роль одного и того же близкого, если это очевидно из списка: «жена» рядом с женским именем, «мама» рядом с именем матери;
+— написания одного города или места на разных языках: Одесса / Одеса, Lisbon / Лиссабон.
+
+Что НЕ объединять:
+— разных людей с похожими именами (Анна и Анна Петровна могут быть разными — объединяй только при явном совпадении);
+— роль без явной пары: «мама» само по себе не объединяется ни с чем;
+— однофамильцев и тёзок.
+
+Лучше пропустить сомнительное, чем склеить двух разных людей: склейку человеку потом не разобрать.`;
+
+const TOOL: Anthropic.Tool = {
+  name: "groups",
+  description: "Группы имён, означающих одно и то же.",
+  input_schema: {
+    type: "object",
+    properties: {
+      groups: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { names: { type: "array", items: { type: "string" }, description: "имена из списка, дословно" } },
+          required: ["names"],
+        },
+      },
+    },
+    required: ["groups"],
+  },
+};
+
+async function smartGroups(userId: string, rows: Row[], already: Set<number>): Promise<Row[][]> {
+  const pool = rows.filter((r) => !already.has(r.id));
+  if (pool.length < 2 || !process.env.ANTHROPIC_API_KEY) return [];
+  try {
+    const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 900,
+      temperature: 0,
+      system: SYS,
+      tools: [TOOL],
+      tool_choice: { type: "tool", name: "groups" },
+      messages: [{ role: "user", content: pool.map((r) => r.name).join("\n") }],
+    });
+    logClaude(userId, "dedupe", "haiku", (m as any).usage);
+    const block = m.content.find((b) => b.type === "tool_use");
+    const raw = (block && block.type === "tool_use" ? (block.input as any)?.groups : []) || [];
+    const byName = new Map(pool.map((r) => [norm(r.name), r]));
+    const out: Row[][] = [];
+    for (const g of raw) {
+      const names: string[] = Array.isArray(g?.names) ? g.names : [];
+      const found = names.map((n) => byName.get(norm(String(n)))).filter(Boolean) as Row[];
+      const uniq = [...new Map(found.map((r) => [r.id, r])).values()];
+      if (uniq.length > 1) out.push(uniq);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// ===== Всё вместе =====
+
+export async function findDuplicates(userId: string, kind: "people" | "places"): Promise<DupGroup[]> {
+  const rows = await loadRows(userId, kind);
+  if (rows.length < 2) return [];
+
+  const groups: DupGroup[] = [];
+  const used = new Set<number>();
+
+  for (const g of exactGroups(rows)) {
+    const { keep, merge } = pickKeep(g);
+    groups.push({ kind, keep, merge, why: "same" });
+    g.forEach((r) => used.add(r.id));
+  }
+
+  for (const g of await smartGroups(userId, rows, used)) {
+    const fresh = g.filter((r) => !used.has(r.id));
+    if (fresh.length < 2) continue;
+    const { keep, merge } = pickKeep(fresh);
+    groups.push({ kind, keep, merge, why: "similar" });
+    fresh.forEach((r) => used.add(r.id));
+  }
+
+  // Сначала точные совпадения, потом догадки: очевидное решается не думая.
+  return groups.sort((a, b) => (a.why === b.why ? 0 : a.why === "same" ? -1 : 1)).slice(0, 12);
+}
+
+// Объединение. Записи переезжают на оставшуюся карточку, лишние исчезают.
+export async function mergeEntities(userId: string, kind: "people" | "places", keepId: number, mergeIds: number[]): Promise<boolean> {
+  const c = CFG[kind];
+  const db = supabaseAdmin();
+  try {
+    const { data: keep } = await db.from(c.table).select("id").eq("id", keepId).eq("user_id", userId).maybeSingle();
+    if (!keep) return false;
+    for (const id of mergeIds) {
+      if (!id || id === keepId) continue;
+      const { data: own } = await db.from(c.table).select("id").eq("id", id).eq("user_id", userId).maybeSingle();
+      if (!own) continue;
+      const { data: links } = await db.from(c.link).select("entry_id").eq(c.fk, id);
+      const rows = ((links as any[]) || []).map((l) => ({ entry_id: l.entry_id, [c.fk]: keepId }));
+      if (rows.length) await db.from(c.link).upsert(rows, { onConflict: `entry_id,${c.fk}`, ignoreDuplicates: true });
+      await db.from(c.link).delete().eq(c.fk, id);
+      await db.from(c.table).delete().eq("id", id).eq("user_id", userId);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}

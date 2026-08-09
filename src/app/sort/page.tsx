@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
 import { listToSort, listRules } from "@/lib/sortShelf";
+import { findDuplicates } from "@/lib/dedupe";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function SortPage() {
   const user = await requireUser();
   const locale = await getLocale();
   const t = getDict(locale);
-  const [items, rules] = await Promise.all([listToSort(user.id), listRules(user.id)]);
+  const [items, rules, dupPeople, dupPlaces] = await Promise.all([listToSort(user.id), listRules(user.id), findDuplicates(user.id, "people"), findDuplicates(user.id, "places")]);
 
   return (
     <div className="shell">
@@ -32,7 +33,7 @@ export default async function SortPage() {
             <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>{TITLE[locale] || TITLE.ru}</h1>
           </div>
           <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 16px" }}>{SUB[locale] || SUB.ru}</p>
-          <SortShelf initial={items} rules={rules} locale={locale} />
+          <SortShelf initial={items} rules={rules} dupes={[...dupPeople, ...dupPlaces]} locale={locale} />
         </div>
       </main>
     </div>
