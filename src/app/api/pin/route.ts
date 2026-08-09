@@ -5,7 +5,7 @@ import { hashPin, unlockToken } from "@/lib/pin";
 
 export const runtime = "nodejs";
 
-const COOKIE_OPTS = { httpOnly: true, path: "/", sameSite: "lax" as const, maxAge: 60 * 60 * 24 * 30 };
+const COOKIE_OPTS = { httpOnly: true, secure: true, path: "/", sameSite: "lax" as const, maxAge: 60 * 60 * 24 * 30 };
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();

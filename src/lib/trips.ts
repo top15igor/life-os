@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { signForWeb } from "./fileLink";
 import { getEntries, places as placesOf, type Entry } from "./queries";
 
 // ===== Дневник путешествий =====
@@ -64,11 +65,15 @@ export async function getTrips(userId: string): Promise<Trip[]> {
         (byTrip[(l as any).trip_id] ||= []).push({ id: e.id, date: e.entry_date, text: String(e.summary || e.raw_text || "").slice(0, 400) });
       }
     } catch {}
-    return trips.map((t: any) => ({
-      ...t,
-      photos: Array.isArray(t.photos) ? t.photos.filter(Boolean) : [],
-      entries: (byTrip[t.id] || []).sort((a, b) => (a.date < b.date ? -1 : 1)),
-    }));
+    // Фото поездок — это те же снимки из «Памяти», бакет закрыт: подписываем на показ.
+    return Promise.all(
+      trips.map(async (t: any) => ({
+        ...t,
+        cover_url: await signForWeb(t.cover_url),
+        photos: await Promise.all((Array.isArray(t.photos) ? t.photos.filter(Boolean) : []).map((u: string) => signForWeb(u))),
+        entries: (byTrip[t.id] || []).sort((a, b) => (a.date < b.date ? -1 : 1)),
+      }))
+    ) as any;
   } catch {
     return []; // таблицы ещё нет — страница работает без поездок
   }

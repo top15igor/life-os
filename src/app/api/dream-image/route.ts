@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { signForWeb } from "@/lib/fileLink";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,9 @@ export async function POST(req: NextRequest) {
     const { data: pub } = db.storage.from("dreams").getPublicUrl(path);
     const url = pub?.publicUrl || null;
     await db.from("dreams").update({ image_url: url }).eq("id", id).eq("user_id", user.id);
-    return NextResponse.json({ ok: true, url });
+    // Бакет закрыт, поэтому в ответ отдаём подписанную ссылку — иначе картинка,
+    // которую человек только что загрузил, не показалась бы до перезагрузки страницы.
+    return NextResponse.json({ ok: true, url: await signForWeb(url) });
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });
   }

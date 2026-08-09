@@ -32,6 +32,7 @@ const T = {
       server: "Что-то пошло не так. Попробуй ещё раз.",
       google: "Не получилось войти через Google. Попробуй ещё раз или войди по почте.",
       net: "Нет связи. Проверь интернет и попробуй снова.",
+      too_many: "Слишком много попыток. Подожди 15 минут и попробуй снова.",
     } as Record<string, string>,
   },
   en: {
@@ -60,6 +61,7 @@ const T = {
       server: "Something went wrong. Try again.",
       google: "Couldn't sign in with Google. Try again or use email.",
       net: "No connection. Check your internet and retry.",
+      too_many: "Too many attempts. Wait 15 minutes and try again.",
     } as Record<string, string>,
   },
 };

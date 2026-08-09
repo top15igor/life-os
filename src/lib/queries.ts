@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { signManyForWeb, signForWeb } from "./fileLink";
 import { SERVICE_TAGS } from "./botTags";
 
 const LIST_SELECT = `
@@ -58,7 +59,8 @@ export async function getEntry(id: string, userId: string): Promise<Entry | null
 export async function getEntryVoiceUrl(id: string, userId: string): Promise<string | null> {
   try {
     const { data } = await supabaseAdmin().from("entries").select("voice_url").eq("id", id).eq("user_id", userId).maybeSingle();
-    return (data as any)?.voice_url || null;
+    // Бакет с голосовыми закрыт: прямой адрес больше не открывается, подписываем на час.
+    return await signForWeb((data as any)?.voice_url || null);
   } catch {
     return null;
   }
@@ -232,7 +234,7 @@ export async function getTraceWeek(userId: string): Promise<{ deeds: number; gra
 export async function getDreams(userId: string): Promise<{ id: string; sphere: string; text: string; emoji?: string; image_url?: string; status: string; created_at: string }[]> {
   try {
     const { data } = await supabaseAdmin().from("dreams").select("id, sphere, text, emoji, image_url, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
-    return data || [];
+    return (await signManyForWeb(data || [])) as any;
   } catch {
     return [];
   }
@@ -245,11 +247,13 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
     // Сначала пробуем с колонками файлов; если миграция не применена — откатываемся к базовому набору.
     const { data, error } = await db.from("memories").select(base + ", file_url, file_name, mime_type").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
     if (error) throw error;
-    return (data as any) || [];
+    // Бакет с документами закрыт: прямые адреса больше не открываются. Подписываем
+    // ссылки на час — иначе сканы паспортов лежали бы доступными любому, кто знает URL.
+    return (await signManyForWeb((data as any) || [], ["image_url", "file_url"])) as any;
   } catch {
     try {
       const { data } = await db.from("memories").select(base).eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
-      return (data as any) || [];
+      return (await signManyForWeb((data as any) || [], ["image_url", "file_url"])) as any;
     } catch {
       return [];
     }

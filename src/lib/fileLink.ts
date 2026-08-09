@@ -1,47 +1,81 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 
-// Ссылка на файл для отправки в Telegram.
+// Ссылки на файлы в хранилище Supabase.
 //
-// Файлы «Памяти» (сканы паспортов, договоры, чеки) лежат в хранилище Supabase,
-// и в базе записан ПУБЛИЧНЫЙ адрес. Это значит, что скан паспорта доступен
-// любому, кто знает ссылку, — для документов такого рода это плохо.
+// Личные файлы — сканы паспортов, договоры, оригиналы голосовых, картинки
+// мечт — лежат в Storage, и в базе записан ПУБЛИЧНЫЙ адрес. Публичный значит
+// «открывается у любого, кто знает ссылку», без всякого входа. Для паспорта
+// и для голоса из дневника это недопустимо.
 //
-// Поэтому перед отправкой мы выписываем ВРЕМЕННУЮ подписанную ссылку: живёт
-// пару минут, Telegram успевает скачать файл, дальше она мертва. Заодно это
-// позволяет сделать бакет закрытым, ничего не меняя в коде: подписанные ссылки
-// работают и там, а публичные — нет.
+// Поэтому бакеты закрываются, а мы выписываем ВРЕМЕННУЮ подписанную ссылку в
+// момент показа. Старые публичные адреса в базе трогать не нужно: из них
+// вынимается путь, а по пути подписывается новая ссылка.
 
-const BUCKET = "memories";
-const TTL_SEC = 180;
+// Закрытые бакеты. Всё остальное (saved, dreams-до-закрытия) отдаётся как есть.
+const PRIVATE_BUCKETS = new Set(["memories", "voices", "dreams"]);
 
-// Из публичного адреса достаём путь внутри бакета.
-export function pathFromPublicUrl(url: string): string | null {
-  const m = /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/.exec(url || "");
+const TTL_TELEGRAM = 180; // файл скачивается сразу
+const TTL_WEB = 3600; // страница может быть открыта долго
+
+// Из адреса достаём бакет и путь внутри него. Понимаем и публичный вид, и уже
+// подписанный — чтобы не подписывать дважды.
+export function parseStorageUrl(url: string): { bucket: string; path: string } | null {
+  const m = /\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/([^?]+)/.exec(url || "");
   if (!m) return null;
-  if (m[1] !== BUCKET) return null;
+  let path = m[2];
   try {
-    return decodeURIComponent(m[2]);
+    path = decodeURIComponent(path);
   } catch {
-    return m[2];
+    /* оставляем как есть */
   }
+  return { bucket: m[1], path };
+}
+
+// Старое имя: код Telegram-ветки ждёт путь именно для «Памяти».
+export function pathFromPublicUrl(url: string): string | null {
+  const p = parseStorageUrl(url);
+  return p && p.bucket === "memories" ? p.path : null;
 }
 
 export function isPdfUrl(url: string): boolean {
   return /\.pdf(\?|$)/i.test(url || "");
 }
 
-// Временная ссылка. Если подписать не вышло (старый бакет, другой путь) —
-// возвращаем исходную: лучше отдать файл человеку, чем промолчать.
-export async function tempFileUrl(publicUrl: string): Promise<string | null> {
+// Общая подписалка. Если подписать не вышло (чужой адрес, открытый бакет) —
+// возвращаем исходную ссылку: лучше показать файл, чем пустое место.
+async function sign(publicUrl: string | null | undefined, ttl: number): Promise<string | null> {
   const url = (publicUrl || "").trim();
   if (!url) return null;
-  const path = pathFromPublicUrl(url);
-  if (!path) return url;
+  const p = parseStorageUrl(url);
+  if (!p || !PRIVATE_BUCKETS.has(p.bucket)) return url;
   try {
-    const { data, error } = await supabaseAdmin().storage.from(BUCKET).createSignedUrl(path, TTL_SEC);
+    const { data, error } = await supabaseAdmin().storage.from(p.bucket).createSignedUrl(p.path, ttl);
     if (error || !data?.signedUrl) return url;
     return data.signedUrl;
   } catch {
     return url;
   }
+}
+
+// Для отправки в Telegram.
+export async function tempFileUrl(publicUrl: string): Promise<string | null> {
+  return sign(publicUrl, TTL_TELEGRAM);
+}
+
+// Для показа на странице.
+export async function signForWeb(publicUrl: string | null | undefined): Promise<string | null> {
+  return sign(publicUrl, TTL_WEB);
+}
+
+// Подписать список разом: страницы тянут записи одним запросом, и по одной
+// подписывать было бы медленно.
+export async function signManyForWeb<T extends Record<string, any>>(rows: T[], fields: string[] = ["image_url"]): Promise<T[]> {
+  return Promise.all(
+    (rows || []).map(async (r) => {
+      if (!r) return r;
+      const patch: Record<string, any> = {};
+      for (const f of fields) if (r[f]) patch[f] = await signForWeb(r[f]);
+      return Object.keys(patch).length ? { ...r, ...patch } : r;
+    })
+  );
 }

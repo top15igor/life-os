@@ -1,3 +1,4 @@
+import { isSafeExternalUrl } from "./safeUrl";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { getHandle } from "./handle";
 
@@ -121,6 +122,8 @@ export type ProductMeta = { title: string | null; description: string | null; im
 
 export async function fetchProductMeta(url: string): Promise<ProductMeta> {
   let html = "";
+  // Ссылка приходит от человека — сервер не должен ходить внутрь себя и облака.
+  if (!isSafeExternalUrl(url)) return { title: null, description: null, imageUrl: null, price: null, currency: null, source: null };
   try {
     const res = await fetch(url, {
       headers: {
