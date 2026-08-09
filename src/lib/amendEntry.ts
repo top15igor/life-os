@@ -56,6 +56,26 @@ export async function amendLastEntry(
   const todayISO = new Date().toISOString().slice(0, 10);
   if (last.entry_date !== todayISO) return null;
 
+  return amendEntryById(userId, String(last.id), correction);
+}
+
+// Та же правка, но по НАЙДЕННОЙ записи, а не по последней. Дневник копится
+// годами, и «исправь запись про Лиссабон» — такая же обычная просьба, как
+// «я ошибся» сразу после отправки.
+export async function amendEntryById(
+  userId: string,
+  entryId: string,
+  correction: string
+): Promise<{ entry: { id: string; entry_date: string }; analysis: Analysis } | null> {
+  const db = supabaseAdmin();
+  const { data: last } = await db
+    .from("entries")
+    .select("id, raw_text, entry_date, entry_time")
+    .eq("id", entryId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!last) return null;
+
   const combined = `${last.raw_text || ""}\n\n[Поправка пользователя]: ${correction}`;
   const a = await analyze(combined, userId);
 

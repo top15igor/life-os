@@ -19,7 +19,8 @@ import { answerFromEverything } from "./vaultSearch";
 import { deepSummary } from "./deepTask";
 import { recordAction, undoLast, listActions } from "./agentJournal";
 import { rememberFocus } from "./dialogFocus";
-import { amendLastEntry } from "./amendEntry";
+import { amendLastEntry, amendEntryById } from "./amendEntry";
+import { findEntry, findThing, deleteThing } from "./findFix";
 import { resetVoiceHint } from "./voiceHints";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -198,8 +199,8 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "amend_entry",
     description:
-      "ИСПРАВИТЬ ПОСЛЕДНЮЮ ЗАПИСЬ ДНЕВНИКА, когда человек уточняет или поправляет уже сказанное: «я ошибся, это было не вчера, а сегодня», «уточню: сумма была 300», «ты неправильно записал», «не так понял», «на самом деле мы ходили втроём». correction — сама поправка словами человека. НЕ выбирай, если поправка относится к НАПОМИНАНИЮ (move_reminder), к ТРАТЕ (fix_finance), к ИМЕНИ человека (rename_person) или к настройкам (set_pushes) — там свои действия.",
-    input_schema: { type: "object", properties: { correction: { type: "string" } }, required: ["correction"] },
+      "ИСПРАВИТЬ ЗАПИСЬ ДНЕВНИКА, когда человек уточняет или поправляет уже сказанное: «я ошибся, это было не вчера, а сегодня», «уточню: сумма была 300», «ты неправильно записал», «на самом деле мы ходили втроём». correction — сама поправка словами человека.\n\nfind заполняй ТОЛЬКО если человек показывает на СТАРУЮ запись, а не на последнюю: «исправь запись про Лиссабон», «в той записи, где про переезд, было не 200». Тогда find — по каким словам её искать. Если поправка идёт сразу за сообщением («я ошибся», «уточню») — find НЕ заполняй, правится последняя.\n\nНЕ выбирай, если поправка относится к НАПОМИНАНИЮ (move_reminder), к ТРАТЕ (fix_finance), к ИМЕНИ человека (rename_person) или к настройкам (set_pushes) — там свои действия.",
+    input_schema: { type: "object", properties: { correction: { type: "string" }, find: { type: "string", description: "слова для поиска старой записи; пусто — правим последнюю" } }, required: ["correction"] },
   },
   {
     name: "agent_log",
@@ -248,7 +249,7 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "delete_item",
     description:
-      "УБРАТЬ/УДАЛИТЬ задачу, заметку или цель: «убери задачу купить воду», «удали заметку про пароль», «убери цель про английский», «сотри задачу…», «мне это больше не нужно». kind — что именно: task | note | goal. query — слова для поиска. ВАЖНО: «отметь задачу выполненной», «сделал» — это complete_task, а не удаление; напоминания удаляет cancel_reminder; последнюю запись дневника — delete_last_entry.",
+      "УБРАТЬ/УДАЛИТЬ вещь по описанию: «убери задачу купить воду», «удали заметку про пароль», «убери цель про английский», «удали то фото паспорта», «сотри сохранёнку про растяжку», «убери книгу Атомные привычки». kind — что именно: task | note | goal | memory (фото и документы из «Памяти») | saved (сохранёнка из Базы знаний) | book (книга или фильм). query — слова для поиска. ВАЖНО: «отметь задачу выполненной», «сделал» — это complete_task, а не удаление; напоминания удаляет cancel_reminder; последнюю запись дневника — delete_last_entry.",
     input_schema: {
       type: "object",
       properties: {
@@ -514,13 +515,13 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
-    amendOk: "✏️ Поправил последнюю запись.", amendNone: "Не нашёл сегодняшней записи, которую можно поправить. Расскажи заново — сохраню как новую.",
+    amendOk: "✏️ Поправил последнюю запись.", amendNotFound: (q: string) => `Не нашёл записи про «${q}». Скажи иначе — или назови дату.`, amendFound: (d: string, t: string) => `✏️ Поправил запись за ${d}: «${t}…»`, amendNone: "Не нашёл сегодняшней записи, которую можно поправить. Расскажи заново — сохраню как новую.",
     jrn: { head: "📋 <b>Что я менял в твоих данных</b>", empty: "Я ничего не удалял и не переписывал — журнал пуст.", undoneMark: "(отменено)", foot: "Любое из этого можно вернуть: скажи «отмени последнее»." },
     undo: { done: (w: string) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились с тех пор. Расскажи, что восстановить, и я сделаю руками." },
     shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
     cant: { text: (w: string) => `Честно: ${w ? `«${w}» — этого` : "этого"} я не умею. Я живу внутри LIFE OS и не могу действовать во внешнем мире.\n\nЗато могу записать это, поставить напоминание или задачу — скажи, что из этого нужно.` },
     fin: { unclear: "Не понял, что поправить. Скажи, например: «я потратил не 500, а 300 на бензин».", none: (q: string) => `Не нашёл трату про «${q}» за последний месяц.`, which: "Нашёл несколько подходящих. Какую поправить?", fixed: (a: string, b: string, n: string) => `💸 Поправил: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Убрал операцию ${a}${n ? ` (${n})` : ""}.` },
-    del: { task: "задачу", note: "заметку", goal: "цель", unclear: "Не понял, что убрать. Скажи, например: «убери задачу заказать воду».", none: (l: string) => `Не нашёл такую ${l} — возможно, она называется иначе.`, which: (l: string) => `Нашёл несколько. Какую ${l} убрать?`, done: (l: string, t: string) => `🗑 Убрал ${l}: «${t}».` },
+    del: { task: "задачу", note: "заметку", goal: "цель", memory: "фото/документ", saved: "сохранёнку", book: "книгу", unclear: "Не понял, что убрать. Скажи, например: «убери задачу заказать воду».", none: (l: string) => `Не нашёл такую ${l} — возможно, она называется иначе.`, which: (l: string) => `Нашёл несколько. Какую ${l} убрать?`, done: (l: string, t: string) => `🗑 Убрал ${l}: «${t}».` },
     push: { morning: "утренние сообщения", evening: "вечерние вопросы", reminders: "напоминание записать день", weekly: "недельный итог", quiet: "тихие дни", on: "включил", off: "выключил", at: (h: number) => `утро в ${h}:00`, none: "Ничего не понял про рассылку — скажи, например: «не пиши мне по утрам».", saved: (p: string) => `⚙️ Готово: ${p}. Изменить можно в любой момент — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
     renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
@@ -549,7 +550,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
-    amendOk: "\u270f\ufe0f Fixed the last entry.", amendNone: "No entry from today to fix. Tell me again and I\u2019ll save it as a new one.",
+    amendOk: "\u270f\ufe0f Fixed the last entry.", amendNotFound: (q: string) => `No entry about \u201c${q}\u201d. Try other words \u2014 or give me the date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Fixed the entry from ${d}: \u201c${t}\u2026\u201d`, amendNone: "No entry from today to fix. Tell me again and I\u2019ll save it as a new one.",
     jrn: { head: "\ud83d\udccb <b>What I changed in your data</b>", empty: "I haven\u2019t deleted or rewritten anything \u2014 the log is empty.", undoneMark: "(undone)", foot: "Any of it can be brought back: say \u201cundo the last one\u201d." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
@@ -584,13 +585,13 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
-    amendOk: "✏️ Виправив останній запис.", amendNone: "Не знайшов сьогоднішнього запису, який можна виправити. Розкажи знову — збережу як новий.",
+    amendOk: "✏️ Виправив останній запис.", amendNotFound: (q: string) => `Не знайшов запису про «${q}». Скажи інакше — або назви дату.`, amendFound: (d: string, t: string) => `✏️ Виправив запис за ${d}: «${t}…»`, amendNone: "Не знайшов сьогоднішнього запису, який можна виправити. Розкажи знову — збережу як новий.",
     jrn: { head: "📋 <b>Що я змінював у твоїх даних</b>", empty: "Я нічого не видаляв і не переписував — журнал порожній.", undoneMark: "(скасовано)", foot: "Будь-що з цього можна повернути: скажи «скасуй останнє»." },
     undo: { done: (w: string) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв і не переписував.", failed: "Не вдалося повернути — дані відтоді змінилися. Скажи, що відновити, і я зроблю руками." },
     shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
     cant: { text: (w: string) => `Чесно: ${w ? `«${w}» — цього` : "цього"} я не вмію. Я живу всередині LIFE OS і не можу діяти в зовнішньому світі.\n\nЗате можу записати це, поставити нагадування чи задачу — скажи, що саме потрібно.` },
     fin: { unclear: "Не зрозумів, що виправити. Скажи, наприклад: «я витратив не 500, а 300 на бензин».", none: (q: string) => `Не знайшов витрату про «${q}» за останній місяць.`, which: "Знайшов кілька. Яку виправити?", fixed: (a: string, b: string, n: string) => `💸 Виправив: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Прибрав операцію ${a}${n ? ` (${n})` : ""}.` },
-    del: { task: "завдання", note: "нотатку", goal: "ціль", unclear: "Не зрозумів, що прибрати. Скажи, наприклад: «прибери завдання замовити воду».", none: (l: string) => `Не знайшов таке — можливо, названо інакше.`, which: (l: string) => `Знайшов кілька. Що саме прибрати?`, done: (l: string, t: string) => `🗑 Прибрав: «${t}».` },
+    del: { task: "завдання", note: "нотатку", goal: "ціль", memory: "фото/документ", saved: "збережене", book: "книгу", unclear: "Не зрозумів, що прибрати. Скажи, наприклад: «прибери завдання замовити воду».", none: (l: string) => `Не знайшов таке — можливо, названо інакше.`, which: (l: string) => `Знайшов кілька. Що саме прибрати?`, done: (l: string, t: string) => `🗑 Прибрав: «${t}».` },
     push: { morning: "ранкові повідомлення", evening: "вечірні питання", reminders: "нагадування записати день", weekly: "тижневий підсумок", quiet: "тихі дні", on: "увімкнув", off: "вимкнув", at: (h: number) => `ранок о ${h}:00`, none: "Не зрозумів, що змінити — скажи, наприклад: «не пиши мені зранку».", saved: (p: string) => `⚙️ Готово: ${p}. Змінити можна будь-коли — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
     renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
@@ -619,7 +620,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
-    amendOk: "\u270f\ufe0f J\u2019ai corrig\u00e9 la derni\u00e8re entr\u00e9e.", amendNone: "Aucune entr\u00e9e d\u2019aujourd\u2019hui \u00e0 corriger. Redis-le et je l\u2019enregistre.",
+    amendOk: "\u270f\ufe0f J\u2019ai corrig\u00e9 la derni\u00e8re entr\u00e9e.", amendNotFound: (q: string) => `Aucune entr\u00e9e sur \u00ab\u00a0${q}\u00a0\u00bb. Dis-le autrement ou donne la date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f J\u2019ai corrig\u00e9 l\u2019entr\u00e9e du ${d}\u00a0: \u00ab\u00a0${t}\u2026\u00a0\u00bb`, amendNone: "Aucune entr\u00e9e d\u2019aujourd\u2019hui \u00e0 corriger. Redis-le et je l\u2019enregistre.",
     jrn: { head: "\ud83d\udccb <b>Ce que j\u2019ai modifi\u00e9 dans tes donn\u00e9es</b>", empty: "Je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit \u2014 le journal est vide.", undoneMark: "(annul\u00e9)", foot: "Tout \u00e7a peut \u00eatre restaur\u00e9 : dis \u00ab annule la derni\u00e8re \u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
@@ -654,7 +655,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
-    amendOk: "\u270f\ufe0f Corregí la última entrada.", amendNone: "No hay entrada de hoy que corregir. Cuéntamelo otra vez y la guardo.",
+    amendOk: "\u270f\ufe0f Corregí la última entrada.", amendNotFound: (q: string) => `No encontré una entrada sobre \u00ab${q}\u00bb. Dilo de otra forma o dame la fecha.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Corregí la entrada del ${d}: \u00ab${t}\u2026\u00bb`, amendNone: "No hay entrada de hoy que corregir. Cuéntamelo otra vez y la guardo.",
     jrn: { head: "\ud83d\udccb <b>Lo que cambi\u00e9 en tus datos</b>", empty: "No he borrado ni reescrito nada \u2014 el registro est\u00e1 vac\u00edo.", undoneMark: "(deshecho)", foot: "Todo esto se puede recuperar: di \u00abdeshaz lo \u00faltimo\u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
@@ -1239,6 +1240,18 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // остальными: у него на виду и напоминания, и траты, и имена.
       const c = String(input?.correction || "").trim();
       if (!c) return { text: s.fail };
+      const find = String(input?.find || "").trim();
+
+      // Показана старая запись — сначала находим её, и обязательно НАЗЫВАЕМ,
+      // что нашли: молча поправить не ту запись хуже, чем не поправить.
+      if (find) {
+        const hit = await findEntry(userId, find);
+        if (!hit) return { text: (s as any).amendNotFound(find) };
+        const done = await amendEntryById(userId, hit.id, c);
+        if (!done) return { text: (s as any).amendNone };
+        return { text: (s as any).amendFound(hit.date, hit.text.slice(0, 90)), openNext: `/entry/${hit.id}` };
+      }
+
       const res = await amendLastEntry(userId, c);
       if (!res) return { text: (s as any).amendNone };
       return { text: (s as any).amendOk, openNext: "/diary" };
@@ -1357,6 +1370,25 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         note: { table: "notes", field: "text", label: D.note, open: "/notes" },
         goal: { table: "goals", field: "title", label: D.goal, open: "/goals" },
       };
+      // Полки хранилища ищем смыслом: «то фото паспорта» буквами не найти,
+      // а название документа человек почти никогда не помнит дословно.
+      const SHELVES: Record<string, { open: string; label: string }> = {
+        memory: { open: "/memory", label: D.memory },
+        saved: { open: "/knowledge", label: D.saved },
+        book: { open: "/books", label: D.book },
+      };
+      if (SHELVES[kind]) {
+        if (!q) return { text: D.unclear };
+        const sh = SHELVES[kind];
+        const found = await findThing(userId, kind as any, q);
+        if (!found) return { text: D.none(sh.label) };
+        const row = await deleteThing(userId, kind as any, found.id);
+        if (!row) return { text: s.fail };
+        const title = String(found.title || "").slice(0, 120);
+        await recordAction(userId, `delete_${kind}` as any, D.done(sh.label, title), { row, table: kind });
+        return { text: D.done(sh.label, title), openNext: sh.open, markup: undoMarkup(lang) };
+      }
+
       const c = cfg[kind];
       if (!c || !q) return { text: D.unclear };
 
