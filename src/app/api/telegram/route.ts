@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
-import { tempFileUrl, isPdfUrl } from "@/lib/fileLink";
+import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -2210,8 +2210,11 @@ async function handleUpdate(req: NextRequest) {
         // Само видео тоже отправляем в чат. Если файл слишком крупный для отправки по ссылке
         // (лимит Telegram ~20 МБ) — даём кнопку со ссылкой на файл в хранилище.
         if (r.videoUrl) {
-          const sent = await sendVideo(chatId, r.videoUrl, { caption: (a.title || "").slice(0, 200) });
-          if (!sent) await sendMessage(chatId, `🎬 <a href="${r.videoUrl}">${L.video}</a>`);
+          // Бакет закрыт — подписываем на час: и Telegram успеет скачать,
+          // и запасная ссылка в чате поживёт, если файл окажется слишком крупным.
+          const vurl = (await signForWeb(r.videoUrl)) || r.videoUrl;
+          const sent = await sendVideo(chatId, vurl, { caption: (a.title || "").slice(0, 200) });
+          if (!sent) await sendMessage(chatId, `🎬 <a href="${vurl}">${L.video}</a>`);
         }
       } catch (e) {
         logError("bot:import-link", e, { userId: user.id, chatId });

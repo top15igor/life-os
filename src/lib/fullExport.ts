@@ -1,3 +1,4 @@
+import { signForExport } from "./fileLink";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { getEntriesPage, cats, tagList, people, places, projects } from "./queries";
 
@@ -82,7 +83,7 @@ export async function buildFullExport(userId: string, name?: string | null): Pro
   const db = supabaseAdmin();
 
   // Записи — в человекочитаемом виде, со всеми связями, без обрезания по 1000.
-  const entries: any[] = [];
+  let entries: any[] = [];
   for (let page = 0; page < 100; page++) {
     const raw = await getEntriesPage(userId, page * 1000, page * 1000 + 999);
     for (const e of raw as any[]) {
@@ -121,6 +122,26 @@ export async function buildFullExport(userId: string, name?: string | null): Pro
     finance_settings = data || null;
   } catch {}
 
+  // Файлы лежат в закрытых бакетах — в выгрузке отдаём подписанные ссылки
+  // на неделю. Иначе человек унёс бы свой архив с мёртвыми ссылками, а это
+  // ровно то, чего мы обещали не делать.
+  const FILE_FIELDS = ["image_url", "file_url", "video_url", "voice_url", "cover_url"];
+  async function signDeep(rows: any[]): Promise<any[]> {
+    return Promise.all(
+      (rows || []).map(async (r: any) => {
+        if (!r || typeof r !== "object") return r;
+        const patch: any = {};
+        for (const f of FILE_FIELDS) if (typeof r[f] === "string" && r[f]) patch[f] = await signForExport(r[f]);
+        for (const f of ["image_urls", "photos"]) {
+          if (Array.isArray(r[f])) patch[f] = await Promise.all(r[f].map((u: any) => (typeof u === "string" ? signForExport(u) : u)));
+        }
+        return Object.keys(patch).length ? { ...r, ...patch } : r;
+      })
+    );
+  }
+  for (const key of Object.keys(sections)) sections[key] = await signDeep(sections[key] as any[]);
+  entries = await signDeep(entries as any[]) as any;
+
   const counts: Record<string, number> = { entries: entries.length };
   for (const [key] of TABLES) counts[key] = sections[key]?.length || 0;
 
@@ -128,7 +149,7 @@ export async function buildFullExport(userId: string, name?: string | null): Pro
     service: "LIFE OS",
     exported_at: new Date().toISOString(),
     profile: { name: name || null },
-    note: "Полный экспорт данных аккаунта. Фото и файлы приложены ссылками (image_url / file_url). Токены и секреты интеграций не экспортируются никогда.",
+    note: "Полный экспорт данных аккаунта. Фото и файлы приложены ссылками (image_url / file_url) — они действуют 7 дней с момента выгрузки, скачай файлы сразу. Токены и секреты интеграций не экспортируются никогда.",
     counts,
     entries,
     ...sections,

@@ -11,8 +11,8 @@ import { supabaseAdmin } from "./supabaseAdmin";
 // момент показа. Старые публичные адреса в базе трогать не нужно: из них
 // вынимается путь, а по пути подписывается новая ссылка.
 
-// Закрытые бакеты. Всё остальное (saved, dreams-до-закрытия) отдаётся как есть.
-const PRIVATE_BUCKETS = new Set(["memories", "voices", "dreams"]);
+// Закрытые бакеты: ссылки в них подписываются. Остальное отдаётся как есть.
+const PRIVATE_BUCKETS = new Set(["memories", "voices", "dreams", "saved"]);
 
 const TTL_TELEGRAM = 180; // файл скачивается сразу
 const TTL_WEB = 3600; // страница может быть открыта долго
@@ -65,6 +65,18 @@ export async function tempFileUrl(publicUrl: string): Promise<string | null> {
 // Для показа на странице.
 export async function signForWeb(publicUrl: string | null | undefined): Promise<string | null> {
   return sign(publicUrl, TTL_WEB);
+}
+
+// Для выгрузки «унести всё своё»: ссылка должна пережить скачивание архива
+// и спокойный разбор дома. Неделя.
+export async function signForExport(publicUrl: string | null | undefined): Promise<string | null> {
+  return sign(publicUrl, 7 * 24 * 3600);
+}
+
+// Списки ссылок (у сохранённого поста может быть карусель картинок).
+export async function signListForWeb(urls: string[] | null | undefined): Promise<string[] | null> {
+  if (!Array.isArray(urls) || !urls.length) return urls ?? null;
+  return (await Promise.all(urls.map((u) => signForWeb(u)))).filter(Boolean) as string[];
 }
 
 // Подписать список разом: страницы тянут записи одним запросом, и по одной

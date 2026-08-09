@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { signManyForWeb, signForWeb } from "./fileLink";
+import { signManyForWeb, signForWeb, signListForWeb } from "./fileLink";
 import { SERVICE_TAGS } from "./botTags";
 
 const LIST_SELECT = `
@@ -272,11 +272,20 @@ export async function getSavedItems(userId: string): Promise<SavedItem[]> {
   try {
     const { data, error } = await db.from("saved_items").select(SAVED_FULL).eq("user_id", userId).order("created_at", { ascending: false }).limit(500);
     if (error) throw error;
-    return (data as any) || [];
+    // Бакет с сохранённым закрыт: картинки, карусели и видео подписываем на показ.
+    return (await Promise.all(
+      ((data as any[]) || []).map(async (d) => ({
+        ...d,
+        image_url: await signForWeb(d.image_url),
+        image_urls: await signListForWeb(d.image_urls),
+        video_url: await signForWeb(d.video_url),
+      }))
+    )) as any;
   } catch {
     try {
       const { data } = await db.from("saved_items").select(SAVED_BASIC).eq("user_id", userId).order("created_at", { ascending: false }).limit(500);
-      return ((data as any[]) || []).map((d) => ({ ...d, image_urls: null, video_url: null, note: null, favorite: false, done: false, position: 0 }));
+      const signed = await signManyForWeb(((data as any[]) || []));
+      return signed.map((d: any) => ({ ...d, image_urls: null, video_url: null, note: null, favorite: false, done: false, position: 0 }));
     } catch {
       return [];
     }
