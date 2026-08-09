@@ -491,28 +491,32 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
 
   // Плитка-папка: стопка карточек с обложкой первого фото, названием и счётчиком.
   // Клик открывает категорию (там папка раскрыта секцией).
-  const FolderTile = (catKey: string, name: string, arr: Memory[]) => {
+  // Явно «папочный» вид: цветной корпус в тон категории, «язычок» сверху, крупная
+  // иконка папки и счётчик. Без фото — чтобы не путать с обычной карточкой.
+  const FolderVisual = (catKey: string, name: string, count: number) => {
     const cm = catMeta(catKey);
-    const cover = arr.find((m) => m.image_url)?.image_url || null;
     return (
-      <div key={`${catKey}:${name}`} style={{ position: "relative", width: 232, flexShrink: 0 }}>
-        <div style={{ position: "absolute", inset: 0, transform: "translate(7px,7px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
-        <div style={{ position: "absolute", inset: 0, transform: "translate(3.5px,3.5px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
-        <button onClick={() => { setActiveCat(catKey); setPath([name]); }} className="card" style={{ position: "relative", display: "block", width: "100%", padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", border: "1px solid var(--border)" }}>
-          <div style={{ height: 150, background: cover ? `center/cover no-repeat url(${cover})` : cm.bg, display: "flex", alignItems: cover ? "flex-start" : "center", justifyContent: cover ? "flex-start" : "center", position: "relative" }}>
-            {!cover && <i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} />}
-            <span style={{ position: "absolute", top: 8, left: 8, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#fff", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, backdropFilter: "blur(2px)" }}><i className="ti ti-folder" style={{ fontSize: 12 }} />{arr.length}</span>
+      <div style={{ position: "relative" }}>
+        {/* язычок папки */}
+        <div style={{ position: "absolute", top: -7, left: 14, width: 66, height: 14, background: cm.c, borderRadius: "8px 8px 0 0", opacity: 0.9 }} />
+        <div style={{ position: "relative", borderRadius: 14, background: cm.bg, border: `1px solid ${cm.c}22`, padding: "20px 14px 14px", minHeight: 118, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
+            <i className="ti ti-folder-filled" style={{ fontSize: 46, color: cm.c }} />
           </div>
-          <div style={{ padding: "10px 12px 12px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className="ti ti-folder" style={{ fontSize: 14, color: cm.c }} /></span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{name}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: cm.c, borderRadius: 999, padding: "1px 8px", flexShrink: 0 }}>{count}</span>
           </div>
-        </button>
+        </div>
       </div>
     );
   };
+
+  const FolderTile = (catKey: string, name: string, arr: Memory[]) => (
+    <button key={`${catKey}:${name}`} onClick={() => { setActiveCat(catKey); setPath([name]); }} style={{ width: 232, flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
+      {FolderVisual(catKey, name, arr.length)}
+    </button>
+  );
 
   return (
     <div>
@@ -749,20 +753,14 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
                       {subOrder.map((seg) => {
                         const arr = subMap.get(seg)!;
-                        const cover = arr.find((m) => m.image_url)?.image_url || null;
                         return (
-                          <div key={seg} className="card" style={{ padding: 0, overflow: "hidden", position: "relative" }}>
+                          <div key={seg} style={{ position: "relative" }}>
                             <button onClick={() => setPath([...path, seg])} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-                              <div style={{ height: 120, background: cover ? `center/cover no-repeat url(${cover})` : cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>{!cover && <i className="ti ti-folder" style={{ fontSize: 32, color: cm.c }} />}</div>
-                              <div style={{ padding: "10px 12px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className="ti ti-folder" style={{ fontSize: 14, color: cm.c }} /></span>
-                                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{seg}</span>
-                                <span style={{ fontSize: 12.5, color: "var(--text-3)", marginLeft: "auto" }}>{arr.length}</span>
-                              </div>
+                              {FolderVisual(activeCat, seg, arr.length)}
                             </button>
-                            <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 2 }}>
-                              <button onClick={() => renameSubfolder(activeCat, path, seg)} title={s.rename} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.5)", color: "#fff", cursor: "pointer" }}><i className="ti ti-pencil" style={{ fontSize: 13 }} /></button>
-                              <button onClick={() => removeSubfolder(activeCat, path, seg)} title={s.delFolder} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.5)", color: "#fff", cursor: "pointer" }}><i className="ti ti-folder-off" style={{ fontSize: 13 }} /></button>
+                            <div style={{ position: "absolute", top: 6, right: 8, display: "flex", gap: 2 }}>
+                              <button onClick={() => renameSubfolder(activeCat, path, seg)} title={s.rename} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.35)", color: "#fff", cursor: "pointer" }}><i className="ti ti-pencil" style={{ fontSize: 13 }} /></button>
+                              <button onClick={() => removeSubfolder(activeCat, path, seg)} title={s.delFolder} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.35)", color: "#fff", cursor: "pointer" }}><i className="ti ti-folder-off" style={{ fontSize: 13 }} /></button>
                             </div>
                           </div>
                         );
