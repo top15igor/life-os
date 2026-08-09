@@ -65,7 +65,7 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
   const [path, setPath] = useState<string[]>([]); // текущий путь внутри категории (дерево папок)
   const [sendId, setSendId] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ url: string; pdf: boolean; title: string } | null>(null);
-  const [menu, setMenu] = useState<{ id: string; type: "move" | "cat" | "send"; x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<{ id: string; type: "move" | "cat" | "send"; x: number; y: number; up: boolean; maxH: number } | null>(null);
   const [toast, setToast] = useState<string>("");
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 2200); }
 
@@ -269,8 +269,13 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
   // рамкой карточки с overflow:hidden). Тип: move | cat | send.
   function openMenu(e: any, id: string, type: "move" | "cat" | "send") {
     e.stopPropagation();
+    if (menu && menu.id === id && menu.type === type) { setMenu(null); return; }
     const r = e.currentTarget.getBoundingClientRect();
-    setMenu(menu && menu.id === id && menu.type === type ? null : { id, type, x: r.left, y: r.bottom + 6 });
+    const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+    const below = vh - r.bottom - 16, above = r.top - 16;
+    const up = below < 300 && above > below; // мало места снизу — открываем вверх
+    const maxH = Math.min(360, Math.max(up ? above : below, 180));
+    setMenu({ id, type, x: r.left, y: up ? vh - r.top + 6 : r.bottom + 6, up, maxH });
   }
   // Открыть фото/документ во всплывающем окне (лайтбокс), а не в новой вкладке.
   function openPreview(m: Memory) {
@@ -582,20 +587,21 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
           <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", padding: "9px 11px", borderRadius: 8, border: "none", background: "none", color, fontSize: 13, cursor: "pointer" }}><i className={`ti ${icon}`} style={{ fontSize: 15, color: color === "var(--text)" ? "var(--text-3)" : color }} />{label}</button>
         );
         const left = Math.min(menu.x, (typeof window !== "undefined" ? window.innerWidth : 1000) - 240);
+        const pos: any = menu.up ? { bottom: menu.y } : { top: menu.y };
         return (
           <>
             <div onClick={() => setMenu(null)} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
-            <div style={{ position: "fixed", left, top: menu.y, zIndex: 61, minWidth: 210, maxHeight: 320, overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.18)", padding: 6 }}>
+            <div style={{ position: "fixed", left, ...pos, zIndex: 61, minWidth: 210, maxHeight: menu.maxH, overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 10px 30px rgba(0,0,0,.18)", padding: 6 }}>
               {menu.type === "send" && <>
                 {item(s.sendDownload, "ti-download", () => downloadFile(m))}
                 {item(s.sendLink, "ti-link", () => shareLink(m))}
                 {item(s.sendTg, "ti-brand-telegram", () => sendToTelegram(m))}
               </>}
               {menu.type === "cat" && <>
+                <button onClick={() => { const id = menu.id; setMenu(null); addCategory(id); }} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", padding: "10px 11px", borderRadius: 9, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 6 }}><i className="ti ti-plus" style={{ fontSize: 16 }} />{s.newCat.replace(/[:：].*$/, "")}</button>
                 {allCats.map((c) => (
                   <button key={c.key} onClick={() => setCategory(m.id, c.key)} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", padding: "9px 11px", borderRadius: 8, border: "none", background: m.category === c.key ? c.bg : "none", color: m.category === c.key ? c.c : "var(--text)", fontSize: 13, cursor: "pointer" }}><i className={`ti ${c.icon}`} style={{ fontSize: 15, color: c.c }} />{catName(c.key)}</button>
                 ))}
-                <button onClick={() => { const id = menu.id; setMenu(null); addCategory(id); }} style={{ display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", padding: "9px 11px", borderRadius: 8, border: "none", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer", borderTop: "1px solid var(--border)", marginTop: 4 }}><i className="ti ti-plus" style={{ fontSize: 15 }} />{s.newCat.replace(/[:：].*$/, "")}</button>
               </>}
               {menu.type === "move" && <>
                 {item(activeCat !== "all" && path.length ? s.newSub : s.newFolder, "ti-folder-plus", () => { const n = (prompt(activeCat !== "all" && path.length ? s.newSub : s.newFolder) || "").trim(); if (n) moveOne(m.id, newFolderPath(n)); }, "var(--accent)")}
