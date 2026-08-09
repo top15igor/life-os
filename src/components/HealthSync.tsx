@@ -49,6 +49,7 @@ const STR: Record<string, any> = {
     fb_notconfigured: "Fitbit пока не настроен (нужны ключи приложения).",
     fb_ok: "Fitbit подключён — данные загружены ✓", fb_err: "Не удалось подключить Fitbit, попробуй ещё раз.",
     fb_denied: "Доступ к Fitbit не выдан.", fb_synced: (n: number) => `Обновлено дней: ${n}`,
+    fb_revoked: "Google отозвал доступ — повторять бесполезно. Нажми «Подключить Fitbit» и разреши доступ заново.", fb_reconnect: "Подключить заново", stale: (d: string) => `Данные за ${d} — свежее не приходило`,
     src_title: "Основной источник", src_hint: "Подключены оба источника — выбери, чей показывать в дашборде.",
     src_auto: "Авто", src_google: "Fitbit", src_apple: "Apple",
   },
@@ -83,6 +84,7 @@ const STR: Record<string, any> = {
     fb_notconfigured: "Fitbit is not set up yet (app keys required).",
     fb_ok: "Fitbit connected — data loaded ✓", fb_err: "Could not connect Fitbit, please try again.",
     fb_denied: "Fitbit access was not granted.", fb_synced: (n: number) => `${n} days updated`,
+    fb_revoked: "Google revoked access — retrying won't help. Press “Connect Fitbit” and grant access again.", fb_reconnect: "Reconnect", stale: (d: string) => `Data from ${d} — nothing newer arrived`,
     src_title: "Primary source", src_hint: "Both sources are connected — choose which one to show on the dashboard.",
     src_auto: "Auto", src_google: "Fitbit", src_apple: "Apple",
   },
@@ -222,19 +224,22 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
   const [busy, setBusy] = useState(false);
   const [test, setTest] = useState<string>("");
   const [fbBusy, setFbBusy] = useState(false);
+  const [fbRevoked, setFbRevoked] = useState(false);
   const [fbStatus, setFbStatus] = useState<string>(
     fitbitMsg === "ok" ? s.fb_ok : fitbitMsg === "error" ? s.fb_err : fitbitMsg === "denied" ? s.fb_denied : fitbitMsg === "notconfigured" ? s.fb_notconfigured : ""
   );
 
   async function fbSync() {
-    setFbBusy(true); setFbStatus(s.fb_syncing);
+    setFbBusy(true); setFbStatus(s.fb_syncing); setFbRevoked(false);
     try {
       const r = await fetch("/api/integrations/google-health/sync", { method: "POST" }).then((x) => x.json());
-      setFbStatus(r?.ok ? s.fb_synced(r.saved || 0) : s.fb_err);
-      if (r?.ok) router.refresh();
+      if (r?.ok) { setFbStatus(s.fb_synced(r.saved || 0)); router.refresh(); }
+      else if (r?.error === "revoked") { setFbRevoked(true); setFbStatus(s.fb_revoked); }
+      else setFbStatus(s.fb_err);
     } catch { setFbStatus(s.fb_err); }
     setFbBusy(false);
-    setTimeout(() => setFbStatus(""), 5000);
+    // Сообщение про отозванный доступ не прячем: оно требует действия.
+    if (!fbRevoked) setTimeout(() => setFbStatus(""), 5000);
   }
 
   async function fbDisconnect() {
@@ -329,6 +334,11 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
         </div>
       )}
 
+      {latest && latest.day !== new Date().toISOString().slice(0, 10) && (
+        <div style={{ fontSize: 12.5, color: "#b7791f", marginBottom: 8 }}>
+          <i className="ti ti-alert-triangle" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.stale(latest.day)}
+        </div>
+      )}
       {latest ? (
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginBottom: 10 }}>
           <Stat label={s.steps} value={latest.steps != null ? latest.steps.toLocaleString() : dash}
@@ -359,6 +369,9 @@ export default function HealthSync({ days, token, locale, fitbitConnected, fitbi
           {fitbitConnected && (
             <>
               <button onClick={fbSync} disabled={fbBusy} style={{ fontSize: 12.5, padding: "8px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface-2)", color: "var(--text)", cursor: fbBusy ? "default" : "pointer", opacity: fbBusy ? 0.6 : 1 }}>{fbBusy ? s.fb_syncing : s.fb_sync}</button>
+              {fbRevoked && !inApp && (
+                <a href="/api/integrations/google-health/start" style={{ fontSize: 12.5, padding: "8px 14px", borderRadius: 9, background: "#00b0b9", color: "#fff", textDecoration: "none" }}>{s.fb_reconnect}</a>
+              )}
               <button onClick={fbDisconnect} disabled={fbBusy} style={{ fontSize: 12.5, padding: "8px 12px", borderRadius: 9, border: "1px solid var(--border)", background: "none", color: "var(--text-3)", cursor: "pointer" }}>{s.fb_disconnect}</button>
             </>
           )}

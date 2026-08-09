@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const saved = await syncGoogleHealth(user.id, 7);
+  if (saved === -2) return NextResponse.json({ ok: false, error: "revoked" }, { status: 400 });
   if (saved < 0) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
   return NextResponse.json({ ok: true, saved });
 }

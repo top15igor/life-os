@@ -87,10 +87,25 @@ async function getAccessToken(userId: string): Promise<string | null> {
     client_secret: process.env.GOOGLE_HEALTH_CLIENT_SECRET || "",
   });
   const r = await fetch(TOKEN_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body });
-  if (!r.ok) return null; // доступ отозван
+  if (!r.ok) {
+    // Google различает «доступ больше не действует» (invalid_grant) и временный сбой.
+    // Первое retry не лечит: нужно подключаться заново, и человеку надо это сказать.
+    const txt = await r.text().catch(() => "");
+    if (/invalid_grant/i.test(txt)) throw new GoogleHealthRevoked(txt.slice(0, 300));
+    console.error("googlehealth refresh failed", r.status, txt.slice(0, 300));
+    return null;
+  }
   const tok = (await r.json()) as TokenResp;
   await saveTokens(userId, tok, data.refresh_token as string);
   return tok.access_token;
+}
+
+// Доступ отозван или протух: обычная ошибка сети тут не при чём.
+export class GoogleHealthRevoked extends Error {
+  constructor(detail: string) {
+    super(`googlehealth revoked: ${detail}`);
+    this.name = "GoogleHealthRevoked";
+  }
 }
 
 export async function isGoogleHealthConnected(userId: string): Promise<boolean> {
@@ -160,8 +175,15 @@ async function dailyRollUp(token: string, dataType: string, startIso: string, en
 }
 
 // Подтянуть последние N дней из Google Health в health_metrics. -1 если нет связи.
+// -1 — связи нет; -2 — Google отозвал доступ (нужно подключиться заново).
 export async function syncGoogleHealth(userId: string, days = 7): Promise<number> {
-  const token = await getAccessToken(userId);
+  let token: string | null;
+  try {
+    token = await getAccessToken(userId);
+  } catch (e) {
+    if (e instanceof GoogleHealthRevoked) { console.error(e.message); return -2; }
+    throw e;
+  }
   if (!token) return -1;
 
   const startIso = isoDay(days - 1);     // включительно
