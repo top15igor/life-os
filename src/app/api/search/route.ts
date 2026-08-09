@@ -119,5 +119,13 @@ export async function GET(req: NextRequest) {
   }
 
   results.sort((a, b) => (PR[a.type] ?? 9) - (PR[b.type] ?? 9));
+
+  // ?debug=1 владельцу: с какой полки и с каким баллом пришла каждая находка.
+  // Настраивать поиск «на глаз по выдаче» — верный способ ошибиться.
+  if (req.nextUrl.searchParams.get("debug") === "1" && uid === "00000000-0000-0000-0000-000000000000") {
+    const raw = await searchEverything(uid, q, 20).catch(() => []);
+    return NextResponse.json({ ok: true, results: results.slice(0, 24), raw: raw.map((f) => ({ src: f.src, score: Number(f.score.toFixed(2)), title: f.title || f.text.slice(0, 60) })) });
+  }
+
   return NextResponse.json({ ok: true, results: results.slice(0, 24) });
 }

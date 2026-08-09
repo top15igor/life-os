@@ -55,10 +55,21 @@ function scoreOf(hay: string, st: string[]): number {
 // Насколько «весит» смысловое совпадение рядом с буквенным. Похожесть 0..1
 // превращаем в баллы того же порядка, что и совпавшие слова: близкое по
 // смыслу (0.5) стоит примерно как три общих слова.
-const SIM_MIN = 0.22;
+// Порог подобран по живым данным: у text-embedding-3-small случайные тексты
+// дают 0.1-0.25, и с низким порогом дневник вываливал восемь «похожих» записей
+// на любой вопрос, вытесняя документы. Ниже порога — это не находка, а шум.
+const SIM_MIN = 0.3;
 function simScore(sim: number | undefined): number {
   if (!sim || sim < SIM_MIN) return 0;
   return sim * 6;
+}
+
+// Сколько находок пускаем с одной полки. Без этого полка, где вещей на порядок
+// больше (дневник), занимает всю выдачу собой — даже когда спрашивали про
+// документ. Разнообразие полок здесь важнее лишней пятой записи.
+const PER_SHELF = 4;
+function topOf(list: Found[]): Found[] {
+  return [...list].sort((a, b) => b.score - a.score).slice(0, PER_SHELF);
 }
 
 // ===== Полки =====
@@ -165,9 +176,12 @@ async function fromBooks(userId: string, st: string[], sim: Sim): Promise<Found[
 async function fromDiary(userId: string, query: string, st: string[]): Promise<Found[]> {
   const hits = await searchMemories(userId, query, 8).catch(() => []);
   if (hits.length) {
-    return hits
-      .filter((h) => h.similarity >= 0.15)
-      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: Math.round(h.similarity * 10) + 1, path: h.id ? `/entry/${h.id}` : "/diary" }));
+    // Та же шкала, что и у остальных полок: раньше дневник считался по своей,
+    // получал вдвое больше баллов и всегда выигрывал у документов.
+    const sem = hits
+      .filter((h) => h.similarity >= SIM_MIN)
+      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: simScore(h.similarity), path: h.id ? `/entry/${h.id}` : "/diary" }));
+    if (sem.length) return sem;
   }
   try {
     const { data } = await supabaseAdmin().from("entries")
@@ -195,7 +209,7 @@ export async function searchEverything(userId: string, query: string, limit = 12
     fromDocs(userId, st, S("memories")),
     fromBooks(userId, st, S("books")),
   ]);
-  return [...d, ...n, ...k, ...m, ...b]
+  return [...topOf(d), ...topOf(n), ...topOf(k), ...topOf(m), ...topOf(b)]
     .filter((x) => x.text.trim())
     .sort((a, b2) => b2.score - a.score || String(b2.date || "").localeCompare(String(a.date || "")))
     .slice(0, limit);
