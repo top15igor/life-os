@@ -15,6 +15,7 @@ import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
+import { extractFacebookUrl, importFacebook } from "@/lib/facebook";
 import { extractShopUrl, extractAnyUrl, addWishFromUrl, formatPrice, setWishPublic } from "@/lib/wishlist";
 import { addBookFromImage } from "@/lib/books";
 import { parseSend, sendRelay, toggleRelay, relayHelp, relaySentMsg, relayToggleMsg, parseNick, setAlias, nickHelp, nickSavedMsg, relayFromPhrase, parseUnnick, listAliasesText, removeAlias } from "@/lib/relay";
@@ -2160,10 +2161,11 @@ async function handleUpdate(req: NextRequest) {
     const igUrl = extractInstagramUrl(text);
     const yt = extractYoutubeUrl(text);
     const ttUrl = extractTiktokUrl(text);
-    if (igUrl || yt || ttUrl) {
+    const fbUrl = extractFacebookUrl(text);
+    if (igUrl || yt || ttUrl || fbUrl) {
       const lang = langOf(user, msg);
       const L = IG_MSG[lang] || IG_MSG.ru;
-      const srcName = igUrl ? "Instagram" : ttUrl ? "TikTok" : "YouTube";
+      const srcName = igUrl ? "Instagram" : ttUrl ? "TikTok" : fbUrl ? "Facebook" : "YouTube";
       const failedMsg = L.failed.replace("{src}", srcName);
       await sendMessage(chatId, L.working);
       try {
@@ -2171,7 +2173,9 @@ async function handleUpdate(req: NextRequest) {
           ? await importInstagram(user.id, igUrl, lang)
           : ttUrl
             ? await importTiktok(user.id, ttUrl, lang)
-            : await importYoutube(user.id, yt!.url, yt!.kind, lang);
+            : fbUrl
+              ? await importFacebook(user.id, fbUrl, lang)
+              : await importYoutube(user.id, yt!.url, yt!.kind, lang);
         if (r.ok === false) {
           await sendMessage(chatId, r.reason === "limited" ? L.limited : failedMsg);
           return NextResponse.json({ ok: true });
