@@ -21,6 +21,8 @@ import { recordAction, undoLast, listActions } from "./agentJournal";
 import { rememberFocus } from "./dialogFocus";
 import { amendLastEntry, amendEntryById } from "./amendEntry";
 import { findEntry, findThing, deleteThing } from "./findFix";
+import { listRules as listUserRules, addRule as addUserRule, dropRule as dropUserRule } from "./userRules";
+import { planBulk, rememberPlan } from "./bulkOps";
 import { resetVoiceHint } from "./voiceHints";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -257,6 +259,33 @@ export const ACTION_TOOLS: any[] = [
         query: { type: "string", description: "слова для поиска того, что убрать" },
       },
       required: ["kind", "query"],
+    },
+  },
+  {
+    name: "user_rule",
+    description:
+      "ПОСТОЯННОЕ РАСПОРЯЖЕНИЕ, как работать с этим человеком дальше: «когда я пишу про тренировку — веди в проект Спорт», «трату без валюты считай в евро», «мои чеки всегда в документы», «не заводи задачи из моих мыслей», «имя жены пиши Евгения, а не Женя». Такое правило запоминается и применяется к КАЖДОЙ будущей записи.\n\naction: add — добавить правило (rule — фраза человека, дословно, коротко); list — показать все правила; drop — убрать (rule — по каким словам искать).\n\nЭто НЕ set_pushes (там включается и выключается отправка сообщений по расписанию) и НЕ set_style (там меняется манера речи бота). Здесь — как разбирать и куда класть то, что человек пишет.",
+    input_schema: {
+      type: "object",
+      properties: {
+        action: { type: "string", enum: ["add", "list", "drop"] },
+        rule: { type: "string", description: "текст правила словами человека" },
+      },
+      required: ["action"],
+    },
+  },
+  {
+    name: "bulk_change",
+    description:
+      "СРАЗУ МНОГО одинаковых изменений: «отметь все задачи по тетрадке сделанными», «удали все заметки про пароли», «перенеси все напоминания на понедельник». Ничего не делается молча: бот сначала покажет список и попросит подтвердить кнопкой.\n\nkind: tasks_done — закрыть задачи; tasks_delete — удалить задачи; notes_delete — удалить заметки; reminders_move — перенести напоминания (тогда обязательно when — дата и время в ISO, по местному времени человека).\nquery — по каким словам отбирать; пусто означает ВСЕ, и это законно («перенеси все напоминания»).\n\nДля ОДНОЙ вещи это не нужно: там delete_item, complete_task, move_reminder.",
+    input_schema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["tasks_done", "tasks_delete", "notes_delete", "reminders_move"] },
+        query: { type: "string" },
+        when: { type: "string", description: "для reminders_move: новое время в ISO" },
+      },
+      required: ["kind"],
     },
   },
   {
@@ -522,6 +551,8 @@ const M: Record<Lang, any> = {
     cant: { text: (w: string) => `Честно: ${w ? `«${w}» — этого` : "этого"} я не умею. Я живу внутри LIFE OS и не могу действовать во внешнем мире.\n\nЗато могу записать это, поставить напоминание или задачу — скажи, что из этого нужно.` },
     fin: { unclear: "Не понял, что поправить. Скажи, например: «я потратил не 500, а 300 на бензин».", none: (q: string) => `Не нашёл трату про «${q}» за последний месяц.`, which: "Нашёл несколько подходящих. Какую поправить?", fixed: (a: string, b: string, n: string) => `💸 Поправил: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Убрал операцию ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "задачу", note: "заметку", goal: "цель", memory: "фото/документ", saved: "сохранёнку", book: "книгу", unclear: "Не понял, что убрать. Скажи, например: «убери задачу заказать воду».", none: (l: string) => `Не нашёл такую ${l} — возможно, она называется иначе.`, which: (l: string) => `Нашёл несколько. Какую ${l} убрать?`, done: (l: string, t: string) => `🗑 Убрал ${l}: «${t}».` },
+    rules: { head: "📌 Твои правила:", foot: "Скажи «убери правило про …», чтобы отменить.", empty: "Правил пока нет. Скажи, например: «когда я пишу про тренировку — веди в проект Спорт».", added: (t: string) => `📌 Запомнил правило: «${t}». Буду применять к новым записям.`, dropped: (t: string) => `Убрал правило: «${t}».`, notFound: "Не нашёл такого правила. Скажи «покажи правила» — перечислю." },
+    bulk: { none: "Не нашёл, к чему это применить.", needWhen: "Скажи, на когда переносить.", ask: "Применить?", yes: "✅ Да, применить", no: "Отмена", ok: (n: number) => `Готово, изменил: ${n}.`, cancelled: "Отменил, ничего не трогал.", expired: "Список устарел — скажи ещё раз.", what: (k: string, n: number, w: string) => k === "tasks_done" ? `Отмечу выполненными задач: ${n}` : k === "tasks_delete" ? `Удалю задач: ${n}` : k === "notes_delete" ? `Удалю заметок: ${n}` : `Перенесу напоминаний: ${n}${w ? ` на ${String(w).slice(0, 16).replace("T", " ")}` : ""}` },
     push: { morning: "утренние сообщения", evening: "вечерние вопросы", reminders: "напоминание записать день", weekly: "недельный итог", quiet: "тихие дни", on: "включил", off: "выключил", at: (h: number) => `утро в ${h}:00`, none: "Ничего не понял про рассылку — скажи, например: «не пиши мне по утрам».", saved: (p: string) => `⚙️ Готово: ${p}. Изменить можно в любой момент — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Исправил: «${a}» → «${b}» — в людях и в инсайтах.`,
     renameNone: (a: string) => `Не нашёл «${a}» ни в людях, ни в инсайтах. Скажи, как имя записано сейчас?`,
@@ -557,6 +588,8 @@ const M: Record<Lang, any> = {
     cant: { text: (w: string) => `Honestly: ${w ? `\u201c${w}\u201d is` : "that\u2019s"} something I can\u2019t do. I live inside LIFE OS and can\u2019t act in the outside world.\n\nWhat I can do: save it, set a reminder or a task \u2014 tell me which.` },
     fin: { unclear: "I didn\u2019t catch what to fix. Say something like \u201cit was 300, not 500, for fuel\u201d.", none: (q: string) => `No transaction about \u201c${q}\u201d in the last month.`, which: "Found several. Which one should I fix?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Fixed: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Removed ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "task", note: "note", goal: "goal", memory: "the photo/document", saved: "the saved item", book: "the book", unclear: "I didn\u2019t catch what to remove. Say something like \u201cdelete the task order water\u201d.", none: (l: string) => `Couldn\u2019t find that ${l} \u2014 maybe it\u2019s worded differently.`, which: (l: string) => `Found several. Which ${l} should I remove?`, done: (l: string, t: string) => `\ud83d\uddd1 Removed the ${l}: \u201c${t}\u201d.` },
+    rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
+    bulk: { none: "Nothing to apply this to.", needWhen: "Tell me when to move them to.", ask: "Apply?", yes: "\u2705 Yes, apply", no: "Cancel", ok: (n: number) => `Done, changed: ${n}.`, cancelled: "Cancelled, nothing touched.", expired: "That list is stale \u2014 say it again.", what: (k: string, n: number, w: string) => k === "tasks_done" ? `Will mark done: ${n}` : k === "tasks_delete" ? `Will delete tasks: ${n}` : k === "notes_delete" ? `Will delete notes: ${n}` : `Will move reminders: ${n}${w ? ` to ${String(w).slice(0, 16).replace("T", " ")}` : ""}` },
     push: { morning: "morning messages", evening: "evening questions", reminders: "the nudge to write your day", weekly: "the weekly recap", quiet: "quiet days", on: "on", off: "off", at: (h: number) => `morning at ${h}:00`, none: "I didn\u2019t catch what to change \u2014 say something like \u201cdon\u2019t write to me in the mornings\u201d.", saved: (p: string) => `\u2699\ufe0f Done: ${p}. You can change it anytime \u2014 just say so.` },
     rename: (a: string, b: string) => `✏️ Fixed: “${a}” → “${b}” — in people and insights.`,
     renameNone: (a: string) => `Couldn't find “${a}” in people or insights. How is the name written now?`,
@@ -592,6 +625,8 @@ const M: Record<Lang, any> = {
     cant: { text: (w: string) => `Чесно: ${w ? `«${w}» — цього` : "цього"} я не вмію. Я живу всередині LIFE OS і не можу діяти в зовнішньому світі.\n\nЗате можу записати це, поставити нагадування чи задачу — скажи, що саме потрібно.` },
     fin: { unclear: "Не зрозумів, що виправити. Скажи, наприклад: «я витратив не 500, а 300 на бензин».", none: (q: string) => `Не знайшов витрату про «${q}» за останній місяць.`, which: "Знайшов кілька. Яку виправити?", fixed: (a: string, b: string, n: string) => `💸 Виправив: ${a} → ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `🗑 Прибрав операцію ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "завдання", note: "нотатку", goal: "ціль", memory: "фото/документ", saved: "збережене", book: "книгу", unclear: "Не зрозумів, що прибрати. Скажи, наприклад: «прибери завдання замовити воду».", none: (l: string) => `Не знайшов таке — можливо, названо інакше.`, which: (l: string) => `Знайшов кілька. Що саме прибрати?`, done: (l: string, t: string) => `🗑 Прибрав: «${t}».` },
+    rules: { head: "📌 Твои правила:", foot: "Скажи «убери правило про …», чтобы отменить.", empty: "Правил пока нет. Скажи, например: «когда я пишу про тренировку — веди в проект Спорт».", added: (t: string) => `📌 Запомнил правило: «${t}». Буду применять к новым записям.`, dropped: (t: string) => `Убрал правило: «${t}».`, notFound: "Не нашёл такого правила. Скажи «покажи правила» — перечислю." },
+    bulk: { none: "Не нашёл, к чему это применить.", needWhen: "Скажи, на когда переносить.", ask: "Применить?", yes: "✅ Да, применить", no: "Отмена", ok: (n: number) => `Готово, изменил: ${n}.`, cancelled: "Отменил, ничего не трогал.", expired: "Список устарел — скажи ещё раз.", what: (k: string, n: number, w: string) => k === "tasks_done" ? `Отмечу выполненными задач: ${n}` : k === "tasks_delete" ? `Удалю задач: ${n}` : k === "notes_delete" ? `Удалю заметок: ${n}` : `Перенесу напоминаний: ${n}${w ? ` на ${String(w).slice(0, 16).replace("T", " ")}` : ""}` },
     push: { morning: "ранкові повідомлення", evening: "вечірні питання", reminders: "нагадування записати день", weekly: "тижневий підсумок", quiet: "тихі дні", on: "увімкнув", off: "вимкнув", at: (h: number) => `ранок о ${h}:00`, none: "Не зрозумів, що змінити — скажи, наприклад: «не пиши мені зранку».", saved: (p: string) => `⚙️ Готово: ${p}. Змінити можна будь-коли — просто скажи.` },
     rename: (a: string, b: string) => `✏️ Виправив: «${a}» → «${b}» — у людях і в інсайтах.`,
     renameNone: (a: string) => `Не знайшов «${a}» ні в людях, ні в інсайтах. Скажи, як ім'я записано зараз?`,
@@ -627,6 +662,8 @@ const M: Record<Lang, any> = {
     cant: { text: (w: string) => `Honn\u00eatement : ${w ? `\u00ab ${w} \u00bb, je` : "je"} ne sais pas faire \u00e7a. Je vis dans LIFE OS et je ne peux pas agir dans le monde ext\u00e9rieur.\n\nEn revanche je peux le noter, cr\u00e9er un rappel ou une t\u00e2che \u2014 dis-moi ce qu\u2019il te faut.` },
     fin: { unclear: "Je n\u2019ai pas compris quoi corriger. Dis par exemple \u00ab c\u2019\u00e9tait 300, pas 500, pour l\u2019essence \u00bb.", none: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois.`, which: "J\u2019en ai trouv\u00e9 plusieurs. Laquelle corriger ?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corrig\u00e9 : ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Supprim\u00e9 : ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "t\u00e2che", note: "note", goal: "objectif", memory: "la photo/le document", saved: "l\u2019\u00e9l\u00e9ment enregistr\u00e9", book: "le livre", unclear: "Je n\u2019ai pas compris quoi supprimer. Dis par exemple \u00ab supprime la t\u00e2che commander de l\u2019eau \u00bb.", none: (l: string) => `Je n\u2019ai pas trouv\u00e9 ce ${l}.`, which: (l: string) => `J\u2019en ai trouv\u00e9 plusieurs. Lequel supprimer ?`, done: (l: string, t: string) => `\ud83d\uddd1 Supprim\u00e9 : \u00ab ${t} \u00bb.` },
+    rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
+    bulk: { none: "Nothing to apply this to.", needWhen: "Tell me when to move them to.", ask: "Apply?", yes: "\u2705 Yes, apply", no: "Cancel", ok: (n: number) => `Done, changed: ${n}.`, cancelled: "Cancelled, nothing touched.", expired: "That list is stale \u2014 say it again.", what: (k: string, n: number, w: string) => k === "tasks_done" ? `Will mark done: ${n}` : k === "tasks_delete" ? `Will delete tasks: ${n}` : k === "notes_delete" ? `Will delete notes: ${n}` : `Will move reminders: ${n}${w ? ` to ${String(w).slice(0, 16).replace("T", " ")}` : ""}` },
     push: { morning: "les messages du matin", evening: "les questions du soir", reminders: "le rappel d\u2019\u00e9crire ta journ\u00e9e", weekly: "le bilan hebdo", quiet: "les jours silencieux", on: "activ\u00e9", off: "d\u00e9sactiv\u00e9", at: (h: number) => `matin \u00e0 ${h}h`, none: "Je n\u2019ai pas compris quoi changer \u2014 dis par exemple \u00ab ne m\u2019\u00e9cris pas le matin \u00bb.", saved: (p: string) => `\u2699\ufe0f C\u2019est fait : ${p}. Modifiable \u00e0 tout moment \u2014 dis-le simplement.` },
     rename: (a: string, b: string) => `✏️ Corrigé : « ${a} » → « ${b} » — dans les personnes et les insights.`,
     renameNone: (a: string) => `Je n'ai pas trouvé « ${a} ». Comment le nom est-il écrit actuellement ?`,
@@ -662,6 +699,8 @@ const M: Record<Lang, any> = {
     cant: { text: (w: string) => `Con sinceridad: ${w ? `\u00ab${w}\u00bb es algo que` : "eso"} no s\u00e9 hacer. Vivo dentro de LIFE OS y no puedo actuar en el mundo exterior.\n\nLo que s\u00ed puedo: anotarlo, poner un recordatorio o una tarea \u2014 dime qu\u00e9 prefieres.` },
     fin: { unclear: "No entend\u00ed qu\u00e9 corregir. Di por ejemplo \u00abfueron 300, no 500, de gasolina\u00bb.", none: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes.`, which: "Encontr\u00e9 varios. \u00bfCu\u00e1l corrijo?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corregido: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Quit\u00e9 ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "tarea", note: "nota", goal: "objetivo", memory: "la foto/el documento", saved: "el elemento guardado", book: "el libro", unclear: "No entend\u00ed qu\u00e9 quitar. Di por ejemplo \u00abelimina la tarea pedir agua\u00bb.", none: (l: string) => `No encontr\u00e9 esa ${l}.`, which: (l: string) => `Encontr\u00e9 varias. \u00bfCu\u00e1l ${l} quito?`, done: (l: string, t: string) => `\ud83d\uddd1 Quit\u00e9 la ${l}: \u00ab${t}\u00bb.` },
+    rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
+    bulk: { none: "Nothing to apply this to.", needWhen: "Tell me when to move them to.", ask: "Apply?", yes: "\u2705 Yes, apply", no: "Cancel", ok: (n: number) => `Done, changed: ${n}.`, cancelled: "Cancelled, nothing touched.", expired: "That list is stale \u2014 say it again.", what: (k: string, n: number, w: string) => k === "tasks_done" ? `Will mark done: ${n}` : k === "tasks_delete" ? `Will delete tasks: ${n}` : k === "notes_delete" ? `Will delete notes: ${n}` : `Will move reminders: ${n}${w ? ` to ${String(w).slice(0, 16).replace("T", " ")}` : ""}` },
     push: { morning: "los mensajes de la ma\u00f1ana", evening: "las preguntas de la noche", reminders: "el recordatorio de escribir tu d\u00eda", weekly: "el resumen semanal", quiet: "los d\u00edas en silencio", on: "activado", off: "desactivado", at: (h: number) => `ma\u00f1ana a las ${h}:00`, none: "No entend\u00ed qu\u00e9 cambiar \u2014 di algo como \u00abno me escribas por las ma\u00f1anas\u00bb.", saved: (p: string) => `\u2699\ufe0f Listo: ${p}. Puedes cambiarlo cuando quieras \u2014 solo d\u00edmelo.` },
     open: "Abrir",
     mvKind: { film: "🎬 película", series: "📺 serie", book: "📚 libro" } as Record<string, string>,
@@ -1423,6 +1462,48 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       await recordAction(userId, `delete_${kind}` as any, D.done(c.label, title), { row: victim });
       return { text: D.done(c.label, title), openNext: c.open, markup: undoMarkup(lang) };
     }
+    if (name === "user_rule") {
+      // Правила «если — то». Раньше на такое бот отвечал «запомнил» и ничего
+      // не менял — обещание, которое не выполняется, хуже честного отказа.
+      const R = (s as any).rules;
+      const act = String(input?.action || "").trim();
+      const txt = String(input?.rule || "").trim();
+
+      if (act === "list") {
+        const list = await listUserRules(userId);
+        if (!list.length) return { text: R.empty };
+        return { text: `${R.head}\n\n${list.map((r, i) => `${i + 1}. ${r.text}`).join("\n")}\n\n${R.foot}` };
+      }
+      if (act === "drop") {
+        const gone = await dropUserRule(userId, txt);
+        return { text: gone ? R.dropped(gone.text) : R.notFound };
+      }
+      const added = await addUserRule(userId, txt);
+      return { text: added ? R.added(added.text) : s.fail };
+    }
+
+    if (name === "bulk_change") {
+      // Показать и переспросить. Одна неверно понятая фраза может переписать
+      // полдневника, а «верни как было» для сорока строк — слабое утешение.
+      const B = (s as any).bulk;
+      const kind = String(input?.kind || "") as any;
+      const q = String(input?.query || "").trim();
+      const when = String(input?.when || "").trim() || undefined;
+      if (kind === "reminders_move" && !when) return { text: B.needWhen };
+
+      const plan = await planBulk(userId, kind, q, when);
+      if (!plan) return { text: B.none };
+      await rememberPlan(userId, plan);
+
+      const head = B.what(kind, plan.items.length, when || "");
+      const preview = plan.items.slice(0, 8).map((i) => `• ${i.label}`).join("\n");
+      const more = plan.items.length > 8 ? `\n… и ещё ${plan.items.length - 8}` : "";
+      return {
+        text: `${head}\n\n${preview}${more}\n\n${B.ask}`,
+        markup: { inline_keyboard: [[{ text: B.yes, callback_data: "bulk:go" }, { text: B.no, callback_data: "bulk:no" }]] },
+      };
+    }
+
     if (name === "set_pushes") {
       // Включение/выключение рассылки. До этого такого действия не было вовсе:
       // «не пиши мне по утрам» уходило в манеру речи — бот отвечал «запомнил»

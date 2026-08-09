@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
+import { applyPlan, forgetPlan } from "@/lib/bulkOps";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -202,6 +203,15 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 
 
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
+// Подписи к подтверждению массового изменения.
+const BULK_MSG: Record<string, { ok: (n: number) => string; cancelled: string; expired: string; undo: string }> = {
+  ru: { ok: (n) => `Готово, изменил: ${n}.`, cancelled: "Отменил, ничего не трогал.", expired: "Список устарел — скажи ещё раз.", undo: "↩️ Вернуть как было" },
+  en: { ok: (n) => `Done, changed: ${n}.`, cancelled: "Cancelled, nothing touched.", expired: "That list is stale — say it again.", undo: "↩️ Undo" },
+  uk: { ok: (n) => `Готово, змінив: ${n}.`, cancelled: "Скасував, нічого не чіпав.", expired: "Список застарів — скажи ще раз.", undo: "↩️ Повернути як було" },
+  fr: { ok: (n) => `C'est fait, modifié : ${n}.`, cancelled: "Annulé, rien touché.", expired: "Cette liste est périmée — redis-le.", undo: "↩️ Annuler" },
+  es: { ok: (n) => `Listo, cambié: ${n}.`, cancelled: "Cancelado, no toqué nada.", expired: "La lista caducó — dilo otra vez.", undo: "↩️ Deshacer" },
+};
+
 const UNDO_MSG: Record<string, { done: (w: string) => string; none: string; failed: string }> = {
   ru: { done: (w) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились. Скажи, что восстановить, и сделаю руками." },
   en: { done: (w) => `↩️ Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo — I haven't deleted or rewritten anything this week.", failed: "Couldn't restore it — the data has changed since. Tell me what to bring back." },
@@ -1180,6 +1190,25 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if ((data === "bulk:go" || data === "bulk:no") && cqChat) {
+      // Подтверждение массового изменения. Отдельная кнопка именно потому, что
+      // одна фраза здесь трогает десятки строк — молча такое делать нельзя.
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        await answerCallback(cq.id);
+        if (u) {
+          const lng = pickLang((u as any).lang);
+          const B = (BULK_MSG as any)[lng] || (BULK_MSG as any).ru;
+          if (data === "bulk:no") {
+            await forgetPlan((u as any).id);
+            await sendMessage(cqChat, B.cancelled);
+          } else {
+            const res = await applyPlan((u as any).id);
+            await sendMessage(cqChat, res ? B.ok(res.n) : B.expired, res ? { reply_markup: { inline_keyboard: [[{ text: B.undo, callback_data: "undo:last" }]] } } : undefined);
+          }
+        }
+      } catch (e) { await logError("bot:bulk", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data === "undo:last" && cqChat) {
       // «Вернуть как было» — кнопка под только что выполненным разрушающим действием.
       try {

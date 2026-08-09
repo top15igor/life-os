@@ -15,6 +15,8 @@ import { saveEntry } from "./saveEntry";
 export type ActionKind =
   | "delete_task" | "delete_note" | "delete_goal"
   | "move_to_vault" | "move_to_diary"
+  | "delete_memory" | "delete_saved" | "delete_book"
+  | "bulk_tasks_done" | "bulk_tasks_delete" | "bulk_notes_delete" | "bulk_reminders_move"
   | "fix_finance" | "remove_finance";
 
 const UNDO_WINDOW_MS = 7 * 24 * 3600_000; // неделю помним, дальше это уже не «отмени последнее»
@@ -48,6 +50,36 @@ export async function listActions(userId: string, limit = 15): Promise<JournalRo
 async function restore(userId: string, kind: string, p: any): Promise<boolean> {
   const db = supabaseAdmin();
   try {
+    // Удаление с полок хранилища — та же логика, что и для задач: строку
+    // сохранили целиком, значит можем вернуть как было.
+    if (kind === "delete_memory" || kind === "delete_saved" || kind === "delete_book") {
+      const table = kind === "delete_memory" ? "memories" : kind === "delete_saved" ? "saved_items" : "books";
+      const row = { ...(p?.row || {}) };
+      if (!Object.keys(row).length) return false;
+      row.user_id = userId;
+      const { error } = await db.from(table).insert(row);
+      return !error;
+    }
+
+    // Массовое изменение: возвращаем ВСЕ затронутые строки разом. Иначе
+    // «верни как было» после сорока правок было бы пустым обещанием.
+    if (kind.startsWith("bulk_")) {
+      const rows = Array.isArray(p?.rows) ? p.rows : [];
+      const table = String(p?.table || "");
+      if (!rows.length || !table) return false;
+      const clean = rows.map((r: any) => ({ ...r, user_id: userId }));
+      if (kind === "bulk_tasks_delete" || kind === "bulk_notes_delete") {
+        const { error } = await db.from(table).insert(clean);
+        return !error;
+      }
+      // Задачи закрыли или напоминания перенесли — строки на месте, возвращаем поля.
+      for (const r of clean) {
+        const patch = kind === "bulk_tasks_done" ? { done: r.done } : { due_at: r.due_at, notified_at: r.notified_at ?? null };
+        await db.from(table).update(patch).eq("id", r.id).eq("user_id", userId);
+      }
+      return true;
+    }
+
     if (kind === "delete_task" || kind === "delete_note" || kind === "delete_goal") {
       const table = kind === "delete_task" ? "tasks" : kind === "delete_note" ? "notes" : "goals";
       const row = { ...(p?.row || {}) };

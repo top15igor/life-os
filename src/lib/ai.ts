@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { rulesForAnalysis } from "./userRules";
 import { logClaude } from "./usage";
 import { supabaseAdmin } from "./supabaseAdmin";
 
@@ -208,7 +209,11 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
   let projectNames: string[] = [];
   let peopleNames: string[] = [];
   let customCats: { slug: string; label: string }[] = [];
+  // Правила «если — то», которые человек установил сам. Идут в КОНЕЦ задания,
+  // после общих указаний: личное правило должно перебивать общее.
+  let userRules = "";
   if (userId) {
+    userRules = await rulesForAnalysis(userId).catch(() => "");
     try {
       const { data } = await supabaseAdmin().from("projects").select("name").eq("user_id", userId).limit(80);
       projectNames = ((data as any[]) ?? []).map((r) => r.name).filter(Boolean);
@@ -260,7 +265,7 @@ export async function analyze(text: string, userId?: string): Promise<Analysis> 
       system: [{ type: "text", text: SYS_ANALYZE, cache_control: { type: "ephemeral" } }],
       tools: [tool],
       tool_choice: { type: "tool", name: "save_analysis" },
-      messages: [{ role: "user", content: userPrompt(text, projectNames, peopleNames, todayLine) }],
+      messages: [{ role: "user", content: userPrompt(text, projectNames, peopleNames, todayLine) + userRules }],
     });
     logClaude(userId, "analyze", model.includes("haiku") ? "haiku" : "sonnet", (msg as any).usage);
     const block = msg.content.find((b) => b.type === "tool_use");
