@@ -33,6 +33,19 @@ export async function saveEntry(opts: {
     }
   }
 
+  // Запись прошлым числом: если разбор нашёл ЯВНУЮ дату («вчера», «в субботу»,
+  // «15 июля») — она важнее сегодняшней. Только прошлое и не старше года; время
+  // того дня неизвестно, ставим нейтральный полдень.
+  const aDate = (a as any).entry_date;
+  if (typeof aDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(aDate)) {
+    const todayRef = entry_date || new Date().toISOString().slice(0, 10);
+    const diff = Date.parse(todayRef) - Date.parse(aDate);
+    if (diff > 0 && diff <= 366 * 86400000) {
+      entry_date = aDate;
+      entry_time = opts.entry_time || "12:00:00";
+    }
+  }
+
   const { data: entry, error } = await db
     .from("entries")
     .insert({

@@ -7,7 +7,7 @@ import { archiveVoice } from "@/lib/voiceArchive";
 import { alreadyHandled } from "@/lib/tgDedupe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
-import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction } from "@/lib/botActions";
+import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction, looksLikeDeadEnd } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
@@ -314,6 +314,15 @@ const MILE: Record<string, any> = {
   uk: { first: "🎉 Це твій перший запис! Книга життя почалася.", count: (n: number) => `🎉 Уже ${n} записів! Твоя історія росте.`, streak: (n: number) => `🔥 ${n} днів поспіль — неймовірно, так тримати!` },
   fr: { first: "🎉 Ta première entrée ! Ton Livre de vie a commencé.", count: (n: number) => `🎉 Déjà ${n} entrées ! Ton histoire grandit.`, streak: (n: number) => `🔥 ${n} jours d'affilée — incroyable, continue !` },
   es: { first: "🎉 ¡Tu primera entrada! Tu Libro de la vida ha comenzado.", count: (n: number) => `🎉 ¡Ya ${n} entradas! Tu historia está creciendo.`, streak: (n: number) => `🔥 ${n} días seguidos — ¡increíble, sigue así!` },
+};
+
+// Запись прошлым числом: честно показываем, за какой день сохранили.
+const BACKDATED: Record<string, (d: string) => string> = {
+  ru: (d) => `📅 Записал прошлым числом: <b>${d}</b>`,
+  en: (d) => `📅 Saved for a past date: <b>${d}</b>`,
+  uk: (d) => `📅 Записав минулим числом: <b>${d}</b>`,
+  fr: (d) => `📅 Enregistré à une date passée : <b>${d}</b>`,
+  es: (d) => `📅 Guardado con fecha pasada: <b>${d}</b>`,
 };
 
 const MEM: Record<string, any> = {
@@ -2401,20 +2410,12 @@ async function handleUpdate(req: NextRequest) {
     // Без этой проверки просьба перенести напоминание уходила в правку записи:
     // напоминание оставалось на старой дате, а в дневник дописывался выдуманный
     // факт («сходил постричься», хотя стрижка ещё предстоит).
-    if (!forceSave && isCorrection(text) && !isNameCorrection(text) && !(await lastReplyWasAction(user.id))) {
-      const amended = await amendLastEntry(user.id, text);
-      if (amended) {
-        const lang = langOf(user, msg);
-        const L = CONFIRM[lang] || CONFIRM.ru;
-        const streak = await getStreak(user.id);
-        const body = `${FIXED[lang] || FIXED.ru}\n\n${formatConfirm(amended.analysis, streak, lang)}`;
-        await sendMessage(chatId, body, {
-          reply_markup: { inline_keyboard: [[{ text: L.book, callback_data: "lifebook" }]] },
-        });
-        return NextResponse.json({ ok: true });
-      }
-      // нет сегодняшней записи для правки → проваливаемся дальше (вопрос/новая запись)
-    }
+    // Поправку («я ошибся», «уточню», «ты не так записал») больше НЕ ловит
+    // регулярка перед роутером. Раньше она перехватывала фразы вроде «измени
+    // дату на 7.08» и правила дневник, хотя человек говорил про напоминание —
+    // и AI об этом даже не узнавал. Теперь это решает один мозг вместе со
+    // всеми остальными вариантами: у него на виду и напоминания, и траты,
+    // и имена. Действие называется amend_entry.
 
     // По смыслу: ДЕЙСТВИЕ (бот выполняет вместо пользователя), вопрос к ассистенту или запись?
     // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
@@ -2426,7 +2427,22 @@ async function handleUpdate(req: NextRequest) {
         if (route.name === "deep_summary") {
           await sendMessage(chatId, (DEEP_WORKING[lang] || DEEP_WORKING.ru)(String(route.input?.topic || "").slice(0, 60)));
         }
-        const res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
+        let res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
+
+        // Вторая попытка: агент смотрит на СВОЙ результат. Если инструмент
+        // ответил «не нашёл» или «не понял», это чаще всего значит, что выбран
+        // не тот инструмент, — и человеку незачем об этом догадываться самому.
+        // Пробуем ровно один раз: бесконечное самоисправление хуже честного «не нашёл».
+        if (looksLikeDeadEnd(res.text)) {
+          const retryCtx = `Ты уже попробовал действие «${route.name}» — оно ответило: «${res.text.slice(0, 200)}». Значит, инструмент выбран неверно ЛИБО названного объекта действительно нет. Выбери ДРУГОЙ инструмент, если он подходит; если подходящего нет — верни ask_question или save_entry.`;
+          try {
+            const second = await routeMessage(text, user.id, (user as any).tz_offset, retryCtx, hasReference(text) ? await focusLine(user.id) : null);
+            if (second.kind === "action" && second.name !== route.name) {
+              const alt = await runAction(user.id, second.name, second.input, lang, (user as any).tz_offset);
+              if (!looksLikeDeadEnd(alt.text)) res = alt;
+            }
+          } catch (e) { await logError("bot:retry", e, { userId: user.id, chatId }); }
+        }
         // Несколько объектов в одной команде («добавь два фильма») → несколько вызовов:
         // выполняем все, подтверждения склеиваем в одно сообщение.
         const moreParts: { text: string; html?: boolean }[] = [];
@@ -2515,6 +2531,11 @@ async function handleUpdate(req: NextRequest) {
     if (analysis.finance?.length && !financeOk) console.error("finance not saved", (entry as any).financeError);
     const showVT = isVoice ? await getVoiceTextPref(user.id) : true;
     let body = formatConfirm(analysis, streak, lang, financeOk, isVoice ? text : undefined, showVT);
+    // Если разбор увидел явный прошлый день («вчера», «15 июля») и запись легла
+    // этим числом — говорим об этом первой строкой, чтобы не было сюрпризов.
+    if ((analysis as any).entry_date && (entry as any).entry_date === (analysis as any).entry_date) {
+      body = `${(BACKDATED[lang] || BACKDATED.ru)((entry as any).entry_date)}\n\n${body}`;
+    }
     const ms = milestoneFor(count, streak, lang);
     if (ms) body += `\n\n${ms}`;
     const mem = await getOnThisDay(user.id, entry.entry_date);
