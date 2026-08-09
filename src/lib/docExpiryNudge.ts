@@ -33,13 +33,24 @@ function stageFor(days: number): number | null {
 type DocRow = { id: string; category: string; title: string; fields?: any };
 
 async function loadExpiring(userId: string, todayISO: string): Promise<{ id: string; title: string; days: number }[]> {
-  let rows: DocRow[] = [];
+  let rows: any[] = [];
   try {
-    const { data } = await supabaseAdmin().from("memories").select("id, category, title, fields").eq("user_id", userId).limit(500);
+    const { data, error } = await supabaseAdmin().from("memories").select("id, category, title, fields, remind_at, remind_off").eq("user_id", userId).limit(500);
+    if (error) throw error;
     rows = (data as any[]) || [];
-  } catch { return []; }
+  } catch {
+    // Колонок напоминаний ещё нет — работаем по автосроку из полей.
+    try {
+      const { data } = await supabaseAdmin().from("memories").select("id, category, title, fields").eq("user_id", userId).limit(500);
+      rows = (data as any[]) || [];
+    } catch { return []; }
+  }
   return rows
-    .map((r) => { const e = documentExpiry(r.category, r.fields); return e ? { id: r.id, title: String(r.title || ""), days: daysLeft(e.date, todayISO) } : null; })
+    .map((r) => {
+      if (r.remind_off === true) return null; // пользователь снял напоминание
+      const date = (typeof r.remind_at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r.remind_at)) ? r.remind_at : documentExpiry(r.category, r.fields)?.date;
+      return date ? { id: r.id, title: String(r.title || ""), days: daysLeft(date, todayISO) } : null;
+    })
     .filter((x): x is { id: string; title: string; days: number } => !!x);
 }
 

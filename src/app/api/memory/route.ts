@@ -74,6 +74,19 @@ export async function POST(req: NextRequest) {
   const id = String(body?.id || "");
   if (!id) return NextResponse.json({ ok: false }, { status: 400 });
 
+  // Управление сроком/напоминанием документа: задать дату, отключить (продлил) или включить.
+  if (action === "remind") {
+    const patch: any = {};
+    if (body?.off === true) patch.remind_off = true;
+    if (body?.off === false) patch.remind_off = false;
+    if (typeof body?.remindAt === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.remindAt)) { patch.remind_at = body.remindAt; patch.remind_off = false; }
+    if (body?.remindAt === null) patch.remind_at = null;
+    if (!Object.keys(patch).length) return NextResponse.json({ ok: false }, { status: 400 });
+    try { await db.from("memories").update(patch).eq("id", id).eq("user_id", user.id); }
+    catch { return NextResponse.json({ ok: false, error: "apply memory_reminders.sql" }, { status: 400 }); }
+    return NextResponse.json({ ok: true });
+  }
+
   // Отправка файла: ссылка (на 7 дней) или прямо в Telegram владельцу.
   if (action === "share" || action === "telegram") {
     const { data: row } = await db.from("memories").select("image_url, file_url, file_name, title").eq("id", id).eq("user_id", user.id).maybeSingle();

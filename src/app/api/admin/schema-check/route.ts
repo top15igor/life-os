@@ -18,6 +18,7 @@ const CHECKS: { key: string; table: string; column?: string; note: string }[] = 
   { key: "free_books_used", table: "users", column: "free_books_used", note: "referral_free_book.sql — «3 друга = книга»" },
   { key: "token_at", table: "users", column: "token_at", note: "link_ttl.sql — срок жизни ссылки входа (1 час)" },
   { key: "folder", table: "memories", column: "folder", note: "memory_folders.sql — стопки-папки в Визуальной памяти" },
+  { key: "remind_at", table: "memories", column: "remind_at", note: "memory_reminders.sql — управление сроками документов" },
 ];
 
 export async function GET() {
