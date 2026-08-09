@@ -491,22 +491,44 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
 
   // Плитка-папка: стопка карточек с обложкой первого фото, названием и счётчиком.
   // Клик открывает категорию (там папка раскрыта секцией).
-  // Явно «папочный» вид: цветной корпус в тон категории, «язычок» сверху, крупная
-  // иконка папки и счётчик. Без фото — чтобы не путать с обычной карточкой.
+  // Эмодзи-обложка по смыслу папки (иначе 📁).
+  const folderEmoji = (name: string): string => {
+    const n = name.toLowerCase();
+    if (/паспорт|passport/.test(n)) return "🛂";
+    if (/свидетельств|свідоцтв|certificate/.test(n)) return "📜";
+    if (/чек|receipt|квитанц|invoice/.test(n)) return "🧾";
+    if (/налог|ипн|іпн|инн|tax/.test(n)) return "🏛️";
+    if (/прав|licen|водит/.test(n)) return "🚗";
+    if (/виза|visa|внж|permit/.test(n)) return "🛫";
+    if (/гаранти|warranty/.test(n)) return "🛡️";
+    if (/билет|ticket/.test(n)) return "🎫";
+    if (/код|доступ|пароль|password|key|token/.test(n)) return "🔑";
+    if (/медиц|health|анализ|рецепт|prescription/.test(n)) return "💊";
+    if (/фото|photo|момент|moment/.test(n)) return "🖼️";
+    return "📁";
+  };
+
+  // Папка: цветной корпус в тон категории + «язычок», листы-стопка торчат сверху,
+  // эмодзи-обложка и счётчик. Подпись — ПОД папкой обычным текстом (читаемо в тёмной теме).
   const FolderVisual = (catKey: string, name: string, count: number) => {
     const cm = catMeta(catKey);
     return (
-      <div style={{ position: "relative" }}>
-        {/* язычок папки */}
-        <div style={{ position: "absolute", top: -7, left: 14, width: 66, height: 14, background: cm.c, borderRadius: "8px 8px 0 0", opacity: 0.9 }} />
-        <div style={{ position: "relative", borderRadius: 14, background: cm.bg, border: `1px solid ${cm.c}22`, padding: "20px 14px 14px", minHeight: 118, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
-            <i className="ti ti-folder-filled" style={{ fontSize: 46, color: cm.c }} />
+      <div>
+        <div style={{ position: "relative", height: 104, marginBottom: 9 }}>
+          {/* листы-стопка, торчат из папки */}
+          <div style={{ position: "absolute", left: 34, right: 30, top: 4, height: 46, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 5, transform: "rotate(-3deg)" }} />
+          <div style={{ position: "absolute", left: 30, right: 34, top: 2, height: 48, background: "#fff", border: "1px solid var(--border)", borderRadius: 5, transform: "rotate(2deg)" }} />
+          {/* язычок папки */}
+          <div style={{ position: "absolute", left: 16, top: 16, width: 78, height: 18, background: cm.c, borderRadius: "7px 7px 0 0" }} />
+          {/* корпус папки */}
+          <div style={{ position: "absolute", left: 8, right: 8, top: 26, bottom: 0, background: cm.c, borderRadius: "4px 12px 12px 12px", boxShadow: "0 3px 8px rgba(0,0,0,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 30, lineHeight: 1 }}>{folderEmoji(name)}</span>
+            <span style={{ position: "absolute", right: 9, bottom: 8, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,.28)", borderRadius: 999, padding: "1px 8px" }}>{count}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{name}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: cm.c, borderRadius: 999, padding: "1px 8px", flexShrink: 0 }}>{count}</span>
-          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 2px" }}>
+          <i className="ti ti-folder-filled" style={{ fontSize: 15, color: cm.c, flexShrink: 0 }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
         </div>
       </div>
     );
