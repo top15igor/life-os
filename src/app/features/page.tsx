@@ -3,6 +3,7 @@ import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT_VARS } from "@/lib/publicShell";
 import { pageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -227,7 +228,7 @@ export default async function FeaturesPage() {
   // Как на лендинге: гостю — «Войти», вошедшему — «В приложение» (не обе сразу).
   const isAuthed = !!(await getCurrentUser());
   return (
-    <div className="fx-shell">
+    <div className="fx-shell" data-public="1" style={PUBLIC_LIGHT_VARS}>
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
       <PublicHeader
         locale={locale}

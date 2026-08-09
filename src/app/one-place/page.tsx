@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import ChaosToOrder, { type Chip } from "@/components/onePlace/ChaosToOrder";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { PUBLIC_LIGHT_VARS } from "@/lib/publicShell";
 
 export const dynamic = "force-dynamic";
 
@@ -373,7 +374,7 @@ export default async function OnePlacePage() {
   const href = isAuthed ? "/notes" : "/login";
 
   return (
-    <div className="op-shell">
+    <div className="op-shell" data-public="1" style={PUBLIC_LIGHT_VARS}>
       <style dangerouslySetInnerHTML={{ __html: STYLE }} />
 
       <PublicHeader
