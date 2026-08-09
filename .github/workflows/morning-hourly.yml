@@ -27,3 +27,15 @@ jobs:
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+      - name: Sweep semantic index
+        # Досчитывает векторы для того, что сохранилось мимо основного пути
+        # или лежало ещё до включения смыслового поиска. Не роняем job,
+        # если подметание не удалось: утренние пуши важнее.
+        continue-on-error: true
+        run: |
+          curl -fsS -X GET "${APP_URL}/api/embed-sweep" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

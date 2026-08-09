@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
+import { indexRowSoon } from "./vaultIndex";
 import { analyzeImage, analyzeDocument, type VisionResult } from "./vision";
 
 export type Memory = {
@@ -63,6 +64,8 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
     } catch {}
   }
 
+  // Смысловой указатель: без него документ найдётся только по точному слову.
+  if (memory?.id) indexRowSoon("memories", memory.id, userId);
   return { memory, vision };
 }
 
@@ -118,5 +121,7 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
     } catch {}
   }
 
+  // Смысловой указатель: без него документ найдётся только по точному слову.
+  if (memory?.id) indexRowSoon("memories", memory.id, userId);
   return { memory, vision };
 }

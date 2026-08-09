@@ -338,6 +338,7 @@ const SCHEMA_CHECKS: { table: string; column?: string; sql: string; why: string 
   { table: "selftest_runs", sql: "selftest.sql", why: "нет истории самопроверки" },
   { table: "push_log", column: "question", sql: "question_quality.sql", why: "не считается отклик на вопросы" },
   { table: "agent_actions", sql: "agent_actions.sql", why: "нельзя отменить удаление — «верни как было» не работает" },
+  { table: "memories", column: "embedding", sql: "pgvector_vault.sql", why: "хранилище ищется только по буквам: «жильё» не найдёт «квартиру»" },
 ];
 
 async function checkSchema(): Promise<StepResult[]> {

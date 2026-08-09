@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
+import { indexRowSoon } from "./vaultIndex";
 import { logClaude } from "./usage";
 import { DREAM_SPHERES } from "./ai";
 import { createReminder, localToISO, deleteReminder } from "./reminders";
@@ -925,6 +926,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         };
       }
       const { data: created, error } = await db.from("notes").insert({ user_id: userId, text: t }).select("id").maybeSingle();
+      if ((created as any)?.id) indexRowSoon("notes", String((created as any).id), userId);
       if (error) return { text: s.fail };
       await rememberFocus(userId, [{ kind: "note", label: t, id: (created as any)?.id ?? null }]); // таблицы может не быть до миграции notes.sql
       // Зеркально записи дневника: показываем полку и даём переложить одним тапом.
