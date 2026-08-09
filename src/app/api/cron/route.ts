@@ -18,7 +18,7 @@ import { eveningQuestion, eveningQuestionPick } from "@/lib/dailyQuestions";
 import { START_BTN as DAY_START_BTN } from "@/lib/dayCapture";
 import { localParts } from "@/lib/pushSchedule";
 import { peopleDigestMessage } from "@/lib/peopleCrm";
-import { docExpiryMessage } from "@/lib/docExpiryNudge";
+import { docExpiryMessage, dueExpiryReminders } from "@/lib/docExpiryNudge";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { autoReleaseInactive } from "@/lib/heirs";
@@ -544,16 +544,20 @@ export async function GET(req: NextRequest) {
         } catch (e) { console.error("people digest", u.id, e); }
       }
 
-      // ⏳ «Скоро истекают сроки» — раз в неделю по понедельникам: документы
-      // (паспорт/виза/гарантия), у которых близко дата окончания. Молчим, если нечего.
-      if (!isWeeklyDay && lp.weekday === 1 && prefs.remindersEnabled !== false) {
+      // ⏳ Сроки документов — ступенчато: за год, полгода, 90/30/14/7/1 день и «истёк».
+      // На каждом рубеже один пуш (дедуп в morning_prefs.docExpiryNotified). Проверяем
+      // раз в день (около 10:00 локальных), уважаем «напоминания записать».
+      if (lp.hour === 10 && prefs.remindersEnabled !== false) {
         try {
-          const msg = await docExpiryMessage(u.id, lang, lp.dateKey);
-          if (msg) {
-            await sendMessage(u.chat_id, msg);
+          const raw = (u.morning_prefs && typeof u.morning_prefs === "object") ? (u.morning_prefs as any) : {};
+          const notified = (raw.docExpiryNotified && typeof raw.docExpiryNotified === "object") ? raw.docExpiryNotified : {};
+          const { message, nextNotified, changed } = await dueExpiryReminders(u.id, lang, lp.dateKey, notified);
+          if (message) {
+            await sendMessage(u.chat_id, message);
             logPush(u.id, "docexpiry").catch(() => {});
             (stats as any).docExpiry = ((stats as any).docExpiry || 0) + 1;
           }
+          if (changed) await db.from("users").update({ morning_prefs: { ...raw, docExpiryNotified: nextNotified } }).eq("id", u.id);
         } catch (e) { console.error("doc expiry", u.id, e); }
       }
 

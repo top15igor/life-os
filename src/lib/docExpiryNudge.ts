@@ -3,41 +3,83 @@ import { documentExpiry, daysLeft } from "./docExpiry";
 
 type Lang = "ru" | "en" | "uk" | "fr" | "es";
 
+// Рубежи напоминаний: за год и далее по мере приближения. На каждом — один пуш.
+export const EXPIRY_STAGES = [365, 180, 90, 30, 14, 7, 1] as const;
+const OVERDUE = -1; // отдельный рубеж «уже истёк»
+
 const T: Record<Lang, { header: string; soon: (n: number) => string; today: string; over: (n: number) => string; footer: string }> = {
-  ru: { header: "⏳ <b>Скоро истекают сроки</b>", soon: (n) => `через ${n} дн.`, today: "сегодня", over: (n) => `истёк ${n} дн. назад`, footer: "Открой «Память» → фильтр «Документы», чтобы посмотреть." },
-  en: { header: "⏳ <b>Expiring soon</b>", soon: (n) => `in ${n} d.`, today: "today", over: (n) => `expired ${n} d. ago`, footer: "Open Memory → Documents to review." },
-  uk: { header: "⏳ <b>Скоро спливають терміни</b>", soon: (n) => `через ${n} дн.`, today: "сьогодні", over: (n) => `сплив ${n} дн. тому`, footer: "Відкрий «Пам'ять» → «Документи», щоб переглянути." },
-  fr: { header: "⏳ <b>Expire bientôt</b>", soon: (n) => `dans ${n} j.`, today: "aujourd'hui", over: (n) => `expiré il y a ${n} j.`, footer: "Ouvre Mémoire → Documents pour vérifier." },
-  es: { header: "⏳ <b>Vencen pronto</b>", soon: (n) => `en ${n} d.`, today: "hoy", over: (n) => `venció hace ${n} d.`, footer: "Abre Memoria → Documentos para revisar." },
+  ru: { header: "⏳ <b>Приближается срок документа</b>", soon: (n) => (n >= 60 ? `через ~${Math.round(n / 30)} мес.` : `через ${n} дн.`), today: "сегодня", over: (n) => `истёк ${n} дн. назад`, footer: "Открой «Память» → «Документы», чтобы посмотреть." },
+  en: { header: "⏳ <b>A document is expiring</b>", soon: (n) => (n >= 60 ? `in ~${Math.round(n / 30)} mo.` : `in ${n} d.`), today: "today", over: (n) => `expired ${n} d. ago`, footer: "Open Memory → Documents to review." },
+  uk: { header: "⏳ <b>Наближається термін документа</b>", soon: (n) => (n >= 60 ? `через ~${Math.round(n / 30)} міс.` : `через ${n} дн.`), today: "сьогодні", over: (n) => `сплив ${n} дн. тому`, footer: "Відкрий «Пам'ять» → «Документи», щоб переглянути." },
+  fr: { header: "⏳ <b>Un document expire bientôt</b>", soon: (n) => (n >= 60 ? `dans ~${Math.round(n / 30)} mois` : `dans ${n} j.`), today: "aujourd'hui", over: (n) => `expiré il y a ${n} j.`, footer: "Ouvre Mémoire → Documents pour vérifier." },
+  es: { header: "⏳ <b>Un documento está por vencer</b>", soon: (n) => (n >= 60 ? `en ~${Math.round(n / 30)} meses` : `en ${n} d.`), today: "hoy", over: (n) => `venció hace ${n} d.`, footer: "Abre Memoria → Documentos para revisar." },
 };
 
 function esc(s: string): string {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Дайджест «скоро истекают документы»: показываем то, что в ближайшие 60 дней
-// (и уже просроченное за последние 30). Молчим, если нечего. todayISO — локальное
-// «сегодня» пользователя (передаёт крон по его таймзоне).
-export async function docExpiryMessage(userId: string, lang: Lang, todayISO: string): Promise<string | null> {
-  let rows: any[] = [];
+// Рубеж, на который «попадает» документ с данным остатком дней:
+// самый большой порог, который ещё не превышен; для просроченного — OVERDUE.
+function stageFor(days: number): number | null {
+  if (days < 0) return OVERDUE;
+  for (const t of EXPIRY_STAGES) if (days <= t) { /* ищем наименьший подходящий */ }
+  // наименьший порог >= days (т.е. текущая «ступень срочности»)
+  let stage: number | null = null;
+  for (const t of [...EXPIRY_STAGES].sort((a, b) => a - b)) { if (days <= t) { stage = t; break; } }
+  return stage; // null → до срока больше года, пока молчим
+}
+
+type DocRow = { id: string; category: string; title: string; fields?: any };
+
+async function loadExpiring(userId: string, todayISO: string): Promise<{ id: string; title: string; days: number }[]> {
+  let rows: DocRow[] = [];
   try {
-    const { data } = await supabaseAdmin().from("memories").select("category, title, fields").eq("user_id", userId).limit(500);
+    const { data } = await supabaseAdmin().from("memories").select("id, category, title, fields").eq("user_id", userId).limit(500);
     rows = (data as any[]) || [];
-  } catch { return null; }
+  } catch { return []; }
+  return rows
+    .map((r) => { const e = documentExpiry(r.category, r.fields); return e ? { id: r.id, title: String(r.title || ""), days: daysLeft(e.date, todayISO) } : null; })
+    .filter((x): x is { id: string; title: string; days: number } => !!x);
+}
 
-  const found = rows
-    .map((r) => { const e = documentExpiry(r.category, r.fields); return e ? { title: String(r.title || ""), date: e.date, days: daysLeft(e.date, todayISO) } : null; })
-    .filter((x): x is { title: string; date: string; days: number } => !!x && x.days <= 60 && x.days >= -30)
+// Самотест/предпросмотр: все документы со сроком в пределах года (и просроченные) — одним списком.
+export async function docExpiryMessage(userId: string, lang: Lang, todayISO: string): Promise<string | null> {
+  const found = (await loadExpiring(userId, todayISO))
+    .filter((x) => x.days <= 365)
     .sort((a, b) => a.days - b.days)
-    .slice(0, 8);
+    .slice(0, 12);
   if (!found.length) return null;
-
   const t = T[lang] || T.ru;
   const lines = [t.header, ""];
-  for (const f of found) {
-    const when = f.days < 0 ? t.over(-f.days) : f.days === 0 ? t.today : t.soon(f.days);
-    lines.push(`• <b>${esc(f.title)}</b> — ${when}`);
-  }
+  for (const f of found) lines.push(`• <b>${esc(f.title)}</b> — ${f.days < 0 ? t.over(-f.days) : f.days === 0 ? t.today : t.soon(f.days)}`);
   lines.push("", t.footer);
   return lines.join("\n");
+}
+
+// Для крона: какие документы ПЕРЕСЕКЛИ новый рубеж (год/полгода/…/просрочен) и ещё
+// не были на нём отмечены. Возвращает готовое сообщение + обновлённую карту рубежей.
+export async function dueExpiryReminders(
+  userId: string, lang: Lang, todayISO: string, notified: Record<string, number>
+): Promise<{ message: string | null; nextNotified: Record<string, number>; changed: boolean }> {
+  const docs = await loadExpiring(userId, todayISO);
+  const next = { ...(notified || {}) };
+  const due: { title: string; days: number }[] = [];
+  let changed = false;
+  for (const d of docs) {
+    const stage = stageFor(d.days);
+    if (stage === null) continue; // дальше года — молчим
+    if (next[d.id] !== stage) { next[d.id] = stage; changed = true; due.push({ title: d.title, days: d.days }); }
+  }
+  // Подчистим карту от исчезнувших документов (удалённых).
+  const ids = new Set(docs.map((d) => d.id));
+  for (const k of Object.keys(next)) if (!ids.has(k)) { delete next[k]; changed = true; }
+
+  if (!due.length) return { message: null, nextNotified: next, changed };
+  const t = T[lang] || T.ru;
+  due.sort((a, b) => a.days - b.days);
+  const lines = [t.header, ""];
+  for (const f of due) lines.push(`• <b>${esc(f.title)}</b> — ${f.days < 0 ? t.over(-f.days) : f.days === 0 ? t.today : t.soon(f.days)}`);
+  lines.push("", t.footer);
+  return { message: lines.join("\n"), nextNotified: next, changed };
 }
