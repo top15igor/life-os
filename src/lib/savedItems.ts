@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { indexRowSoon } from "./vaultIndex";
+import { indexRow } from "./vaultIndex";
 
 // Убираем символы, которые PostgreSQL отказывается писать в text/jsonb: нулевой байт
 // и прочие управляющие C0-символы (кроме \t \n \r). Такое иногда попадает в расшифровку
@@ -27,7 +27,7 @@ export async function insertSavedItem(row: Record<string, any>, onError?: (msg: 
   if (!error) {
     const id = (data as any)?.id || null;
     // Смысловой указатель — чтобы сохранённое искалось по сути, а не по слову.
-    if (id && clean.user_id) indexRowSoon("saved_items", id, String(clean.user_id));
+    if (id && clean.user_id) await indexRow("saved_items", id, String(clean.user_id));
     return id;
   }
 
@@ -36,7 +36,7 @@ export async function insertSavedItem(row: Record<string, any>, onError?: (msg: 
     const retry = await db.from("saved_items").insert(rest).select("id").single();
     if (!retry.error) {
       const id = (retry.data as any)?.id || null;
-      if (id && clean.user_id) indexRowSoon("saved_items", id, String(clean.user_id));
+      if (id && clean.user_id) await indexRow("saved_items", id, String(clean.user_id));
       return id;
     }
     console.error("saved insert retry", retry.error);

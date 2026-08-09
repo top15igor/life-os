@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { indexRowSoon } from "@/lib/vaultIndex";
+import { indexRow } from "@/lib/vaultIndex";
 import { notesToText, parseNotesText } from "@/lib/notesIO";
 
 export const runtime = "nodejs";
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const text = String(body?.text || "").trim().slice(0, 2000);
     if (!text) return NextResponse.json({ ok: false }, { status: 400 });
     const { data, error } = await db.from("notes").insert({ user_id: user.id, text }).select("id, text, pinned, created_at").single();
-    if ((data as any)?.id) indexRowSoon("notes", String((data as any).id), user.id);
+    if ((data as any)?.id) await indexRow("notes", String((data as any).id), user.id);
     if (error) return NextResponse.json({ ok: false, error: "no_table" }, { status: 200 });
     return NextResponse.json({ ok: true, note: data });
   }

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { indexRowSoon } from "./vaultIndex";
+import { indexRow } from "./vaultIndex";
 import { analyzeImage, analyzeDocument, analyzeText, type VisionResult } from "./vision";
 import { extractText } from "./docText";
 
@@ -66,7 +66,7 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
   }
 
   // Смысловой указатель: без него документ найдётся только по точному слову.
-  if (memory?.id) indexRowSoon("memories", memory.id, userId);
+  if (memory?.id) await indexRow("memories", memory.id, userId);
   return { memory, vision };
 }
 
@@ -137,6 +137,6 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
   }
 
   // Смысловой указатель: без него документ найдётся только по точному слову.
-  if (memory?.id) indexRowSoon("memories", memory.id, userId);
+  if (memory?.id) await indexRow("memories", memory.id, userId);
   return { memory, vision };
 }

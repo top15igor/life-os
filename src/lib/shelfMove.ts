@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "./supabaseAdmin";
-import { indexRowSoon } from "./vaultIndex";
+import { indexRow } from "./vaultIndex";
 import { analyze } from "./ai";
 import { saveEntry, clearDerived } from "./saveEntry";
 import { recordAction } from "./agentJournal";
@@ -60,7 +60,7 @@ export async function entryToVault(userId: string, entryId: string): Promise<{ o
   if (!text) return { ok: false };
 
   const { data: note, error } = await db.from("notes").insert({ user_id: userId, text: text.slice(0, 4000) }).select("id").maybeSingle();
-  if ((note as any)?.id) indexRowSoon("notes", String((note as any).id), userId);
+  if ((note as any)?.id) await indexRow("notes", String((note as any).id), userId);
   if (error) return { ok: false };
 
   // Пишем в журнал ДО удаления: запись дневника — самое дорогое, что тут теряется,

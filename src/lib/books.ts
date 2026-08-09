@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
-import { indexRowSoon } from "./vaultIndex";
+import { indexRow } from "./vaultIndex";
 import { getHandle } from "./handle";
 
 // kind: тип единицы медиатеки — 'book' | 'film' | 'series'. По умолчанию 'book'.
@@ -179,7 +179,7 @@ export async function addBook(
     const r2 = await db.from("books").insert(row).select(COLS_LEGACY).single();
     data = r2.data as any;
   }
-  if ((data as any)?.id && row.user_id) indexRowSoon("books", String((data as any).id), String(row.user_id));
+  if ((data as any)?.id && row.user_id) await indexRow("books", String((data as any).id), String(row.user_id));
   return data ? ({ ...(data as any), kind: (data as any).kind || kind }) : null;
 }
 
