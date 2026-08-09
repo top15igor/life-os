@@ -35,6 +35,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, count: ids.length });
   }
 
+  // Создать свою категорию: сохраняем в morning_prefs.memCustomCats, возвращаем ключ.
+  if (action === "addCat") {
+    const label = typeof body?.label === "string" ? body.label.trim().slice(0, 40) : "";
+    if (!label) return NextResponse.json({ ok: false }, { status: 400 });
+    const PALETTE = [
+      { icon: "ti-folder", c: "#7C3AED", bg: "#F0E9FE" }, { icon: "ti-star", c: "#B45309", bg: "#FAEEDA" },
+      { icon: "ti-heart", c: "#BE123C", bg: "#FCE7EC" }, { icon: "ti-bookmark", c: "#0F6E56", bg: "#E1F5EE" },
+      { icon: "ti-bulb", c: "#0369A1", bg: "#E0F2FE" }, { icon: "ti-flame", c: "#DC2626", bg: "#FDE7E7" },
+    ];
+    try {
+      const { data } = await db.from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+      const raw = (data as any)?.morning_prefs && typeof (data as any).morning_prefs === "object" ? (data as any).morning_prefs : {};
+      const list = Array.isArray(raw.memCustomCats) ? raw.memCustomCats : [];
+      const key = "u_" + label.toLowerCase().replace(/ё/g, "е").replace(/[^\p{L}\p{N}]+/gu, "").slice(0, 24) + "_" + list.length;
+      const style = PALETTE[list.length % PALETTE.length];
+      const cat = { key, label, ...style };
+      await db.from("users").update({ morning_prefs: { ...raw, memCustomCats: [...list, cat] } }).eq("id", user.id);
+      return NextResponse.json({ ok: true, cat });
+    } catch { return NextResponse.json({ ok: false }, { status: 500 }); }
+  }
+
   // Переименование категории: сохраняем свой ярлык в morning_prefs.memCatLabels.
   if (action === "catLabel") {
     const category = CATEGORIES.includes(body?.category) ? body.category : null;
@@ -85,7 +106,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
   if (action === "category") {
-    const category = CATEGORIES.includes(body?.category) ? body.category : "other";
+    // Базовые 8 категорий ИЛИ своя (ключ u_*) — принимаем и пользовательские.
+    const raw = String(body?.category || "");
+    const category = CATEGORIES.includes(raw) ? raw : (/^u_[a-z0-9_]{1,40}$/.test(raw) ? raw : "other");
     await db.from("memories").update({ category, status: "ok" }).eq("id", id).eq("user_id", user.id);
     return NextResponse.json({ ok: true });
   }

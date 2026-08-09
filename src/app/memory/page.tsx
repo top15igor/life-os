@@ -26,10 +26,14 @@ export default async function MemoryPage() {
 
   // Пользовательские названия категорий (переименование) — из morning_prefs.memCatLabels.
   let catLabels: Record<string, string> = {};
+  let customCats: { key: string; label: string; icon: string; c: string; bg: string }[] = [];
   try {
     const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
     const raw = (data as any)?.morning_prefs;
-    if (raw && typeof raw === "object" && raw.memCatLabels && typeof raw.memCatLabels === "object") catLabels = raw.memCatLabels;
+    if (raw && typeof raw === "object") {
+      if (raw.memCatLabels && typeof raw.memCatLabels === "object") catLabels = raw.memCatLabels;
+      if (Array.isArray(raw.memCustomCats)) customCats = raw.memCustomCats.filter((c: any) => c?.key && c?.label);
+    }
   } catch {}
 
   return (
@@ -37,7 +41,7 @@ export default async function MemoryPage() {
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main wide">
         <PageHead icon="ti-camera" color="#ec4899" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
-        <MemoryArchive initial={memories as any} locale={locale} catLabels={catLabels} />
+        <MemoryArchive initial={memories as any} locale={locale} catLabels={catLabels} customCats={customCats} />
       </main>
     </div>
   );
