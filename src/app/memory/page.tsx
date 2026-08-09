@@ -5,6 +5,7 @@ import { getMemories } from "@/lib/queries";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { requireUser } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +24,20 @@ export default async function MemoryPage() {
   const t = getDict(locale);
   const memories = await getMemories(user.id);
 
+  // Пользовательские названия категорий (переименование) — из morning_prefs.memCatLabels.
+  let catLabels: Record<string, string> = {};
+  try {
+    const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+    const raw = (data as any)?.morning_prefs;
+    if (raw && typeof raw === "object" && raw.memCatLabels && typeof raw.memCatLabels === "object") catLabels = raw.memCatLabels;
+  } catch {}
+
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main wide">
         <PageHead icon="ti-camera" color="#ec4899" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
-        <MemoryArchive initial={memories as any} locale={locale} />
+        <MemoryArchive initial={memories as any} locale={locale} catLabels={catLabels} />
       </main>
     </div>
   );

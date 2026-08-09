@@ -35,6 +35,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, count: ids.length });
   }
 
+  // Переименование категории: сохраняем свой ярлык в morning_prefs.memCatLabels.
+  if (action === "catLabel") {
+    const category = CATEGORIES.includes(body?.category) ? body.category : null;
+    if (!category) return NextResponse.json({ ok: false }, { status: 400 });
+    const label = typeof body?.label === "string" ? body.label.trim().slice(0, 40) : "";
+    try {
+      const { data } = await db.from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+      const raw = (data as any)?.morning_prefs && typeof (data as any).morning_prefs === "object" ? (data as any).morning_prefs : {};
+      const labels = { ...(raw.memCatLabels && typeof raw.memCatLabels === "object" ? raw.memCatLabels : {}) };
+      if (label) labels[category] = label; else delete labels[category];
+      await db.from("users").update({ morning_prefs: { ...raw, memCatLabels: labels } }).eq("id", user.id);
+    } catch {}
+    return NextResponse.json({ ok: true });
+  }
+
   const id = String(body?.id || "");
   if (!id) return NextResponse.json({ ok: false }, { status: 400 });
 
