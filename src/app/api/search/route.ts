@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { searchEverything } from "@/lib/vaultSearch";
+import { semanticAll } from "@/lib/vaultIndex";
 
 export const runtime = "nodejs";
 
@@ -122,6 +123,25 @@ export async function GET(req: NextRequest) {
 
   // ?debug=1 владельцу: с какой полки и с каким баллом пришла каждая находка.
   // Настраивать поиск «на глаз по выдаче» — верный способ ошибиться.
+  // ?debug=2 — сырая выдача смыслового слоя ДО отсечки по порогу: видно, что
+  // вообще вернула база и с какой похожестью. Без этого настройка порога —
+  // гадание, а промах индекса неотличим от «просто не похоже».
+  if (req.nextUrl.searchParams.get("debug") === "2" && uid === "00000000-0000-0000-0000-000000000000") {
+    const sim = await semanticAll(uid, q, 10);
+    const out: any = {};
+    for (const shelf of Object.keys(sim) as (keyof typeof sim)[]) {
+      const ids = [...sim[shelf].keys()];
+      if (!ids.length) { out[shelf] = []; continue; }
+      const titleCol = shelf === "notes" ? "id, text" : "id, title";
+      const { data } = await db.from(shelf).select(titleCol).in("id", ids);
+      const byId = new Map(((data as any[]) || []).map((r) => [String(r.id), String(r.title ?? r.text ?? "").slice(0, 55)]));
+      out[shelf] = [...sim[shelf].entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id, v]) => ({ похожесть: Number(v.toFixed(3)), что: byId.get(id) || id }));
+    }
+    return NextResponse.json({ ok: true, запрос: q, сырое: out });
+  }
+
   if (req.nextUrl.searchParams.get("debug") === "1" && uid === "00000000-0000-0000-0000-000000000000") {
     const raw = await searchEverything(uid, q, 20).catch(() => []);
     return NextResponse.json({ ok: true, results: results.slice(0, 24), raw: raw.map((f) => ({ src: f.src, score: Number(f.score.toFixed(2)), title: f.title || f.text.slice(0, 60) })) });
