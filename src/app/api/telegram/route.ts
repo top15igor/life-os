@@ -10,7 +10,6 @@ import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction, looksLikeDeadEnd } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
-import { isCorrection, isNameCorrection, amendLastEntry } from "@/lib/amendEntry";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
