@@ -191,22 +191,34 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   const byDay = new Map<string, HealthDay>();
   const get = (d: string) => { let h = byDay.get(d); if (!h) { h = { day: d }; byDay.set(d, h); } return h; };
 
+  // Семь независимых чтений раньше шли по очереди: на холодном старте плюс
+  // обновление токена это упиралось в лимит времени функции, и человек видел
+  // «не удалось» без объяснений. Запросы не зависят друг от друга — спрашиваем разом.
+  const [stepsRows, distRows, kcalRows, rhr, sleep, hrvResp, azmRows] = await Promise.all([
+    dailyRollUp(token, "steps", startIso, endExclIso),
+    dailyRollUp(token, "distance", startIso, endExclIso),
+    dailyRollUp(token, "active-energy-burned", startIso, endExclIso),
+    ghGet(token, `/users/me/dataTypes/daily-resting-heart-rate/dataPoints?pageSize=100&filter=${encodeURIComponent(`daily_resting_heart_rate.date >= "${startIso}" AND daily_resting_heart_rate.date < "${endExclIso}"`)}`),
+    ghGet(token, `/users/me/dataTypes/sleep/dataPoints?pageSize=100&filter=${encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`)}`),
+    ghGet(token, `/users/me/dataTypes/heart-rate-variability/dataPoints?pageSize=200`),
+    dailyRollUp(token, "active-zone-minutes", startIso, endExclIso),
+  ]);
+
   // steps / distance / active-energy-burned — дневные суммы.
-  for (const rp of await dailyRollUp(token, "steps", startIso, endExclIso)) {
+  for (const rp of stepsRows) {
     const d = dayOf(rp.civilStartTime); const v = Number(rp.steps?.countSum);
     if (d && isFinite(v) && v > 0) get(d).steps = v;
   }
-  for (const rp of await dailyRollUp(token, "distance", startIso, endExclIso)) {
+  for (const rp of distRows) {
     const d = dayOf(rp.civilStartTime); const mm = Number(rp.distance?.millimetersSum);
     if (d && isFinite(mm) && mm > 0) get(d).distance_km = Math.round((mm / 1_000_000) * 10) / 10;
   }
-  for (const rp of await dailyRollUp(token, "active-energy-burned", startIso, endExclIso)) {
+  for (const rp of kcalRows) {
     const d = dayOf(rp.civilStartTime); const k = Number(rp.activeEnergyBurned?.kcalSum);
     if (d && isFinite(k) && k > 0) get(d).active_kcal = Math.round(k);
   }
 
   // Пульс покоя — отдельный дневной тип, читаем списком.
-  const rhr = await ghGet(token, `/users/me/dataTypes/daily-resting-heart-rate/dataPoints?pageSize=100&filter=${encodeURIComponent(`daily_resting_heart_rate.date >= "${startIso}" AND daily_resting_heart_rate.date < "${endExclIso}"`)}`);
   for (const dp of rhr?.dataPoints || []) {
     const d = dayOf(dp.dailyRestingHeartRate); const bpm = Number(dp.dailyRestingHeartRate?.beatsPerMinute);
     if (d && isFinite(bpm) && bpm > 0) get(d).hr_resting = Math.round(bpm);
@@ -214,7 +226,6 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
 
   // Сон — сессии. interval.endTime/startTime приходят ISO-строками + endUtcOffset ("7200s").
   // Минуты сна берём из summary.minutesAsleep; день = локальная дата пробуждения.
-  const sleep = await ghGet(token, `/users/me/dataTypes/sleep/dataPoints?pageSize=100&filter=${encodeURIComponent(`sleep.interval.civil_end_time >= "${startIso}" AND sleep.interval.civil_end_time < "${endExclIso}"`)}`);
   for (const dp of sleep?.dataPoints || []) {
     const sl = dp.sleep || {};
     const iv = sl.interval || {};
@@ -243,7 +254,6 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
   }
 
   // HRV (вариабельность пульса) — ~1 замер за ночь (RMSSD, мс). Усредняем по дню.
-  const hrvResp = await ghGet(token, `/users/me/dataTypes/heart-rate-variability/dataPoints?pageSize=200`);
   const hrvAcc = new Map<string, { s: number; n: number }>();
   for (const dp of hrvResp?.dataPoints || []) {
     const o = dp.heartRateVariability || {};
@@ -258,7 +268,7 @@ export async function syncGoogleHealth(userId: string, days = 7): Promise<number
 
   // Зоны активности (Active Zone Minutes) — дневная агрегация по зонам.
   // Формула Fitbit: Fat Burn = 1 AZM/мин, Cardio и Peak = 2 AZM/мин.
-  for (const rp of await dailyRollUp(token, "active-zone-minutes", startIso, endExclIso)) {
+  for (const rp of azmRows) {
     const d = dayOf(rp.civilStartTime);
     const z = rp.activeZoneMinutes || {};
     const fat = Number(z.sumInFatBurnHeartZone) || 0;
