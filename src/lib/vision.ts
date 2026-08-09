@@ -62,7 +62,7 @@ export async function analyzeText(text: string, fileName: string | undefined, us
 
 // Разбор загруженного ДОКУМЕНТА (PDF). Claude читает PDF напрямую — отдельный парсер не нужен.
 export async function analyzeDocument(base64: string, userId?: string): Promise<VisionResult> {
-  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Перед тобой документ (PDF). Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence.`;
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Перед тобой документ (PDF). Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.`;
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
@@ -86,7 +86,7 @@ export async function analyzeDocument(base64: string, userId?: string): Promise<
 
 export async function analyzeImage(base64: string, mediaType: string, userId?: string): Promise<VisionResult> {
   const mt = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mediaType) ? mediaType : "image/jpeg";
-  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Посмотри на изображение и опиши его СМЫСЛ для человека (НЕ технический OCR, не сырой текст). Заполни describe_image: category, человеческий title, короткий summary, важные fields (только реально видимые данные — не выдумывай), date если видна, confidence по чёткости. Если фото нечёткое или непонятное — confidence: low.`;
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Посмотри на изображение и опиши его СМЫСЛ для человека (НЕ технический OCR, не сырой текст). Заполни describe_image: category, человеческий title, короткий summary, важные fields (только реально видимые данные — не выдумывай), date если видна, confidence по чёткости. Если фото нечёткое или непонятное — confidence: low. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.`;
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1200,
