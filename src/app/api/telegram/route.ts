@@ -2419,8 +2419,14 @@ async function handleUpdate(req: NextRequest) {
     // По смыслу: ДЕЙСТВИЕ (бот выполняет вместо пользователя), вопрос к ассистенту или запись?
     // (очень длинные голосовые > 400 символов всегда считаем записью, чтобы не потерять мысль;
     // порог был 160 — из-за этого голосовой ВОПРОС на ~190 символов молча уходил в дневник)
+    // Похоже ли это на справку, а не на кусок жизни. Решает мозг при разборе —
+    // и только по этому флагу под записью появляется кнопка «Это в хранилище».
+    // Раньше она висела под каждой записью: под рассказом о пляже с детьми
+    // такой вопрос неуместен и выглядит так, будто бот не понял, что прочитал.
+    let maybeVault = false;
     if (!forceSave && (!isVoice || text.length < 400)) {
       const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), hasReference(text) ? await focusLine(user.id) : null);
+      if (route.kind === "note") maybeVault = route.maybeVault === true;
       if (route.kind === "action") {
         const lang = langOf(user, msg);
         if (route.name === "deep_summary") {
@@ -2557,7 +2563,7 @@ async function handleUpdate(req: NextRequest) {
         { text: L.book, callback_data: "lifebook" },
       ],
     ];
-    if (entry?.id) rows.unshift([{ text: SH.toVault, callback_data: `shelf:v:${entry.id}` }]);
+    if (entry?.id && maybeVault) rows.unshift([{ text: SH.toVault, callback_data: `shelf:v:${entry.id}` }]);
     if (analysis.finance?.length) rows.push([{ text: L.money, url: `${origin}/go?next=/finance` }]);
     // «Позвать друга» — не под каждой записью, а в момент-пик: майлстоун или
     // настроение 9+, и не чаще раза в 3 дня (иначе кнопка становится обоями).
