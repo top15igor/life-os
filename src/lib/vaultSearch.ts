@@ -68,20 +68,29 @@ function scoreOf(hay: string, st: string[]): number {
 // текстов (запись дневника против названия документа) сравниваются честно.
 const SIM_FLOOR = 0.24;
 const SIM_REL = 0.85;
+// Насколько лидер должен оторваться от середины, чтобы считаться находкой.
+const SIM_SPREAD = 1.12;
 
-function simScore(sim: number | undefined, best: number): number {
-  if (!sim || sim < SIM_FLOOR) return 0;
-  if (best > 0 && sim < best * SIM_REL) return 0;
+// Полка отвечает ВСЕГДА — ближайшие соседи есть у любого запроса, даже у
+// «зелёного жирафа на велосипеде». Отличить находку от вежливого шума можно
+// не по абсолютной величине, а по ОТРЫВУ лидера от середины списка: если все
+// восемь ответов кучкуются рядом, значит на полке просто нет ничего про это.
+type Shelf = { best: number; ok: boolean };
+
+function shelfStat(sim: Sim): Shelf {
+  const v = [...sim.values()].sort((a, b) => b - a);
+  if (!v.length) return { best: 0, ok: false };
+  const best = v[0];
+  const mid = v[Math.floor(v.length / 2)] || best;
+  return { best, ok: best >= SIM_FLOOR && (v.length < 3 || best >= mid * SIM_SPREAD) };
+}
+
+function simScore(sim: number | undefined, sh: Shelf): number {
+  if (!sh.ok || !sim || sim < SIM_FLOOR) return 0;
+  if (sim < sh.best * SIM_REL) return 0;
   // Чем дальше от пола, тем весомее: сильное совпадение должно перебивать
   // случайное совпадение пары слов, а слабое — нет.
   return (sim - SIM_FLOOR) * 25 + 1.5;
-}
-
-// Лучшая похожесть на полке — точка отсчёта для относительного правила.
-function bestOf(sim: Sim): number {
-  let m = 0;
-  for (const v of sim.values()) if (v > m) m = v;
-  return m;
 }
 
 // Сколько находок пускаем с одной полки. Без этого полка, где вещей на порядок
@@ -110,7 +119,7 @@ async function pull(table: string, cols: string, userId: string, ids: string[], 
 }
 
 async function fromNotes(userId: string, st: string[], sim: Sim): Promise<Found[]> {
-  const best = bestOf(sim);
+  const sh = shelfStat(sim);
   try {
     const rows = await pull("notes", "id, text, created_at", userId, [...sim.keys()], 500);
     return rows
@@ -119,7 +128,7 @@ async function fromNotes(userId: string, st: string[], sim: Sim): Promise<Found[
         date: String(n.created_at || "").slice(0, 10),
         title: "",
         text: String(n.text || ""),
-        score: scoreOf(n.text || "", st) + simScore(sim.get(String(n.id)), best),
+        score: scoreOf(n.text || "", st) + simScore(sim.get(String(n.id)), sh),
         path: "/notes",
       }))
       .filter((x) => x.score > 0);
@@ -129,7 +138,7 @@ async function fromNotes(userId: string, st: string[], sim: Sim): Promise<Found[
 }
 
 async function fromKnowledge(userId: string, st: string[], sim: Sim): Promise<Found[]> {
-  const best = bestOf(sim);
+  const sh = shelfStat(sim);
   try {
     const rows = await pull("saved_items", "id, title, topic, summary, key_points, tags, created_at", userId, [...sim.keys()], 300);
     return rows
@@ -140,7 +149,7 @@ async function fromKnowledge(userId: string, st: string[], sim: Sim): Promise<Fo
           date: String(d.created_at || "").slice(0, 10),
           title: String(d.title || ""),
           text: String(d.summary || hay).slice(0, 600),
-          score: scoreOf(hay, st) + simScore(sim.get(String(d.id)), best),
+          score: scoreOf(hay, st) + simScore(sim.get(String(d.id)), sh),
           path: "/knowledge",
         };
       })
@@ -151,7 +160,7 @@ async function fromKnowledge(userId: string, st: string[], sim: Sim): Promise<Fo
 }
 
 async function fromDocs(userId: string, st: string[], sim: Sim): Promise<Found[]> {
-  const best = bestOf(sim);
+  const sh = shelfStat(sim);
   try {
     const rows = await pull("memories", "id, title, summary, fields, mem_date, created_at, image_url", userId, [...sim.keys()], 300);
     return rows
@@ -163,7 +172,7 @@ async function fromDocs(userId: string, st: string[], sim: Sim): Promise<Found[]
           date: String(m.mem_date || m.created_at || "").slice(0, 10),
           title: String(m.title || ""),
           text: [m.summary, flds].filter(Boolean).join(" · ").slice(0, 600),
-          score: scoreOf(hay, st) + simScore(sim.get(String(m.id)), best),
+          score: scoreOf(hay, st) + simScore(sim.get(String(m.id)), sh),
           path: "/memory",
           fileUrl: m.image_url || null,
         };
@@ -175,7 +184,7 @@ async function fromDocs(userId: string, st: string[], sim: Sim): Promise<Found[]
 }
 
 async function fromBooks(userId: string, st: string[], sim: Sim): Promise<Found[]> {
-  const best = bestOf(sim);
+  const sh = shelfStat(sim);
   try {
     const rows = await pull("books", "id, title, author, genre, review, notes, status, created_at", userId, [...sim.keys()], 300);
     return rows
@@ -186,7 +195,7 @@ async function fromBooks(userId: string, st: string[], sim: Sim): Promise<Found[
           date: String(b.created_at || "").slice(0, 10),
           title: [b.title, b.author].filter(Boolean).join(" — "),
           text: [b.review, b.notes].filter(Boolean).join(" · ").slice(0, 600) || String(b.genre || ""),
-          score: scoreOf(hay, st) + simScore(sim.get(String(b.id)), best),
+          score: scoreOf(hay, st) + simScore(sim.get(String(b.id)), sh),
           path: "/books",
         };
       })
@@ -202,9 +211,9 @@ async function fromDiary(userId: string, query: string, st: string[]): Promise<F
   if (hits.length) {
     // Та же шкала, что и у остальных полок: раньше дневник считался по своей,
     // получал вдвое больше баллов и всегда выигрывал у документов.
-    const best = Math.max(...hits.map((h) => h.similarity));
+    const sh = shelfStat(new Map<string, number>(hits.map((h, i) => [String(i), h.similarity] as [string, number])));
     const sem = hits
-      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: simScore(h.similarity, best), path: h.id ? `/entry/${h.id}` : "/diary" }))
+      .map((h) => ({ src: "diary" as Src, date: h.entry_date, title: "", text: String(h.raw_text || h.summary || "").slice(0, 700), score: simScore(h.similarity, sh), path: h.id ? `/entry/${h.id}` : "/diary" }))
       .filter((x) => x.score > 0);
     if (sem.length) return sem;
   }
