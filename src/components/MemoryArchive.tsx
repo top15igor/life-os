@@ -17,11 +17,11 @@ const CATS = [
 const catMeta = (k: string) => CATS.find((x) => x.key === k) || CATS[7];
 
 const STR: Record<string, any> = {
-  ru: { add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
-  en: { add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
-  uk: { add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
-  fr: { add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
-  es: { add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
+  ru: { all: "Все", add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
+  en: { all: "All", add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
+  uk: { all: "Усі", add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
+  fr: { all: "Tout", add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
+  es: { all: "Todo", add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
 };
 
 function resizeImage(file: File, max = 1568): Promise<Blob> {
@@ -53,6 +53,10 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   const [recording, setRecording] = useState(false);
   const [recBusy, setRecBusy] = useState(false);
   const [catId, setCatId] = useState<string | null>(null);
+  // Полка категорий (фильтр) + раскрытая карточка: по умолчанию карточки компактные
+  // (фото+заголовок+дата), весь AI-разбор и заметки — по клику.
+  const [activeCat, setActiveCat] = useState<string>("all");
+  const [openId, setOpenId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -122,6 +126,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
 
   const Card = (m: Memory) => {
     const cm = catMeta(m.category);
+    const open = openId === m.id;
     return (
       <div key={m.id} className="card" style={{ padding: 0, overflow: "hidden" }}>
         {m.image_url ? (
@@ -135,22 +140,34 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
           <div style={{ height: 110, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} /></div>
         )}
         <div style={{ padding: "12px 13px 13px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4, flexWrap: "wrap" }}>
+          {/* Шапка карточки — клик раскрывает/сворачивает детали. */}
+          <div onClick={() => { setOpenId(open ? null : m.id); if (open) setCatId(null); }} style={{ cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <div style={{ flex: 1, fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{m.title}</div>
+              <i className="ti ti-chevron-down" style={{ fontSize: 15, color: "var(--text-3)", flexShrink: 0, marginTop: 2, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 4, flexWrap: "wrap" }}>
+              {m.mem_date && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dateStr(m.mem_date)}</span>}
+              {m.status === "review" && <span style={{ fontSize: 11, color: "#854F0B", background: "#FAEEDA", padding: "2px 7px", borderRadius: 999 }}>{s.review}</span>}
+              {m.note && !open && <i className="ti ti-message" style={{ fontSize: 13, color: "var(--accent)" }} />}
+            </div>
+          </div>
+
+          {open && (
+          <>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
             <button onClick={() => setCatId(catId === m.id ? null : m.id)} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: cm.c, background: cm.bg, padding: "2px 8px", borderRadius: 999, border: "none", cursor: "pointer" }}><i className={`ti ${cm.icon}`} style={{ fontSize: 12 }} />{s.catNames[m.category]}<i className="ti ti-chevron-down" style={{ fontSize: 11 }} /></button>
-            {m.mem_date && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{dateStr(m.mem_date)}</span>}
-            {m.status === "review" && <span style={{ fontSize: 11, color: "#854F0B", background: "#FAEEDA", padding: "2px 7px", borderRadius: 999 }}>{s.review}</span>}
           </div>
 
           {catId === m.id && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "4px 0 9px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, margin: "8px 0 3px" }}>
               {CATS.map((c) => (
                 <button key={c.key} onClick={() => setCategory(m.id, c.key)} style={{ fontSize: 11.5, padding: "4px 9px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (m.category === c.key ? c.c : "var(--border)"), background: m.category === c.key ? c.bg : "var(--surface)", color: m.category === c.key ? c.c : "var(--text-2)" }}>{s.catNames[c.key]}</button>
               ))}
             </div>
           )}
 
-          <div style={{ fontSize: 14.5, fontWeight: 500, lineHeight: 1.3 }}>{m.title}</div>
-          {m.summary && <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 3 }}>{m.summary}</div>}
+          {m.summary && <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.45, marginTop: 8 }}>{m.summary}</div>}
 
           {m.fields?.length > 0 && (
             <div style={{ marginTop: 9, borderTop: "1px solid var(--border)", paddingTop: 8, display: "grid", gap: 4 }}>
@@ -190,6 +207,8 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
           )}
 
           <button onClick={() => del(m.id)} aria-label="delete" style={{ marginTop: 10, marginLeft: 14, background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", fontSize: 12, padding: 0 }}><i className="ti ti-trash" style={{ fontSize: 14 }} /></button>
+          </>
+          )}
         </div>
       </div>
     );
@@ -212,17 +231,22 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
           <div style={{ fontSize: 14.5, color: "var(--text-2)", lineHeight: 1.55, maxWidth: 420, margin: "0 auto" }}>{s.empty}</div>
         </div>
       ) : (
-        used.map((c) => (
-          <div key={c.key} style={{ marginBottom: 22 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 11px" }}>
-              <span style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${c.icon}`} style={{ fontSize: 16, color: c.c }} /></span>
-              <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.catNames[c.key]}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-              {items.filter((m) => m.category === c.key).map(Card)}
-            </div>
+        <>
+          {/* Полка категорий: счётчики + фильтр. «Все» — общая лента. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 15 }}>
+            <button onClick={() => setActiveCat("all")} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === "all" ? "var(--accent)" : "var(--border)"), background: activeCat === "all" ? "var(--accent)" : "var(--surface)", color: activeCat === "all" ? "#fff" : "var(--text-2)" }}>
+              {s.all}<span style={{ opacity: 0.75 }}>{items.length}</span>
+            </button>
+            {used.map((c) => (
+              <button key={c.key} onClick={() => setActiveCat(activeCat === c.key ? "all" : c.key)} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === c.key ? c.c : "var(--border)"), background: activeCat === c.key ? c.bg : "var(--surface)", color: activeCat === c.key ? c.c : "var(--text-2)" }}>
+                <i className={`ti ${c.icon}`} style={{ fontSize: 14 }} />{s.catNames[c.key]}<span style={{ opacity: 0.75 }}>{items.filter((m) => m.category === c.key).length}</span>
+              </button>
+            ))}
           </div>
-        ))
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+            {(activeCat === "all" ? items : items.filter((m) => m.category === activeCat)).map(Card)}
+          </div>
+        </>
       )}
     </div>
   );
