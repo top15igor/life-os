@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
 import { backfillShelves } from "@/lib/vaultIndex";
 
 export const runtime = "nodejs";
@@ -12,15 +13,20 @@ export const maxDuration = 60;
 // забудут. Плюс всё, что человек сложил ДО включения этой памяти. Поэтому раз
 // в час проходим и досчитываем: это страховка, а не основной путь.
 //
-// Ручной запуск владельцем: /api/embed-sweep?key=<TELEGRAM_WEBHOOK_SECRET>
+// Ручной запуск владельцем: просто открыть /api/embed-sweep в браузере, где
+// он вошёл, — как самопроверка и диагност. Секрет искать не нужно.
 // Расписание: Bearer CRON_SECRET (workflow morning-hourly.yml).
 
+const OWNER = "00000000-0000-0000-0000-000000000000";
+
 export async function GET(req: NextRequest) {
-  const key = req.nextUrl.searchParams.get("key");
   const auth = req.headers.get("authorization");
-  const okKey = !!process.env.TELEGRAM_WEBHOOK_SECRET && key === process.env.TELEGRAM_WEBHOOK_SECRET;
-  const okCron = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
-  if (!okKey && !okCron) return NextResponse.json({ ok: false }, { status: 401 });
+  let allowed = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
+  if (!allowed) {
+    const user = await getCurrentUser();
+    allowed = !!user && user.id === OWNER;
+  }
+  if (!allowed) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
 
   // По сотне на полку за раз: укладываемся в минуту и не жжём лимиты OpenAI.
   const rows = await backfillShelves(100);
