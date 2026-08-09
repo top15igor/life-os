@@ -1,0 +1,14 @@
+{
+  "name": "lifeos-photo-scout",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local photo scout for LIFE OS: scans a folder, uploads ONLY thumbnails + metadata. Originals never leave the machine.",
+  "scripts": {
+    "scan": "node scan.mjs"
+  },
+  "dependencies": {
+    "exifr": "^7.1.3",
+    "sharp": "^0.33.5"
+  }
+}

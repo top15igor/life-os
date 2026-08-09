@@ -11,6 +11,9 @@ out/
 # TS incremental build cache
 *.tsbuildinfo
 
+# Локальное состояние фоторазведчика (что уже отправлено)
+scout/.state/
+
 # Хэндофф между сессиями Claude — локальный, не для публичного репо
 SESSION_HANDOFF.md
 .env*

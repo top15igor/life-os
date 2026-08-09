@@ -12,7 +12,7 @@ import { supabaseAdmin } from "./supabaseAdmin";
 // вынимается путь, а по пути подписывается новая ссылка.
 
 // Закрытые бакеты: ссылки в них подписываются. Остальное отдаётся как есть.
-const PRIVATE_BUCKETS = new Set(["memories", "voices", "dreams", "saved"]);
+const PRIVATE_BUCKETS = new Set(["memories", "voices", "dreams", "saved", "photo-thumbs"]);
 
 const TTL_TELEGRAM = 180; // файл скачивается сразу
 const TTL_WEB = 3600; // страница может быть открыта долго
