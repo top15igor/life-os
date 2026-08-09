@@ -15,7 +15,7 @@ export type PushMeta = { question?: string | null; qKey?: string | null; qSource
 
 export async function logPush(
   userId: string,
-  kind: "morning" | "evening" | "weekly" | "acquaint" | "people" | "birthday",
+  kind: "morning" | "evening" | "weekly" | "acquaint" | "people" | "birthday" | "docexpiry",
   meta?: PushMeta,
 ): Promise<void> {
   const row: any = { user_id: userId, kind };

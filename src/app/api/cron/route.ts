@@ -18,6 +18,7 @@ import { eveningQuestion, eveningQuestionPick } from "@/lib/dailyQuestions";
 import { START_BTN as DAY_START_BTN } from "@/lib/dayCapture";
 import { localParts } from "@/lib/pushSchedule";
 import { peopleDigestMessage } from "@/lib/peopleCrm";
+import { docExpiryMessage } from "@/lib/docExpiryNudge";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { autoReleaseInactive } from "@/lib/heirs";
@@ -325,6 +326,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, bday: true });
   }
 
+  // Самотест «Скоро истекают сроки»: /api/cron?docexpiry=<secret|self>.
+  const de = req.nextUrl.searchParams.get("docexpiry");
+  if (de !== null) {
+    if (de !== process.env.TELEGRAM_WEBHOOK_SECRET && !(await ownerViaCookie())) return NextResponse.json({ ok: false, error: "bad key" }, { status: 401 });
+    const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+    const dbx = supabaseAdmin();
+    const { data: u } = await dbx.from("users").select("id, lang").eq("chat_id", Number(chat)).maybeSingle();
+    if (!u || !chat) return NextResponse.json({ ok: false, error: "no_user" });
+    const lang: Lang = (["ru", "en", "uk", "fr", "es"].includes((u as any).lang) ? (u as any).lang : "ru") as Lang;
+    const today = new Date().toISOString().slice(0, 10);
+    const msg = await docExpiryMessage((u as any).id, lang, today);
+    if (msg) await sendMessage(Number(chat), msg);
+    return NextResponse.json({ ok: true, docexpiry: true, sent: !!msg });
+  }
+
   const test = req.nextUrl.searchParams.get("test");
   if (test !== null) {
     if (test !== process.env.TELEGRAM_WEBHOOK_SECRET) {
@@ -526,6 +542,19 @@ export async function GET(req: NextRequest) {
             (stats as any).peopleDigests = ((stats as any).peopleDigests || 0) + 1;
           }
         } catch (e) { console.error("people digest", u.id, e); }
+      }
+
+      // ⏳ «Скоро истекают сроки» — раз в неделю по понедельникам: документы
+      // (паспорт/виза/гарантия), у которых близко дата окончания. Молчим, если нечего.
+      if (!isWeeklyDay && lp.weekday === 1 && prefs.remindersEnabled !== false) {
+        try {
+          const msg = await docExpiryMessage(u.id, lang, lp.dateKey);
+          if (msg) {
+            await sendMessage(u.chat_id, msg);
+            logPush(u.id, "docexpiry").catch(() => {});
+            (stats as any).docExpiry = ((stats as any).docExpiry || 0) + 1;
+          }
+        } catch (e) { console.error("doc expiry", u.id, e); }
       }
 
       // 🌱 Возврат к знакомству: человек поставил «Давай познакомимся» на паузу
