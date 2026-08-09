@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logClaude } from "./usage";
+import { deriveFolder } from "./memoryFolders";
 
 export const MEM_CATEGORIES = ["document", "moment", "thing", "person", "place", "project", "info", "other"];
 
@@ -8,6 +9,7 @@ export type VisionResult = {
   title: string;
   summary: string;
   fields: { label: string; value: string }[];
+  folder?: string | null;
   date?: string | null;
   confidence?: "low" | "medium" | "high";
 };
@@ -22,6 +24,7 @@ const TOOL: Anthropic.Tool = {
       title: { type: "string", description: "Короткое человеческое название, напр. «Квитанция за замену аккумулятора»." },
       summary: { type: "string", description: "1 фраза по-человечески, без технического OCR." },
       fields: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] }, description: "Важные извлечённые данные парами (дата, сумма, организация, предмет, гарантия, номер, модель, серийный, пробег, адрес) — ТОЛЬКО что реально видно." },
+      folder: { type: "string", description: "Короткое имя стопки-папки для похожих вещей ВНУТРИ категории, во множественном числе, в языке документа: «Паспорта», «Чеки», «Свидетельства о рождении», «Гарантии», «Билеты», «Медицина». Одинаковые по типу вещи ДОЛЖНЫ получать ОДНО и то же имя папки. Для уникальных моментов/фото, которым папка не нужна — не заполняй." },
       date: { type: "string", description: "YYYY-MM-DD, если на документе видна дата." },
       confidence: { type: "string", enum: ["low", "medium", "high"] },
     },
@@ -47,6 +50,7 @@ export async function analyzeDocument(base64: string, userId?: string): Promise<
     title: d.title || "Документ",
     summary: d.summary || "",
     fields: Array.isArray(d.fields) ? d.fields.filter((f: any) => f?.label && f?.value).slice(0, 12) : [],
+    folder: (typeof d.folder === "string" && d.folder.trim()) ? d.folder.trim().slice(0, 60) : deriveFolder("document", d.title, d.fields),
     date: d.date || null,
     confidence: d.confidence,
   };
@@ -70,6 +74,7 @@ export async function analyzeImage(base64: string, mediaType: string, userId?: s
     title: d.title || "Фото",
     summary: d.summary || "",
     fields: Array.isArray(d.fields) ? d.fields.filter((f: any) => f?.label && f?.value).slice(0, 12) : [],
+    folder: (typeof d.folder === "string" && d.folder.trim()) ? d.folder.trim().slice(0, 60) : deriveFolder(MEM_CATEGORIES.includes(d.category) ? d.category : "other", d.title, d.fields),
     date: d.date || null,
     confidence: d.confidence,
   };

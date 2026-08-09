@@ -240,9 +240,9 @@ export async function getDreams(userId: string): Promise<{ id: string; sphere: s
   }
 }
 
-export async function getMemories(userId: string): Promise<{ id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; mem_date: string | null; image_url: string | null; status: string; file_url?: string | null; file_name?: string | null; mime_type?: string | null; created_at: string }[]> {
+export async function getMemories(userId: string): Promise<{ id: string; category: string; title: string; summary: string; fields: { label: string; value: string }[]; folder?: string | null; mem_date: string | null; image_url: string | null; status: string; file_url?: string | null; file_name?: string | null; mime_type?: string | null; created_at: string }[]> {
   const db = supabaseAdmin();
-  const base = "id, category, title, summary, fields, mem_date, image_url, status, note, created_at";
+  const base = "id, category, title, summary, fields, folder, mem_date, image_url, status, note, created_at";
   try {
     // Сначала пробуем с колонками файлов; если миграция не применена — откатываемся к базовому набору.
     const { data, error } = await db.from("memories").select(base + ", file_url, file_name, mime_type").eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
@@ -251,12 +251,17 @@ export async function getMemories(userId: string): Promise<{ id: string; categor
     // ссылки на час — иначе сканы паспортов лежали бы доступными любому, кто знает URL.
     return (await signManyForWeb((data as any) || [], ["image_url", "file_url"])) as any;
   } catch {
-    try {
-      const { data } = await db.from("memories").select(base).eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
-      return (await signManyForWeb((data as any) || [], ["image_url", "file_url"])) as any;
-    } catch {
-      return [];
+    // Нет колонок файлов ИЛИ ещё нет folder (миграция не применена) — деградируем
+    // до самого базового набора, чтобы страница памяти не падала до применения SQL.
+    const bare = "id, category, title, summary, fields, mem_date, image_url, status, note, created_at";
+    for (const sel of [base, bare]) {
+      try {
+        const { data, error } = await db.from("memories").select(sel).eq("user_id", userId).order("created_at", { ascending: false }).limit(300);
+        if (error) throw error;
+        return (await signManyForWeb((data as any) || [], ["image_url", "file_url"])) as any;
+      } catch {}
     }
+    return [];
   }
 }
 

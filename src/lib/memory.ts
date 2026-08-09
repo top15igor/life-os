@@ -43,14 +43,25 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
         title: vision.title,
         summary: vision.summary,
         fields: vision.fields,
+        folder: vision.folder || null,
         mem_date: vision.date || null,
         image_url,
         status: vision.confidence === "low" ? "review" : "ok",
       })
-      .select("id, category, title, summary, fields, mem_date, image_url, status, created_at")
+      .select("id, category, title, summary, fields, folder, mem_date, image_url, status, created_at")
       .single();
     memory = (data as any) || null;
-  } catch {}
+  } catch {
+    // Колонки folder ещё нет (миграция не применена) — сохраняем без неё.
+    try {
+      const { data } = await db
+        .from("memories")
+        .insert({ user_id: userId, entry_id: entryId ?? null, category: vision.category, title: vision.title, summary: vision.summary, fields: vision.fields, mem_date: vision.date || null, image_url, status: vision.confidence === "low" ? "review" : "ok" })
+        .select("id, category, title, summary, fields, mem_date, image_url, status, created_at")
+        .single();
+      memory = (data as any) || null;
+    } catch {}
+  }
 
   return { memory, vision };
 }
@@ -85,11 +96,14 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
     title: vision.title,
     summary: vision.summary,
     fields: vision.fields,
+    folder: vision.folder || null,
     mem_date: vision.date || null,
     image_url: isImage ? url : null,
     status: vision.confidence === "low" ? "review" : "ok",
   };
-  const sel = "id, category, title, summary, fields, mem_date, image_url, status, created_at";
+  const sel = "id, category, title, summary, fields, folder, mem_date, image_url, status, created_at";
+  const { folder: _f, ...baseNoFolder } = base; // запас, если колонки folder ещё нет
+  const selNoFolder = "id, category, title, summary, fields, mem_date, image_url, status, created_at";
 
   let memory: Memory | null = null;
   try {
@@ -97,9 +111,9 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
     if (error) throw error;
     memory = (data as any) || null;
   } catch {
-    // Колонок file_* ещё нет (миграция не применена) — сохраняем хотя бы смысл и метаданные.
+    // Колонок file_*/folder ещё нет (миграция не применена) — сохраняем хотя бы смысл и метаданные.
     try {
-      const { data } = await db.from("memories").insert(base).select(sel).single();
+      const { data } = await db.from("memories").insert(baseNoFolder).select(selNoFolder).single();
       memory = (data as any) || null;
     } catch {}
   }
