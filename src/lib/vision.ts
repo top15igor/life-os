@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { rulesHint } from "./sortShelf";
 import { logClaude } from "./usage";
 import { deriveFolder } from "./memoryFolders";
 
@@ -37,8 +38,9 @@ const TOOL: Anthropic.Tool = {
 // docText, а осмысляет уже эта функция. Без неё договор в .docx попадал бы в
 // хранилище безымянным «Документом».
 export async function analyzeText(text: string, fileName: string | undefined, userId?: string): Promise<VisionResult> {
+  const hint = userId ? await rulesHint(userId) : "";
   const body = (text || "").trim().slice(0, 24000);
-  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Ниже ТЕКСТ файла${fileName ? ` «${fileName}»` : ""}. Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence.\n\nТЕКСТ:\n${body}`;
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Ниже ТЕКСТ файла${fileName ? ` «${fileName}»` : ""}. Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence.${hint}\n\nТЕКСТ:\n${body}`;
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
@@ -62,7 +64,8 @@ export async function analyzeText(text: string, fileName: string | undefined, us
 
 // Разбор загруженного ДОКУМЕНТА (PDF). Claude читает PDF напрямую — отдельный парсер не нужен.
 export async function analyzeDocument(base64: string, userId?: string): Promise<VisionResult> {
-  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Перед тобой документ (PDF). Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.`;
+  const hint = userId ? await rulesHint(userId) : "";
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Перед тобой документ (PDF). Опиши его СМЫСЛ по-человечески и извлеки важные данные. Заполни describe_image: category (для договоров/свидетельств/чеков/справок — document), человеческий title, короткий summary одной фразой, важные fields (реальные данные — даты, номера, стороны, суммы, адреса — не выдумывай), date если есть, confidence. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.${hint}`;
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
@@ -86,7 +89,10 @@ export async function analyzeDocument(base64: string, userId?: string): Promise<
 
 export async function analyzeImage(base64: string, mediaType: string, userId?: string): Promise<VisionResult> {
   const mt = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(mediaType) ? mediaType : "image/jpeg";
-  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Посмотри на изображение и опиши его СМЫСЛ для человека (НЕ технический OCR, не сырой текст). Заполни describe_image: category, человеческий title, короткий summary, важные fields (только реально видимые данные — не выдумывай), date если видна, confidence по чёткости. Если фото нечёткое или непонятное — confidence: low. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.`;
+  // Правила человека: чему он уже поправлял разбор. Без этого одна и та же
+  // ошибка повторяется бесконечно, и разбор выглядит глухим.
+  const hint = userId ? await rulesHint(userId) : "";
+  const prompt = `Ты — «Визуальная память» дневника LIFE OS. Посмотри на изображение и опиши его СМЫСЛ для человека (НЕ технический OCR, не сырой текст). Заполни describe_image: category, человеческий title, короткий summary, важные fields (только реально видимые данные — не выдумывай), date если видна, confidence по чёткости. Если фото нечёткое или непонятное — confidence: low. ВАЖНО: если это удостоверение личности, паспорт, виза, права, гарантия или страховка и виден СРОК ДЕЙСТВИЯ (на укр. «Дата закінчення строку дії», Date of expiry, «действителен до», «valid until») — ОБЯЗАТЕЛЬНО добавь отдельное поле с label «Действителен до» и value датой в формате ГГГГ-ММ-ДД (сконвертируй из любого вида, напр. «24 ЖОВ/OCT 27» → 2027-10-24). Не путай с датой выдачи.${hint}`;
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1200,
