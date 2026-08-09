@@ -1,3 +1,5 @@
+import ExportChoice from "./ExportChoice";
+
 // Блок «Твои данные» (экспорт, Obsidian, открытый код). Вынесен на
 // отдельную страницу /profile/data, чтобы профиль оставался компактным.
 
@@ -14,9 +16,8 @@ export default function ProfileData({ locale }: { locale: string }) {
   return (
     <div className="card">
       <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 12, lineHeight: 1.55 }}>{s.hint}</div>
-      <a href="/api/export" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 11, background: "var(--accent)", color: "#fff", fontSize: 14, fontWeight: 500, textDecoration: "none", marginBottom: 9 }}>
-        <i className="ti ti-download" style={{ fontSize: 17 }} />{s.exportBtn}
-      </a>
+      <ExportChoice locale={locale} />
+      <div style={{ height: 9 }} />
       <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, margin: "4px 0 9px", display: "flex", gap: 8, alignItems: "flex-start" }}>
         <i className="ti ti-folder-share" style={{ fontSize: 16, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />{s.obsidianHint}
       </div>
