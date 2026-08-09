@@ -47,7 +47,7 @@ const STR: Record<string, any> = {
     dupSame: "написано одинаково",
     dupSimilar: "похоже на одно и то же",
     dupMerge: "Объединить",
-    dupSkip: "Разные",
+    dupSkip: "Разные", dupRename: "Переименовать", dupRenameHint: "Разные люди? Переименуй, чтобы не путать в будущем.", save: "Сохранить", 
     dupKeep: "останется",
     dupMentions: "упом.",
     dupNoMentions: "нет записей",
@@ -78,7 +78,7 @@ const STR: Record<string, any> = {
     dupSame: "written the same",
     dupSimilar: "looks like the same",
     dupMerge: "Merge",
-    dupSkip: "Different",
+    dupSkip: "Different", dupRename: "Rename", dupRenameHint: "Different people? Rename so you won't confuse them later.", save: "Save", 
     dupKeep: "stays",
     dupMentions: "ment.",
     dupNoMentions: "no entries",
@@ -113,6 +113,16 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
 
   // Ключ группы: у людей и мест номера свои, поэтому берём и то и другое.
   const dupKey = (d: Dup) => `${d.kind}:${d.keep.id}`;
+
+  const [editEnt, setEditEnt] = useState<string | null>(null); // "kind:id"
+  const [entDraft, setEntDraft] = useState("");
+  async function renameEnt(kind: "people" | "places", id: number, name: string) {
+    const nm = name.trim();
+    if (!nm) return;
+    setDupes((p) => p.map((d) => ({ ...d, keep: d.keep.id === id ? { ...d.keep, name: nm } : d.keep, merge: d.merge.map((m) => (m.id === id ? { ...m, name: nm } : m)) })));
+    setEditEnt(null);
+    try { await fetch("/api/entities", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, id, action: "rename", name: nm }) }); } catch {}
+  }
 
   async function merge(d: Dup) {
     setDupes((p) => p.filter((x) => dupKey(x) !== dupKey(d)));
@@ -222,7 +232,19 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                 {[{ e: d.keep, keep: true }, ...d.merge.map((e) => ({ e, keep: false }))].map(({ e, keep }) => (
                   <div key={e.id} style={{ padding: "7px 0 5px", borderTop: keep ? "none" : "1px solid var(--border)" }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 14, fontWeight: keep ? 600 : 400 }}>{e.name}</span>
+                      {editEnt === `${d.kind}:${e.id}` ? (
+                        <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                          <input value={entDraft} onChange={(ev) => setEntDraft(ev.target.value)} autoFocus
+                            onKeyDown={(ev) => { if (ev.key === "Enter") renameEnt(d.kind, e.id, entDraft); if (ev.key === "Escape") setEditEnt(null); }}
+                            style={{ fontSize: 14, padding: "3px 8px", borderRadius: 7, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }} />
+                          <button onClick={() => renameEnt(d.kind, e.id, entDraft)} style={{ fontSize: 12, color: "var(--accent)", background: "none", border: "none", cursor: "pointer" }}>{s.save}</button>
+                        </span>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 14, fontWeight: keep ? 600 : 400 }}>{e.name}</span>
+                          <button onClick={() => { setEditEnt(`${d.kind}:${e.id}`); setEntDraft(e.name); }} title={s.dupRename} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "0 2px" }}><i className="ti ti-pencil" style={{ fontSize: 12 }} /></button>
+                        </>
+                      )}
                       <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
                         {e.count ? `${e.count} ${s.dupMentions}` : s.dupNoMentions}
                         {keep ? ` · ${s.dupKeep}` : ""}
@@ -244,6 +266,7 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                     <i className="ti ti-x" style={{ fontSize: 15 }} />{s.dupSkip}
                   </button>
                 </div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6, lineHeight: 1.4 }}>{s.dupRenameHint}</div>
               </div>
             ))}
           </div>
