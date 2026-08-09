@@ -111,9 +111,29 @@ const TOOL: Anthropic.Tool = {
   },
 };
 
-async function smartGroups(userId: string, rows: Row[], already: Set<number>): Promise<Row[][]> {
+// Умный проход стоит вызова модели, а страницу открывают часто. Пока список
+// имён не изменился, ответ тот же — держим его в памяти. Заодно уходит
+// неприятность: без кэша модель на каждом заходе группировала чуть иначе,
+// и список дублей «дрожал» у человека на глазах.
+const cache = new Map<string, { key: string; at: number; groups: string[][] }>();
+const CACHE_MS = 60 * 60 * 1000;
+
+async function smartGroups(userId: string, kind: "people" | "places", rows: Row[], already: Set<number>): Promise<Row[][]> {
   const pool = rows.filter((r) => !already.has(r.id));
   if (pool.length < 2 || !process.env.ANTHROPIC_API_KEY) return [];
+
+  const byName = new Map(pool.map((r) => [norm(r.name), r]));
+  const key = pool.map((r) => norm(r.name)).sort().join("|");
+  // Ячейка своя у людей и у мест: иначе они затирают друг друга и кэш
+  // не срабатывает никогда.
+  const cacheKey = `${userId}:${kind}`;
+  const hit = cache.get(cacheKey);
+  if (hit && hit.key === key && Date.now() - hit.at < CACHE_MS) {
+    return hit.groups
+      .map((names) => names.map((n) => byName.get(n)).filter(Boolean) as Row[])
+      .filter((g) => g.length > 1);
+  }
+
   try {
     const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -127,7 +147,6 @@ async function smartGroups(userId: string, rows: Row[], already: Set<number>): P
     logClaude(userId, "dedupe", "haiku", (m as any).usage);
     const block = m.content.find((b) => b.type === "tool_use");
     const raw = (block && block.type === "tool_use" ? (block.input as any)?.groups : []) || [];
-    const byName = new Map(pool.map((r) => [norm(r.name), r]));
     const out: Row[][] = [];
     for (const g of raw) {
       const names: string[] = Array.isArray(g?.names) ? g.names : [];
@@ -135,6 +154,7 @@ async function smartGroups(userId: string, rows: Row[], already: Set<number>): P
       const uniq = [...new Map(found.map((r) => [r.id, r])).values()];
       if (uniq.length > 1) out.push(uniq);
     }
+    cache.set(cacheKey, { key, at: Date.now(), groups: out.map((g) => g.map((r) => norm(r.name))) });
     return out;
   } catch {
     return [];
@@ -156,7 +176,7 @@ export async function findDuplicates(userId: string, kind: "people" | "places"):
     g.forEach((r) => used.add(r.id));
   }
 
-  for (const g of await smartGroups(userId, rows, used)) {
+  for (const g of await smartGroups(userId, kind, rows, used)) {
     const fresh = g.filter((r) => !used.has(r.id));
     if (fresh.length < 2) continue;
     const { keep, merge } = pickKeep(fresh);

@@ -41,7 +41,7 @@ const STR: Record<string, any> = {
     left: "осталось",
     cats: { document: "Документ", moment: "Момент", thing: "Вещь", person: "Люди", place: "Место", project: "Проект", info: "Инфо", other: "Другое" },
     dupTitle: "Похоже, это одно и то же",
-    dupHint: "Один человек записан несколькими карточками — записи о нём разбросаны. Объединишь — всё соберётся в одну.",
+    dupHint: "Один человек записан несколькими карточками — записи о нём разбросаны. Объединишь — всё соберётся в одну. Объединение не отменяется: если это всё-таки разные люди, жми «Разные».",
     dupSame: "написано одинаково",
     dupSimilar: "похоже на одно и то же",
     dupMerge: "Объединить",
@@ -64,7 +64,7 @@ const STR: Record<string, any> = {
     left: "left",
     cats: { document: "Document", moment: "Moment", thing: "Thing", person: "People", place: "Place", project: "Project", info: "Info", other: "Other" },
     dupTitle: "Looks like the same thing",
-    dupHint: "One person recorded as several cards — their entries are scattered. Merge and it all comes together.",
+    dupHint: "One person recorded as several cards — their entries are scattered. Merge and it all comes together. Merging can't be undone: if they really are different people, tap «Different».",
     dupSame: "written the same",
     dupSimilar: "looks like the same",
     dupMerge: "Merge",
@@ -122,7 +122,7 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
 
   return (
     <div>
-      {items.length === 0 ? (
+      {items.length === 0 && dupes.length > 0 ? null : items.length === 0 ? (
         <div className="card" style={{ padding: "20px 18px", textAlign: "center" }}>
           <i className="ti ti-checks" style={{ fontSize: 30, color: "#0F6E56" }} />
           <div style={{ fontSize: 15, fontWeight: 500, marginTop: 8 }}>{s.empty}</div>
