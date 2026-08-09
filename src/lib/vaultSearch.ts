@@ -49,7 +49,12 @@ function stems(q: string): string[] {
 
 function scoreOf(hay: string, st: string[]): number {
   const h = norm(hay);
-  return st.filter((x) => h.includes(x)).length;
+  const hits = st.filter((x) => h.includes(x)).length;
+  if (!hits) return 0;
+  // Совпали ВСЕ слова запроса — это уже не случайность, а именно та вещь.
+  // «Код от домофона» должен поднимать заметку, где это написано дословно,
+  // выше всего, что просто похоже по смыслу на коды и двери.
+  return hits + (hits === st.length && st.length >= 2 ? 4 : 0);
 }
 
 // Насколько «весит» смысловое совпадение рядом с буквенным. Похожесть 0..1
