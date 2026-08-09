@@ -21,11 +21,11 @@ alter table notes       add column if not exists embedding vector(1536);
 alter table saved_items add column if not exists embedding vector(1536);
 alter table books       add column if not exists embedding vector(1536);
 
--- 2) Approximate-nearest-neighbour indexes (cosine distance).
-create index if not exists memories_embedding_idx    on memories    using ivfflat (embedding vector_cosine_ops) with (lists = 100);
-create index if not exists notes_embedding_idx       on notes       using ivfflat (embedding vector_cosine_ops) with (lists = 100);
-create index if not exists saved_items_embedding_idx on saved_items using ivfflat (embedding vector_cosine_ops) with (lists = 100);
-create index if not exists books_embedding_idx       on books       using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+-- 2) Индексов здесь НЕТ намеренно.
+--    ivfflat учится на данных в момент создания, а в этот момент колонка
+--    пуста — такой индекс потом молча промахивается мимо нужных строк.
+--    На наших объёмах точный перебор быстрее миллисекунд. Когда данных
+--    станет много, индекс ставится отдельно: см. pgvector_fix_index.sql.
 
 -- 3) One search function for every shelf.
 --    The table name is passed in, so adding a shelf later needs no new
