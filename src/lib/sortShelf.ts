@@ -141,7 +141,10 @@ export async function rememberRule(userId: string, title: string, was: string, s
   }
 }
 
-// Правила человека одной строкой — их подмешивают в разбор новых вещей.
+// Правила человека компактной строкой. Их подмешивают ДВАЖДЫ: в текст задания
+// и в описание самого поля «категория». Второе решает: проверено вживую, что
+// одного упоминания в задании мало — жёсткая инструкция в схеме («чек →
+// документ») перебивает его, и поправка человека остаётся без последствий.
 export async function rulesHint(userId: string): Promise<string> {
   try {
     const { data } = await supabaseAdmin()
@@ -153,11 +156,16 @@ export async function rulesHint(userId: string): Promise<string> {
       .limit(12);
     const rows = (data as any[]) || [];
     if (!rows.length) return "";
-    const list = rows.map((r) => `«${r.subject}» → ${r.should_be}`).join("; ");
-    return `\n\nЭТОТ ЧЕЛОВЕК УЖЕ ПОПРАВЛЯЛ ТЕБЯ — учитывай: ${list}. Если новая вещь похожа на одну из них, ставь ту же категорию.`;
+    return rows.map((r) => `«${r.subject}» → ${r.should_be}`).join("; ");
   } catch {
     return "";
   }
+}
+
+// Кусок для текста задания.
+export function rulesBlock(list: string): string {
+  if (!list) return "";
+  return `\n\nЛИЧНЫЕ ПРАВИЛА ЭТОГО ЧЕЛОВЕКА (он сам их установил, поправив тебя раньше): ${list}. Они ВАЖНЕЕ общих правил категорий. Если новая вещь похожа на одну из них — ставь ту категорию, которую он выбрал, даже если по общему правилу вышло бы иначе.`;
 }
 
 export async function listRules(userId: string): Promise<{ id: string; subject: string; should_be: string; times: number }[]> {
