@@ -18,11 +18,11 @@ const CATS = [
 const catMeta = (k: string) => CATS.find((x) => x.key === k) || CATS[7];
 
 const STR: Record<string, any> = {
-  ru: { manage: "Выбрать", manageDone: "Готово", selected: "выбрано", moveTo: "В папку", newFolder: "Новая папка…", delSel: "Удалить", delAsk: "Удалить выбранные безвозвратно?", rename: "Переименовать", renameAsk: "Новое имя папки:", delFolder: "Убрать папку", delFolderAsk: "Убрать эту папку? Файлы останутся, просто выйдут из папки.", cancel2: "Отмена", tidy: "Разложить по папкам", tidyBusy: "Раскладываю…", tidyDone: "Готово — разложил по папкам", misc: "Разное", all: "Все", add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
-  en: { manage: "Select", manageDone: "Done", selected: "selected", moveTo: "To folder", newFolder: "New folder…", delSel: "Delete", delAsk: "Delete selected permanently?", rename: "Rename", renameAsk: "New folder name:", delFolder: "Remove folder", delFolderAsk: "Remove this folder? Files stay, just leave the folder.", cancel2: "Cancel", tidy: "Sort into folders", tidyBusy: "Sorting…", tidyDone: "Done — sorted into folders", misc: "Other", all: "All", add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
-  uk: { manage: "Вибрати", manageDone: "Готово", selected: "вибрано", moveTo: "У папку", newFolder: "Нова папка…", delSel: "Видалити", delAsk: "Видалити вибрані безповоротно?", rename: "Перейменувати", renameAsk: "Нове ім'я папки:", delFolder: "Прибрати папку", delFolderAsk: "Прибрати цю папку? Файли залишаться, просто вийдуть із папки.", cancel2: "Скасувати", tidy: "Розкласти по папках", tidyBusy: "Розкладаю…", tidyDone: "Готово — розклав по папках", misc: "Інше", all: "Усі", add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
-  fr: { manage: "Sélectionner", manageDone: "Terminé", selected: "sélectionné(s)", moveTo: "Vers dossier", newFolder: "Nouveau dossier…", delSel: "Supprimer", delAsk: "Supprimer définitivement la sélection ?", rename: "Renommer", renameAsk: "Nouveau nom du dossier :", delFolder: "Retirer le dossier", delFolderAsk: "Retirer ce dossier ? Les fichiers restent, ils quittent juste le dossier.", cancel2: "Annuler", tidy: "Ranger par dossiers", tidyBusy: "Rangement…", tidyDone: "Terminé — rangé par dossiers", misc: "Divers", all: "Tout", add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
-  es: { manage: "Seleccionar", manageDone: "Listo", selected: "seleccionado(s)", moveTo: "A carpeta", newFolder: "Nueva carpeta…", delSel: "Eliminar", delAsk: "¿Eliminar la selección permanentemente?", rename: "Renombrar", renameAsk: "Nuevo nombre de carpeta:", delFolder: "Quitar carpeta", delFolderAsk: "¿Quitar esta carpeta? Los archivos quedan, solo salen de la carpeta.", cancel2: "Cancelar", tidy: "Ordenar en carpetas", tidyBusy: "Ordenando…", tidyDone: "Listo — ordenado en carpetas", misc: "Otros", all: "Todo", add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
+  ru: { rootFolder: "Все папки", newSub: "Новая подпапка здесь…", manage: "Выбрать", manageDone: "Готово", selected: "выбрано", moveTo: "В папку", newFolder: "Новая папка…", delSel: "Удалить", delAsk: "Удалить выбранные безвозвратно?", rename: "Переименовать", renameAsk: "Новое имя папки:", delFolder: "Убрать папку", delFolderAsk: "Убрать эту папку? Файлы останутся, просто выйдут из папки.", cancel2: "Отмена", tidy: "Разложить по папкам", tidyBusy: "Раскладываю…", tidyDone: "Готово — разложил по папкам", misc: "Разное", all: "Все", add: "Добавить фото или документ", sub: "Сфоткай чек, гарантию или важный момент — я пойму и сохраню смысл. Или просто пришли фото боту.", analyzing: "Разбираю фото…", empty: "Здесь будет твоя визуальная память. Сфоткай первый документ, квитанцию или момент.", review: "проверь", addNote: "Добавить заметку", editNote: "Изменить заметку", notePh: "Что важного в этом моменте? Опиши место, событие, что с этим делать…", save: "Сохранить", cancel: "Отмена", recording: "Запись… нажми, чтобы остановить", recHint: "Можно наговорить голосом", changeCat: "Сменить категорию", catNames: { moment: "Важные моменты", document: "Документы и квитанции", thing: "Вещи", person: "Люди и семья", place: "Места и поездки", project: "Проекты", info: "Полезная информация", other: "Другое" } },
+  en: { rootFolder: "All folders", newSub: "New subfolder here…", manage: "Select", manageDone: "Done", selected: "selected", moveTo: "To folder", newFolder: "New folder…", delSel: "Delete", delAsk: "Delete selected permanently?", rename: "Rename", renameAsk: "New folder name:", delFolder: "Remove folder", delFolderAsk: "Remove this folder? Files stay, just leave the folder.", cancel2: "Cancel", tidy: "Sort into folders", tidyBusy: "Sorting…", tidyDone: "Done — sorted into folders", misc: "Other", all: "All", add: "Add a photo or document", sub: "Snap a receipt, warranty or a meaningful moment — I'll understand and keep its meaning. Or just send a photo to the bot.", analyzing: "Reading the photo…", empty: "Your visual memory will live here. Snap your first document, receipt or moment.", review: "review", addNote: "Add a note", editNote: "Edit note", notePh: "What matters about this moment? Place, event, what to do with it…", save: "Save", cancel: "Cancel", recording: "Recording… tap to stop", recHint: "You can speak it", changeCat: "Change category", catNames: { moment: "Key moments", document: "Documents & receipts", thing: "Things", person: "People & family", place: "Places & trips", project: "Projects", info: "Useful info", other: "Other" } },
+  uk: { rootFolder: "Усі папки", newSub: "Нова підпапка тут…", manage: "Вибрати", manageDone: "Готово", selected: "вибрано", moveTo: "У папку", newFolder: "Нова папка…", delSel: "Видалити", delAsk: "Видалити вибрані безповоротно?", rename: "Перейменувати", renameAsk: "Нове ім'я папки:", delFolder: "Прибрати папку", delFolderAsk: "Прибрати цю папку? Файли залишаться, просто вийдуть із папки.", cancel2: "Скасувати", tidy: "Розкласти по папках", tidyBusy: "Розкладаю…", tidyDone: "Готово — розклав по папках", misc: "Інше", all: "Усі", add: "Додати фото або документ", sub: "Сфоткай чек, гарантію чи важливий момент — я зрозумію й збережу сенс. Або просто надішли фото боту.", analyzing: "Розпізнаю фото…", empty: "Тут буде твоя візуальна пам'ять. Сфоткай перший документ, квитанцію чи момент.", review: "перевір", addNote: "Додати нотатку", editNote: "Змінити нотатку", notePh: "Що важливого в цьому моменті? Місце, подія, що з цим робити…", save: "Зберегти", cancel: "Скасувати", recording: "Запис… натисни, щоб зупинити", recHint: "Можна наговорити голосом", changeCat: "Змінити категорію", catNames: { moment: "Важливі моменти", document: "Документи та квитанції", thing: "Речі", person: "Люди та сім'я", place: "Місця та поїздки", project: "Проєкти", info: "Корисна інформація", other: "Інше" } },
+  fr: { rootFolder: "Tous les dossiers", newSub: "Nouveau sous-dossier ici…", manage: "Sélectionner", manageDone: "Terminé", selected: "sélectionné(s)", moveTo: "Vers dossier", newFolder: "Nouveau dossier…", delSel: "Supprimer", delAsk: "Supprimer définitivement la sélection ?", rename: "Renommer", renameAsk: "Nouveau nom du dossier :", delFolder: "Retirer le dossier", delFolderAsk: "Retirer ce dossier ? Les fichiers restent, ils quittent juste le dossier.", cancel2: "Annuler", tidy: "Ranger par dossiers", tidyBusy: "Rangement…", tidyDone: "Terminé — rangé par dossiers", misc: "Divers", all: "Tout", add: "Ajouter une photo ou un document", sub: "Photographie un reçu, une garantie ou un moment important — je comprends et garde le sens. Ou envoie la photo au bot.", analyzing: "Je lis la photo…", empty: "Ta mémoire visuelle vivra ici. Photographie ton premier document, reçu ou moment.", review: "à vérifier", addNote: "Ajouter une note", editNote: "Modifier la note", notePh: "Qu'est-ce qui compte dans ce moment ? Lieu, événement, quoi en faire…", save: "Enregistrer", cancel: "Annuler", recording: "Enregistrement… touche pour arrêter", recHint: "Tu peux le dicter", changeCat: "Changer de catégorie", catNames: { moment: "Moments clés", document: "Documents & reçus", thing: "Objets", person: "Personnes & famille", place: "Lieux & voyages", project: "Projets", info: "Infos utiles", other: "Autre" } },
+  es: { rootFolder: "Todas las carpetas", newSub: "Nueva subcarpeta aquí…", manage: "Seleccionar", manageDone: "Listo", selected: "seleccionado(s)", moveTo: "A carpeta", newFolder: "Nueva carpeta…", delSel: "Eliminar", delAsk: "¿Eliminar la selección permanentemente?", rename: "Renombrar", renameAsk: "Nuevo nombre de carpeta:", delFolder: "Quitar carpeta", delFolderAsk: "¿Quitar esta carpeta? Los archivos quedan, solo salen de la carpeta.", cancel2: "Cancelar", tidy: "Ordenar en carpetas", tidyBusy: "Ordenando…", tidyDone: "Listo — ordenado en carpetas", misc: "Otros", all: "Todo", add: "Añadir foto o documento", sub: "Fotografía un recibo, una garantía o un momento importante — yo entiendo y guardo el sentido. O simplemente envía la foto al bot.", analyzing: "Leyendo la foto…", empty: "Aquí vivirá tu memoria visual. Fotografía tu primer documento, recibo o momento.", review: "por revisar", addNote: "Añadir nota", editNote: "Editar nota", notePh: "¿Qué es lo importante de este momento? Lugar, evento, qué hacer con ello…", save: "Guardar", cancel: "Cancelar", recording: "Grabando… toca para detener", recHint: "Puedes dictarlo por voz", changeCat: "Cambiar categoría", catNames: { moment: "Momentos clave", document: "Documentos y recibos", thing: "Cosas", person: "Personas y familia", place: "Lugares y viajes", project: "Proyectos", info: "Información útil", other: "Otro" } },
 };
 
 function resizeImage(file: File, max = 1568): Promise<Blob> {
@@ -61,6 +61,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   const [manage, setManage] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [moveOpen, setMoveOpen] = useState(false);
+  const [path, setPath] = useState<string[]>([]); // текущий путь внутри категории (дерево папок)
   const [tidying, setTidying] = useState(false);
   const [tidyMsg, setTidyMsg] = useState<string>("");
 
@@ -84,6 +85,11 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   }
   function exitManage() { setManage(false); setSel(new Set()); setMoveOpen(false); }
 
+  // Имя новой папки с учётом текущего пути: внутри открытой папки создаёт подпапку.
+  function newFolderPath(name: string): string {
+    const clean = name.replace(/\//g, " ").trim();
+    return activeCat !== "all" && path.length ? [...path, clean].join("/") : clean;
+  }
   // Переместить выбранные в папку (folder=null — вынуть из папки).
   async function moveSelected(folder: string | null) {
     const ids = [...sel];
@@ -99,23 +105,35 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
     exitManage();
     try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "bulkDelete", ids }) }); } catch {}
   }
-  // Переименовать папку: переносим все её карточки на новое имя (id-based, надёжно
-  // и для папок из эвристики, которых ещё нет в базе).
-  async function renameFolder(catKey: string, name: string) {
-    const to = (prompt(s.renameAsk, name) || "").trim();
-    if (!to || to === name) return;
-    const ids = items.filter((m) => m.category === catKey && folderOf(m) === name).map((m) => m.id);
-    if (!ids.length) return;
-    setItems((p) => p.map((m) => (ids.includes(m.id) ? { ...m, folder: to } : m)));
-    try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "bulkFolder", ids, folder: to }) }); } catch {}
+  // Все вещи под папкой parentPath+seg (включая вложенные). rewrite строит новый путь.
+  async function rewriteSubtree(catKey: string, parentPath: string[], seg: string, rewrite: (segs: string[]) => string[]) {
+    const idx = parentPath.length;
+    const affected = items.filter((m) => {
+      if (m.category !== catKey) return false;
+      const pp = pathOf(m);
+      return pp.length > idx && pp.slice(0, idx).join("/") === parentPath.join("/") && pp[idx] === seg;
+    });
+    if (!affected.length) return;
+    // Группируем по новому пути и шлём пачками.
+    const byFolder = new Map<string | null, string[]>();
+    for (const m of affected) {
+      const next = rewrite(pathOf(m));
+      const folder = next.length ? next.join("/") : null;
+      if (!byFolder.has(folder)) byFolder.set(folder, []);
+      byFolder.get(folder)!.push(m.id);
+    }
+    for (const [folder, ids] of byFolder) await setFolderForIds(ids, folder);
   }
-  // Убрать папку: карточки не удаляем, просто вынимаем (folder=null).
-  async function removeFolder(catKey: string, name: string) {
+  // Переименовать подпапку: меняем сегмент на её уровне, вложенное сохраняется.
+  async function renameSubfolder(catKey: string, parentPath: string[], seg: string) {
+    const to = (prompt(s.renameAsk, seg) || "").replace(/\//g, " ").trim();
+    if (!to || to === seg) return;
+    await rewriteSubtree(catKey, parentPath, seg, (segs) => segs.map((x, i) => (i === parentPath.length ? to : x)));
+  }
+  // Убрать подпапку: содержимое поднимается на уровень выше (файлы не удаляются).
+  async function removeSubfolder(catKey: string, parentPath: string[], seg: string) {
     if (!confirm(s.delFolderAsk)) return;
-    const ids = items.filter((m) => m.category === catKey && folderOf(m) === name).map((m) => m.id);
-    if (!ids.length) return;
-    setItems((p) => p.map((m) => (ids.includes(m.id) ? { ...m, folder: null } : m)));
-    try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "bulkFolder", ids, folder: null }) }); } catch {}
+    await rewriteSubtree(catKey, parentPath, seg, (segs) => segs.filter((_, i) => i !== parentPath.length));
   }
 
   // Имена уже существующих папок (для меню «В папку»).
@@ -189,6 +207,15 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
   // Папка вещи: сохранённая в БД, иначе — мгновенная эвристика (для фото, загруженных
   // до появления папок). Так стопки видны сразу, ещё до бэкфилла.
   const folderOf = (m: Memory) => (m.folder && m.folder.trim()) || deriveFolder(m.category, m.title, m.fields) || null;
+  // Путь вещи как массив сегментов: «Документы/Паспорта» → ["Документы","Паспорта"].
+  const pathOf = (m: Memory): string[] => (folderOf(m) || "").split("/").map((x) => x.trim()).filter(Boolean);
+  const eqPath = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+  // Установить путь как строку папки для набора id (переименование/перемещение по дереву).
+  async function setFolderForIds(ids: string[], folder: string | null) {
+    if (!ids.length) return;
+    setItems((p) => p.map((m) => (ids.includes(m.id) ? { ...m, folder } : m)));
+    try { await fetch("/api/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "bulkFolder", ids, folder }) }); } catch {}
+  }
 
   const used = CATS.filter((c) => items.some((m) => m.category === c.key));
 
@@ -294,7 +321,9 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
     const order: string[] = [];
     const groups = new Map<string, Memory[]>();
     for (const m of arr) {
-      const key = folderOf(m) || "__none__";
+      // В общей ленте группируем по ВЕРХНЕМУ сегменту пути (вложенное — внутри).
+      const pp = pathOf(m);
+      const key = pp.length ? pp[0] : "__none__";
       if (!groups.has(key)) { groups.set(key, []); order.push(key); }
       groups.get(key)!.push(m);
     }
@@ -312,7 +341,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
       <div key={`${catKey}:${name}`} style={{ position: "relative", width: 232, flexShrink: 0 }}>
         <div style={{ position: "absolute", inset: 0, transform: "translate(7px,7px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
         <div style={{ position: "absolute", inset: 0, transform: "translate(3.5px,3.5px)", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14 }} />
-        <button onClick={() => setActiveCat(catKey)} className="card" style={{ position: "relative", display: "block", width: "100%", padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", border: "1px solid var(--border)" }}>
+        <button onClick={() => { setActiveCat(catKey); setPath([name]); }} className="card" style={{ position: "relative", display: "block", width: "100%", padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", border: "1px solid var(--border)" }}>
           <div style={{ height: 150, background: cover ? `center/cover no-repeat url(${cover})` : cm.bg, display: "flex", alignItems: cover ? "flex-start" : "center", justifyContent: cover ? "flex-start" : "center", position: "relative" }}>
             {!cover && <i className={`ti ${cm.icon}`} style={{ fontSize: 34, color: cm.c }} />}
             <span style={{ position: "absolute", top: 8, left: 8, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "#fff", background: "rgba(0,0,0,.55)", padding: "3px 8px", borderRadius: 999, backdropFilter: "blur(2px)" }}><i className="ti ti-folder" style={{ fontSize: 12 }} />{arr.length}</span>
@@ -358,7 +387,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
             <button onClick={() => setMoveOpen((v) => !v)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}><i className="ti ti-folder-plus" style={{ fontSize: 15 }} />{s.moveTo}</button>
             {moveOpen && (
               <div style={{ position: "absolute", right: 0, top: "calc(100% + 6px)", minWidth: 200, maxHeight: 280, overflowY: "auto", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 11, boxShadow: "0 8px 24px rgba(0,0,0,.14)", padding: 6, zIndex: 6 }}>
-                <button onClick={() => { const n = (prompt(s.newFolder) || "").trim(); if (n) moveSelected(n); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 8, border: "none", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}><i className="ti ti-folder-plus" style={{ fontSize: 15 }} />{s.newFolder}</button>
+                <button onClick={() => { const n = (prompt(activeCat !== "all" && path.length ? s.newSub : s.newFolder) || "").trim(); if (n) moveSelected(newFolderPath(n)); }} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 8, border: "none", background: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}><i className="ti ti-folder-plus" style={{ fontSize: 15 }} />{activeCat !== "all" && path.length ? s.newSub : s.newFolder}</button>
                 {allFolders.map((f) => (
                   <button key={f} onClick={() => moveSelected(f)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 8, border: "none", background: "none", color: "var(--text)", fontSize: 13, cursor: "pointer" }}><i className="ti ti-folder" style={{ fontSize: 15, color: "var(--text-3)" }} />{f}</button>
                 ))}
@@ -380,11 +409,11 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
         <>
           {/* Полка категорий: счётчики + фильтр. «Все» — общая лента. */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 15 }}>
-            <button onClick={() => setActiveCat("all")} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === "all" ? "var(--accent)" : "var(--border)"), background: activeCat === "all" ? "var(--accent)" : "var(--surface)", color: activeCat === "all" ? "#fff" : "var(--text-2)" }}>
+            <button onClick={() => { setActiveCat("all"); setPath([]); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === "all" ? "var(--accent)" : "var(--border)"), background: activeCat === "all" ? "var(--accent)" : "var(--surface)", color: activeCat === "all" ? "#fff" : "var(--text-2)" }}>
               {s.all}<span style={{ opacity: 0.75 }}>{items.length}</span>
             </button>
             {used.map((c) => (
-              <button key={c.key} onClick={() => setActiveCat(activeCat === c.key ? "all" : c.key)} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === c.key ? c.c : "var(--border)"), background: activeCat === c.key ? c.bg : "var(--surface)", color: activeCat === c.key ? c.c : "var(--text-2)" }}>
+              <button key={c.key} onClick={() => { setActiveCat(activeCat === c.key ? "all" : c.key); setPath([]); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, padding: "6px 12px", borderRadius: 999, cursor: "pointer", border: "1px solid " + (activeCat === c.key ? c.c : "var(--border)"), background: activeCat === c.key ? c.bg : "var(--surface)", color: activeCat === c.key ? c.c : "var(--text-2)" }}>
                 <i className={`ti ${c.icon}`} style={{ fontSize: 14 }} />{s.catNames[c.key]}<span style={{ opacity: 0.75 }}>{items.filter((m) => m.category === c.key).length}</span>
               </button>
             ))}
@@ -395,7 +424,7 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
               const inCat = items.filter((m) => m.category === c.key);
               return (
                 <div key={c.key} style={{ marginBottom: 24 }}>
-                  <button onClick={() => setActiveCat(c.key)} style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 10px", background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--text)" }}>
+                  <button onClick={() => { setActiveCat(c.key); setPath([]); }} style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 10px", background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--text)" }}>
                     <span style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${c.icon}`} style={{ fontSize: 16, color: c.c }} /></span>
                     <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.catNames[c.key]}</span>
                     <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>{inCat.length}</span>
@@ -417,37 +446,70 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
             })
           ) : (
             (() => {
-              const inCat = items.filter((m) => m.category === activeCat);
-              const { folderKeys: foldered, groups, loose } = folderize(inCat);
               const cm = catMeta(activeCat);
+              const inCat = items.filter((m) => m.category === activeCat);
+              // На текущем уровне пути: прямые карточки + подпапки (следующий сегмент).
+              const under = inCat.filter((m) => { const pp = pathOf(m); return pp.length >= path.length && eqPath(pp.slice(0, path.length), path); });
+              const direct = under.filter((m) => pathOf(m).length === path.length);
+              const subOrder: string[] = [];
+              const subMap = new Map<string, Memory[]>();
+              for (const m of under) {
+                const pp = pathOf(m);
+                if (pp.length > path.length) {
+                  const seg = pp[path.length];
+                  if (!subMap.has(seg)) { subMap.set(seg, []); subOrder.push(seg); }
+                  subMap.get(seg)!.push(m);
+                }
+              }
               const Grid = (arr: Memory[]) => (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>{arr.map(Card)}</div>
               );
+              const fullPath = (seg: string) => [...path, seg].join("/");
               return (
-                <div style={{ display: "grid", gap: 20 }}>
-                  {foldered.map((k) => (
-                    <div key={k}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 2px 10px" }}>
-                        <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className="ti ti-folder" style={{ fontSize: 14, color: cm.c }} /></span>
-                        <span style={{ fontSize: 14, fontWeight: 600 }}>{k}</span>
-                        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>{groups.get(k)!.length}</span>
-                        <button onClick={() => renameFolder(activeCat, k)} title={s.rename} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "2px 4px", marginLeft: 4 }}><i className="ti ti-pencil" style={{ fontSize: 14 }} /></button>
-                        <button onClick={() => removeFolder(activeCat, k)} title={s.delFolder} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "2px 4px" }}><i className="ti ti-folder-off" style={{ fontSize: 14 }} /></button>
-                      </div>
-                      {Grid(groups.get(k)!)}
+                <div style={{ display: "grid", gap: 18 }}>
+                  {/* Хлебные крошки: категория › папка › подпапка. */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 13.5 }}>
+                    <button onClick={() => setPath([])} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: path.length ? "var(--accent)" : "var(--text)", fontWeight: 600, padding: 0 }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${cm.icon}`} style={{ fontSize: 14, color: cm.c }} /></span>{s.catNames[activeCat]}
+                    </button>
+                    {path.map((seg, i) => (
+                      <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <i className="ti ti-chevron-right" style={{ fontSize: 13, color: "var(--text-3)" }} />
+                        <button onClick={() => setPath(path.slice(0, i + 1))} style={{ background: "none", border: "none", cursor: "pointer", color: i === path.length - 1 ? "var(--text)" : "var(--accent)", fontWeight: 600, padding: 0 }}>{seg}</button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Подпапки текущего уровня — плитки, клик уводит внутрь. */}
+                  {subOrder.length > 0 && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+                      {subOrder.map((seg) => {
+                        const arr = subMap.get(seg)!;
+                        const cover = arr.find((m) => m.image_url)?.image_url || null;
+                        return (
+                          <div key={seg} className="card" style={{ padding: 0, overflow: "hidden", position: "relative" }}>
+                            <button onClick={() => setPath([...path, seg])} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+                              <div style={{ height: 120, background: cover ? `center/cover no-repeat url(${cover})` : cm.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>{!cover && <i className="ti ti-folder" style={{ fontSize: 32, color: cm.c }} />}</div>
+                              <div style={{ padding: "10px 12px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ width: 24, height: 24, borderRadius: 7, background: cm.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className="ti ti-folder" style={{ fontSize: 14, color: cm.c }} /></span>
+                                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{seg}</span>
+                                <span style={{ fontSize: 12.5, color: "var(--text-3)", marginLeft: "auto" }}>{arr.length}</span>
+                              </div>
+                            </button>
+                            <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 2 }}>
+                              <button onClick={() => renameSubfolder(activeCat, path, seg)} title={s.rename} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.5)", color: "#fff", cursor: "pointer" }}><i className="ti ti-pencil" style={{ fontSize: 13 }} /></button>
+                              <button onClick={() => removeSubfolder(activeCat, path, seg)} title={s.delFolder} style={{ width: 26, height: 26, borderRadius: 7, border: "none", background: "rgba(0,0,0,.5)", color: "#fff", cursor: "pointer" }}><i className="ti ti-folder-off" style={{ fontSize: 13 }} /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                  {loose.length > 0 && (
-                    <div>
-                      {foldered.length > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 2px 10px" }}>
-                          <span style={{ width: 24, height: 24, borderRadius: 7, background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center" }}><i className="ti ti-dots" style={{ fontSize: 14, color: "var(--text-3)" }} /></span>
-                          <span style={{ fontSize: 14, fontWeight: 600 }}>{s.misc}</span>
-                          <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>{loose.length}</span>
-                        </div>
-                      )}
-                      {Grid(loose)}
-                    </div>
+                  )}
+
+                  {/* Карточки, лежащие прямо на этом уровне. */}
+                  {direct.length > 0 && Grid(direct)}
+                  {direct.length === 0 && subOrder.length === 0 && (
+                    <div style={{ fontSize: 13.5, color: "var(--text-3)", padding: "8px 2px" }}>{s.misc}: 0</div>
                   )}
                 </div>
               );
