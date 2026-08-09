@@ -94,10 +94,17 @@ async function addMentions(kind: "people" | "places", ids: number[]): Promise<Ma
   return out;
 }
 
-// Кого оставить: у кого больше записей; при равенстве — более полное имя
-// («Евгения» вместо «Женя»), потому что его потом понятнее читать.
+// Кого оставить.
+//
+// Обычно — того, у кого больше записей. Но если разница в одну-две записи,
+// решает полнота имени: «Игрь» с одним упоминанием не должен побеждать
+// «Игоря Михайловича» — останется исковерканное голосом написание, и человек
+// будет всю жизнь видеть его в разделе «Люди».
 function pickKeep(group: Row[]): { keep: Row; merge: Row[] } {
-  const sorted = [...group].sort((a, b) => b.count - a.count || b.name.length - a.name.length);
+  const sorted = [...group].sort((a, b) => {
+    if (Math.abs(a.count - b.count) <= 2) return b.name.length - a.name.length;
+    return b.count - a.count;
+  });
   return { keep: sorted[0], merge: sorted.slice(1) };
 }
 
