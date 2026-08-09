@@ -243,9 +243,31 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
               </button>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-            {(activeCat === "all" ? items : items.filter((m) => m.category === activeCat)).map(Card)}
-          </div>
+          {activeCat === "all" ? (
+            /* «Все» — полочки: категория = полка с заголовком и горизонтальной лентой карточек. */
+            used.map((c) => {
+              const inCat = items.filter((m) => m.category === c.key);
+              return (
+                <div key={c.key} style={{ marginBottom: 24 }}>
+                  <button onClick={() => setActiveCat(c.key)} style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 2px 10px", background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--text)" }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 8, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${c.icon}`} style={{ fontSize: 16, color: c.c }} /></span>
+                    <span style={{ fontSize: 15.5, fontWeight: 600 }}>{s.catNames[c.key]}</span>
+                    <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>{inCat.length}</span>
+                    <i className="ti ti-chevron-right" style={{ fontSize: 15, color: "var(--text-3)" }} />
+                  </button>
+                  <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 6, scrollbarWidth: "thin" }}>
+                    {inCat.map((m) => (
+                      <div key={m.id} style={{ width: 232, flexShrink: 0 }}>{Card(m)}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+              {items.filter((m) => m.category === activeCat).map(Card)}
+            </div>
+          )}
         </>
       )}
     </div>
