@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { searchEverything } from "@/lib/vaultSearch";
 
 export const runtime = "nodejs";
 
 type Hit = { type: string; title: string; sub?: string; href: string };
 
 // Приоритет показа по типу (меньше = выше).
+// Полка смыслового поиска → тип в выдаче (у типов уже есть приоритет и иконки).
+const SEM_TYPE: Record<string, string> = { diary: "entry", note: "note", knowledge: "knowledge", doc: "memory", book: "book" };
+
 const PR: Record<string, number> = {
   entry: 0, dream: 1, goal: 1, task: 2, insight: 2, person: 3, place: 3,
-  project: 3, path: 3, deed: 4, promise: 4, gratitude: 4, knowledge: 5, memory: 5, finance: 6,
+  project: 3, path: 3, deed: 4, promise: 4, gratitude: 4, note: 4, book: 5, knowledge: 5, memory: 5, finance: 6,
 };
 
 // Полный поиск по всему содержимому пользователя. Каждая выборка устойчива к
@@ -89,6 +93,30 @@ export async function GET(req: NextRequest) {
     // Финансы (по заметке к операции)
     simple("finance_tx", "note", "finance", "/finance"),
   ]);
+
+  // Поиск ПО СМЫСЛУ поверх буквального. Выше искали подстроку: «жильё» не
+  // найдёт «квартиру», хотя лежит ровно то, что нужно. Добавляем то, что
+  // нашлось по смыслу, и не дублируем уже найденное.
+  //
+  // Только на запросах от четырёх букв: короткие — это почти всегда навигация
+  // («дне», «фин»), там смысл лишний, а лишний вызов в наборе текста — нет.
+  if (q.length >= 4) {
+    try {
+      const found = await searchEverything(uid, q, 8);
+      const have = new Set(results.map((r) => `${r.type}|${r.title.toLowerCase()}`));
+      for (const f of found) {
+        const type = SEM_TYPE[f.src] || "entry";
+        const title = (f.title || f.text || "").trim().slice(0, 80);
+        if (!title) continue;
+        const k = `${type}|${title.toLowerCase()}`;
+        if (have.has(k)) continue;
+        have.add(k);
+        results.push({ type, title, sub: f.date || undefined, href: f.path || "/" });
+      }
+    } catch {
+      // смысловой слой не настроен — остаётся буквальный поиск, как раньше
+    }
+  }
 
   results.sort((a, b) => (PR[a.type] ?? 9) - (PR[b.type] ?? 9));
   return NextResponse.json({ ok: true, results: results.slice(0, 24) });

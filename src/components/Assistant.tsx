@@ -30,6 +30,8 @@ const HIT_ICON: Record<string, string> = {
   gratitude: "ti-heart",
   knowledge: "ti-bookmark",
   memory: "ti-camera",
+  note: "ti-note",
+  book: "ti-book",
   finance: "ti-wallet",
 };
 
