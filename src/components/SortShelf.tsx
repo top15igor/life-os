@@ -14,6 +14,7 @@ type Rule = { id: string; subject: string; should_be: string; times: number };
 type Mention = { date: string; text: string };
 type Ent = { id: number; name: string; count: number; mentions?: Mention[] };
 type Dup = { kind: "people" | "places"; keep: Ent; merge: Ent[]; why: "same" | "similar" };
+type Theme = { tagId: number; tag: string; title: string; why: string; count: number; first: string; last: string; samples: string[] };
 
 const CATS = [
   { key: "document", icon: "ti-file-text", c: "#185FA5", bg: "#E6F1FB" },
@@ -50,6 +51,13 @@ const STR: Record<string, any> = {
     dupKeep: "останется",
     dupMentions: "упом.",
     dupNoMentions: "нет записей",
+    thTitle: "Похоже, это одна тема",
+    thHint: "Порядок в дневнике виден задним числом: в момент записи это просто вечер вторника, и только спустя месяцы становится ясно, что был один сюжет. Соберёшь темой — записи свяжутся в одну нить, оставаясь на своих местах.",
+    thMake: "Собрать темой",
+    thSkip: "Не тема",
+    thEntries: "записей",
+    thFrom: "с",
+    thTo: "по",
   },
   en: {
     empty: "Nothing to sort — the wardrobe figured it all out.",
@@ -74,15 +82,34 @@ const STR: Record<string, any> = {
     dupKeep: "stays",
     dupMentions: "ment.",
     dupNoMentions: "no entries",
+    thTitle: "Looks like one story",
+    thHint: "Order in a diary only shows in hindsight: at the time it was just a Tuesday evening. Group it and the entries link into one thread while staying where they are.",
+    thMake: "Make it a theme",
+    thSkip: "Not a theme",
+    thEntries: "entries",
+    thFrom: "from",
+    thTo: "to",
   },
 };
 
-export default function SortShelf({ initial, rules: initialRules, dupes: initialDupes, locale }: { initial: Item[]; rules: Rule[]; dupes: Dup[]; locale: string }) {
+export default function SortShelf({ initial, rules: initialRules, dupes: initialDupes, themes: initialThemes, locale }: { initial: Item[]; rules: Rule[]; dupes: Dup[]; themes: Theme[]; locale: string }) {
   const s = STR[locale] || STR.ru;
   const [items, setItems] = useState<Item[]>(initial);
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [dupes, setDupes] = useState<Dup[]>(initialDupes || []);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [themes, setThemes] = useState<Theme[]>(initialThemes || []);
+
+  async function theme(t: Theme, make: boolean) {
+    setThemes((p) => p.filter((x) => x.tagId !== t.tagId));
+    try {
+      await fetch("/api/sort", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(make ? { action: "theme", tagId: t.tagId, title: t.title } : { action: "themeSkip", tagId: t.tagId }),
+      });
+    } catch {}
+  }
 
   // Ключ группы: у людей и мест номера свои, поэтому берём и то и другое.
   const dupKey = (d: Dup) => `${d.kind}:${d.keep.id}`;
@@ -125,7 +152,7 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
 
   return (
     <div>
-      {items.length === 0 && dupes.length > 0 ? null : items.length === 0 ? (
+      {items.length === 0 && (dupes.length > 0 || themes.length > 0) ? null : items.length === 0 ? (
         <div className="card" style={{ padding: "20px 18px", textAlign: "center" }}>
           <i className="ti ti-checks" style={{ fontSize: 30, color: "#0F6E56" }} />
           <div style={{ fontSize: 15, fontWeight: 500, marginTop: 8 }}>{s.empty}</div>
@@ -215,6 +242,40 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                   </button>
                   <button onClick={() => skip(d)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" }}>
                     <i className="ti ti-x" style={{ fontSize: 15 }} />{s.dupSkip}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {themes.length > 0 && (
+        <div style={{ marginTop: items.length || dupes.length ? 22 : 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{s.thTitle}</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.5, marginBottom: 10 }}>{s.thHint}</div>
+          <div style={{ display: "grid", gap: 9 }}>
+            {themes.map((t) => (
+              <div key={t.tagId} className="card" style={{ padding: 12 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <i className="ti ti-timeline-event" style={{ fontSize: 16, color: "var(--accent)" }} />
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{t.title}</span>
+                  <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
+                    {t.count} {s.thEntries}{t.first ? ` · ${s.thFrom} ${t.first.slice(0, 7)} ${s.thTo} ${t.last.slice(0, 7)}` : ""}
+                  </span>
+                </div>
+                {t.why && <div style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5, marginTop: 5 }}>{t.why}</div>}
+                <div style={{ marginTop: 7, display: "grid", gap: 3 }}>
+                  {t.samples.map((q, i) => (
+                    <div key={i} style={{ fontSize: 12.5, color: "var(--text-3)", lineHeight: 1.45 }}>«{q}»</div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => theme(t, true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}>
+                    <i className="ti ti-folder-plus" style={{ fontSize: 15 }} />{s.thMake}
+                  </button>
+                  <button onClick={() => theme(t, false)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 9, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", fontSize: 13, cursor: "pointer" }}>
+                    <i className="ti ti-x" style={{ fontSize: 15 }} />{s.thSkip}
                   </button>
                 </div>
               </div>
