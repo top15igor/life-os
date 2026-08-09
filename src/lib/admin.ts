@@ -241,12 +241,33 @@ export async function getAdminData() {
 
   // Расход AI (если запущен usage.sql).
   const OPENAI_KINDS = new Set(["transcribe"]); // Whisper — OpenAI, остальное Claude
-  let usage: { total: number; last7: number; perWriter: number; anthropic: number; openai: number; byKind: { kind: string; cents: number }[]; byDay: { day: string; anthropic: number; openai: number }[] } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [], byDay: [] };
+
+  // Что тратят агенты на проверки. Считаем ЧЕСТНО, двумя частями:
+  //   1) их собственные вызовы (сочинить пробы, отсудить, поставить диагноз);
+  //   2) всё, что тестовые сообщения тратят, проходя через самого бота, —
+  //      роутер, разбор записи, реакция друга. Это тоже деньги, потраченные
+  //      на проверку, и без этой части цифра занижена в разы.
+  const AGENT_KINDS = new Set(["probe-gen", "probe-judge", "selftest-judge", "diagnosis", "question-coach", "fix-agent"]);
+  const TEST_CHATS = [-777001, -777002];
+  let testUserIds: string[] = [];
+  try {
+    const { data: tu } = await db.from("users").select("id").in("chat_id", TEST_CHATS);
+    testUserIds = ((tu as any[]) || []).map((u) => String(u.id));
+  } catch { /* нет служебных пользователей — значит агенты ещё не гоняли */ }
+  const testIdSet = new Set(testUserIds);
+  let usage: {
+    total: number; last7: number; perWriter: number; anthropic: number; openai: number;
+    byKind: { kind: string; cents: number }[];
+    byDay: { day: string; anthropic: number; openai: number }[];
+    agents: { total: number; last7: number; share: number; byKind: { kind: string; cents: number }[] };
+  } = { total: 0, last7: 0, perWriter: 0, anthropic: 0, openai: 0, byKind: [], byDay: [], agents: { total: 0, last7: 0, share: 0, byKind: [] } };
   try {
     const since7 = dayStr(Date.now() - 7 * 86400000);
-    const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at").order("created_at", { ascending: false }).limit(100000);
+    const { data: ev } = await db.from("usage").select("kind, cost_cents, created_at, user_id").order("created_at", { ascending: false }).limit(100000);
     const rows = ev || [];
     let total = 0, last7 = 0, anthropic = 0, openai = 0;
+    let agentsTotal = 0, agents7 = 0;
+    const agentsByKind: Record<string, number> = {};
     const bk: Record<string, number> = {};
     const byDayMap: Record<string, { a: number; o: number }> = {};
     for (const r of rows) {
@@ -258,6 +279,11 @@ export async function getAdminData() {
       const day = (r.created_at || "").slice(0, 10);
       if (day >= since7) last7 += c;
       bk[r.kind] = (bk[r.kind] || 0) + c;
+      if (AGENT_KINDS.has(r.kind) || (r.user_id && testIdSet.has(String(r.user_id)))) {
+        agentsTotal += c;
+        if (day >= since7) agents7 += c;
+        agentsByKind[r.kind] = (agentsByKind[r.kind] || 0) + c;
+      }
       if (day) {
         const e = byDayMap[day] || { a: 0, o: 0 };
         if (isOpenai) e.o += c; else e.a += c;
@@ -265,7 +291,17 @@ export async function getAdminData() {
       }
     }
     const byDay = Object.entries(byDayMap).map(([day, v]) => ({ day, anthropic: v.a, openai: v.o })).sort((x, y) => x.day.localeCompare(y.day));
-    usage = { total, last7, perWriter: writers ? total / writers : 0, anthropic, openai, byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents), byDay };
+    usage = {
+      total, last7, perWriter: writers ? total / writers : 0, anthropic, openai,
+      byKind: Object.entries(bk).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents),
+      byDay,
+      agents: {
+        total: agentsTotal,
+        last7: agents7,
+        share: total ? agentsTotal / total : 0,
+        byKind: Object.entries(agentsByKind).map(([kind, cents]) => ({ kind, cents })).sort((a, b) => b.cents - a.cents),
+      },
+    };
   } catch {}
 
   // Обратная связь (если запущен feedback.sql).

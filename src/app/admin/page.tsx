@@ -38,6 +38,12 @@ const KIND_INFO: Record<string, { label: string; desc: string }> = {
   knowledge_ask: { label: "Вопрос к базе знаний", desc: "Поиск-ответ по сохранённым материалам." },
   assistant: { label: "Помощник-гид", desc: "AI-подсказки «куда нажать» в окне Помощник." },
   summarize: { label: "Перегенерация резюме", desc: "Пересборка резюме записи после правки." },
+  "probe-gen": { label: "Агент-исследователь: сочинение проб", desc: "Придумывает свежие формулировки, которыми люди могли бы написать боту." },
+  "probe-judge": { label: "Агент-исследователь: оценка ответа", desc: "Вторая модель судит, понял ли бот пробу и сделал ли то, о чём просили." },
+  "selftest-judge": { label: "Самопроверка: оценка качества", desc: "Судит ответы бота в полном прогоне: по существу ли, без выдумок, тёплым ли тоном." },
+  diagnosis: { label: "Утренний диагност", desc: "Раз в сутки сводит падения, сбои и жалобы в разбор с приоритетами." },
+  "question-coach": { label: "Редактор вопросов", desc: "Раз в неделю смотрит отклик на вечерние вопросы и предлагает переписать слабые." },
+  "fix-agent": { label: "Агент-починщик", desc: "Готовит правку и открывает pull request по нажатию кнопки." },
 };
 
 
@@ -445,6 +451,30 @@ export default async function AdminPage() {
                 <span style={{ alignSelf: "center", color: "var(--text-3)" }}>← сравнивай левое с Console → Billing</span>
               </div>
               <div className="card" style={{ padding: "4px 14px" }}>
+                {d.usage.agents?.total > 0 && (
+                  <div style={{ background: "var(--surface-2)", borderRadius: 12, padding: "13px 15px", marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600 }}>🤖 Проверки агентов</span>
+                      <span style={{ fontSize: 18, fontWeight: 600 }}>${(d.usage.agents.total / 100).toFixed(2)}</span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 3 }}>
+                      за 7 дней ${(d.usage.agents.last7 / 100).toFixed(2)} · это {Math.round(d.usage.agents.share * 100)}% всего расхода
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 6, lineHeight: 1.5 }}>
+                      Считается всё, что уходит на проверки: и собственные вызовы агентов, и то, что их тестовые
+                      сообщения тратят внутри бота — роутер, разбор записи, реакция. Частота задаётся расписанием
+                      в базе: самопроверка каждые 15 минут, исследователь каждые 2 часа.
+                    </div>
+                    <div style={{ marginTop: 9 }}>
+                      {d.usage.agents.byKind.slice(0, 8).map((k: any) => (
+                        <div key={k.kind} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, padding: "3px 0" }}>
+                          <span style={{ color: "var(--text-2)" }}>{KIND_INFO[k.kind]?.label || k.kind}</span>
+                          <span style={{ color: "var(--text-2)", whiteSpace: "nowrap" }}>${(k.cents / 100).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {d.usage.byKind.map((k: any, i: number) => {
                   const info = KIND_INFO[k.kind];
                   return (
