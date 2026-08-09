@@ -491,43 +491,42 @@ export default function MemoryArchive({ initial, locale }: { initial: Memory[]; 
 
   // Плитка-папка: стопка карточек с обложкой первого фото, названием и счётчиком.
   // Клик открывает категорию (там папка раскрыта секцией).
-  // Эмодзи-обложка по смыслу папки (иначе 📁).
-  const folderEmoji = (name: string): string => {
+  // Стиль папки по смыслу: тонкая иконка (как в меню) + свой цвет для каждого типа,
+  // чтобы папки не сливались в одинаковые синие.
+  const folderStyle = (name: string): { icon: string; c: string; bg: string } => {
     const n = name.toLowerCase();
-    if (/паспорт|passport/.test(n)) return "🛂";
-    if (/свидетельств|свідоцтв|certificate/.test(n)) return "📜";
-    if (/чек|receipt|квитанц|invoice/.test(n)) return "🧾";
-    if (/налог|ипн|іпн|инн|tax/.test(n)) return "🏛️";
-    if (/прав|licen|водит/.test(n)) return "🚗";
-    if (/виза|visa|внж|permit/.test(n)) return "🛫";
-    if (/гаранти|warranty/.test(n)) return "🛡️";
-    if (/билет|ticket/.test(n)) return "🎫";
-    if (/код|доступ|пароль|password|key|token/.test(n)) return "🔑";
-    if (/медиц|health|анализ|рецепт|prescription/.test(n)) return "💊";
-    if (/фото|photo|момент|moment/.test(n)) return "🖼️";
-    return "📁";
+    if (/паспорт|passport/.test(n)) return { icon: "ti-id", c: "#534AB7", bg: "#EEEDFE" };
+    if (/свидетельств|свідоцтв|certificate/.test(n)) return { icon: "ti-certificate", c: "#0F6E56", bg: "#E1F5EE" };
+    if (/чек|receipt|квитанц|invoice/.test(n)) return { icon: "ti-receipt", c: "#B45309", bg: "#FAEEDA" };
+    if (/налог|ипн|іпн|инн|tax/.test(n)) return { icon: "ti-building-bank", c: "#185FA5", bg: "#E6F1FB" };
+    if (/прав|licen|водит|авто|car|техпаспорт|транспорт/.test(n)) return { icon: "ti-car", c: "#0369A1", bg: "#E0F2FE" };
+    if (/виза|visa|внж|permit/.test(n)) return { icon: "ti-plane", c: "#0284C7", bg: "#E0F2FE" };
+    if (/гаранти|warranty/.test(n)) return { icon: "ti-shield", c: "#15803D", bg: "#E3F5E9" };
+    if (/билет|ticket/.test(n)) return { icon: "ti-ticket", c: "#7C3AED", bg: "#F0E9FE" };
+    if (/код|доступ|пароль|password|key|token/.test(n)) return { icon: "ti-key", c: "#BE123C", bg: "#FCE7EC" };
+    if (/медиц|health|анализ|рецепт|prescription/.test(n)) return { icon: "ti-pill", c: "#DC2626", bg: "#FDE7E7" };
+    return { icon: "ti-file-text", c: "#5F5E5A", bg: "#F1EFE8" };
   };
 
-  // Папка: цветной корпус в тон категории + «язычок», листы-стопка торчат сверху,
-  // эмодзи-обложка и счётчик. Подпись — ПОД папкой обычным текстом (читаемо в тёмной теме).
+  // Папка = стопка документов: несколько листов со смещением, на верхнем — иконка типа
+  // в фирменном стиле (тонкая, как в меню) и свой цвет. Подпись под стопкой.
   const FolderVisual = (catKey: string, name: string, count: number) => {
-    const cm = catMeta(catKey);
+    const f = folderStyle(name);
+    const sheet: any = { position: "absolute", borderRadius: 11, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 1px 4px rgba(0,0,0,.08)" };
     return (
       <div>
-        <div style={{ position: "relative", height: 104, marginBottom: 9 }}>
-          {/* листы-стопка, торчат из папки */}
-          <div style={{ position: "absolute", left: 34, right: 30, top: 4, height: 46, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 5, transform: "rotate(-3deg)" }} />
-          <div style={{ position: "absolute", left: 30, right: 34, top: 2, height: 48, background: "#fff", border: "1px solid var(--border)", borderRadius: 5, transform: "rotate(2deg)" }} />
-          {/* язычок папки */}
-          <div style={{ position: "absolute", left: 16, top: 16, width: 78, height: 18, background: cm.c, borderRadius: "7px 7px 0 0" }} />
-          {/* корпус папки */}
-          <div style={{ position: "absolute", left: 8, right: 8, top: 26, bottom: 0, background: cm.c, borderRadius: "4px 12px 12px 12px", boxShadow: "0 3px 8px rgba(0,0,0,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 30, lineHeight: 1 }}>{folderEmoji(name)}</span>
-            <span style={{ position: "absolute", right: 9, bottom: 8, fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,.28)", borderRadius: 999, padding: "1px 8px" }}>{count}</span>
+        <div style={{ position: "relative", height: 118, marginBottom: 9 }}>
+          {/* задние листы стопки */}
+          <div style={{ ...sheet, left: 22, right: 10, top: 12, bottom: 10, transform: "rotate(3deg)" }} />
+          <div style={{ ...sheet, left: 10, right: 22, top: 8, bottom: 8, transform: "rotate(-2deg)" }} />
+          {/* верхний лист с иконкой типа */}
+          <div style={{ ...sheet, left: 16, right: 16, top: 0, bottom: 4, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,.12)" }}>
+            <span style={{ width: 52, height: 52, borderRadius: 13, background: f.bg, display: "flex", alignItems: "center", justifyContent: "center" }}><i className={`ti ${f.icon}`} style={{ fontSize: 28, color: f.c }} /></span>
+            <span style={{ position: "absolute", right: 10, bottom: 9, fontSize: 12, fontWeight: 700, color: "#fff", background: f.c, borderRadius: 999, padding: "1px 8px" }}>{count}</span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 2px" }}>
-          <i className="ti ti-folder-filled" style={{ fontSize: 15, color: cm.c, flexShrink: 0 }} />
+          <i className={`ti ${f.icon}`} style={{ fontSize: 15, color: f.c, flexShrink: 0 }} />
           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
         </div>
       </div>
