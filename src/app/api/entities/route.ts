@@ -59,5 +59,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Удалить карточку сущности (и её связи). Безопасно для «пустышек» без записей;
+  // если записи есть — удаляем и связи (упоминания в записях останутся текстом).
+  if (action === "delete") {
+    try { await db.from(cfg.link).delete().eq(cfg.fk, id); } catch {}
+    await db.from(cfg.table).delete().eq("id", id).eq("user_id", user.id);
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ ok: false, error: "bad action" }, { status: 400 });
 }

@@ -48,7 +48,7 @@ const STR: Record<string, any> = {
     dupSimilar: "похоже на одно и то же",
     dupMerge: "Объединить",
     dupSkip: "Разные", dupRename: "Переименовать", dupRenameHint: "Разные люди? Переименуй, чтобы не путать в будущем.", save: "Сохранить", 
-    dupKeep: "останется", dupChoose: "Оставить это имя",
+    dupKeep: "останется", dupChoose: "Оставить это имя", dupDelete: "Удалить карточку", dupDeleteAsk: "Удалить эту карточку? Она исчезнет из «Люди/Места».",
     dupMentions: "упом.",
     dupNoMentions: "нет записей",
     thTitle: "Похоже, это одна тема",
@@ -79,7 +79,7 @@ const STR: Record<string, any> = {
     dupSimilar: "looks like the same",
     dupMerge: "Merge",
     dupSkip: "Different", dupRename: "Rename", dupRenameHint: "Different people? Rename so you won't confuse them later.", save: "Save", 
-    dupKeep: "stays", dupChoose: "Keep this name",
+    dupKeep: "stays", dupChoose: "Keep this name", dupDelete: "Delete card", dupDeleteAsk: "Delete this card? It disappears from People/Places.",
     dupMentions: "ment.",
     dupNoMentions: "no entries",
     thTitle: "Looks like one story",
@@ -123,6 +123,14 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
     setDupes((p) => p.map((d) => ({ ...d, keep: d.keep.id === id ? { ...d.keep, name: nm } : d.keep, merge: d.merge.map((m) => (m.id === id ? { ...m, name: nm } : m)) })));
     setEditEnt(null);
     try { await fetch("/api/entities", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, id, action: "rename", name: nm }) }); } catch {}
+  }
+
+  async function deleteEnt(kind: "people" | "places", id: number) {
+    if (!confirm(s.dupDeleteAsk)) return;
+    setDupes((p) => p
+      .map((d) => (d.keep.id === id ? null : { ...d, merge: d.merge.filter((m) => m.id !== id) }))
+      .filter((d): d is Dup => !!d && (d.merge.length > 0)));
+    try { await fetch("/api/entities", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, id, action: "delete" }) }); } catch {}
   }
 
   async function merge(d: Dup) {
@@ -248,6 +256,7 @@ export default function SortShelf({ initial, rules: initialRules, dupes: initial
                         <>
                           <span style={{ fontSize: 14, fontWeight: keep ? 600 : 400 }}>{e.name}</span>
                           <button onClick={() => { setEditEnt(`${d.kind}:${e.id}`); setEntDraft(e.name); }} title={s.dupRename} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "0 2px" }}><i className="ti ti-pencil" style={{ fontSize: 12 }} /></button>
+                          <button onClick={() => deleteEnt(d.kind, e.id)} title={s.dupDelete} style={{ background: "none", border: "none", color: "var(--text-3)", cursor: "pointer", padding: "0 2px" }}><i className="ti ti-trash" style={{ fontSize: 12 }} /></button>
                         </>
                       )}
                       <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
