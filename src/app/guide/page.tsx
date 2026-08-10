@@ -196,7 +196,7 @@ export default async function GuidePage() {
 
         <GuideAccordion items={items} tocLabel={tocLabel} />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="guide" />
     </div>
   );
 }

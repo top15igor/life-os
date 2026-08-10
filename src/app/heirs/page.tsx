@@ -36,7 +36,7 @@ export default async function HeirsPage() {
         <p style={{ fontSize: 14, color: "var(--text-2)", margin: "0 0 18px" }}>{SUB[locale] || SUB.ru}</p>
         <HeirsManager initial={heirs as any} locale={locale} />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="heirs" />
     </div>
   );
 }

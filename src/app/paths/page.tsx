@@ -33,7 +33,7 @@ export default async function PathsPage() {
         <PageHead icon="ti-route" color="#4f46e5" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <PathsView paths={paths} host={host} locale={locale} />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="paths" />
     </div>
   );
 }

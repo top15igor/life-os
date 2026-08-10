@@ -34,7 +34,7 @@ export default async function ReferralsPage() {
         <BackLink locale={locale} />
         <ReferralTreeView locale={locale} tree={tree} status={status} inviteLink={inviteLink} />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="referrals" />
     </div>
   );
 }

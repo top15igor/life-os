@@ -38,7 +38,7 @@ export default async function SortPage() {
           <SortShelf initial={items} rules={rules} dupes={[...dupPeople, ...dupPlaces]} themes={themes} locale={locale} />
         </div>
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="sort" />
     </div>
   );
 }
