@@ -105,9 +105,25 @@ export default function Sidebar({ navLabels, brand, locale }: { navLabels: Recor
     <>
       <aside className="sidebar">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 10 }}>
-          <Link href="/about" className="brand" style={{ textDecoration: "none", padding: "4px 9px 4px", flex: 1, minWidth: 0 }}>
+          {/* Логотип ведёт домой, на «Сегодня». Раньше он уводил на презентацию
+              продукта — но человек, который уже внутри, нажимает на логотип не
+              затем, чтобы почитать, что такое LIFE OS. */}
+          <Link href="/" className="brand" style={{ textDecoration: "none", padding: "4px 9px 4px", flex: 1, minWidth: 0 }}>
             <i className="ti ti-flower" style={{ fontSize: 18, color: "var(--accent)" }} />
             <span>{brand}</span>
+          </Link>
+          {/* А презентация — отдельной иконкой рядом: она нужна, чтобы показать
+              продукт другому человеку, и открывается новой вкладкой, чтобы не
+              терять то, что открыто сейчас. */}
+          <Link
+            href="/about"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="О проекте"
+            title="О проекте — страница для друзей"
+            style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+          >
+            <i className="ti ti-world" style={{ fontSize: 16 }} />
           </Link>
           <button
             onClick={toggleTheme}
