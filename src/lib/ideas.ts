@@ -79,8 +79,10 @@ async function savePrefs(userId: string, p: any): Promise<void> {
 export async function getDraft(userId: string): Promise<Draft | null> {
   try {
     const d = (await prefs(userId)).ideaDraft as Draft | undefined;
-    // Сутки — щедро: человек может отвлечься и вернуться вечером.
-    if (!d?.msgs?.length || Date.now() - Number(d.at || 0) > 24 * 3600_000) return null;
+    // Две недели. Сутки оказались мало: человек обсуждает идею вечером, на
+    // следующий день занят, возвращается через три дня — и разговор к тому
+    // времени уже стирался вместе со всем, что он наговорил.
+    if (!d?.msgs?.length || Date.now() - Number(d.at || 0) > 14 * 24 * 3600_000) return null;
     return d;
   } catch {
     return null;
