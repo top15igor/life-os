@@ -2461,7 +2461,11 @@ async function handleUpdate(req: NextRequest) {
       }
       await sendChatAction(chatId, "typing");
       await remember(user.id, "u", q);
-      const ans = await askLife(user.id, q, lng);
+      // Через AI-друга, а не через «спроси свою жизнь»: у него та же сильная
+      // модель и весь архив, но вдобавок руки — он может по ходу разговора
+      // поставить напоминание, поправить трату, найти документ. Джарвис,
+      // который только рассуждает, — это справочная, а не помощник.
+      const ans = await talkToCompanion(user.id, user.name ?? null, q, lng as any, (user as any).tz_offset);
       await remember(user.id, "a", ans);
       await saveChat(user.id, q, ans);
       await sendMessage(chatId, mdToTelegram(ans) || "—");
