@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { tipsOfDay } from "@/lib/tips";
+import { sectionTips, hasSectionTips } from "@/lib/sectionTips";
 import { hints } from "@/lib/hints";
 import { lifeCase } from "@/lib/cases";
 import type { Locale } from "@/lib/i18n";
@@ -33,9 +34,12 @@ export default function TipsRail({ locale, section }: { locale: Locale; section?
   // него добавляем ещё одну общую подсказку, чтобы колонка не пустовала.
   const kase = lifeCase(section, locale);
   const about = section ? hints(locale)[section] : undefined;
-  // Четыре подсказки: места по вертикали хватает, а одна на всю колонку
-  // выглядела случайной. Если кейса или пояснения нет — добавляем ещё по одной.
-  const tips = tipsOfDay(locale, 4 + (kase ? 0 : 1) + (about ? 0 : 1), section);
+  // Подсказки — про ЭТОТ раздел. Общий набор берём только там, где своего нет
+  // (служебные страницы), иначе на каждой странице висело бы одно и то же.
+  const want = 4 + (kase ? 0 : 1) + (about ? 0 : 1);
+  // Есть свои — показываем ТОЛЬКО их. Добивать общими нельзя: именно так на всех
+  // страницах и оказывался один и тот же совет.
+  const tips = hasSectionTips(section) ? sectionTips(section, locale, want) : tipsOfDay(locale, want, section);
   if (!tips.length && !about && !kase) return null;
 
   return (
