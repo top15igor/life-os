@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import { getEntries, getEntityMeta, people as peopleOf, type Entry } from "@/lib/queries";
@@ -60,6 +61,7 @@ export default async function PeoplePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="people" />
         <PageHead icon="ti-user-heart" color="#ec4899" title={t.nav.people} hint={h.people} />
         {staleList.length > 0 && (
           <div style={{ marginBottom: 16 }}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { tipsOfDay } from "@/lib/tips";
 import { sectionTips, hasSectionTips } from "@/lib/sectionTips";
 import { hints } from "@/lib/hints";
@@ -28,7 +29,10 @@ const TITLE: Record<string, string> = {
   es: "Prueba esto",
 };
 
-export default function TipsRail({ locale, section }: { locale: Locale; section?: string }) {
+export default async function TipsRail({ locale, section }: { locale: Locale; section?: string }) {
+  // Выключено в Профиле — колонки нет вовсе.
+  if ((await cookies()).get("tips")?.value === "off") return null;
+
   // Порядок в колонке: сначала «зачем это в жизни» (кейс), потом «что это»
   // (пояснение), потом общая подсказка. Чего нет — то пропускаем, и вместо
   // него добавляем ещё одну общую подсказку, чтобы колонка не пустовала.

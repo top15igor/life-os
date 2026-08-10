@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import IdeasBoard from "@/components/IdeasBoard";
 import { getLocale } from "@/lib/locale";
@@ -32,6 +33,7 @@ export default async function IdeasPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="ideas" />
         <div style={{ maxWidth: 640 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 6 }}>
             <i className="ti ti-bulb" style={{ fontSize: 24, color: "var(--accent)" }} />

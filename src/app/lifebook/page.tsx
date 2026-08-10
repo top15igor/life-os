@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import BookOfLife from "@/components/BookOfLife";
@@ -31,6 +32,7 @@ export default async function LifeBookPage({ searchParams }: { searchParams: Pro
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main narrow">
+        <CaseStrip locale={locale} section="lifebook" />
         <PageHead icon="ti-book-2" color="var(--accent)" title={t.nav.lifebook} hint={h.lifebook} />
         <a href="/heirs" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", marginBottom: 16, padding: "12px 14px", borderRadius: 14, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}>
           <i className="ti ti-users-group" style={{ fontSize: 20, color: "#ec4899", flexShrink: 0 }} />

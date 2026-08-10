@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Lab from "@/components/Lab";
@@ -28,6 +29,7 @@ export default async function LabPage({ searchParams }: { searchParams: Promise<
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="lab" />
         <PageHead icon="ti-flask-2" color="var(--insight)" title={t.nav.lab} hint={h.lab} />
         {premium ? (
           <>

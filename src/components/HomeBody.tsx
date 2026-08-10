@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import HomeSwitch from "@/components/HomeSwitch";
 import {
@@ -185,6 +186,7 @@ export default async function HomeBody() {
     <div className="shell has-tips">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="today" />
         <EnterInBrowser link={personalLink} locale={locale} />
         <BindEmailPrompt hasEmail={hasEmail} locale={locale} googleEnabled={!!process.env.GOOGLE_CLIENT_ID} />
         <PinPrompt hasPin={hasPin} locale={locale} hasEmail={hasEmail} />

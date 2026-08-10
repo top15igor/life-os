@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import RemindersView from "@/components/RemindersView";
 import { getLocale } from "@/lib/locale";
@@ -40,6 +41,7 @@ export default async function RemindersPage({ searchParams }: { searchParams: Pr
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="reminders" />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <i className="ti ti-bell" style={{ fontSize: 24, color: "var(--accent)" }} />
           <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>{s.title}</h1>

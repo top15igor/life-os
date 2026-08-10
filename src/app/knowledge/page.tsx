@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import KnowledgeManager from "@/components/KnowledgeManager";
@@ -27,6 +28,7 @@ export default async function KnowledgePage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="knowledge" />
         <PageHead icon="ti-bookmarks" color="#6d5efc" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
 
         <KnowledgeManager initial={items} locale={locale} />

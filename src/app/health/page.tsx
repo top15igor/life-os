@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import TrendChart from "@/components/TrendChart";
@@ -157,6 +158,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="health" />
         <PageHead icon="ti-heartbeat" color="#ef4444" title={t.nav.wellness} hint={h.wellness} />
         <SubTabs base="/health" active={tab} tabs={tabs} />
 

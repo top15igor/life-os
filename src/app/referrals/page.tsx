@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import Sidebar from "@/components/Sidebar";
 import BackLink from "@/components/BackLink";
@@ -31,6 +32,7 @@ export default async function ReferralsPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="referrals" />
         <BackLink locale={locale} />
         <ReferralTreeView locale={locale} tree={tree} status={status} inviteLink={inviteLink} />
       </main>

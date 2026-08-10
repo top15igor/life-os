@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import DiaryView from "@/components/DiaryView";
@@ -46,6 +47,7 @@ export default async function DiaryPage({ searchParams }: { searchParams: Promis
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="diary" />
         <PageHead icon="ti-book" color="var(--accent)" title={t.diaryTitle} hint={h.diary} />
         {(() => { const qa = QA[locale] || QA.ru; return <QuickAdd placeholder={qa.placeholder} button={qa.button} saving={qa.saving} hint={qa.hint} locale={locale} />; })()}
         <DiaryView entries={entries} t={t} locale={locale} initial={{ tag: sp.tag || "", category: sp.category || "", person: sp.person || "" }} />

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Link from "next/link";
@@ -82,6 +83,7 @@ export default async function PlacesPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="places" />
         <PageHead icon="ti-plane-departure" color="#06b6d4" title={t.nav.places} hint={h.places} />
 
         {/* Хронология путешествий */}

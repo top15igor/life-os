@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import FinanceTracker from "@/components/FinanceTracker";
@@ -33,6 +34,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="finance" />
         <PageHead icon="ti-wallet" color="#10b981" title={t.nav.finance} hint={h.finance} />
         <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "var(--surface-2)", borderRadius: 12, padding: 4, width: "fit-content", flexWrap: "wrap" }}>
           {SCOPES.map((s) => {

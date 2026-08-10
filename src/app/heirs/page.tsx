@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
@@ -28,6 +29,7 @@ export default async function HeirsPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="heirs" />
         <Link href="/lifebook" style={{ color: "var(--accent)", fontSize: 13 }}>← {t.nav.lifebook}</Link>
         <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0 4px" }}>
           <i className="ti ti-users-group" style={{ fontSize: 24, color: "#ec4899" }} />

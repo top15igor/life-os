@@ -125,6 +125,19 @@ details.adm[open] > summary .adm-chev { transform: rotate(180deg); }
    помещаются, начиная с 1700px ширины окна (220 + 1200 + 260 = 1680,
    плюс запас). Ниже — скрыта полностью,
    чтобы не отбирать ширину у контента. */
+/* Подсказки выключены в Профиле — прячем и полоску, и колонку. */
+html[data-tips="off"] .case-strip, html[data-tips="off"] .tips-rail { display: none !important; }
+
+/* Кейс раздела одной строкой — там, где правой колонки нет (до 1700px).
+   Иначе на Air 13 и Pro 14 человек вообще не видел ни кейсов, ни подсказок. */
+.case-strip { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 11px 13px; border-radius: 12px; background: var(--surface); border: 1px solid var(--card-border); box-shadow: var(--shadow); }
+.case-strip-emoji { font-size: 19px; line-height: 1.35; flex-shrink: 0; }
+.case-strip-text { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-2); }
+.case-strip-x { flex-shrink: 0; background: none; border: none; padding: 2px; cursor: pointer; color: var(--text-3); line-height: 1; }
+.case-strip-x:hover { color: var(--text-2); }
+.case-strip-x i { font-size: 16px; }
+@media (min-width: 1700px) { .case-strip { display: none; } }
+
 .tips-rail { display: none; }
 @media (min-width: 1700px) {
   .tips-rail {

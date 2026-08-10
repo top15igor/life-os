@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Biographer from "@/components/Biographer";
@@ -28,6 +29,7 @@ export default async function BiographerPage({ searchParams }: { searchParams: P
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main narrow">
+        <CaseStrip locale={locale} section="biographer" />
         <PageHead icon="ti-messages" color="var(--insight)" title={t.nav.biographer} hint={h.biographer} />
         {premium ? (
           <>

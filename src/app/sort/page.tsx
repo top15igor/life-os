@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import SortShelf from "@/components/SortShelf";
 import { getLocale } from "@/lib/locale";
@@ -29,6 +30,7 @@ export default async function SortPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="sort" />
         <div style={{ maxWidth: 620 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 6 }}>
             <i className="ti ti-inbox" style={{ fontSize: 24, color: "var(--accent)" }} />

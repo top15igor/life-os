@@ -35,11 +35,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Язык страницы: был жёстко «ru» на всех пяти языках — поисковики и
   // программы для незрячих считали испанскую версию русской.
   const locale = await getLocale();
+  // Подсказки в разделах можно выключить в Профиле. Ставим атрибут на <html>,
+  // чтобы скрыть их стилями сразу, без мигания и без проброса через все страницы.
+  const tipsOff = c.get("tips")?.value === "off";
   const themePref = c.get("theme")?.value;
   const serverTheme = themePref === "dark" ? "dark" : themePref === "light" ? "light" : undefined;
   const themeScript = `(function(){try{var t=${JSON.stringify(themePref || "light")};var d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';if(t==='auto'){matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){document.documentElement.dataset.theme=e.matches?'dark':'light';});}}catch(e){}})();`;
   return (
-    <html lang={locale} data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme} suppressHydrationWarning>
+    <html lang={locale} data-app={inApp ? "1" : undefined} data-solo={solo ? "1" : undefined} data-theme={serverTheme} data-tips={tipsOff ? "off" : undefined} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         {/* Шрифт иконок лежит у нас (public/fonts), а не на стороннем CDN: если бы

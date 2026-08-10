@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ProfileButtons } from "@/components/ProfileActions";
+import TipsToggle from "@/components/TipsToggle";
 import LangSwitcher from "@/components/LangSwitcher";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import ChatToneSettings from "@/components/ChatToneSettings";
@@ -22,7 +23,9 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
   const s = STR[locale] || STR.ru;
   const initial = (user.name || "?").trim().charAt(0).toUpperCase() || "?";
   const showPushToggle = !!user.chat_id; // пуши приходят только тем, кто в Telegram
-  const tc = (await cookies()).get("theme")?.value;
+  const jar = await cookies();
+  const tipsOn = jar.get("tips")?.value !== "off";
+  const tc = jar.get("theme")?.value;
   const themePref = (tc === "light" || tc === "dark" || tc === "auto" ? tc : "auto") as "auto" | "light" | "dark";
 
   // Тон общения с ботом (AI-друг) — хранится в morning_prefs, читаем мягко.
@@ -86,6 +89,9 @@ export default async function ProfileBody({ user, locale }: { user: CurrentUser;
 
       {/* Тон общения с ботом (AI-друг: чат + голос) — здесь же, не в пушах */}
       <ChatToneSettings locale={locale} initial={chatPrefs} />
+
+      {/* Подсказки в разделах — можно выключить, когда всё уже знаешь */}
+      <TipsToggle locale={locale} initialOn={tipsOn} />
 
       {/* Твои данные → отдельная страница */}
       <Link href="/profile/data" className="card" style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 16 }}>

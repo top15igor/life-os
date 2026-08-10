@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import NotesManager from "@/components/NotesManager";
 import ListsBlock from "@/components/ListsBlock";
@@ -19,6 +20,7 @@ export default async function NotesPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="notes" />
         <div style={{ maxWidth: 620 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
             <i className="ti ti-note" style={{ fontSize: 24, color: "var(--accent)" }} />

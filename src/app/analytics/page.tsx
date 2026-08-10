@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import PageHead from "@/components/PageHead";
@@ -58,6 +59,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       <div className="shell">
         <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
         <main className="main">
+        <CaseStrip locale={locale} section="analytics" />
           <PageHead icon="ti-sparkles" color="var(--insight)" title={t.nav.analytics} hint={h.analytics} />
           <AnalyticsPitch locale={locale} progress={{ count: entryCount, need: FREE_AT }} />
         </main>

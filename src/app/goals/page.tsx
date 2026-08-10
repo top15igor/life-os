@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import SubTabs from "@/components/SubTabs";
@@ -55,6 +56,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="goals" />
         <PageHead icon="ti-target" color="#3b82f6" title={t.nav.plans} hint={h.plans} />
         <SubTabs base="/goals" active={tab} tabs={tabs} />
 

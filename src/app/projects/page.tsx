@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import ProjectsManager from "@/components/ProjectsManager";
@@ -21,6 +22,7 @@ export default async function ProjectsPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="projects" />
         <PageHead icon="ti-briefcase" color="#3b82f6" title={t.nav.projects} hint={h.projects} />
         <ProjectsManager initial={projects as any} locale={locale} />
       </main>

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import EntryFeed from "@/components/EntryFeed";
@@ -22,6 +23,7 @@ export default async function FamilyPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="family" />
         <PageHead icon="ti-users" color="#ec4899" title={t.nav.family} hint={h.family} />
         <EntryFeed entries={entries} t={t} locale={locale} />
       </main>

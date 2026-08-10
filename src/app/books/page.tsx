@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Books from "@/components/Books";
@@ -26,6 +27,7 @@ export default async function BooksPage() {
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
+        <CaseStrip locale={locale} section="books" />
         <PageHead icon="ti-books" color="#8b5cf6" title={t.nav.books} hint={h.books} />
         <Books locale={locale} initial={books as any} quotes={quotes as any} goal={goal} share={share} />
       </main>
