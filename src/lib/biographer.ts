@@ -7,6 +7,8 @@ import { recallContext } from "./semanticMemory";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
 import { getLifeFacts } from "./lifeFacts";
+import { talkBlock } from "./talkLog";
+import { searchEverything } from "./vaultSearch";
 import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Отвечает на вопрос пользователя по его записям (ассистент «спроси свою жизнь»).
@@ -81,6 +83,26 @@ export async function askLife(userId: string, question: string, lang: string = "
 
   // Недавний диалог: даём ассистенту память о последних сообщениях — в т.ч. о
   // собственных утренних пушах, — чтобы он связывал уточняющие вопросы с контекстом.
+  // Живой разговор — общий на все режимы. Раньше сюда попадали только прошлые
+  // ВОПРОСЫ к ассистенту, поэтому на «а что я только что рассказывал» он
+  // отвечал так, будто разговора не было.
+  const talk = await talkBlock(userId).catch(() => "");
+
+  // И поиск по ВСЕМУ хранилищу под конкретный вопрос: последние двести записей
+  // не помогут, если нужное лежит в заметке за март или в документе. Ищем по
+  // смыслу — тем же поиском, что и везде.
+  let found = "";
+  try {
+    const hits = await searchEverything(userId, question, 8);
+    if (hits.length) {
+      found = `\n\nНАЙДЕНО ПО ЭТОМУ ВОПРОСУ НА ВСЕХ ПОЛКАХ (дневник, заметки, база знаний, документы, книги):\n${hits
+        .map((h) => `[${h.src}${h.date ? `, ${h.date}` : ""}] ${h.title ? h.title + ": " : ""}${h.text.slice(0, 400)}`)
+        .join("\n---\n")}`;
+    }
+  } catch {
+    /* поиск не настроен — отвечаем по остальному контексту */
+  }
+
   let convo = "(пусто)";
   try {
     const hist = await getBiographerHistory(userId, 6);
@@ -138,13 +160,13 @@ ${life}
 ${appCheatsheet((lang as any) || "ru")}
 
 ${isOwner(userId) ? architectureFacts() + "\n\n" : ""}НЕДАВНИЙ ДИАЛОГ (последние сообщения, новые внизу; «Ты» — это твои же прошлые сообщения, включая утренние пуши):
-${convo}
+${convo}${talk}${found}
 
 ВОПРОС: ${question}`;
 
   const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 1000,
+    max_tokens: 1400,
     messages: [{ role: "user", content: prompt }],
   });
   logClaude(userId, "biographer", "sonnet", (m as any).usage);

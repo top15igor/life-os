@@ -8,6 +8,7 @@ import { TONE_PROMPT } from "./morningPrefs";
 import { getChatVoice, voiceLine } from "./chatVoice";
 import { getAccountFacts, appCheatsheet } from "./accountFacts";
 import { getLifeFacts } from "./lifeFacts";
+import { talkBlock } from "./talkLog";
 import { isOwner, architectureFacts } from "./architectureFacts";
 
 // Действия, которые компаньон может ВЫПОЛНЯТЬ прямо в беседе (как Джарвис).
@@ -109,6 +110,9 @@ async function gatherContext(userId: string): Promise<string> {
     // отвечать хуже только потому, что разговор идёт в другом режиме.
     getLifeFacts(userId).catch(() => ""),
   ]);
+  // Общий журнал разговора: человек мог только что говорить с ботом вне
+  // режима беседы, и для него это один разговор, а не два.
+  const talk = await talkBlock(userId).catch(() => "");
 
   const diary =
     (entries || []).map((e: any) => `${e.entry_date}: ${(e.raw_text || e.summary || "").slice(0, 700)}`).join("\n") ||
@@ -145,7 +149,7 @@ ${finance || "ФИНАНСЫ: операций пока нет."}
 АККАУНТ И СТАТИСТИКА (профиль и точные цифры по данным собеседника — вопросы «когда я зарегистрировался», «сколько у меня записей/голосовых/слов», «какая у меня почта», «какой тариф» закрывай именно этим, не оценивай на глаз):
 ${facts}
 
-${life}${isOwner(userId) ? "\n\n" + architectureFacts() : ""}`;
+${life}${talk}${isOwner(userId) ? "\n\n" + architectureFacts() : ""}`;
 }
 
 function nowLocal(off?: number | null): string {

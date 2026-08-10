@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
+import { remember } from "@/lib/talkLog";
 import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
@@ -204,6 +205,15 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 
 
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
+// Позвали по имени, но без вопроса.
+const JARVIS_ASK: Record<string, string> = {
+  ru: "Слушаю. Спроси что-нибудь про свою жизнь или скажи, что разобрать — я вижу все твои записи, деньги, здоровье, документы и то, о чём мы только что говорили.",
+  en: "I'm listening. Ask me anything about your life — I can see your entries, money, health, documents and what we were just talking about.",
+  uk: "Слухаю. Запитай щось про своє життя — я бачу всі твої записи, гроші, здоров'я, документи й те, про що ми щойно говорили.",
+  fr: "Je t'écoute. Demande-moi ce que tu veux sur ta vie — je vois tes entrées, tes finances, ta santé, tes documents et ce dont on vient de parler.",
+  es: "Te escucho. Pregúntame lo que quieras sobre tu vida — veo tus entradas, dinero, salud, documentos y lo que acabamos de hablar.",
+};
+
 // Подписи обсуждения идей и предпросмотр постановки.
 const IDEA_T: Record<string, any> = {
   ru: { skip: "", enough: "📨 Хватит, отправляй", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
@@ -2437,6 +2447,32 @@ async function handleUpdate(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // 🧠 Позвать думающего агента в ЛЮБОЙ момент, не гадая, распознает ли роутер
+    //    вопрос. Человек так и просил: «хочу в любой момент обратиться, чтобы он
+    //    думал и был в контексте». Обращение по имени — самый простой способ,
+    //    который не нужно запоминать.
+    const CALL_RE = /^\s*(джарвис|jarvis|подумай|разберись|проанализируй)\b[\s,:—-]*/i;
+    if (CALL_RE.test(text)) {
+      const q = text.replace(CALL_RE, "").trim();
+      const lng = langOf(user, msg);
+      if (!q) {
+        await sendMessage(chatId, JARVIS_ASK[lng] || JARVIS_ASK.ru);
+        return NextResponse.json({ ok: true });
+      }
+      await sendChatAction(chatId, "typing");
+      await remember(user.id, "u", q);
+      const ans = await askLife(user.id, q, lng);
+      await remember(user.id, "a", ans);
+      await saveChat(user.id, q, ans);
+      await sendMessage(chatId, mdToTelegram(ans) || "—");
+      if (isVoice && ans) {
+        await sendChatAction(chatId, "record_voice");
+        const audio = await speak(mdToPlain(ans));
+        if (audio) await sendVoice(chatId, audio);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     // Команда добавить без предмета: не выдумываем пустую запись, а спрашиваем.
     if (EMPTY_ADD_RE.test(text.trim())) {
       const lng = langOf(user, msg);
@@ -2511,7 +2547,9 @@ async function handleUpdate(req: NextRequest) {
           return NextResponse.json({ ok: true });
         }
         if (route.kind === "question") {
+          await remember(user.id, "u", text);
           const ans = await askLife(user.id, text, lng0);
+          await remember(user.id, "a", ans);
           await saveChat(user.id, text, ans);
           await sendMessage(chatId, mdToTelegram(ans) || "—", acqMarkup(lng0));
           return NextResponse.json({ ok: true });
@@ -2638,6 +2676,7 @@ async function handleUpdate(req: NextRequest) {
         if (route.name === "deep_summary") {
           await sendMessage(chatId, (DEEP_WORKING[lang] || DEEP_WORKING.ru)(String(route.input?.topic || "").slice(0, 60)));
         }
+        await remember(user.id, "u", text);
         let res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
 
         // Вторая попытка: агент смотрит на СВОЙ результат. Если инструмент
