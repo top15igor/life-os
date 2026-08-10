@@ -45,7 +45,7 @@ export default async function IdeasPage() {
           <IdeasBoard initial={ideas} owner={owner} authors={authors} />
         </div>
       </main>
-      <TipsRail locale={locale} section="insights" />
+      <TipsRail locale={locale} section="ideas" />
     </div>
   );
 }

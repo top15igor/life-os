@@ -2,6 +2,7 @@ import type { Locale } from "./i18n";
 
 const H: Record<Locale, Record<string, string>> = {
   ru: {
+    ideas: "Твои предложения по LIFE OS и что с ними стало. Скажи боту «идея по LIFE OS» — он обсудит её с тобой, доведёт до постановки и передаст. О решении сообщит сам.",
     today: "Главный экран: твои показатели и записи за сегодня. Можно добавить запись прямо здесь или голосом в Telegram.",
     diary: "Все записи по датам. Нажми на запись — увидишь полный AI-разбор.",
     tasks: "Все твои задачи из записей в одном месте. Отмечай выполненные галочкой.",
@@ -30,6 +31,7 @@ const H: Record<Locale, Record<string, string>> = {
     profile: "Твой личный кабинет: личная ссылка, язык, приватность, выход и удаление аккаунта.",
   },
   en: {
+    ideas: "Your suggestions for LIFE OS and what happened to them. Tell the bot “a LIFE OS idea” — it will talk it through with you, write it up and pass it on. You'll hear back about the decision.",
     today: "Your day at a glance: today's metrics and entries. Add an entry here or by voice in Telegram.",
     diary: "All your entries by date. Tap an entry to see the full AI breakdown.",
     tasks: "All your tasks from entries in one place. Tick them off when done.",
@@ -58,6 +60,7 @@ const H: Record<Locale, Record<string, string>> = {
     profile: "Your account: personal link, language, privacy, log out and delete account.",
   },
   uk: {
+    ideas: "Твої пропозиції щодо LIFE OS і що з ними сталося. Скажи боту «ідея по LIFE OS» — він обговорить її з тобою і передасть. Про рішення повідомить сам.",
     today: "Головний екран: твої показники та записи за сьогодні. Можна додати запис тут або голосом у Telegram.",
     diary: "Усі записи за датами. Натисни на запис — побачиш повний AI-розбір.",
     tasks: "Усі твої завдання із записів в одному місці. Познач виконані галочкою.",
@@ -86,6 +89,7 @@ const H: Record<Locale, Record<string, string>> = {
     profile: "Твій особистий кабінет: посилання, мова, приватність, вихід і видалення акаунта.",
   },
   fr: {
+    ideas: "Tes propositions pour LIFE OS et ce qu'elles sont devenues. Dis au bot « une idée pour LIFE OS » : il en discute avec toi, la met au propre et la transmet.",
     today: "Ta journée en un coup d'œil : indicateurs et entrées du jour. Ajoute une entrée ici ou par la voix dans Telegram.",
     diary: "Toutes tes entrées par date. Touche une entrée pour voir l'analyse IA complète.",
     tasks: "Toutes tes tâches en un seul endroit. Coche-les quand c'est fait.",
@@ -114,6 +118,7 @@ const H: Record<Locale, Record<string, string>> = {
     profile: "Ton compte : lien personnel, langue, confidentialité, déconnexion et suppression.",
   },
   es: {
+    ideas: "Tus propuestas para LIFE OS y en qué quedaron. Dile al bot «una idea para LIFE OS»: lo hablará contigo, lo redactará y lo pasará.",
     today: "Tu día de un vistazo: tus indicadores y entradas de hoy. Añade una entrada aquí o por voz en Telegram.",
     diary: "Todas tus entradas por fecha. Toca una entrada para ver el análisis completo de la IA.",
     tasks: "Todas tus tareas de las entradas en un solo lugar. Márcalas al terminarlas.",
