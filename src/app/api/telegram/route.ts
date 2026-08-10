@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
+import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, advance as advanceIdea, summarize as summarizeIdea, createIdea } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -203,6 +204,30 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 
 
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
+// Подписи обсуждения идей и предпросмотр постановки.
+const IDEA_T: Record<string, any> = {
+  ru: { skip: "Если нечего добавить — жми «Хватит, собери».", enough: "Хватит, собери", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
+        dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что добавить?", gone: "Черновик уже не найти, расскажи заново.",
+        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, failed: "Не получилось сохранить, попробуй ещё раз.",
+        head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
+  en: { skip: "Nothing to add? Tap «That's enough».", enough: "That's enough", send: "📨 Send it", more: "Let me add", drop: "Cancel",
+        dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
+        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, failed: "Couldn't save it, try again.",
+        head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
+};
+IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
+
+function ideaPreview(d: any, lng: string): string {
+  const T = IDEA_T[lng] || IDEA_T.ru;
+  const e = (x: any) => String(x || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const out = [`💡 <b>${T.head}</b>`, "", `<b>${e(d.title || "")}</b>`, e(d.body || "")];
+  if (d.problem) out.push("", `<b>${T.zach}:</b> ${e(d.problem)}`);
+  if (d.who) out.push(`<b>${T.komu}:</b> ${e(d.who)}`);
+  if (d.done_when) out.push(`<b>${T.gotovo}:</b> ${e(d.done_when)}`);
+  out.push("", T.ok);
+  return out.join("\n");
+}
+
 // Подписи к подтверждению массового изменения.
 const BULK_MSG: Record<string, { ok: (n: number) => string; cancelled: string; expired: string; undo: string }> = {
   ru: { ok: (n) => `Готово, изменил: ${n}.`, cancelled: "Отменил, ничего не трогал.", expired: "Список устарел — скажи ещё раз.", undo: "↩️ Вернуть как было" },
@@ -1202,6 +1227,36 @@ async function handleUpdate(req: NextRequest) {
           await answerCallback(cq.id);
         }
       } catch { await answerCallback(cq.id); }
+    } else if (data.startsWith("idea:") && cqChat) {
+      // Идея: подтвердить, дополнить или бросить. Наружу уходит только по «Отправить».
+      try {
+        await answerCallback(cq.id);
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, name, lang").eq("chat_id", cqChat).maybeSingle();
+        if (!u) return NextResponse.json({ ok: true });
+        const uid = (u as any).id;
+        const lng = pickLang((u as any).lang);
+        const act = data.slice(5);
+
+        if (act === "drop") {
+          await clearIdeaDraft(uid);
+          await sendMessage(cqChat, IDEA_T[lng].dropped);
+        } else if (act === "more") {
+          await sendMessage(cqChat, IDEA_T[lng].tellMore);
+        } else if (act === "sum" || act === "send") {
+          const d = await getIdeaDraft(uid);
+          if (!d) { await sendMessage(cqChat, IDEA_T[lng].gone); return NextResponse.json({ ok: true }); }
+          const ready = await summarizeIdea(uid, d.said, d.asked);
+          if (act === "sum") {
+            await sendMessage(cqChat, ideaPreview(ready || {}, lng), {
+              reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+            });
+          } else {
+            const saved = await createIdea(uid, { name: (u as any).name }, ready || {}, { said: d.said, asked: d.asked });
+            await sendMessage(cqChat, saved ? IDEA_T[lng].sent(saved.num) : IDEA_T[lng].failed);
+          }
+        }
+      } catch (e) { await logError("bot:idea", e, { chatId: cqChat }); await answerCallback(cq.id); }
     } else if (data.startsWith("clar:") && cqChat) {
       // Ответ на уточняющий вопрос. Прогоняем его как обычную реплику: у мозга
       // в контексте остаётся исходная просьба, и он доводит дело до конца.
@@ -2327,6 +2382,23 @@ async function handleUpdate(req: NextRequest) {
       await sendMessage(chatId, res.text, res.ticket
         ? { reply_markup: { inline_keyboard: [[{ text: MORE_BTN[lng as keyof typeof MORE_BTN] || MORE_BTN.ru, callback_data: "pb:more" }]] } }
         : undefined);
+      return NextResponse.json({ ok: true });
+    }
+
+    // 💡 Идёт обсуждение идеи по продукту: ответы человека — часть разговора,
+    //    а не запись в дневник. Пока он не подтвердил, наружу ничего не уходит.
+    if (!text.startsWith("/") && (await getIdeaDraft(user.id))) {
+      const lng = langOf(user, msg);
+      const step = await advanceIdea(user.id, text);
+      if ("question" in step) {
+        await sendMessage(chatId, `${step.question}\n\n<i>${IDEA_T[lng].skip}</i>`, {
+          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }]] },
+        });
+      } else {
+        await sendMessage(chatId, ideaPreview(step.ready, lng), {
+          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 

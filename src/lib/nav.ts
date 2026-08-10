@@ -22,6 +22,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "wishlist", href: "/wishlist", icon: "ti-gift" },
   { key: "share", href: "/share", icon: "ti-share-2" },
   { key: "paths", href: "/paths", icon: "ti-route" },
+  { key: "ideas", href: "/ideas", icon: "ti-bulb" },
   { key: "profile", href: "/profile", icon: "ti-user" },
   { key: "guide", href: "/guide", icon: "ti-help" },
 ];
@@ -40,7 +41,7 @@ export const NAV_GROUPS: { id: string; keys: string[] }[] = [
   { id: "life", keys: ["plans", "reminders", "finance", "family", "people", "places", "projects", "trace", "lifebook"] },
   { id: "vault", keys: ["notes", "knowledge", "memory", "sort", "books", "wishlist"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
-  { id: "more", keys: ["share", "paths", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
+  { id: "more", keys: ["share", "paths", "ideas", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)
 ];
 
 // Главные разделы для нижнего таб-бара на мобильном.
