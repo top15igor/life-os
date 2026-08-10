@@ -118,6 +118,8 @@ const SYS = `Ты обсуждаешь с человеком ИДЕЮ ПО ПР�
 
 КАК РАЗГОВАРИВАТЬ.
 — Это живой разговор, а не анкета. Ты помнишь всё сказанное раньше и опираешься на это.
+— Человек может отойти и вернуться через час. Если видишь пометку о перерыве — в одной фразе напомни, на чём остановились, и продолжай.
+— Реплика бывает длинной: человек наговаривает голосом две-три минуты. Это по-прежнему реплика разговора, а не отдельная история.
 — Сначала пойми, а потом предлагай. Если формулировка допускает два прочтения — скажи, какие, и спроси, какое верное.
 — Думай вместе с ним: предлагай более острую версию идеи, показывай, где она сломается, называй похожее, что уже есть в продукте.
 — Не соглашайся из вежливости. Если видишь, что идея решает не ту проблему или уже решена — скажи прямо и объясни.
@@ -149,6 +151,16 @@ export type Turn = { reply: string; ready?: Partial<Idea>; msgs: Msg[] };
 // постановку — но НЕ сохраняет её: решение отправлять принимает человек.
 export async function converse(userId: string, text: string): Promise<Turn> {
   const d = (await getDraft(userId)) || { msgs: [], at: Date.now() };
+
+  // Человек отошёл и вернулся. Модель не чувствует времени: для неё реплика
+  // через полчаса ничем не отличается от следующей подряд, и она отвечает
+  // так, будто разговор не прерывался. Живой случай: Коля вернулся через
+  // полчаса и начал с середины мысли — а агент не понял, что это возврат.
+  const gapMin = Math.round((Date.now() - Number(d.at || Date.now())) / 60000);
+  if (d.msgs.length && gapMin >= 10) {
+    d.msgs.push({ r: "u", t: `[прошло ${gapMin} мин., человек вернулся к разговору — при необходимости коротко напомни, на чём остановились]` });
+  }
+
   d.msgs.push({ r: "u", t: String(text).slice(0, 3000) });
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -268,6 +280,33 @@ export async function ideaShots(userId: string): Promise<string[]> {
     return (await prefs(userId)).ideaShots || [];
   } catch {
     return [];
+  }
+}
+
+// Забрать ошибочно сохранённую запись в обсуждение идеи.
+//
+// Живой случай: человек наговорил доработку, бот записал это в дневник, человек
+// говорит «ты перепутал, это не запись». Начинать разговор с нуля здесь мало:
+// в дневнике останется мусор, а сказанное придётся повторять голосом заново.
+export async function takeLastEntry(userId: string, withinMin = 60): Promise<{ text: string; entry: any } | null> {
+  const db = supabaseAdmin();
+  try {
+    const { data } = await db
+      .from("entries")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    const age = (Date.now() - new Date(String((data as any).created_at || 0)).getTime()) / 60000;
+    if (!Number.isFinite(age) || age > withinMin) return null;
+    const text = String((data as any).raw_text || (data as any).summary || "").trim();
+    if (!text) return null;
+    await db.from("entries").delete().eq("id", (data as any).id).eq("user_id", userId);
+    return { text, entry: data };
+  } catch {
+    return null;
   }
 }
 

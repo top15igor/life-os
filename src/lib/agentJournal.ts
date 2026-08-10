@@ -15,7 +15,7 @@ import { saveEntry } from "./saveEntry";
 export type ActionKind =
   | "delete_task" | "delete_note" | "delete_goal"
   | "move_to_vault" | "move_to_diary"
-  | "delete_memory" | "delete_saved" | "delete_book"
+  | "delete_memory" | "delete_saved" | "delete_book" | "move_to_idea"
   | "bulk_tasks_done" | "bulk_tasks_delete" | "bulk_notes_delete" | "bulk_reminders_move"
   | "fix_finance" | "remove_finance";
 
@@ -86,6 +86,15 @@ async function restore(userId: string, kind: string, p: any): Promise<boolean> {
       if (!row || !Object.keys(row).length) return false;
       row.user_id = userId; // на всякий случай: восстанавливаем только себе
       const { error } = await db.from(table).insert(row);
+      return !error;
+    }
+
+    // Запись уехала в обсуждение идеи — возвращаем её в дневник как была.
+    if (kind === "move_to_idea") {
+      const row = { ...(p?.row || {}) };
+      if (!Object.keys(row).length) return false;
+      row.user_id = userId;
+      const { error } = await db.from("entries").insert(row);
       return !error;
     }
 
