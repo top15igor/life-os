@@ -179,7 +179,7 @@ export default function Assistant() {
         aria-label={s.bubble}
         title={s.bubble}
       >
-        <i className={`ti ${open ? "ti-x" : "ti-help"}`} />
+        <i className={`ti ${open ? "ti-x" : "ti-sparkles"}`} />
       </button>
 
       {open && (

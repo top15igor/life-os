@@ -253,15 +253,27 @@ a.card:active, button.card:active, .card-hover:active { transform: translateY(0)
 .fin-row:hover { background: var(--surface-2); }
 
 /* ===== Помощник (плавающий ассистент внизу справа) ===== */
+/* Кнопка AI-помощника. Была плоским кружком с вопросительным знаком — читалась
+   как «справка». Теперь фиолетовый градиент и искры: сразу видно, что это AI. */
 .asst-fab {
   position: fixed; z-index: 70; right: 22px; bottom: 22px;
-  width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-  background: var(--accent); color: #fff; box-shadow: 0 6px 22px rgba(79,70,229,.42);
+  width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
+  background: linear-gradient(135deg, #6d6bf6 0%, #8b5cf6 55%, #a855f7 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px -6px rgba(124,92,246,.55), 0 0 0 6px rgba(124,92,246,.10);
   display: flex; align-items: center; justify-content: center;
-  transition: transform .15s, box-shadow .15s;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
 }
-.asst-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(79,70,229,.52); }
-.asst-fab i { font-size: 24px; line-height: 1; }
+.asst-fab:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 14px 32px -8px rgba(124,92,246,.65), 0 0 0 8px rgba(124,92,246,.14); filter: brightness(1.05); }
+.asst-fab:active { transform: translateY(0) scale(.97); }
+.asst-fab i { font-size: 25px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(40,20,90,.35)); }
+/* Еле заметное «дыхание» ореола — кнопка живая, но в глаза не лезет. */
+@keyframes asstGlow {
+  0%, 100% { box-shadow: 0 8px 24px -6px rgba(124,92,246,.55), 0 0 0 6px rgba(124,92,246,.10); }
+  50%      { box-shadow: 0 8px 26px -6px rgba(124,92,246,.62), 0 0 0 10px rgba(124,92,246,.06); }
+}
+.asst-fab:not(:hover) { animation: asstGlow 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .asst-fab:not(:hover) { animation: none; } }
 .asst-backdrop { position: fixed; inset: 0; z-index: 74; background: transparent; }
 .asst-panel {
   position: fixed; z-index: 80; right: 22px; bottom: 86px;
