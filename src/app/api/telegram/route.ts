@@ -2810,7 +2810,17 @@ async function handleUpdate(req: NextRequest) {
     if (mem) body += `\n\n${(MEM[lang] || MEM.ru)[mem.period](mem.summary)}`;
     // Тёплый отклик друга под разбором (в выбранном тоне) — отдельной строкой, факты не трогает.
     const reaction = await reactionP;
-    if (reaction) body += `\n\n💬 ${esc(reaction)}`;
+    // Когда в записи тяжёлое, порядок решает всё. Человек написал «мне сегодня
+    // совсем тяжело» — и первым видел «✅ Запись сохранена», теги, серию дней и
+    // счётчик записей, а живой отклик где-то внизу. Формально всё правильно,
+    // по-человечески — отписка. Теперь отклик идёт ПЕРВЫМ, а бухгалтерия
+    // убирается: она тут никому не нужна.
+    const heavy = Number((analysis as any).mood) > 0 && Number((analysis as any).mood) <= 4;
+    if (reaction && heavy) {
+      body = `${esc(reaction)}\n\n<i>✅ ${esc(L.saved)}</i>`;
+    } else if (reaction) {
+      body += `\n\n💬 ${esc(reaction)}`;
+    }
     // Запись — в память разговора: следом часто звучит «переложи это»,
     // «убери последнюю», «а добавь туда ещё».
     if (entry?.id) {
