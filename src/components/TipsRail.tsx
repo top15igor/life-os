@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { tipsOfDay } from "@/lib/tips";
-import { sectionTips, hasSectionTips } from "@/lib/sectionTips";
+import { sectionTips, hasSectionTips, sectionDoneKeys, tipDoneKey } from "@/lib/sectionTips";
+import { doneKeys } from "@/lib/tipState";
+import { getCurrentUser } from "@/lib/auth";
 import { hints } from "@/lib/hints";
 import { lifeCase } from "@/lib/cases";
 import type { Locale } from "@/lib/i18n";
@@ -43,7 +45,18 @@ export default async function TipsRail({ locale, section }: { locale: Locale; se
   const want = 4 + (kase ? 0 : 1) + (about ? 0 : 1);
   // Есть свои — показываем ТОЛЬКО их. Добивать общими нельзя: именно так на всех
   // страницах и оказывался один и тот же совет.
-  const tips = hasSectionTips(section) ? sectionTips(section, locale, want) : tipsOfDay(locale, want, section);
+  const own = hasSectionTips(section) ? sectionTips(section, locale, want) : [];
+  // Прячем то, что человек уже делает: «подключи Fitbit» при подключённом
+  // Fitbit выглядит так, будто приложение его не замечает.
+  const user = own.length ? await getCurrentUser().catch(() => null) : null;
+  const done = user ? await doneKeys(user.id, sectionDoneKeys(section)) : new Set<string>();
+  const fresh = own.filter((_, i) => {
+    const k = tipDoneKey(section, i);
+    return !k || !done.has(k);
+  });
+  // Своих не осталось (всё освоено) или их нет вовсе — показываем общие:
+  // тут человеку уже нечему учиться, зато можно рассказать про соседние разделы.
+  const tips = fresh.length ? fresh : tipsOfDay(locale, want, section);
   if (!tips.length && !about && !kase) return null;
 
   return (

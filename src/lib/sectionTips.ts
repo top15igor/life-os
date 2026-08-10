@@ -1,5 +1,6 @@
 import type { Locale } from "./i18n";
 import type { Tip } from "./tips";
+import type { DoneKey } from "./tipState";
 
 // Подсказки ДЛЯ КОНКРЕТНОГО раздела: что сказать боту или нажать именно здесь.
 //
@@ -767,6 +768,39 @@ const S: Record<string, Pack> = {
     ],
   },
 };
+
+// Какая подсказка считается «уже освоенной». Порядок — как в массивах выше:
+// первая, вторая, третья. null — проверять нечего, показываем всегда.
+//
+// Привязываем к номеру, а не к тексту: тексты живут в пяти языках, а условие
+// у них общее.
+const DONE: Record<string, (DoneKey | null)[]> = {
+  today: ["voice", null, null],
+  diary: [null, null, "voice"],
+  health: ["health", "health", null],
+  goals: ["goals", "tasks", null],
+  reminders: ["reminders", "reminders", null],
+  finance: ["finance", "finance", null],
+  people: ["people", null, null],
+  places: ["trips", null, null],
+  notes: ["notes", "notes", "lists"],
+  knowledge: ["knowledge", "knowledge", "knowledge"],
+  memory: ["memory", "memory", "memory"],
+  books: ["books", "books", "books"],
+  wishlist: ["wishlist", "wishlist", null],
+};
+
+/** Условия, которые нужны этому разделу, — чтобы не спрашивать базу лишнего. */
+export function sectionDoneKeys(section?: string): DoneKey[] {
+  if (!section) return [];
+  return (DONE[section] || []).filter((k): k is DoneKey => !!k);
+}
+
+/** Номер подсказки -> условие, при котором её уже можно не показывать. */
+export function tipDoneKey(section: string | undefined, index: number): DoneKey | null {
+  if (!section) return null;
+  return (DONE[section] || [])[index] || null;
+}
 
 export function sectionTips(section: string | undefined, locale: Locale, count: number): Tip[] {
   if (!section) return [];
