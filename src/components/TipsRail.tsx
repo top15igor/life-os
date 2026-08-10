@@ -33,7 +33,9 @@ export default function TipsRail({ locale, section }: { locale: Locale; section?
   // него добавляем ещё одну общую подсказку, чтобы колонка не пустовала.
   const kase = lifeCase(section, locale);
   const about = section ? hints(locale)[section] : undefined;
-  const tips = tipsOfDay(locale, 3 - (kase ? 1 : 0) - (about ? 1 : 0));
+  // Четыре подсказки: места по вертикали хватает, а одна на всю колонку
+  // выглядела случайной. Если кейса или пояснения нет — добавляем ещё по одной.
+  const tips = tipsOfDay(locale, 4 + (kase ? 0 : 1) + (about ? 0 : 1), section);
   if (!tips.length && !about && !kase) return null;
 
   return (

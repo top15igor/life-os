@@ -62,12 +62,20 @@ const T: Record<Locale, Tip[]> = {
 };
 
 /**
- * Три подсказки на сегодня. Набор меняется каждый день, но в пределах дня
+ * Подсказки на сегодня. Набор меняется каждый день, но в пределах дня
  * одинаков — иначе сервер и браузер отрисовали бы разное.
+ *
+ * Если известен раздел, подсказки про него идут первыми: на «Заметках»
+ * логично сначала прочитать про заметки, а не про капсулу времени.
  */
-export function tipsOfDay(locale: Locale, count = 3): Tip[] {
+export function tipsOfDay(locale: Locale, count = 3, section?: string): Tip[] {
   const all = T[locale] || T.ru;
   const dayNumber = Math.floor(Date.now() / 86400000);
   const start = dayNumber % all.length;
-  return Array.from({ length: Math.min(count, all.length) }, (_, i) => all[(start + i) % all.length]);
+  const rotated = Array.from({ length: all.length }, (_, i) => all[(start + i) % all.length]);
+  const here = section ? `/${section}` : null;
+  const ordered = here
+    ? [...rotated.filter((t) => t.href === here), ...rotated.filter((t) => t.href !== here)]
+    : rotated;
+  return ordered.slice(0, Math.min(count, all.length));
 }
