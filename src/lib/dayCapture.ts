@@ -45,11 +45,11 @@ const DEPTH_ASK: Record<Lang, string> = {
 };
 
 export const DEPTH_CHIPS: Record<Lang, { label: string; max: number }[]> = {
-  ru: [{ label: "⚡ Минутка — 3 вопроса", max: 3 }, { label: "🙂 Нормально — 6 вопросов", max: 6 }, { label: "💬 Поговорим", max: 0 }],
-  en: [{ label: "⚡ A minute — 3 questions", max: 3 }, { label: "🙂 Normal — 6 questions", max: 6 }, { label: "💬 Let's talk", max: 0 }],
-  uk: [{ label: "⚡ Хвилинка — 3 питання", max: 3 }, { label: "🙂 Нормально — 6 питань", max: 6 }, { label: "💬 Поговорімо", max: 0 }],
-  fr: [{ label: "⚡ Une minute — 3 questions", max: 3 }, { label: "🙂 Normal — 6 questions", max: 6 }, { label: "💬 On discute", max: 0 }],
-  es: [{ label: "⚡ Un minuto — 3 preguntas", max: 3 }, { label: "🙂 Normal — 6 preguntas", max: 6 }, { label: "💬 Charlemos", max: 0 }],
+  ru: [{ label: "⚡ Минутка — 3 вопроса", max: 3 }, { label: "🙂 Нормально — 6 вопросов", max: 6 }, { label: "🌙 Поглубже — про состояние", max: 106 }, { label: "💬 Поговорим", max: 0 }],
+  en: [{ label: "⚡ A minute — 3 questions", max: 3 }, { label: "🙂 Normal — 6 questions", max: 6 }, { label: "🌙 Deeper — how you are", max: 106 }, { label: "💬 Let's talk", max: 0 }],
+  uk: [{ label: "⚡ Хвилинка — 3 питання", max: 3 }, { label: "🙂 Нормально — 6 питань", max: 6 }, { label: "🌙 Глибше — про стан", max: 106 }, { label: "💬 Поговорімо", max: 0 }],
+  fr: [{ label: "⚡ Une minute — 3 questions", max: 3 }, { label: "🙂 Normal — 6 questions", max: 6 }, { label: "🌙 Plus profond — ton état", max: 106 }, { label: "💬 On discute", max: 0 }],
+  es: [{ label: "⚡ Un minuto — 3 preguntas", max: 3 }, { label: "🙂 Normal — 6 preguntas", max: 6 }, { label: "🌙 Más hondo — cómo estás", max: 106 }, { label: "💬 Charlemos", max: 0 }],
 };
 
 const LEAD_FIRST: Record<Lang, string> = {
@@ -207,16 +207,16 @@ export function isStuckPhrase(text: string): boolean {
 
 // ===== Состояние =====
 
-type St = { active: boolean; prefs: any; max: number; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string };
+type St = { active: boolean; prefs: any; max: number; deep: boolean; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string };
 
 async function readState(userId: string): Promise<St> {
   try {
     const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", userId).maybeSingle();
     const prefs = normalizeMorningPrefs((data as any)?.morning_prefs);
-    return { active: prefs.dayActive, prefs, max: prefs.dayMax, asked: prefs.dayAsked, chips: prefs.dayChips, answers: prefs.dayAnswers, draft: prefs.dayDraft, date: prefs.dayDate };
+    return { active: prefs.dayActive, prefs, max: prefs.dayMax, deep: prefs.dayDeep === true, asked: prefs.dayAsked, chips: prefs.dayChips, answers: prefs.dayAnswers, draft: prefs.dayDraft, date: prefs.dayDate };
   } catch {
     const prefs = normalizeMorningPrefs(null);
-    return { active: false, prefs, max: 3, asked: [], chips: [], answers: [], draft: "", date: "" };
+    return { active: false, prefs, max: 3, deep: false, asked: [], chips: [], answers: [], draft: "", date: "" };
   }
 }
 
@@ -226,10 +226,11 @@ export async function dayChipText(userId: string, idx: number): Promise<string> 
   return st.chips[idx] || "";
 }
 
-async function writeState(userId: string, prefs: any, patch: Partial<{ active: boolean; max: number; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string }>): Promise<void> {
+async function writeState(userId: string, prefs: any, patch: Partial<{ active: boolean; max: number; deep: boolean; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string }>): Promise<void> {
   const next = { ...prefs };
   if (patch.active !== undefined) next.dayActive = patch.active;
   if (patch.max !== undefined) next.dayMax = patch.max;
+  if (patch.deep !== undefined) next.dayDeep = patch.deep;
   if (patch.asked !== undefined) next.dayAsked = patch.asked.slice(-MAX_ANSWERS);
   if (patch.chips !== undefined) next.dayChips = patch.chips.slice(0, 3);
   if (patch.answers !== undefined) next.dayAnswers = patch.answers.slice(-MAX_ANSWERS);
@@ -334,7 +335,26 @@ function ctxLines(ctx: DayCtx): string {
 
 const LANG_NAME: Record<Lang, string> = { ru: "русском", en: "английском", uk: "украинском", fr: "французском", es: "испанском" };
 
-async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: string[], answers: string[], max: number): Promise<{ q: string; chips: string[] }> {
+// Есть ли в ответе за что зацепиться. Отговорки («нет», «только работа»,
+// «ничего») — это конец ветки, а не приглашение копать.
+function worthDigging(a: string): boolean {
+  const t = (a || "").trim().toLowerCase();
+  if (t.length < 25) return false;
+  if (/^(нет|ничего|не было|только работа|как обычно|норм|ok|no|nothing)\b/.test(t)) return false;
+  return true;
+}
+
+// Сколько раз подряд мы уже углублялись. Больше двух — это уже допрос.
+function digDepth(asked: string[], answers: string[]): number {
+  let n = 0;
+  for (let i = answers.length - 1; i >= 1 && n < 3; i--) {
+    if (!worthDigging(answers[i] || "")) break;
+    n++;
+  }
+  return n;
+}
+
+async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: string[], answers: string[], max: number, deep = false): Promise<{ q: string; chips: string[] }> {
   const n = asked.length; // сколько уже задано
   const isFirst = n === 0;
   const isLast = max > 0 && n === max - 1;
@@ -346,7 +366,19 @@ async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: stri
   // живая жалоба звучала так — «ты задаёшь первый вопрос, а потом все остальные
   // крутятся вокруг него, и раскрыта только маленькая часть дня». Так и было:
   // подсказка прямо велела цепляться за предыдущий ответ.
-  const AREAS = [
+  // В режиме «поглубже» спрашиваем не про дела, а про то, что с человеком
+  // происходило. Это другой разбор: «что было» против «как тебе было».
+  const AREAS = deep
+    ? [
+        "состояние: где сегодня было тяжело и где отпустило",
+        "отношения: кто был рядом, с кем не хватило контакта",
+        "смысл: что из сегодняшнего было по-настоящему твоим, а что чужим",
+        "тело: что оно сегодня говорило — усталость, напряжение, лёгкость",
+        "выбор: где ты сегодня поступил как хотел, а где как пришлось",
+        "внимание: на что ушла голова, о чём думалось между делами",
+        "благодарность: за что сегодня стоит сказать спасибо — себе или кому-то",
+      ]
+    : [
     "дела и работа: что двигал, что получилось или застряло",
     "люди: с кем виделся, говорил, кому написал",
     "тело и самочувствие: сон, спорт, усталость, здоровье",
@@ -365,14 +397,14 @@ async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: stri
       // рассказанного — «ты ходил в эти магазины специально или по пути?» это
       // всё тот же поход в магазин. Поэтому область задаётся жёстко, по кругу,
       // со сдвигом по дню — чтобы разбор не начинался одинаково каждый раз.
-      // Чередуем. Только вглубь — получается допрос про один поход в магазин.
-      // Только вширь — получается анкета, где человек шесть раз отвечает «нет,
-      // не было»: «а по дому сделал?» — «нет», «куда ездил?» — «только на
-      // работу». И то и другое — не разговор. Поэтому: нечётные вопросы идут
-      // ЗА тем, что он назвал сам, чётные открывают новую сторону дня.
-      : (n % 2 === 1
-        ? `СЕРЕДИНА, шаг вглубь: он уже назвал главное в своём дне. Спроси про ЭТО конкретнее — что именно двигалось, что застряло, с кем, чем закончилось. Один вопрос, по существу сказанного, без общих слов.`
-        : `СЕРЕДИНА, шаг вширь: открой сторону дня, которой ещё не касались — «${AREAS[(n / 2 - 1 + new Date().getDate()) % AREAS.length]}».\n\nСпрашивай про то, что БЫЛО, а не «было ли». Вопрос не должен допускать ответа «нет, не было» — иначе получается анкета, а не разговор.`);
+      // Глубину решает НЕ чётность, а сам ответ. Живой случай: человек написал
+      // «сделал Джарвиса и надеюсь он не будет тупить» — и следующий вопрос был
+      // «что ты сделал по дому?». Самое живое в дне бросили ради расписания.
+      // Правило простое: есть за что зацепиться — цепляемся; ответ пустой или
+      // отговорка («нет», «только работа») — открываем новую сторону.
+      : (worthDigging(answers[answers.length - 1] || "") && digDepth(asked, answers) < 2
+        ? `СЕРЕДИНА, шаг вглубь: в последнем ответе есть живое — иди туда. Спроси про ЭТО конкретнее: что именно, чем закончилось, что оказалось трудным, что теперь. Один вопрос, по существу сказанного, без общих слов.`
+        : `СЕРЕДИНА, шаг вширь: предыдущая ветка исчерпана — открой сторону дня, которой ещё не касались: «${AREAS[(n + new Date().getDate()) % AREAS.length]}».\n\nСпрашивай про то, что БЫЛО, а не «было ли». Вопрос не должен допускать ответа «нет, не было» — иначе получается анкета, а не разговор.`);
 
   const prompt = `Ты — внимательный друг, который помогает человеку зафиксировать сегодняшний день в дневнике. Человек в ступоре от вопроса «расскажи, как прошёл день», поэтому твоя задача — задать ОДИН короткий конкретный вопрос, на который легко ответить не задумываясь.
 
@@ -468,11 +500,15 @@ export function dayDepthAsk(lang: string): { text: string; chips: { label: strin
 // Шаг 1: включаем режим и задаём первый вопрос.
 export async function beginDayCapture(userId: string, lang: string, max: number): Promise<DayTurn> {
   const l = L(lang);
+  // 106 — это «поглубже»: шесть вопросов, но про состояние, а не про дела.
+  // Кнопка передаёт одно число, поэтому режим закодирован в нём.
+  const deep = max === 106;
+  if (deep) max = 6;
   const st = await readState(userId);
   const { date } = await localNow(userId);
   const ctx = await dayContext(userId, date);
-  const { q, chips } = await nextQuestion(userId, l, ctx, [], [], max);
-  await writeState(userId, st.prefs, { active: true, max, asked: [q], chips, answers: [], draft: "", date });
+  const { q, chips } = await nextQuestion(userId, l, ctx, [], [], max, deep);
+  await writeState(userId, st.prefs, { active: true, max, deep, asked: [q], chips, answers: [], draft: "", date });
   return {
     text: `${LEAD_FIRST[l]}\n\n${step(1, max)}${q}`,
     chips: chips.map((c) => ({ label: c, value: c })),
@@ -562,7 +598,7 @@ export async function dayAnswer(userId: string, lang: string, answer: string): P
   if (enough) return finish(userId, l, st, answers);
 
   const ctx = await dayContext(userId, st.date || (await localNow(userId)).date);
-  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, answers, max);
+  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, answers, max, st.deep);
   const asked = [...st.asked, q];
   await writeState(userId, st.prefs, { asked, chips, answers });
   return { text: `${step(answers.length + 1, max)}${q}`, chips: chips.map((c) => ({ label: c, value: c })), phase: "ask" };
@@ -573,7 +609,7 @@ export async function daySkipQuestion(userId: string, lang: string): Promise<Day
   const l = L(lang);
   const st = await readState(userId);
   const ctx = await dayContext(userId, st.date || (await localNow(userId)).date);
-  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, st.max);
+  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, st.max, st.deep);
   // Пропущенный вопрос заменяем новым, чтобы пары «вопрос-ответ» не разъезжались.
   const asked = [...st.asked.slice(0, st.answers.length), q];
   await writeState(userId, st.prefs, { asked, chips });
@@ -609,7 +645,7 @@ export async function dayMoreQuestion(userId: string, lang: string): Promise<Day
   const l = L(lang);
   const st = await readState(userId);
   const ctx = await dayContext(userId, st.date || (await localNow(userId)).date);
-  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, 0);
+  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, 0, st.deep);
   const asked = [...st.asked.slice(0, st.answers.length), q];
   await writeState(userId, st.prefs, { asked, chips, draft: "" });
   return { text: q, chips: chips.map((c) => ({ label: c, value: c })), phase: "ask" };

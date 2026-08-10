@@ -35,6 +35,7 @@ export interface MorningPrefs {
   // «Помогу зафиксировать день»: пошаговый разбор сегодняшнего дня (dayCapture.ts).
   dayActive: boolean;         // идёт ли сейчас разбор дня
   dayMax: number;             // сколько вопросов человек выбрал (0 = «поговорим», пока не скажет хватит)
+  dayDeep: boolean;           // «поглубже»: вопросы про состояние и смыслы, а не про дела
   dayAt: string;              // ISO последнего шага — для авто-паузы по бездействию
   dayAsked: string[];         // заданные вопросы (чтобы не повторяться и собрать пары «вопрос-ответ»)
   dayChips: string[];         // варианты быстрого ответа на текущий вопрос (в кнопку уходит номер, не текст)
@@ -85,7 +86,7 @@ export const DEFAULT_WEEKLY_PREFS: WeeklyPrefs = { enabled: true, day: 0 };
 
 export const DEFAULT_MORNING_PREFS: MorningPrefs = {
   tone: "friend", chatTone: "friend", chatStyle: "", acquaintActive: false, acquaintPct: 0, acquaintNudgedOn: "", acquaintNudges: 0, acquaintNav: 0, acquaintAt: "",
-  dayActive: false, dayMax: 3, dayAt: "", dayAsked: [], dayChips: [], dayAnswers: [], dayDraft: "", dayDate: "",
+  dayActive: false, dayMax: 3, dayDeep: false, dayAt: "", dayAsked: [], dayChips: [], dayAnswers: [], dayDraft: "", dayDate: "",
   pbKind: "", pbAt: "", pbTicket: "", gapText: "", gapAt: "",
   invitePromptedOn: "", topics: [...MORNING_TOPICS], length: "normal", address: "",
   hour: null, hourWeekend: null, tz: null, customStyle: "", worldNews: true, morningEnabled: true,
@@ -135,6 +136,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
   const acquaintAt: string = typeof raw.acquaintAt === "string" ? raw.acquaintAt.slice(0, 40) : "";
   const dayActive: boolean = raw.dayActive === true;
   const dayMax: number = (typeof raw.dayMax === "number" && raw.dayMax >= 0 && raw.dayMax <= 20) ? Math.floor(raw.dayMax) : 3;
+  const dayDeep: boolean = raw.dayDeep === true;
   const dayAt: string = typeof raw.dayAt === "string" ? raw.dayAt.slice(0, 40) : "";
   const strList = (v: any, maxLen: number): string[] =>
     Array.isArray(v) ? v.filter((s: any) => typeof s === "string").map((s: string) => s.slice(0, maxLen)).slice(-20) : [];
@@ -162,7 +164,7 @@ export function normalizeMorningPrefs(raw: any): MorningPrefs {
     : { ...DEFAULT_WEEKLY_PREFS };
   return {
     tone, chatTone, chatStyle, acquaintActive, acquaintPct, acquaintNudgedOn, acquaintNudges, acquaintNav, acquaintAt,
-    dayActive, dayMax, dayAt, dayAsked, dayChips, dayAnswers, dayDraft, dayDate,
+    dayActive, dayMax, dayDeep, dayAt, dayAsked, dayChips, dayAnswers, dayDraft, dayDate,
     pbKind, pbAt, pbTicket, gapText, gapAt,
     invitePromptedOn, topics, length, address, tz, customStyle,
     hour: validHour(raw.hour), hourWeekend: validHour(raw.hourWeekend),
