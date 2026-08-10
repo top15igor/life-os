@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import HomeSwitch from "@/components/HomeSwitch";
 import {
   getToday, getEntries, getGoals, getMonths, getOpenTasks, getRecentGratitude, getInsights,
@@ -181,7 +182,7 @@ export default async function HomeBody() {
   }[locale] || { placeholder: "…", button: "+", saving: "…" };
 
   return (
-    <div className="shell">
+    <div className="shell has-tips">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
       <main className="main">
         <EnterInBrowser link={personalLink} locale={locale} />
@@ -195,6 +196,7 @@ export default async function HomeBody() {
           qa={{ ...qa, hint: t.quickHint }}
         />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }
