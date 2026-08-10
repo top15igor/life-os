@@ -50,7 +50,7 @@ export default async function TracePage() {
         <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 18 }}>{s.sub}</p>
         <TraceView locale={locale} deeds={deeds} promises={promises} gratitudeCount={gratitudeCount} week={week} calConnected={calConnected} calLinks={calLinks} />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="trace" />
     </div>
   );
 }

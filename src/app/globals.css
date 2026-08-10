@@ -135,6 +135,10 @@ details.adm[open] > summary .adm-chev { transform: rotate(180deg); }
   .tips-rail-title { font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 4px 0 10px 2px; }
   .tips-card { display: block; background: var(--surface); border: 1px solid var(--card-border); border-radius: 14px; padding: 13px 15px; margin-bottom: 10px; text-decoration: none; color: var(--text); box-shadow: var(--shadow); transition: transform .15s ease, box-shadow .15s ease; }
   a.tips-card:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 10px 24px -14px rgba(20,24,40,.35); }
+  /* Кейс — крупнее и теплее остальных: это первое, что должно зацепить взгляд. */
+  .tips-card-case { padding: 16px 16px 15px; }
+  .tips-card-case .tips-card-text { font-size: 13.5px; line-height: 1.55; color: var(--text); }
+  .tips-case-emoji { font-size: 26px; line-height: 1; margin-bottom: 9px; }
   .tips-card-about { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
   .tips-card-about .tips-card-head { color: var(--accent-text, var(--accent)); }
   .tips-card-about .tips-card-text { color: var(--text-2); }

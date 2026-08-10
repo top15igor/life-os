@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { tipsOfDay } from "@/lib/tips";
 import { hints } from "@/lib/hints";
+import { lifeCase } from "@/lib/cases";
 import type { Locale } from "@/lib/i18n";
 
 // Правая колонка с подсказками — на всех разделах приложения.
@@ -27,14 +28,22 @@ const TITLE: Record<string, string> = {
 };
 
 export default function TipsRail({ locale, section }: { locale: Locale; section?: string }) {
-  // Пояснение к разделу + общие подсказки. Если у раздела пояснения нет —
-  // показываем на одну общую подсказку больше, чтобы колонка не пустовала.
+  // Порядок в колонке: сначала «зачем это в жизни» (кейс), потом «что это»
+  // (пояснение), потом общая подсказка. Чего нет — то пропускаем, и вместо
+  // него добавляем ещё одну общую подсказку, чтобы колонка не пустовала.
+  const kase = lifeCase(section, locale);
   const about = section ? hints(locale)[section] : undefined;
-  const tips = tipsOfDay(locale, about ? 2 : 3);
-  if (!tips.length && !about) return null;
+  const tips = tipsOfDay(locale, 3 - (kase ? 1 : 0) - (about ? 1 : 0));
+  if (!tips.length && !about && !kase) return null;
 
   return (
     <aside className="tips-rail" aria-label={TITLE[locale] || TITLE.ru}>
+      {kase && (
+        <div className="tips-card tips-card-case">
+          <div className="tips-case-emoji">{kase.emoji}</div>
+          <div className="tips-card-text">{kase.text}</div>
+        </div>
+      )}
       {about && (
         <div className="tips-card tips-card-about">
           <div className="tips-card-head">

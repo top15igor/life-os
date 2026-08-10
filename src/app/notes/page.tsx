@@ -28,7 +28,7 @@ export default async function NotesPage() {
           <ListsBlock locale={locale} />
         </div>
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="notes" />
     </div>
   );
 }

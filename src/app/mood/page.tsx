@@ -25,7 +25,7 @@ export default async function MoodPage() {
         </p>
         <MoodCalendar />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="mood" />
     </div>
   );
 }
