@@ -12,9 +12,11 @@ import { logClaude } from "./usage";
 // дословно, такая идея бесполезна — до неё всё равно придётся возвращаться и
 // переспрашивать, а автор к тому времени забудет, что имел в виду.
 //
-// Поэтому агент ОБСУЖДАЕТ: пересказывает своими словами (это одно уже ловит
-// половину непониманий), задаёт два-три точных вопроса и показывает итог на
-// подтверждение. Владельцу уходит не реплика, а готовая постановка.
+// Поэтому агент ОБСУЖДАЕТ — именно разговором, а не анкетой. Он помнит весь
+// диалог целиком, возвращается к сказанному раньше, предлагает более острую
+// версию, спорит, если идея решает не ту проблему. Заканчивает не по счётчику
+// вопросов, а когда стало ясно, ЧТО делать, ЗАЧЕМ и КОМУ. Владельцу уходит не
+// реплика, а готовая постановка.
 //
 // И главное, чего обычно не делают: автор УЗНАЁТ о судьбе своей идеи. Без
 // этого предложения уходят в пустоту, и человек перестаёт предлагать после
@@ -56,7 +58,14 @@ export type Idea = {
 // Тот же принцип, что и в «Хочу, чтобы умел»: до явного согласия текст
 // принадлежит только ему.
 
-type Draft = { said: string[]; asked: string[]; step: number; at: number };
+// Разговор — не анкета. Держим ВСЮ переписку и каждый раз отдаём её модели
+// целиком: человек возвращается к сказанному, меняет мнение, вспоминает
+// подробность через десять реплик. Анкета из трёх вопросов этого не умеет —
+// она спрашивает своё и не слышит, что ей ответили.
+type Msg = { r: "u" | "a"; t: string };
+type Draft = { msgs: Msg[]; at: number };
+
+const MAX_MSGS = 40;
 
 async function prefs(userId: string): Promise<any> {
   const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", userId).maybeSingle();
@@ -71,7 +80,7 @@ export async function getDraft(userId: string): Promise<Draft | null> {
   try {
     const d = (await prefs(userId)).ideaDraft as Draft | undefined;
     // Сутки — щедро: человек может отвлечься и вернуться вечером.
-    if (!d || Date.now() - Number(d.at || 0) > 24 * 3600_000) return null;
+    if (!d?.msgs?.length || Date.now() - Number(d.at || 0) > 24 * 3600_000) return null;
     return d;
   } catch {
     return null;
@@ -82,6 +91,7 @@ export async function clearDraft(userId: string): Promise<void> {
   try {
     const p = await prefs(userId);
     delete p.ideaDraft;
+    delete p.ideaReady;
     await savePrefs(userId, p);
   } catch {
     /* нечего убирать */
@@ -91,107 +101,151 @@ export async function clearDraft(userId: string): Promise<void> {
 async function putDraft(userId: string, d: Draft): Promise<void> {
   try {
     const p = await prefs(userId);
-    p.ideaDraft = d;
+    p.ideaDraft = { msgs: d.msgs.slice(-MAX_MSGS), at: Date.now() };
     await savePrefs(userId, p);
   } catch {
-    /* без черновика обсуждение просто не продолжится */
+    /* без черновика разговор не продолжится */
   }
 }
 
-// ===== Обсуждение =====
+// ===== Разговор =====
 
-const MAX_QUESTIONS = 3;
+const SYS = `Ты обсуждаешь с человеком ИДЕЮ ПО ПРОДУКТУ LIFE OS. Он не заказчик и не подчинённый — он соавтор, который хорошо знает жизнь пользователя, но не обязан знать, как устроен продукт.
 
-const SYS = `Ты помогаешь довести ИДЕЮ ПО ПРОДУКТУ LIFE OS до постановки, по которой можно работать.
+ЧТО ТАКОЕ LIFE OS. Личный архив жизни: Telegram-бот и сайт. Человек надиктовывает боту события дня, AI разбирает их и раскладывает по разделам: дневник, деньги, задачи, напоминания, люди, места, здоровье, документы и фото, заметки, база знаний, книги, мечты, путешествия. Есть поиск по смыслу по всем разделам сразу, «Разобрать» — где агент показывает, в чём сомневался, и учится на поправках, выгрузка всех своих данных, книга жизни.
 
-LIFE OS — личный архив жизни: Telegram-бот и сайт. Человек надиктовывает боту события дня, тот разбирает их AI и раскладывает по разделам (дневник, деньги, задачи, напоминания, люди, места, здоровье, документы и фото, заметки, база знаний, книги). Есть поиск по смыслу по всем разделам и «Разобрать» — где агент показывает, в чём сомневался.
+КАК РАЗГОВАРИВАТЬ.
+— Это живой разговор, а не анкета. Ты помнишь всё сказанное раньше и опираешься на это.
+— Сначала пойми, а потом предлагай. Если формулировка допускает два прочтения — скажи, какие, и спроси, какое верное.
+— Думай вместе с ним: предлагай более острую версию идеи, показывай, где она сломается, называй похожее, что уже есть в продукте.
+— Не соглашайся из вежливости. Если видишь, что идея решает не ту проблему или уже решена — скажи прямо и объясни.
+— Отвечай коротко, 2-5 предложений, как в переписке. Без списков, заголовков и markdown. Один вопрос за раз.
+— Не обещай сроков и не решай, будут ли это делать: решает владелец.
 
-ТВОЯ ЗАДАЧА на этом шаге — задать ОДИН следующий вопрос, который сильнее всего уточняет идею. Хорошие вопросы:
-— какую проблему это решает и когда она случается;
-— что именно должно произойти: где, в какой момент, что человек увидит;
-— чем предложенное лучше того, что уже есть;
-— как понять, что сделано хорошо.
+КОГДА ЗАКАНЧИВАТЬ. Как только ясно, ЧТО делать, ЗАЧЕМ и КОМУ это нужно, — вызови инструмент finish. Не тяни разговор ради разговора: три-четыре обмена репликами обычно достаточно. Если человек говорит «хватит», «отправляй», «достаточно» — вызывай finish немедленно, с тем, что есть.`;
 
-ПРАВИЛА:
-— Ровно один вопрос, короткий, без вступлений и без списков.
-— Не спрашивай очевидное и не повторяй уже спрошенное.
-— Не предлагай своих решений и не спорь: твоё дело — понять.
-— Если по сказанному уже понятно, ЧТО делать, для кого и когда — верни пустую строку вместо вопроса.`;
-
-export async function nextQuestion(userId: string, said: string[], asked: string[]): Promise<string> {
-  if (asked.length >= MAX_QUESTIONS || !process.env.ANTHROPIC_API_KEY) return "";
-  try {
-    const dialog = said.map((t, i) => `Автор: ${t}${asked[i] ? `\nТы спросил: ${asked[i]}` : ""}`).join("\n");
-    const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 200,
-      temperature: 0.3,
-      system: SYS,
-      messages: [{ role: "user", content: dialog }],
-    });
-    logClaude(userId, "idea-refine", "sonnet", (m as any).usage);
-    return m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim().slice(0, 300);
-  } catch {
-    return "";
-  }
-}
-
-const SUM_TOOL: Anthropic.Tool = {
-  name: "idea",
-  description: "Готовая постановка идеи.",
+const FINISH: Anthropic.Tool = {
+  name: "finish",
+  description: "Идея понятна — собрать постановку и предложить отправить владельцу.",
   input_schema: {
     type: "object",
     properties: {
+      say: { type: "string", description: "что сказать человеку перед показом постановки, 1-2 предложения" },
       title: { type: "string", description: "суть одной строкой, 3-8 слов, словами автора" },
       body: { type: "string", description: "что именно сделать: 2-4 предложения, конкретно" },
       problem: { type: "string", description: "какую проблему решает и когда она случается" },
-      who: { type: "string", description: "кому это нужно: всем, новичкам, тем у кого много документов и т.п." },
+      who: { type: "string", description: "кому это нужно" },
       done_when: { type: "string", description: "как понять, что сделано хорошо — проверяемо" },
     },
-    required: ["title", "body"],
+    required: ["say", "title", "body"],
   },
 };
 
-export async function summarize(userId: string, said: string[], asked: string[]): Promise<Partial<Idea> | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return { title: said[0]?.slice(0, 60) || "Идея", body: said.join(" ") };
+export type Turn = { reply: string; ready?: Partial<Idea>; msgs: Msg[] };
+
+// Одна реплика разговора. Возвращает ответ агента и, если пора, готовую
+// постановку — но НЕ сохраняет её: решение отправлять принимает человек.
+export async function converse(userId: string, text: string): Promise<Turn> {
+  const d = (await getDraft(userId)) || { msgs: [], at: Date.now() };
+  d.msgs.push({ r: "u", t: String(text).slice(0, 3000) });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    await putDraft(userId, d);
+    return { reply: "Расскажи ещё пару слов — и соберу.", msgs: d.msgs };
+  }
+
   try {
-    const dialog = said.map((t, i) => `Автор: ${t}${asked[i] ? `\nВопрос: ${asked[i]}` : ""}`).join("\n");
+    const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 900,
+      temperature: 0.5,
+      system: SYS,
+      tools: [FINISH],
+      messages: d.msgs.map((x) => ({ role: x.r === "u" ? ("user" as const) : ("assistant" as const), content: x.t })),
+    });
+    logClaude(userId, "idea-talk", "sonnet", (m as any).usage);
+
+    const tool = m.content.find((b) => b.type === "tool_use");
+    const said = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
+
+    if (tool && tool.type === "tool_use") {
+      const i = tool.input as any;
+      const reply = String(i.say || said || "Кажется, всё понятно.").slice(0, 600);
+      d.msgs.push({ r: "a", t: reply });
+      await putDraft(userId, d);
+      return {
+        reply,
+        ready: {
+          title: String(i.title || "").slice(0, 120),
+          body: String(i.body || "").slice(0, 2000),
+          problem: i.problem || null,
+          who: i.who || null,
+          done_when: i.done_when || null,
+        },
+        msgs: d.msgs,
+      };
+    }
+
+    const reply = said || "Расскажи чуть подробнее.";
+    d.msgs.push({ r: "a", t: reply.slice(0, 1500) });
+    await putDraft(userId, d);
+    return { reply, msgs: d.msgs };
+  } catch {
+    await putDraft(userId, d);
+    return { reply: "Что-то пошло не так, скажи ещё раз.", msgs: d.msgs };
+  }
+}
+
+// Свернуть разговор по требованию человека («хватит, отправляй»), даже если
+// агент считает, что стоило бы уточнить ещё.
+export async function summarize(userId: string, msgs?: Msg[]): Promise<Partial<Idea> | null> {
+  const list = msgs || (await getDraft(userId))?.msgs || [];
+  const mine = list.filter((x) => x.r === "u").map((x) => x.t);
+  if (!mine.length) return null;
+  if (!process.env.ANTHROPIC_API_KEY) return { title: mine[0].slice(0, 60), body: mine.join(" ") };
+  try {
+    const dialog = list.map((x) => `${x.r === "u" ? "Автор" : "Ты"}: ${x.t}`).join("\n");
     const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 900,
       temperature: 0.2,
-      system: `Собери из разговора ПОСТАНОВКУ идеи по продукту LIFE OS. Пиши словами автора, не приукрашивай и НЕ ДОДУМЫВАЙ того, чего он не говорил: если чего-то не прозвучало, оставь поле пустым. Формулируй так, чтобы человек, который в разговоре не участвовал, понял, что делать.`,
-      tools: [SUM_TOOL],
+      system: "Собери из разговора ПОСТАНОВКУ идеи по продукту LIFE OS. Пиши словами автора, не приукрашивай и НЕ ДОДУМЫВАЙ того, чего он не говорил: если чего-то не прозвучало, оставь поле пустым. Формулируй так, чтобы понял человек, который в разговоре не участвовал.",
+      tools: [{ ...FINISH, name: "idea", description: "Готовая постановка." }],
       tool_choice: { type: "tool", name: "idea" },
       messages: [{ role: "user", content: dialog }],
     });
     logClaude(userId, "idea-sum", "sonnet", (m as any).usage);
     const b = m.content.find((x) => x.type === "tool_use");
-    const d = (b && b.type === "tool_use" ? b.input : {}) as any;
-    if (!d?.title) return null;
-    return { title: String(d.title).slice(0, 120), body: String(d.body || "").slice(0, 2000), problem: d.problem || null, who: d.who || null, done_when: d.done_when || null };
+    const i = (b && b.type === "tool_use" ? b.input : {}) as any;
+    if (!i?.title) return null;
+    return { title: String(i.title).slice(0, 120), body: String(i.body || "").slice(0, 2000), problem: i.problem || null, who: i.who || null, done_when: i.done_when || null };
   } catch {
     return null;
   }
 }
 
-// Начать или продолжить обсуждение. Возвращает вопрос — либо null, если пора
-// показывать итог.
-export async function advance(userId: string, text: string): Promise<{ question: string } | { ready: Partial<Idea>; chat: { said: string[]; asked: string[] } }> {
-  const d = (await getDraft(userId)) || { said: [], asked: [], step: 0, at: Date.now() };
-  d.said.push(text.slice(0, 2000));
-  d.at = Date.now();
-
-  const q = await nextQuestion(userId, d.said, d.asked);
-  if (q && d.asked.length < MAX_QUESTIONS) {
-    d.asked.push(q);
-    await putDraft(userId, d);
-    return { question: q };
+// Готовую постановку держим рядом с разговором: кнопка «Отправить» берёт её
+// отсюда, а не пересобирает заново — иначе человек подтверждает один текст,
+// а уходит другой.
+export async function stashIdea(userId: string, ready: Partial<Idea>): Promise<void> {
+  try {
+    const p = await prefs(userId);
+    p.ideaReady = ready;
+    await savePrefs(userId, p);
+  } catch {
+    /* соберём заново при отправке */
   }
+}
 
-  const ready = await summarize(userId, d.said, d.asked);
-  await putDraft(userId, d);
-  return { ready: ready || { title: d.said[0].slice(0, 80), body: d.said.join(" ") }, chat: { said: d.said, asked: d.asked } };
+export async function takeStashed(userId: string): Promise<Partial<Idea> | null> {
+  try {
+    const p = await prefs(userId);
+    const r = p.ideaReady || null;
+    if (r) { delete p.ideaReady; await savePrefs(userId, p); }
+    return r;
+  } catch {
+    return null;
+  }
 }
 
 // ===== Сохранение и жизнь идеи =====

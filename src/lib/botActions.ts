@@ -23,7 +23,7 @@ import { amendLastEntry, amendEntryById } from "./amendEntry";
 import { findEntry, findThing, deleteThing } from "./findFix";
 import { listRules as listUserRules, addRule as addUserRule, dropRule as dropUserRule } from "./userRules";
 import { planBulk, rememberPlan } from "./bulkOps";
-import { advance as advanceIdea, similarIdea, STATUS_LABEL } from "./ideas";
+import { converse as converseIdea, similarIdea, STATUS_LABEL } from "./ideas";
 import { resetVoiceHint } from "./voiceHints";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -1500,9 +1500,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const same = await similarIdea(t);
       if (same) return { text: I.similar(same.num, same.title, STATUS_LABEL[same.status]) };
 
-      const step = await advanceIdea(userId, t);
-      if ("question" in step) return { text: `${I.head}\n\n${step.question}` };
-      return { text: I.fallback };
+      // Первая реплика разговора. Дальше человек просто отвечает — ветка
+      // разговора в вебхуке подхватит, и весь диалог будет с общей памятью.
+      const turn = await converseIdea(userId, t);
+      return { text: `${I.head}\n\n${turn.reply}` };
     }
 
     if (name === "ask_clarify") {

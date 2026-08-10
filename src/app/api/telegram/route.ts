@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
-import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, advance as advanceIdea, summarize as summarizeIdea, createIdea } from "@/lib/ideas";
+import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -206,11 +206,11 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
 // Подписи обсуждения идей и предпросмотр постановки.
 const IDEA_T: Record<string, any> = {
-  ru: { skip: "Если нечего добавить — жми «Хватит, собери».", enough: "Хватит, собери", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
-        dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что добавить?", gone: "Черновик уже не найти, расскажи заново.",
+  ru: { skip: "", enough: "Хватит, отправляем", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
+        dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
         sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, failed: "Не получилось сохранить, попробуй ещё раз.",
         head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
-  en: { skip: "Nothing to add? Tap «That's enough».", enough: "That's enough", send: "📨 Send it", more: "Let me add", drop: "Cancel",
+  en: { skip: "", enough: "Enough, let's send", send: "📨 Send it", more: "Let me add", drop: "Cancel",
         dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
         sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, failed: "Couldn't save it, try again.",
         head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
@@ -1246,13 +1246,13 @@ async function handleUpdate(req: NextRequest) {
         } else if (act === "sum" || act === "send") {
           const d = await getIdeaDraft(uid);
           if (!d) { await sendMessage(cqChat, IDEA_T[lng].gone); return NextResponse.json({ ok: true }); }
-          const ready = await summarizeIdea(uid, d.said, d.asked);
+          const ready = (act === "send" ? await takeStashed(uid) : null) || (await summarizeIdea(uid));
           if (act === "sum") {
             await sendMessage(cqChat, ideaPreview(ready || {}, lng), {
               reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
             });
           } else {
-            const saved = await createIdea(uid, { name: (u as any).name }, ready || {}, { said: d.said, asked: d.asked });
+            const saved = await createIdea(uid, { name: (u as any).name }, ready || {}, d.msgs);
             await sendMessage(cqChat, saved ? IDEA_T[lng].sent(saved.num) : IDEA_T[lng].failed);
           }
         }
@@ -2389,14 +2389,22 @@ async function handleUpdate(req: NextRequest) {
     //    а не запись в дневник. Пока он не подтвердил, наружу ничего не уходит.
     if (!text.startsWith("/") && (await getIdeaDraft(user.id))) {
       const lng = langOf(user, msg);
-      const step = await advanceIdea(user.id, text);
-      if ("question" in step) {
-        await sendMessage(chatId, `${step.question}\n\n<i>${IDEA_T[lng].skip}</i>`, {
-          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }]] },
-        });
-      } else {
-        await sendMessage(chatId, ideaPreview(step.ready, lng), {
+      const turn = await converseIdea(user.id, text);
+      if (turn.ready) {
+        // Разговор дошёл до конца: сначала реплика агента, следом — постановка
+        // с кнопками. Сохраняем только по «Отправить».
+        await sendMessage(chatId, turn.reply);
+        await sendMessage(chatId, ideaPreview(turn.ready, lng), {
           reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+        });
+        // Постановку держим рядом с разговором: кнопка «Отправить» возьмёт её
+        // отсюда, а не будет пересобирать заново.
+        await stashIdea(user.id, turn.ready);
+      } else {
+        // Обычная реплика разговора. Кнопки внизу — чтобы человек в любой момент
+        // мог свернуть обсуждение, не дожидаясь, пока агент решит, что понял.
+        await sendMessage(chatId, turn.reply, {
+          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
         });
       }
       return NextResponse.json({ ok: true });
