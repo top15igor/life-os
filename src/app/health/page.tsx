@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import TrendChart from "@/components/TrendChart";
 import EntryFeed from "@/components/EntryFeed";
@@ -204,6 +205,7 @@ export default async function WellnessPage({ searchParams }: { searchParams: Pro
         {tab === "sport" && <EntryFeed entries={sportEntries} t={t} locale={locale} />}
         {tab === "food" && <EntryFeed entries={foodEntries} t={t} locale={locale} />}
       </main>
+      <TipsRail locale={locale} section="health" />
     </div>
   );
 }

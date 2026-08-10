@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import FinanceTracker from "@/components/FinanceTracker";
 import { requireUser } from "@/lib/auth";
@@ -52,6 +53,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         </div>
         <FinanceTracker data={data} locale={locale} />
       </main>
+      <TipsRail locale={locale} section="finance" />
     </div>
   );
 }

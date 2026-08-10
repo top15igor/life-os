@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -195,6 +196,7 @@ export default async function GuidePage() {
 
         <GuideAccordion items={items} tocLabel={tocLabel} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

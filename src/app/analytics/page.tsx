@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import PageHead from "@/components/PageHead";
 import IntelligenceOverview from "@/components/IntelligenceOverview";
@@ -144,6 +145,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           </div>
         )}
       </main>
+      <TipsRail locale={locale} section="analytics" />
     </div>
   );
 }

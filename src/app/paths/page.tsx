@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import PathsView from "@/components/PathsView";
 import { getPaths } from "@/lib/paths";
@@ -32,6 +33,7 @@ export default async function PathsPage() {
         <PageHead icon="ti-route" color="#4f46e5" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <PathsView paths={paths} host={host} locale={locale} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

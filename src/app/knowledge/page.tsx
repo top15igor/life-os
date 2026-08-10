@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import KnowledgeManager from "@/components/KnowledgeManager";
 import { getSavedItems } from "@/lib/queries";
@@ -25,11 +26,12 @@ export default async function KnowledgePage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main wide">
+      <main className="main">
         <PageHead icon="ti-bookmarks" color="#6d5efc" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
 
         <KnowledgeManager initial={items} locale={locale} />
       </main>
+      <TipsRail locale={locale} section="knowledge" />
     </div>
   );
 }

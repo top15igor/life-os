@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Lab from "@/components/Lab";
 import LabPitch from "@/components/LabPitch";
@@ -37,6 +38,7 @@ export default async function LabPage({ searchParams }: { searchParams: Promise<
           <LabPitch locale={locale} />
         )}
       </main>
+      <TipsRail locale={locale} section="lab" />
     </div>
   );
 }

@@ -202,7 +202,7 @@ export default function DashboardView({ locale = "ru" }: { locale?: string }) {
   const secLbl: React.CSSProperties = { fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--text-3)" };
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto" }}>
+    <div>
       {/* Hero */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
         {[

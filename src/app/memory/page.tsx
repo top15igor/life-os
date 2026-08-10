@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import MemoryArchive from "@/components/MemoryArchive";
 import { getMemories } from "@/lib/queries";
@@ -39,10 +40,11 @@ export default async function MemoryPage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main wide">
+      <main className="main">
         <PageHead icon="ti-camera" color="#ec4899" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <MemoryArchive initial={memories as any} locale={locale} catLabels={catLabels} customCats={customCats} />
       </main>
+      <TipsRail locale={locale} section="memory" />
     </div>
   );
 }

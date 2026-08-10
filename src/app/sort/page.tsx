@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import SortShelf from "@/components/SortShelf";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -37,6 +38,7 @@ export default async function SortPage() {
           <SortShelf initial={items} rules={rules} dupes={[...dupPeople, ...dupPlaces]} themes={themes} locale={locale} />
         </div>
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Biographer from "@/components/Biographer";
 import BiographerPitch from "@/components/BiographerPitch";
@@ -37,6 +38,7 @@ export default async function BiographerPage({ searchParams }: { searchParams: P
           <BiographerPitch locale={locale} />
         )}
       </main>
+      <TipsRail locale={locale} section="biographer" />
     </div>
   );
 }

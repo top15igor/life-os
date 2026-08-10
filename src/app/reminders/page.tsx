@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import RemindersView from "@/components/RemindersView";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -46,6 +47,7 @@ export default async function RemindersPage({ searchParams }: { searchParams: Pr
         <p style={{ fontSize: 15, color: "var(--text-2)", lineHeight: 1.6, marginTop: 0, marginBottom: 18 }}>{s.sub}</p>
         <RemindersView locale={locale} initial={reminders} connected={connected} calStatus={sp.cal} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

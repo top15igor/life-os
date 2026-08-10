@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import NotesManager from "@/components/NotesManager";
 import ListsBlock from "@/components/ListsBlock";
 import { getLocale } from "@/lib/locale";
@@ -27,6 +28,7 @@ export default async function NotesPage() {
           <ListsBlock locale={locale} />
         </div>
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

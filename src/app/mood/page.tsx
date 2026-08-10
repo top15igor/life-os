@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import MoodCalendar from "@/components/MoodCalendar";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -24,6 +25,7 @@ export default async function MoodPage() {
         </p>
         <MoodCalendar />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

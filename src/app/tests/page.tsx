@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Link from "next/link";
 import TesterReport from "@/components/TesterReport";
@@ -35,6 +36,7 @@ export default async function TestsPage() {
           </div>
         )}
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

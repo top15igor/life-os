@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import ProjectsManager from "@/components/ProjectsManager";
 import { getProjectsManaged } from "@/lib/queries";
@@ -23,6 +24,7 @@ export default async function ProjectsPage() {
         <PageHead icon="ti-briefcase" color="#3b82f6" title={t.nav.projects} hint={h.projects} />
         <ProjectsManager initial={projects as any} locale={locale} />
       </main>
+      <TipsRail locale={locale} section="projects" />
     </div>
   );
 }

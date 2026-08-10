@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import ShareCard from "@/components/ShareCard";
 import PublicProfileEditor from "@/components/PublicProfileEditor";
@@ -63,6 +64,7 @@ export default async function SharePage() {
         <ShareCard prefill={{ progress, dreams: doneDreams, thoughts }} host={host} refLink={refLink} locale={locale} />
         <PublicProfileEditor initial={pubConfig} host={host} suggestedSlug={suggestedSlug} locale={locale} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

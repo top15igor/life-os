@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import { getEntries, getEntityMeta, people as peopleOf, type Entry } from "@/lib/queries";
 import { daysSince } from "@/lib/peopleCrm";
@@ -90,6 +91,7 @@ export default async function PeoplePage() {
           <EntityManager kind="people" locale={locale} items={items} />
         )}
       </main>
+      <TipsRail locale={locale} section="people" />
     </div>
   );
 }

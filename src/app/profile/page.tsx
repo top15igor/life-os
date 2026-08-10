@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import ProfileBody from "@/components/ProfileBody";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -17,6 +18,7 @@ export default async function ProfilePage() {
       <main className="main">
         <ProfileBody user={user} locale={locale} />
       </main>
+      <TipsRail locale={locale} section="profile" />
     </div>
   );
 }

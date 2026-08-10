@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import IdeasBoard from "@/components/IdeasBoard";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -44,6 +45,7 @@ export default async function IdeasPage() {
           <IdeasBoard initial={ideas} owner={owner} authors={authors} />
         </div>
       </main>
+      <TipsRail locale={locale} section="insights" />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Link from "next/link";
 import { getEntries, getDreams, getEntityMeta, getMemories, places as placesOf, type Entry } from "@/lib/queries";
@@ -80,7 +81,7 @@ export default async function PlacesPage() {
   return (
     <div className="shell">
       <Sidebar navLabels={t.nav} brand={t.brand} locale={locale} />
-      <main className="main wide">
+      <main className="main">
         <PageHead icon="ti-plane-departure" color="#06b6d4" title={t.nav.places} hint={h.places} />
 
         {/* Хронология путешествий */}
@@ -124,6 +125,7 @@ export default async function PlacesPage() {
           </details>
         )}
       </main>
+      <TipsRail locale={locale} section="places" />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import TipsRail from "@/components/TipsRail";
 import Sidebar from "@/components/Sidebar";
 import AdminUsersTable from "@/components/AdminUsersTable";
 import AnthropicLimits from "@/components/AnthropicLimits";
@@ -533,6 +534,7 @@ export default async function AdminPage() {
           <AdminUsersTable users={d.list as any} refOptions={refOptions} />
         </Section>
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

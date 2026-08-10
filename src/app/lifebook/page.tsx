@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import BookOfLife from "@/components/BookOfLife";
 import { getBookYears, getBookData, getBookMeta } from "@/lib/book";
@@ -41,6 +42,7 @@ export default async function LifeBookPage({ searchParams }: { searchParams: Pro
         </a>
         <BookOfLife book={book} meta={meta} years={years} year={year} locale={locale} userName={user.name || ""} memories={memories} referral={referral} />
       </main>
+      <TipsRail locale={locale} section="lifebook" />
     </div>
   );
 }

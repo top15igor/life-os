@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import Link from "next/link";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
@@ -35,6 +36,7 @@ export default async function HeirsPage() {
         <p style={{ fontSize: 14, color: "var(--text-2)", margin: "0 0 18px" }}>{SUB[locale] || SUB.ru}</p>
         <HeirsManager initial={heirs as any} locale={locale} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

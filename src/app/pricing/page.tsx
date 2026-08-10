@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import BackLink from "@/components/BackLink";
 import PageHead from "@/components/PageHead";
 import PricingPlans from "@/components/PricingPlans";
@@ -59,6 +60,7 @@ export default async function PricingPage() {
         <PageHead icon="ti-star" color="#f59e0b" title={TITLE[locale] || TITLE.ru} hint={HINT[locale] || HINT.ru} />
         <PricingPlans locale={locale} monthEntries={monthEntries} userName={user.name || ""} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

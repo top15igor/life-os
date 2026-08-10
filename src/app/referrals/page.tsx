@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import TipsRail from "@/components/TipsRail";
 import Sidebar from "@/components/Sidebar";
 import BackLink from "@/components/BackLink";
 import ReferralTreeView from "@/components/ReferralTreeView";
@@ -33,6 +34,7 @@ export default async function ReferralsPage() {
         <BackLink locale={locale} />
         <ReferralTreeView locale={locale} tree={tree} status={status} inviteLink={inviteLink} />
       </main>
+      <TipsRail locale={locale} />
     </div>
   );
 }

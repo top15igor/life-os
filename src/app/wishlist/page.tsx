@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import Wishlist from "@/components/Wishlist";
 import { getWishes, getWishShare } from "@/lib/wishlist";
@@ -23,6 +24,7 @@ export default async function WishlistPage() {
         <PageHead icon="ti-gift" color="#ec4899" title={t.nav.wishlist} hint={h.wishlist} />
         <Wishlist locale={locale} initial={wishes as any} share={share} />
       </main>
+      <TipsRail locale={locale} section="wishlist" />
     </div>
   );
 }

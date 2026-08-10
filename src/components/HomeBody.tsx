@@ -196,7 +196,7 @@ export default async function HomeBody() {
           qa={{ ...qa, hint: t.quickHint }}
         />
       </main>
-      <TipsRail locale={locale} />
+      <TipsRail locale={locale} section="today" />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import SubTabs from "@/components/SubTabs";
 import GoalsManager from "@/components/GoalsManager";
@@ -62,6 +63,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
         {tab === "dreams" && <DreamsBoard initial={dreams as any} locale={locale} />}
         {tab === "ideas" && <InsightsView insights={insights as any} locale={locale} />}
       </main>
+      <TipsRail locale={locale} section="goals" />
     </div>
   );
 }

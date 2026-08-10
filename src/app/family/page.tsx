@@ -1,4 +1,5 @@
 import Sidebar from "@/components/Sidebar";
+import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import EntryFeed from "@/components/EntryFeed";
 import { getEntries, cats } from "@/lib/queries";
@@ -24,6 +25,7 @@ export default async function FamilyPage() {
         <PageHead icon="ti-users" color="#ec4899" title={t.nav.family} hint={h.family} />
         <EntryFeed entries={entries} t={t} locale={locale} />
       </main>
+      <TipsRail locale={locale} section="family" />
     </div>
   );
 }
