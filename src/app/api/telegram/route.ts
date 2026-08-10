@@ -206,17 +206,20 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
 // Подписи обсуждения идей и предпросмотр постановки.
 const IDEA_T: Record<string, any> = {
-  ru: { skip: "", enough: "Хватит, отправляем", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
+  ru: { skip: "", enough: "📨 Хватит, отправляй", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
         dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
         sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, working: "Собираю постановку…", save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
         head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
-  en: { skip: "", enough: "Enough, let's send", send: "📨 Send it", more: "Let me add", drop: "Cancel",
+  en: { skip: "", enough: "📨 Enough, send it", send: "📨 Send it", more: "Let me add", drop: "Cancel",
         dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
         sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, working: "Writing it up…", save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
         head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
 };
 IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
 
+// Постановка человеческим видом. Одна и та же функция показывает и
+// предложение («так?»), и отчёт о том, что ушло, — поэтому хвост с вопросом
+// вызывающий при необходимости убирает.
 function ideaPreview(d: any, lng: string): string {
   const T = IDEA_T[lng] || IDEA_T.ru;
   const e = (x: any) => String(x || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1253,11 +1256,7 @@ async function handleUpdate(req: NextRequest) {
           await sendMessage(cqChat, IDEA_T[lng].working);
           const ready = (act === "send" ? await takeStashed(uid) : null) || (await summarizeIdea(uid));
           if (!ready) { await sendMessage(cqChat, IDEA_T[lng].failed); return NextResponse.json({ ok: true }); }
-          if (act === "sum") {
-            await sendMessage(cqChat, ideaPreview(ready || {}, lng), {
-              reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
-            });
-          } else {
+          {
             const editId = await editingIdea(uid);
             if (editId) {
               const upd = await updateIdea(editId, ready || {}, d.msgs);
@@ -1274,6 +1273,9 @@ async function handleUpdate(req: NextRequest) {
                 for (const fid of shots) await sendPhoto(ownerChat, fid, { caption: `К идее №${saved.num}` }).catch(() => {});
               }
               await clearIdeaDraft(uid);
+              // Показываем, ЧТО именно ушло: человек должен видеть результат
+              // своими глазами, а не верить строчке «отправлено».
+              if (saved) await sendMessage(cqChat, ideaPreview(ready, lng).replace(IDEA_T[lng].ok, ""));
               await sendMessage(cqChat, saved ? IDEA_T[lng].sent(saved.num) : IDEA_T[lng].failed);
             }
           }
