@@ -2385,31 +2385,6 @@ async function handleUpdate(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 💡 Идёт обсуждение идеи по продукту: ответы человека — часть разговора,
-    //    а не запись в дневник. Пока он не подтвердил, наружу ничего не уходит.
-    if (!text.startsWith("/") && (await getIdeaDraft(user.id))) {
-      const lng = langOf(user, msg);
-      const turn = await converseIdea(user.id, text);
-      if (turn.ready) {
-        // Разговор дошёл до конца: сначала реплика агента, следом — постановка
-        // с кнопками. Сохраняем только по «Отправить».
-        await sendMessage(chatId, turn.reply);
-        await sendMessage(chatId, ideaPreview(turn.ready, lng), {
-          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
-        });
-        // Постановку держим рядом с разговором: кнопка «Отправить» возьмёт её
-        // отсюда, а не будет пересобирать заново.
-        await stashIdea(user.id, turn.ready);
-      } else {
-        // Обычная реплика разговора. Кнопки внизу — чтобы человек в любой момент
-        // мог свернуть обсуждение, не дожидаясь, пока агент решит, что понял.
-        await sendMessage(chatId, turn.reply, {
-          reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
-        });
-      }
-      return NextResponse.json({ ok: true });
-    }
-
     // Команда добавить без предмета: не выдумываем пустую запись, а спрашиваем.
     if (EMPTY_ADD_RE.test(text.trim())) {
       const lng = langOf(user, msg);
@@ -2563,7 +2538,35 @@ async function handleUpdate(req: NextRequest) {
     // такой вопрос неуместен и выглядит так, будто бот не понял, что прочитал.
     let maybeVault = false;
     if (!forceSave && (!isVoice || text.length < 400)) {
-      const route = await routeMessage(text, user.id, (user as any).tz_offset, await recentBotContext(user.id), hasReference(text) ? await focusLine(user.id) : null);
+      // Если идёт обсуждение идеи, мозг должен об этом знать: тогда реплики
+      // разговора он относит к свободной речи, а не пытается выполнить их
+      // буквально («за три дня до срока» — это не новое напоминание).
+      const inIdea = !!(await getIdeaDraft(user.id));
+      const ctx0 = await recentBotContext(user.id);
+      const ctx = inIdea
+        ? `${ctx0 || ""}\n\nСЕЙЧАС ИДЁТ ОБСУЖДЕНИЕ ИДЕИ ПО ПРОДУКТУ LIFE OS. Реплики человека — часть этого разговора: если он рассуждает, уточняет, соглашается или возражает, это save_entry (свободная речь). Выбирай действие ТОЛЬКО если он явно просит сделать что-то со своими данными прямо сейчас.`
+        : ctx0;
+      const route = await routeMessage(text, user.id, (user as any).tz_offset, ctx, hasReference(text) ? await focusLine(user.id) : null);
+      // Разговор об идее продолжается, только если человек говорит свободно.
+      // Раньше ветка стояла раньше роутера и глотала ВСЁ подряд: начал обсуждать
+      // идею — и сутки любое «напомни завтра» уходило в то же обсуждение.
+      // Теперь любая явная команда работает как обычно, а обсуждение просто ждёт.
+      if (route.kind === "note" && inIdea) {
+        const lng = langOf(user, msg);
+        const turn = await converseIdea(user.id, text);
+        if (turn.ready) {
+          await sendMessage(chatId, turn.reply);
+          await stashIdea(user.id, turn.ready);
+          await sendMessage(chatId, ideaPreview(turn.ready, lng), {
+            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+          });
+        } else {
+          await sendMessage(chatId, turn.reply, {
+            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
       if (route.kind === "note") maybeVault = route.maybeVault === true;
       if (route.kind === "action") {
         const lang = langOf(user, msg);
