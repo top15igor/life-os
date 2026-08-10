@@ -208,11 +208,11 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 const IDEA_T: Record<string, any> = {
   ru: { skip: "", enough: "Хватит, отправляем", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
         dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
-        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
+        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, working: "Собираю постановку…", save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
         head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
   en: { skip: "", enough: "Enough, let's send", send: "📨 Send it", more: "Let me add", drop: "Cancel",
         dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
-        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
+        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, working: "Writing it up…", save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
         head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
 };
 IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
@@ -1246,7 +1246,13 @@ async function handleUpdate(req: NextRequest) {
         } else if (act === "sum" || act === "send") {
           const d = await getIdeaDraft(uid);
           if (!d) { await sendMessage(cqChat, IDEA_T[lng].gone); return NextResponse.json({ ok: true }); }
+          // Сборка постановки — это вызов модели, несколько секунд. Без этого
+          // сообщения кнопка «проморгала» и выглядела сломанной: человек не
+          // знает, отправилось у него что-то или нет. Любое действие обязано
+          // отвечать — так же, как «Я удалил запись» после удаления.
+          await sendMessage(cqChat, IDEA_T[lng].working);
           const ready = (act === "send" ? await takeStashed(uid) : null) || (await summarizeIdea(uid));
+          if (!ready) { await sendMessage(cqChat, IDEA_T[lng].failed); return NextResponse.json({ ok: true }); }
           if (act === "sum") {
             await sendMessage(cqChat, ideaPreview(ready || {}, lng), {
               reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
@@ -1272,7 +1278,13 @@ async function handleUpdate(req: NextRequest) {
             }
           }
         }
-      } catch (e) { await logError("bot:idea", e, { chatId: cqChat }); await answerCallback(cq.id); }
+      } catch (e) {
+        await logError("bot:idea", e, { chatId: cqChat });
+        await answerCallback(cq.id);
+        // Молча падать нельзя: человек нажал кнопку и должен узнать результат,
+        // даже если результат — «не получилось».
+        await sendMessage(cqChat, "Не получилось. Скажи «хватит, отправляем» словами — соберу заново.").catch(() => {});
+      }
     } else if (data.startsWith("clar:") && cqChat) {
       // Ответ на уточняющий вопрос. Прогоняем его как обычную реплику: у мозга
       // в контексте остаётся исходная просьба, и он доводит дело до конца.
