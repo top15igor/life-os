@@ -92,6 +92,8 @@ export async function clearDraft(userId: string): Promise<void> {
     const p = await prefs(userId);
     delete p.ideaDraft;
     delete p.ideaReady;
+    delete p.ideaEditing;
+    delete p.ideaShots;
     await savePrefs(userId, p);
   } catch {
     /* нечего убирать */
@@ -245,6 +247,126 @@ export async function takeStashed(userId: string): Promise<Partial<Idea> | null>
     return r;
   } catch {
     return null;
+  }
+}
+
+// Скриншоты, приложенные к разговору. Держим только их идентификаторы в
+// Telegram: перекладывать картинки в хранилище ради обсуждения незачем.
+export async function noteIdeaShot(userId: string, fileId: string): Promise<void> {
+  try {
+    const p = await prefs(userId);
+    const list: string[] = p.ideaShots || [];
+    p.ideaShots = [...list, fileId].slice(-6);
+    await savePrefs(userId, p);
+  } catch {
+    /* без скриншота обсуждение всё равно идёт */
+  }
+}
+
+export async function ideaShots(userId: string): Promise<string[]> {
+  try {
+    return (await prefs(userId)).ideaShots || [];
+  } catch {
+    return [];
+  }
+}
+
+// ===== Вернуться к идее =====
+//
+// Через день человек вспоминает подробность или передумывает: «мы остановились
+// на том-то, я хочу переделать». Без этого идея замерзает в момент отправки, а
+// самое ценное — то, что додумалось потом.
+
+// Найти идею, к которой хотят вернуться: по номеру («идея 7») или по смыслу.
+export async function findIdea(userId: string, query: string, owner: boolean): Promise<Idea | null> {
+  const q = (query || "").trim();
+  const db = supabaseAdmin();
+  const num = Number((q.match(/\d{1,5}/) || [])[0]);
+  try {
+    if (Number.isFinite(num) && num > 0) {
+      let byNum: any = db.from("ideas").select("*").eq("num", num);
+      if (!owner) byNum = byNum.eq("user_id", userId);
+      const { data } = await byNum.maybeSingle();
+      if (data) return data as Idea;
+    }
+    let all: any = db.from("ideas").select("*").order("created_at", { ascending: false }).limit(200);
+    if (!owner) all = all.eq("user_id", userId);
+    const { data } = await all;
+    const norm = (x: string) => (x || "").toLowerCase().replace(/ё/g, "е");
+    const st = norm(q).split(/[^a-zа-яіїєґ0-9]+/i).filter((w) => w.length >= 4).map((w) => w.slice(0, 5));
+    if (!st.length) return null;
+    const scored = ((data as Idea[]) || [])
+      .map((i) => ({ i, n: st.filter((x) => norm(`${i.title} ${i.body}`).includes(x)).length }))
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n);
+    return scored[0]?.i || null;
+  } catch {
+    return null;
+  }
+}
+
+// Продолжить обсуждение существующей идеи: поднимаем прошлый разговор и
+// напоминаем, на чём остановились.
+export async function resumeIdea(userId: string, idea: Idea): Promise<string> {
+  const past: Msg[] = Array.isArray((idea as any).chat) ? ((idea as any).chat as Msg[]) : [];
+  const head: Msg = {
+    r: "u",
+    t: `[Возвращаемся к идее №${idea.num}] Раньше мы сформулировали так: «${idea.title}». ${idea.body}${idea.problem ? ` Зачем: ${idea.problem}` : ""} Сейчас статус: ${STATUS_LABEL[idea.status]}. Я хочу к ней вернуться и доработать.`,
+  };
+  const msgs = [...past.filter((m) => m && m.t), head].slice(-MAX_MSGS);
+  try {
+    const p = await prefs(userId);
+    p.ideaDraft = { msgs, at: Date.now() };
+    p.ideaEditing = idea.id;
+    delete p.ideaReady;
+    await savePrefs(userId, p);
+  } catch {
+    /* не сохранилось — разговор начнётся с чистого листа */
+  }
+  return `Поднял идею №${idea.num}: «${idea.title}» (${STATUS_LABEL[idea.status]}). Что меняем?`;
+}
+
+export async function editingIdea(userId: string): Promise<string | null> {
+  try {
+    return (await prefs(userId)).ideaEditing || null;
+  } catch {
+    return null;
+  }
+}
+
+// Обновить существующую идею после доработки. Номер и статус сохраняем —
+// человеку важно, что это та же идея, а не новая.
+export async function updateIdea(id: string, data: Partial<Idea>, chat: any): Promise<Idea | null> {
+  try {
+    const { data: row, error } = await supabaseAdmin()
+      .from("ideas")
+      .update({
+        title: String(data.title || "").slice(0, 120),
+        body: String(data.body || "").slice(0, 2000),
+        problem: data.problem || null,
+        who: data.who || null,
+        done_when: data.done_when || null,
+        chat: chat || [],
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !row) return null;
+    return row as Idea;
+  } catch {
+    return null;
+  }
+}
+
+export async function tellOwnerUpdated(idea: Idea, who: { name?: string | null }): Promise<void> {
+  const owner = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
+  if (!owner) return;
+  const e = (x: any) => String(x || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  try {
+    await sendMessage(owner, [`✏️ <b>Идея №${idea.num} доработана</b> — ${e(who.name || "автором")}`, "", `<b>${e(idea.title)}</b>`, e(idea.body)].join("\n"));
+  } catch {
+    /* не дошло — правка всё равно сохранена */
   }
 }
 

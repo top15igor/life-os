@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
-import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed } from "@/lib/ideas";
+import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -208,11 +208,11 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 const IDEA_T: Record<string, any> = {
   ru: { skip: "", enough: "Хватит, отправляем", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
         dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
-        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, failed: "Не получилось сохранить, попробуй ещё раз.",
+        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
         head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
   en: { skip: "", enough: "Enough, let's send", send: "📨 Send it", more: "Let me add", drop: "Cancel",
         dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
-        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, failed: "Couldn't save it, try again.",
+        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
         head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
 };
 IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
@@ -1252,8 +1252,24 @@ async function handleUpdate(req: NextRequest) {
               reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
             });
           } else {
-            const saved = await createIdea(uid, { name: (u as any).name }, ready || {}, d.msgs);
-            await sendMessage(cqChat, saved ? IDEA_T[lng].sent(saved.num) : IDEA_T[lng].failed);
+            const editId = await editingIdea(uid);
+            if (editId) {
+              const upd = await updateIdea(editId, ready || {}, d.msgs);
+              if (upd) await tellOwnerUpdated(upd, { name: (u as any).name });
+              await clearIdeaDraft(uid);
+              await sendMessage(cqChat, upd ? IDEA_T[lng].saved(upd.num) : IDEA_T[lng].failed);
+            } else {
+              // Скриншоты пересылаем владельцу вместе с идеей: «вот тут неудобно»
+              // без картинки понять невозможно.
+              const shots = await ideaShots(uid);
+              const saved = await createIdea(uid, { name: (u as any).name }, ready || {}, d.msgs);
+              const ownerChat = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
+              if (saved && ownerChat && shots.length) {
+                for (const fid of shots) await sendPhoto(ownerChat, fid, { caption: `К идее №${saved.num}` }).catch(() => {});
+              }
+              await clearIdeaDraft(uid);
+              await sendMessage(cqChat, saved ? IDEA_T[lng].sent(saved.num) : IDEA_T[lng].failed);
+            }
           }
         }
       } catch (e) { await logError("bot:idea", e, { chatId: cqChat }); await answerCallback(cq.id); }
@@ -2123,6 +2139,28 @@ async function handleUpdate(req: NextRequest) {
         }
         return NextResponse.json({ ok: true });
       }
+      // 💡 Скриншот во время обсуждения идеи — часть разговора, а не документ
+      //    в «Память». Коля показывает пальцем на экран: «вот тут неудобно».
+      if (await getIdeaDraft(user.id)) {
+        const ph = msg.photo[msg.photo.length - 1];
+        const cap = String(msg.caption || "").trim();
+        const said = cap || "[прислал скриншот]";
+        const turn = await converseIdea(user.id, `${said}\n\n[к сообщению приложен скриншот экрана]`);
+        await noteIdeaShot(user.id, ph.file_id);
+        if (turn.ready) {
+          await sendMessage(chatId, turn.reply);
+          await stashIdea(user.id, turn.ready);
+          await sendMessage(chatId, ideaPreview(turn.ready, lang), {
+            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lang].send, callback_data: "idea:send" }], [{ text: IDEA_T[lang].more, callback_data: "idea:more" }, { text: IDEA_T[lang].drop, callback_data: "idea:drop" }]] },
+          });
+        } else {
+          await sendMessage(chatId, turn.reply, {
+            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lang].enough, callback_data: "idea:sum" }, { text: IDEA_T[lang].drop, callback_data: "idea:drop" }]] },
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       const L = MEM_MSG[lang] || MEM_MSG.ru;
       // 📚 Фото с подписью «книга/book» → в библиотеку (обложку или штрих-код читает AI).
       const bookMode = /книг|book|прочит|читаю|читаю/i.test(msg.caption || "");
@@ -2554,16 +2592,24 @@ async function handleUpdate(req: NextRequest) {
       if (route.kind === "note" && inIdea) {
         const lng = langOf(user, msg);
         const turn = await converseIdea(user.id, text);
+        const editing = await editingIdea(user.id);
         if (turn.ready) {
           await sendMessage(chatId, turn.reply);
           await stashIdea(user.id, turn.ready);
           await sendMessage(chatId, ideaPreview(turn.ready, lng), {
-            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
+            reply_markup: { inline_keyboard: [[{ text: editing ? IDEA_T[lng].save : IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
           });
         } else {
           await sendMessage(chatId, turn.reply, {
             reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
           });
+        }
+        // Наговорил голосом — отвечаем и голосом тоже: текст остаётся, чтобы
+        // можно было перечитать, а слушать удобнее на ходу.
+        if (isVoice && turn.reply) {
+          await sendChatAction(chatId, "record_voice");
+          const audio = await speak(mdToPlain(turn.reply));
+          if (audio) await sendVoice(chatId, audio);
         }
         return NextResponse.json({ ok: true });
       }
