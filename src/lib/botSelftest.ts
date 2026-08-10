@@ -31,7 +31,10 @@ type Check = (sent: SentMessage[]) => string | null; // null = всё хорош
 type Scenario = {
   name: string;
   heavy?: boolean;            // тратит AI → только в режиме full
-  send: () => any;            // тело обновления Telegram
+  send?: () => any;           // тело обновления Telegram
+  // Некоторые пути живут только в связке: наговорил — ответил — нажал кнопку.
+  // Проверять их по одному шагу бессмысленно: ломается именно стык.
+  chain?: () => any[];
   check: Check;
   // Проверка в базе: бот мог ответить «записал», но реально ничего не сохранить —
   // для человека это худший из багов, потому что он замечается только потом.
@@ -127,6 +130,38 @@ const hasButtons = (min: number, label: string): Check => (sent) => {
 // кнопка, несохранённая запись.
 
 const SCENARIOS: Scenario[] = [
+  {
+    // Самый ценный путь канала идей и самый хрупкий: он живёт на стыке трёх
+    // шагов. Коля дважды доходил до конца и не получал ничего — сначала из-за
+    // молчащей кнопки, потом из-за того, что кнопка обещала отправку, а
+    // показывала предпросмотр. По одному шагу это не ловится.
+    name: "Идея: разговор доходит до сохранения",
+    heavy: true,
+    chain: () => [
+      message("идея по life os: хочу чтобы бот сам напоминал оплатить счета за квартиру"),
+      message("нужно всем, кто платит коммуналку; напоминать за три дня до срока, чтобы не набежала пеня"),
+      callback("idea:sum"),
+    ],
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join("\n");
+      if (!/отправил как идею|идея №\d/i.test(joined)) return "после «хватит, отправляй» бот не подтвердил, что идея сохранена";
+      return null;
+    },
+    verifyDb: async () => {
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+        const id = (u as any)?.id;
+        if (!id) return "тестовый пользователь не найден";
+        const { data } = await db.from("ideas").select("id, title").eq("user_id", id).limit(1);
+        return (data as any[])?.length ? null : "бот сказал, что отправил, но идея в базе не появилась";
+      } catch {
+        return "не удалось проверить таблицу идей (миграция ideas.sql?)";
+      }
+    },
+  },
   {
     name: "/start отвечает",
     send: () => message("/start"),
@@ -497,7 +532,7 @@ async function cleanup(): Promise<void> {
   const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
   const id = (u as any)?.id;
   if (!id) return;
-  for (const t of ["entries", "reminders", "companion_messages", "feedback", "tasks", "notes", "goals"]) {
+  for (const t of ["entries", "reminders", "companion_messages", "feedback", "tasks", "notes", "goals", "ideas"]) {
     try { await db.from(t).delete().eq("user_id", id); } catch { /* таблицы может не быть */ }
   }
   // Сбрасываем ведущие режимы, чтобы следующий прогон стартовал с чистого листа.
@@ -513,7 +548,12 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
     if (sc.heavy && mode !== "full") continue;
     const s0 = Date.now();
     try {
-      const sent = await fire(origin, secret, sc.send());
+      let sent: SentMessage[] = [];
+      if (sc.chain) {
+        for (const upd of sc.chain()) sent = [...sent, ...(await fire(origin, secret, upd))];
+      } else {
+        sent = await fire(origin, secret, sc.send!());
+      }
       let why = sc.check(sent);
       // Разбор записи идёт в фоне уже после ответа бота — даём ему секунду.
       if (!why && sc.verifyDb) {
