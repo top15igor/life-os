@@ -205,6 +205,15 @@ const FILE_MSG: Record<string, { reading: string; saved: (n: string, parts: numb
 
 
 // «Вернуть как было» — те же слова, что и у действия undo_last в botActions.
+// «Услышал тебя» перед ответом на голосовое в знакомстве.
+const HEARD_LEAD: Record<string, string> = {
+  ru: "🎧 Услышал:",
+  en: "🎧 Heard you:",
+  uk: "🎧 Почув:",
+  fr: "🎧 Je t'ai entendu :",
+  es: "🎧 Te escuché:",
+};
+
 // Позвали по имени, но без вопроса.
 const JARVIS_ASK: Record<string, string> = {
   ru: "Слушаю. Спроси что-нибудь про свою жизнь или скажи, что разобрать — я вижу все твои записи, деньги, здоровье, документы и то, о чём мы только что говорили.",
@@ -2558,7 +2567,15 @@ async function handleUpdate(req: NextRequest) {
           await sendMessage(chatId, mdToTelegram(ans) || "—", acqMarkup(lng0));
           return NextResponse.json({ ok: true });
         }
-        const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg));
+        // Наговорил голосом — сначала показываем, что услышали. Живой случай:
+        // человек наговорил минуту на тяжёлую тему, бот молча задал следующий
+        // вопрос, и понять, дошло ли, было невозможно. Везде в боте расшифровку
+        // показывают — знакомство было единственным местом, где нет.
+        if (isVoice && text.trim().length > 12) {
+          const H = HEARD_LEAD[langOf(user, msg)] || HEARD_LEAD.ru;
+          await sendMessage(chatId, `${H}\n<i>${esc(text.slice(0, 600))}</i>`);
+        }
+        const reply = await acquaintReply(user.id, user.name ?? null, text, langOf(user, msg), isVoice);
         // Пока знакомство активно — чипы + «Пропустить»/«Пауза»; на «первой странице»/финале —
         // обычная клавиатура с обновлённым процентом знакомства на кнопке.
         await sendMessage(chatId, mdToTelegram(reply.text) || "…", reply.active ? acqMarkup(langOf(user, msg), reply.chips) : { reply_markup: mainKeyboard(langOf(user, msg), reply.pct) });

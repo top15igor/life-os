@@ -529,7 +529,7 @@ export async function startAcquaint(userId: string, name: string | null, lang = 
 }
 
 // Ход знакомства на ответ пользователя.
-export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru"): Promise<AcqTurn> {
+export async function acquaintReply(userId: string, name: string | null, userText: string, lang = "ru", isVoice = false): Promise<AcqTurn> {
   const st = await readState(userId);
   const answer = userText.trim();
   await append(userId, "user", answer);
@@ -541,7 +541,12 @@ export async function acquaintReply(userId: string, name: string | null, userTex
   // не заводим — они попадут в «первую страницу». Сохраняем параллельно с ответом бота.
   const savePromise: Promise<unknown> = answer.length >= SAVE_MIN
     ? analyze(answer, userId)
-        .then((analysis) => saveEntry({ userId, raw_text: answer, source: "acquaint", analysis }))
+        // Голосовой ответ помечаем как голосовой. Раньше всё, сказанное во
+        // время знакомства, ложилось с пометкой «acquaint» — и на вопрос «а мой
+        // голос распознал?» бот честно отвечал «голосовых у тебя 0», хотя
+        // человек только что наговорил минуту. Для новичка это выглядит так,
+        // будто его не услышали и вдобавок соврали.
+        .then((analysis) => saveEntry({ userId, raw_text: answer, source: isVoice ? "telegram_voice" : "acquaint", analysis }))
         .catch(() => { /* не вышло сохранить — не роняем диалог */ })
     : Promise.resolve();
 
