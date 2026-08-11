@@ -207,16 +207,16 @@ export function isStuckPhrase(text: string): boolean {
 
 // ===== Состояние =====
 
-type St = { active: boolean; prefs: any; max: number; deep: boolean; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string };
+type St = { active: boolean; prefs: any; max: number; deep: boolean; skips: number; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string };
 
 async function readState(userId: string): Promise<St> {
   try {
     const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", userId).maybeSingle();
     const prefs = normalizeMorningPrefs((data as any)?.morning_prefs);
-    return { active: prefs.dayActive, prefs, max: prefs.dayMax, deep: prefs.dayDeep === true, asked: prefs.dayAsked, chips: prefs.dayChips, answers: prefs.dayAnswers, draft: prefs.dayDraft, date: prefs.dayDate };
+    return { active: prefs.dayActive, prefs, max: prefs.dayMax, deep: prefs.dayDeep === true, skips: prefs.daySkips || 0, asked: prefs.dayAsked, chips: prefs.dayChips, answers: prefs.dayAnswers, draft: prefs.dayDraft, date: prefs.dayDate };
   } catch {
     const prefs = normalizeMorningPrefs(null);
-    return { active: false, prefs, max: 3, deep: false, asked: [], chips: [], answers: [], draft: "", date: "" };
+    return { active: false, prefs, max: 3, deep: false, skips: 0, asked: [], chips: [], answers: [], draft: "", date: "" };
   }
 }
 
@@ -226,11 +226,12 @@ export async function dayChipText(userId: string, idx: number): Promise<string> 
   return st.chips[idx] || "";
 }
 
-async function writeState(userId: string, prefs: any, patch: Partial<{ active: boolean; max: number; deep: boolean; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string }>): Promise<void> {
+async function writeState(userId: string, prefs: any, patch: Partial<{ active: boolean; max: number; deep: boolean; skips: number; asked: string[]; chips: string[]; answers: string[]; draft: string; date: string }>): Promise<void> {
   const next = { ...prefs };
   if (patch.active !== undefined) next.dayActive = patch.active;
   if (patch.max !== undefined) next.dayMax = patch.max;
   if (patch.deep !== undefined) next.dayDeep = patch.deep;
+  if (patch.skips !== undefined) next.daySkips = patch.skips;
   if (patch.asked !== undefined) next.dayAsked = patch.asked.slice(-MAX_ANSWERS);
   if (patch.chips !== undefined) next.dayChips = patch.chips.slice(0, 3);
   if (patch.answers !== undefined) next.dayAnswers = patch.answers.slice(-MAX_ANSWERS);
@@ -360,8 +361,11 @@ function digDepth(asked: string[], answers: string[]): number {
   return n;
 }
 
-async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: string[], answers: string[], max: number, deep = false): Promise<{ q: string; chips: string[] }> {
-  const n = asked.length; // сколько уже задано
+async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: string[], answers: string[], max: number, deep = false, skips = 0): Promise<{ q: string; chips: string[] }> {
+  // Пропуски тоже сдвигают разбор. Иначе «Пропустить» подсовывало ту же тему
+  // другими словами: человек пять раз подряд получал вопрос про деньги, и все
+  // пять помечались «1/6».
+  const n = asked.length + skips;
   const isFirst = n === 0;
   const isLast = max > 0 && n === max - 1;
 
@@ -385,17 +389,22 @@ async function nextQuestion(userId: string, lang: Lang, ctx: DayCtx, asked: stri
         "благодарность: за что сегодня стоит сказать спасибо — себе или кому-то",
       ]
     : [
-    "дела и работа: что двигал, что получилось или застряло",
-    "люди: с кем виделся, говорил, кому написал",
-    "тело и самочувствие: сон, спорт, усталость, здоровье",
-    "дом и быт: что делал по хозяйству, что чинил, что решал",
-    "отдых и голова: что смотрел, читал, о чём думал",
-    "деньги: на что потратил, что решил не покупать",
-    "перемещения: где был кроме дома, куда ездил",
-  ];
+        // Это вопросы для КНИГИ ЖИЗНИ, а не для бухгалтерии. Здесь были «на что
+        // потратил» и «что делал по хозяйству» — их убрали: траты и так
+        // подхватываются из записей и из банка автоматически, а перечитывать
+        // через год «купил продукты» никто не станет. Осталось то, из чего
+        // потом складывается книга: люди, дела, состояние, впечатления.
+        "люди: с кем виделся или говорил, что осталось после разговора",
+        "дела: что двигал, что получилось, что застряло",
+        "живой момент: что сегодня зацепило, рассмешило, удивило или разозлило",
+        "тело и силы: как спалось, где устал, где было легко",
+        "голова: что смотрел, читал, слушал, о чём думалось между делами",
+        "место: где сегодня был кроме дома и как там было",
+        "перемены: что сегодня было не как обычно",
+      ];
 
   const stage = isFirst
-    ? "ПЕРВЫЙ вопрос: строго про ФАКТЫ (что было, где был, с кем, получилось ли запланированное). Факты разгоняют память — про чувства сейчас НЕ спрашивай."
+    ? "ПЕРВЫЙ вопрос: про то, что человек будет ВСПОМИНАТЬ — главное событие дня, встреча, разговор, то, что получилось или сорвалось. Конкретно и по фактам: факты разгоняют память, про чувства сейчас НЕ спрашивай. НЕ спрашивай про траты, покупки и хозяйство: это в книге жизни никому не интересно и подхватывается автоматически."
     : isLast
       ? "ПОСЛЕДНИЙ вопрос: про смысл — что из сегодняшнего он захочет вспомнить, что понял, что почувствовал."
       // Сторону дня выбираем МЫ, а не модель. Просьба «спроси про другое» не
@@ -549,7 +558,7 @@ export async function beginDayCapture(userId: string, lang: string, max: number)
   const { date } = await localNow(userId);
   const ctx = await dayContext(userId, date);
   const { q, chips } = await nextQuestion(userId, l, ctx, [], [], max, deep);
-  await writeState(userId, st.prefs, { active: true, max, deep, asked: [q], chips, answers: [], draft: "", date });
+  await writeState(userId, st.prefs, { active: true, max, deep, skips: 0, asked: [q], chips, answers: [], draft: "", date });
   return {
     text: `${LEAD_FIRST[l]}\n\n${step(1, max)}${q}`,
     chips: chips.map((c) => ({ label: c, value: c })),
@@ -650,10 +659,11 @@ export async function daySkipQuestion(userId: string, lang: string): Promise<Day
   const l = L(lang);
   const st = await readState(userId);
   const ctx = await dayContext(userId, st.date || (await localNow(userId)).date);
-  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, st.max, st.deep);
+  const skips = (st.skips || 0) + 1;
+  const { q, chips } = await nextQuestion(userId, l, ctx, st.asked, st.answers, st.max, st.deep, skips);
   // Пропущенный вопрос заменяем новым, чтобы пары «вопрос-ответ» не разъезжались.
   const asked = [...st.asked.slice(0, st.answers.length), q];
-  await writeState(userId, st.prefs, { asked, chips });
+  await writeState(userId, st.prefs, { asked, chips, skips });
   return { text: `${step(st.answers.length + 1, st.max)}${q}`, chips: chips.map((c) => ({ label: c, value: c })), phase: "ask" };
 }
 

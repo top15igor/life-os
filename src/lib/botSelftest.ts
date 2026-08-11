@@ -184,6 +184,32 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    // Живая жалоба: человек трижды нажал «Пропустить» и трижды получил вопрос
+    // про деньги, все помечены «1/6». Пропуск обязан двигать разбор дальше.
+    name: "Разбор дня: пропуск меняет тему",
+    heavy: true,
+    chain: () => [
+      message("помоги зафиксировать день"),
+      callback("day:len:6"),
+      callback("day:skip"),
+      callback("day:skip"),
+      message("/stop"),
+    ],
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const qs = texts(sent).filter((t) => /\d\/\d/.test(t));
+      if (qs.length < 3) return "после пропусков бот не задал новые вопросы";
+      const money = /деньг|потратил|покуп|купить|купил|трат/i;
+      if (qs.filter((q) => money.test(q)).length >= 2) {
+        return `после пропуска снова про деньги: «${qs[qs.length - 1].slice(0, 90)}» — пропуск не меняет тему`;
+      }
+      const uniq = new Set(qs.map((q) => q.replace(/^\d\/\d\s*·?\s*/, "").slice(0, 40)));
+      if (uniq.size < qs.length) return "после пропуска бот повторил тот же вопрос";
+      return null;
+    },
+  },
+  {
     // Обратная жалоба: человек ответил живо («сделал Джарвиса, надеюсь не будет
     // тупить»), а бот ушёл спрашивать про хозяйство. За живое надо цепляться.
     name: "Разбор дня: за живой ответ цепляется",
