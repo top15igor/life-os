@@ -29,8 +29,17 @@ export async function GET(req: NextRequest) {
   const mode: Mode = req.nextUrl.searchParams.get("mode") === "full" ? "full" : "light";
   // Часть прогона: ?part=0&of=2. Каждая часть — сама себе прогон со своей
   // историей, поэтому «сломалось / починилось» считается по ней честно.
-  const of = Math.min(4, Math.max(1, Number(req.nextUrl.searchParams.get("of") || 1) || 1));
-  const i = Math.min(of - 1, Math.max(0, Number(req.nextUrl.searchParams.get("part") || 0) || 0));
+  // Расписание зовёт нас одной и той же ссылкой, без частей, — и целиком полный
+  // прогон в отведённое время не влезает. Поэтому по умолчанию делим пополам и
+  // чередуем: один заход проверяет первую половину, следующий — вторую. У каждой
+  // половины своя история, так что «сломалось / починилось» считается честно, а
+  // весь список сценариев успевает пройти за два захода расписания.
+  const askedOf = Number(req.nextUrl.searchParams.get("of") || 0) || 0;
+  const of = mode === "full" ? Math.min(4, Math.max(2, askedOf || 2)) : 1;
+  const askedPart = req.nextUrl.searchParams.get("part");
+  const i = askedPart !== null
+    ? Math.min(of - 1, Math.max(0, Number(askedPart) || 0))
+    : Math.floor(Date.now() / (15 * 60_000)) % of;
   const part = of > 1 ? { i, of } : undefined;
 
   const res = await runSelftest(req.nextUrl.origin, mode, part);
