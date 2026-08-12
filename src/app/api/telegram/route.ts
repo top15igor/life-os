@@ -5,6 +5,8 @@ import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
 import { remember } from "@/lib/talkLog";
 import { findQuestion } from "@/lib/entryQuestion";
+import { linkContext } from "@/lib/linkPeek";
+import { rememberClarify, takeClarify, clarifyContext } from "@/lib/clarify";
 import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
@@ -2457,6 +2459,20 @@ async function handleUpdate(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // 🔗 Если в сообщении ссылка — сначала смотрим, что за ней, и только потом
+    //    думаем. Человек скинул ссылку на карту и написал «вот тут мы будем
+    //    жить, найди что интересного вокруг»; бот ответил «я не хожу по ссылкам»
+    //    и стал угадывать город, предлагая Париж и Барселону, — хотя в самой
+    //    ссылке было написано «Snorrabraut 29 · Reykjavík». Заголовок страницы
+    //    подставляем в текст, дальше всё работает как обычно: и роутер, и разбор
+    //    записи, и ответ видят место, а не «какую-то ссылку».
+    try {
+      const linkNote = await linkContext(text);
+      if (linkNote) text = `${text}${linkNote}`;
+    } catch {
+      // Не открылась — не беда: ниже отработает ровно как раньше.
+    }
+
     // 🧠 Позвать думающего агента в ЛЮБОЙ момент, не гадая, распознает ли роутер
     //    вопрос. Человек так и просил: «хочу в любой момент обратиться, чтобы он
     //    думал и был в контексте». Обращение по имени — самый простой способ,
@@ -2659,7 +2675,11 @@ async function handleUpdate(req: NextRequest) {
       // Если идёт обсуждение идеи, мозг должен об этом знать: тогда реплики
       // разговора он относит к свободной речи, а не пытается выполнить их
       // буквально («за три дня до срока» — это не новое напоминание).
-      const ctx0 = await recentBotContext(user.id);
+      // Если бот только что сам о чём-то переспросил — следующая короткая
+      // реплика почти наверняка ответ на его вопрос, а не новая тема.
+      const pend = await takeClarify(user.id);
+      const clarLine = pend ? clarifyContext(pend, text) : null;
+      const ctx0 = [await recentBotContext(user.id), clarLine].filter(Boolean).join("\n\n");
       const ctx = inIdea
         ? `${ctx0 || ""}\n\nСЕЙЧАС ИДЁТ ОБСУЖДЕНИЕ ИДЕИ ПО ПРОДУКТУ LIFE OS. Реплики человека — часть этого разговора: если он рассуждает, уточняет, соглашается или возражает, это save_entry (свободная речь). Выбирай действие ТОЛЬКО если он явно просит сделать что-то со своими данными прямо сейчас.`
         : ctx0;
@@ -2699,6 +2719,11 @@ async function handleUpdate(req: NextRequest) {
           await sendMessage(chatId, (DEEP_WORKING[lang] || DEEP_WORKING.ru)(String(route.input?.topic || "").slice(0, 60)));
         }
         await remember(user.id, "u", text);
+        // Переспросил — запомни, о чём и ради чего. Иначе ответ человека
+        // прилетит как реплика ниоткуда, и разговор начнётся с нуля.
+        if (route.name === "ask_clarify") {
+          await rememberClarify(user.id, String(route.input?.question || ""), pend?.ask || text);
+        }
         let res = await runAction(user.id, route.name, route.input, lang, (user as any).tz_offset);
 
         // Вторая попытка: агент смотрит на СВОЙ результат. Если инструмент
