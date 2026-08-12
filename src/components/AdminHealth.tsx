@@ -46,13 +46,24 @@ export default function AdminHealth() {
     const t0 = Date.now();
     const tick = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 1000);
     try {
-      const url = kind === "diagnose" ? "/api/diagnose?hours=24" : `/api/selftest?mode=${kind}`;
-      const j = await fetch(url).then((r) => r.json());
+      // Полный прогон идёт двумя частями подряд: целиком он не укладывался в
+      // отведённое функции время и обрывался без результата. Для глаз это
+      // по-прежнему одна кнопка и один общий список.
+      const parts = kind === "full" ? [0, 1] : [0];
+      const merged: Step[] = [];
+      let j: any = null;
+      for (const p of parts) {
+        const url = kind === "diagnose"
+          ? "/api/diagnose?hours=24"
+          : `/api/selftest?mode=${kind}${kind === "full" ? `&of=${parts.length}&part=${p}&report=0` : ""}`;
+        j = await fetch(url).then((r) => r.json());
+        merged.push(...((j?.steps || []) as Step[]));
+      }
       if (kind === "diagnose") {
         setHead(j?.issues ? `Нашёл поводов разобраться: ${j.issues}` : "За сутки разбирать нечего");
         setNote(j?.issues ? `Добавлено в «Отложенные задачи»: ${j.tasks || 0}. Разбор ушёл тебе в Telegram.` : "Диагност молчит, когда всё спокойно: ежедневное «всё ок» быстро превращается в шум.");
       } else {
-        const list: Step[] = j?.steps || [];
+        const list: Step[] = merged;
         setSteps(list);
         const bad = list.filter((s) => !s.ok).length;
         setHead(bad ? `Упало ${bad} из ${list.length}` : `Всё в порядке: ${list.length} из ${list.length}`);
@@ -82,8 +93,8 @@ export default function AdminHealth() {
       </div>
 
       <div style={{ fontSize: 12.5, color: "var(--text-3)", lineHeight: 1.5, marginTop: 8 }}>
-        Быстрая — пути без AI, около полуминуты. Полная — плюс живые сообщения боту по всем сценариям с оценкой ответов, три-пять минут.
-        Обе шлют настоящие сообщения через настоящий вебхук, но ответы перехватываются и в чат не уходят.
+        Быстрая — пути без AI, около полуминуты. Полная — плюс живые сообщения боту по всем сценариям с оценкой ответов, идёт двумя частями подряд, четыре-шесть минут.
+        Обе шлют настоящие сообщения через настоящий вебхук, но ответы перехватываются и в чат не уходят. Прогон отсюда в Telegram не пишет — ты и так смотришь на результат.
       </div>
 
       {busy && (

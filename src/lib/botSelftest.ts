@@ -23,8 +23,15 @@ const TEST_CHAT = -777001;
 const TEST_NAME = "🤖 Selftest";
 
 export type StepResult = { name: string; ok: boolean; why?: string; ms: number };
-export type RunResult = { mode: Mode; ok: number; failed: number; ms: number; steps: StepResult[] };
+// mode здесь — ещё и ключ истории: с чем сравнивать прошлый прогон. У части
+// полного прогона он свой («full#0»), иначе части забивали бы друг другу
+// историю и оповещение врало бы на каждом круге.
+export type RunResult = { mode: string; ok: number; failed: number; ms: number; steps: StepResult[] };
 export type Mode = "light" | "full";
+// Какую часть полного прогона гоняем. Функция на Vercel живёт 300 секунд, а
+// сценариев уже за полсотни — целиком прогон в них не укладывался и обрывался
+// без результата. Части идут подряд, порядок сценариев внутри сохраняется.
+export type Part = { i: number; of: number };
 
 type Check = (sent: SentMessage[]) => string | null; // null = всё хорошо, строка = что не так
 
@@ -414,17 +421,18 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
-    name: "Единый поиск находит сохранённое на другой полке",
+    name: "«Где я записывал код от домофона?» — находит",
     heavy: true,
     // Заметка легла в хранилище, а ищем её обычным вопросом «где я записывал».
     // Раньше такой вопрос уходил в дневник и честно отвечал «не нашёл».
-    send: () => message("запиши: код от домофона для самопроверки 4582"),
-    check: (sent) => notBroken(sent),
-  },
-  {
-    name: "«Где я записывал код от домофона?» — находит",
-    heavy: true,
-    send: () => message("где я записывал код от домофона для самопроверки?"),
+    //
+    // Двумя отдельными сценариями это было хрупко: между «записал» и «найди»
+    // мог вклиниться чужой прогон или граница части — и падало не то, что
+    // сломалось. Теперь оба шага живут в одном сценарии.
+    chain: () => [
+      message("запиши: код от домофона для самопроверки 4582"),
+      message("где я записывал код от домофона для самопроверки?"),
+    ],
     check: (sent) => {
       const broken = notBroken(sent);
       if (broken) return broken;
@@ -433,17 +441,15 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
-    name: "Контекст: «перенеси его на завтра» после напоминания",
-    heavy: true,
-    send: () => message("напомни завтра в 15:00 позвонить в банк для самопроверки"),
-    check: (sent) => notBroken(sent),
-  },
-  {
     name: "Контекст: отсылка «его» понята без повтора названия",
     heavy: true,
     // Раньше это был тупик: в «перенеси его» нет ни слова из напоминания,
-    // и роутеру было не за что зацепиться.
-    send: () => message("перенеси его на 18:00"),
+    // и роутеру было не за что зацепиться. Оба шага — в одном сценарии, иначе
+    // «его» относилось к чему угодно, что успело пройти между ними.
+    chain: () => [
+      message("напомни завтра в 15:00 позвонить в банк для самопроверки"),
+      message("перенеси его на 18:00"),
+    ],
     check: (sent) => {
       const broken = notBroken(sent);
       if (broken) return broken;
@@ -747,12 +753,19 @@ async function cleanup(): Promise<void> {
   try { await db.from("users").update({ morning_prefs: {} }).eq("id", id); } catch {}
 }
 
-export async function runSelftest(origin: string, mode: Mode = "light"): Promise<RunResult> {
+// Кусок списка для своей части — подряд, чтобы соседние сценарии не разъезжались.
+function slice<T>(list: T[], part?: Part): T[] {
+  if (!part || part.of < 2) return list;
+  const size = Math.ceil(list.length / part.of);
+  return list.slice(part.i * size, (part.i + 1) * size);
+}
+
+export async function runSelftest(origin: string, mode: Mode = "light", part?: Part): Promise<RunResult> {
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
   const t0 = Date.now();
   const steps: StepResult[] = [];
 
-  for (const sc of SCENARIOS) {
+  for (const sc of slice(SCENARIOS.filter((s) => !s.heavy || mode === "full"), part)) {
     if (sc.heavy && mode !== "full") continue;
     const s0 = Date.now();
     try {
@@ -776,7 +789,9 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
 
   // Готовность базы — в любом режиме: проверка дешёвая, а цена пропущенной
   // миграции высокая (у людей молча не работает целая фича).
-  steps.push(...await checkSchema());
+  // Готовность базы проверяем в первой части: повторять её в каждой — тратить
+  // время на одно и то же.
+  if (!part || part.i === 0) steps.push(...await checkSchema());
 
   // Качество ответов — только в полном прогоне: каждый случай стоит двух вызовов
   // модели (ответ бота + оценка судьи), гонять это каждые 15 минут незачем.
@@ -788,7 +803,7 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
   // без истории, иначе ловим не галлюцинацию, а собственный мусор.
   if (mode === "full") {
     await cleanup().catch(() => {});
-    for (const c of [...COMMAND_CASES, ...QUALITY_CASES]) {
+    for (const c of slice([...COMMAND_CASES, ...QUALITY_CASES], part)) {
       const s0 = Date.now();
       try {
         const sent = await fire(origin, secret, message(c.say));
@@ -804,7 +819,8 @@ export async function runSelftest(origin: string, mode: Mode = "light"): Promise
   await cleanup().catch(() => {});
 
   const failed = steps.filter((s) => !s.ok).length;
-  return { mode, ok: steps.length - failed, failed, ms: Date.now() - t0, steps };
+  const key = part && part.of > 1 ? `${mode}#${part.i}` : mode;
+  return { mode: key, ok: steps.length - failed, failed, ms: Date.now() - t0, steps };
 }
 
 // ===== История и оповещение владельца =====
