@@ -4,6 +4,7 @@ import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answe
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
 import { remember } from "@/lib/talkLog";
+import { findQuestion } from "@/lib/entryQuestion";
 import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
@@ -2867,6 +2868,24 @@ async function handleUpdate(req: NextRequest) {
       rows.push([{ text: L.share, url: shareUrl }]);
     }
     await sendMessage(chatId, body, { reply_markup: { inline_keyboard: rows } });
+
+    // 🧠 Джарвис всегда в разговоре. Если человек по ходу записи о чём-то
+    // спросил («а Исландия остров или материк?»), звать его по имени не нужно:
+    // вопрос уходит тому, у кого есть поиск, и ответ приходит следом. Раньше
+    // на такое отвечал отклик под записью — по памяти и без проверки.
+    try {
+      const q = await findQuestion(user.id, text);
+      if (q) {
+        await sendChatAction(chatId, "typing");
+        await remember(user.id, "u", q);
+        const ans = await talkToCompanion(user.id, user.name ?? null, q, lang as any, (user as any).tz_offset);
+        await remember(user.id, "a", ans);
+        if (ans) await sendMessage(chatId, mdToTelegram(ans) || ans);
+      }
+    } catch (e) {
+      // Не ответить на попутный вопрос не страшно — запись уже сохранена.
+      logError("bot:entry-question", e, { userId: user.id, chatId });
+    }
   } catch (e: any) {
     console.error(e);
     // Telegram не отдаёт боту файлы больше 20 МБ — это не «что-то пошло не так»,
