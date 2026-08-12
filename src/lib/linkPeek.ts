@@ -35,11 +35,33 @@ const decode = (s: string) =>
 
 export type Peek = { url: string; title: string; description: string };
 
+// Карты — отдельный случай. Полная ссылка Google Maps отдаёт заголовок «Google
+// Карты» и ничего больше, зато сам адрес места записан прямо в пути:
+// /maps/place/Snorrabraut+29,+105+Reykjavík,+Iceland. Берём оттуда — это
+// надёжнее и не требует ни одного запроса.
+const MAP_HOST = /(^|\.)(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl|apple\.com|maps\.apple\.com|yandex\.[a-z.]+|osm\.org|openstreetmap\.org|2gis\.[a-z.]+)$/i;
+const GENERIC = /^(google\s*(maps|карты)|карты\s*google|apple\s*maps|Яндекс\s*Карты|yandex\s*maps|maps)$/i;
+
+function placeFromUrl(raw: string): string {
+  let u: URL;
+  try { u = new URL(raw); } catch { return ""; }
+  if (!MAP_HOST.test(u.hostname)) return "";
+  const seg = u.pathname.match(/\/(?:place|search|dir)\/([^/@]+)/);
+  const fromPath = seg ? decodeURIComponent(seg[1]).replace(/\+/g, " ") : "";
+  const fromQuery = u.searchParams.get("q") || u.searchParams.get("daddr") || u.searchParams.get("text") || "";
+  const s = (fromPath || fromQuery).replace(/\s+/g, " ").trim();
+  // Координаты без названия ничего человеку не говорят — и модели тоже.
+  return /^[-\d.,\s]+$/.test(s) ? "" : s.slice(0, 200);
+}
+
 // Заголовок и описание страницы. Ошибка сети — не беда: вернём null и будем
 // работать как раньше.
 export async function peekLink(rawUrl: string): Promise<Peek | null> {
   const url = (rawUrl || "").trim();
   if (!url || !isSafeExternalUrl(url)) return null;
+  // Место видно прямо в адресе — ходить никуда не нужно.
+  const direct = placeFromUrl(url);
+  if (direct) return { url, title: direct, description: "" };
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 6000);
@@ -64,10 +86,16 @@ export async function peekLink(rawUrl: string): Promise<Peek | null> {
       pick(html, /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i) ||
       pick(html, /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
 
-    const t1 = decode(title).slice(0, 200);
+    const final = res.url || url;
+    // Короткая ссылка распрямилась — место снова могло проявиться в адресе.
+    const place = placeFromUrl(final);
+    let t1 = place || decode(title).slice(0, 200);
     const d1 = decode(description).slice(0, 400);
+    // «Google Карты» вместо названия места — это не ответ, а название приложения.
+    // Лучше промолчать, чем подсунуть модели пустышку как факт.
+    if (!place && GENERIC.test(t1)) t1 = "";
     if (!t1 && !d1) return null;
-    return { url: res.url || url, title: t1, description: d1 };
+    return { url: final, title: t1, description: d1 };
   } catch {
     return null;
   }
