@@ -5,7 +5,10 @@ import { runSelftest, reportSelftest, type Mode } from "@/lib/botSelftest";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // Полный прогон трогает AI (разбор записи, ответ ассистента) — 60 секунд не хватает.
-export const maxDuration = 300;
+// Пяти минут тоже перестало хватать: сценариев стало больше полусотни, и прогон
+// обрывался на середине с «не получилось» — то есть проверка молчала ровно тогда,
+// когда её и заводили. Держим запас, а не впритык.
+export const maxDuration = 800;
 
 const OWNER = "00000000-0000-0000-0000-000000000000";
 
