@@ -14,7 +14,7 @@ import { archiveVoice } from "@/lib/voiceArchive";
 import { alreadyHandled } from "@/lib/tgDedupe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
-import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction, looksLikeDeadEnd } from "@/lib/botActions";
+import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction, looksLikeDeadEnd, looksLikeNothingInArchive } from "@/lib/botActions";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
@@ -2739,6 +2739,26 @@ async function handleUpdate(req: NextRequest) {
               if (!looksLikeDeadEnd(alt.text)) res = alt;
             }
           } catch (e) { await logError("bot:retry", e, { userId: user.id, chatId }); }
+        }
+
+        // В архиве пусто — но вопрос-то был не про архив. «Найди что интересного
+        // вокруг» бот искал в СВОИХ ЖЕ сохранёнках, не нашёл и предложил: «просто
+        // скажи, и я расскажу». Игорь сказал — бот предложил ещё раз. Предлагать
+        // то, что можешь сделать прямо сейчас, — это не помощь, а отговорка.
+        // Поэтому пустой архив передаём думающему агенту: у него есть веб-поиск.
+        if (looksLikeNothingInArchive(res.text)) {
+          try {
+            await sendChatAction(chatId, "typing");
+            const ans = await talkToCompanion(
+              user.id, user.name ?? null,
+              `${text}\n\n[Поиск по его личным записям и сохранёнкам ничего не дал. Если спрашивают про МИР — место, что посмотреть, куда сходить, факт, совет — ответь по существу сам, с веб-поиском и конкретикой (названия, чем хороши, где это). Не предлагай «просто скажи, и я расскажу»: он уже спросил. Если же вопрос про его СОБСТВЕННЫЕ записи — скажи одной строкой, что таких записей нет, и ничего не выдумывай.]`,
+              lang as any, (user as any).tz_offset,
+            );
+            if (ans && ans.trim()) res = { ...res, text: ans, html: false };
+          } catch (e) {
+            // Не получилось — человек хотя бы увидит честное «в архиве нет».
+            logError("bot:empty-archive", e, { userId: user.id, chatId });
+          }
         }
         // Несколько объектов в одной команде («добавь два фильма») → несколько вызовов:
         // выполняем все, подтверждения склеиваем в одно сообщение.
