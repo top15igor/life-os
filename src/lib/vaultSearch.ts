@@ -339,13 +339,17 @@ export async function answerFromEverything(userId: string, query: string, locale
 
   try {
     const m = await new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }).messages.create({
-      model: "claude-haiku-4-5-20251001",
+      // Сильная модель: этот ответ человек читает глазами и по нему судит,
+      // умный бот или нет. Дешёвая собирала его так, что в ответ на размышление
+      // о еде приезжал техпаспорт машины, а вместо ответа — «просто скажи, и я
+      // расскажу». Экономия здесь окупается ровно один раз, а стыдно каждый.
+      model: "claude-sonnet-4-6",
       max_tokens: 700,
       temperature: 0.2,
       system: SYS,
       messages: [{ role: "user", content: `ВОПРОС: ${query}\n\nНАЙДЕНО У НЕГО:\n${ctx}\n\nОтветь на ${LANG[locale] || LANG.ru} языке.` }],
     });
-    logClaude(userId, "vault-search", "haiku", (m as any).usage);
+    logClaude(userId, "vault-search", "sonnet", (m as any).usage);
     const t = m.content.filter((b) => b.type === "text").map((b: any) => b.text).join(" ").trim();
     return { text: t || (NOTHING[locale] || NOTHING.ru), sources, files };
   } catch {

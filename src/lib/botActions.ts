@@ -452,13 +452,20 @@ export async function lastReplyWasAction(userId: string, withinMs = 30 * 60 * 10
   }
 }
 
-// Один haiku-проход: действие / вопрос / запись. lastBot — последнее сообщение
-// бота пользователю (если недавнее): без него короткая отсылка «а скинь мне рецепт»
-// после утреннего пуша про гречневый хлеб превращалась в поиск «рецепт» вообще.
+// Один проход сильной моделью: действие / вопрос / запись. lastBot — последнее
+// сообщение бота пользователю (если недавнее): без него короткая отсылка «а скинь
+// мне рецепт» после утреннего пуша про гречневый хлеб превращалась в поиск
+// «рецепт» вообще.
+//
+// Здесь стоит sonnet, а не дешёвая модель, и это осознанно. Это САМАЯ важная
+// развилка бота: если тут ошиблись, дальше уже неважно, насколько умён тот, кто
+// отвечает. Все «странные ответы», на которые жаловались живые люди, начинались
+// именно тут: «найди что интересного вокруг» уходило искать по личному архиву
+// вместо мира, а ответ на только что заданный ботом вопрос — в дневник.
 export async function routeMessage(text: string, userId?: string, tzOffset?: number | null, lastBot?: string | null, focus?: string | null): Promise<Route> {
   try {
     const resp = await client().messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: 220,
       // SYS статичен → кэшируем (одна кэш-точка покрывает и tools). Время меняется
       // каждую минуту — держим его отдельным НЕкэшируемым блоком после SYS.
@@ -474,7 +481,7 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       tools: ACTION_TOOLS,
       tool_choice: { type: "any" },
     });
-    logClaude(userId, "bot_route", "haiku", (resp as any).usage);
+    logClaude(userId, "bot_route", "sonnet", (resp as any).usage);
     const blocks: any[] = resp.content.filter((c: any) => c.type === "tool_use");
     const block: any = blocks[0];
     const name = block?.name;
