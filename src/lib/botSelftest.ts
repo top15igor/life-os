@@ -79,6 +79,23 @@ async function testTaskExists(): Promise<boolean> {
   }
 }
 
+// Что на самом деле легло в задачи. «Задача не появилась» — правдивый, но
+// бесполезный отчёт: непонятно, бот не понял команду или переписал текст
+// своими словами и проверка его не узнала. Показываем последние задачи целиком.
+async function lastTasksText(): Promise<string> {
+  try {
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+    if (!(u as any)?.id) return "пользователя нет";
+    const { data } = await db.from("tasks").select("text").eq("user_id", (u as any).id)
+      .order("created_at", { ascending: false }).limit(3);
+    const list = ((data as any[]) || []).map((r) => `«${String(r.text).slice(0, 60)}»`);
+    return list.length ? list.join(", ") : "задач нет вообще";
+  } catch {
+    return "не смог посмотреть";
+  }
+}
+
 // ===== Помощники для сборки обновлений =====
 
 let seq = 0;
@@ -402,7 +419,8 @@ const SCENARIOS: Scenario[] = [
     heavy: true,
     send: () => message(`добавь задачу ${TASK_MARK}`),
     check: (sent) => notBroken(sent),
-    verifyDb: async () => (await testTaskExists()) ? null : "задача не появилась в базе",
+    verifyDb: async () =>
+      (await testTaskExists()) ? null : `задача не появилась в базе; последние задачи: ${await lastTasksText()}`,
   },
   {
     name: "Команда «убери задачу» действительно её убирает",
