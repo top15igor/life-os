@@ -287,6 +287,16 @@ const SYS = `Ты отвечаешь человеку по ЕГО СОБСТВЕ
 — Если куски противоречат друг другу, скажи об этом и покажи оба.
 — Коротко. Без markdown, списков со звёздочками и заголовков.`;
 
+// Просят ли сам файл. Признак — названный вид документа или снимка: «дай паспорт
+// мамы», «где страховка на машину», «скинь фото с моря». Размышление о жизни
+// такого слова не содержит — и файлов в ответ не получает.
+const DOC_WORD =
+  /(документ|скан|копи[юя]|файл|фото|снимок|снимк|картинк|изображени|pdf|паспорт|техпаспорт|техталон|права|водительск|страховк|полис|свидетельств|справк|договор|контракт|счёт|счет|инвойс|чек|квитанц|билет|виза|сертификат|диплом|аттестат|выписк|доверенност|завещани|анализ[ыа]?\b|рецепт от врача|карточк)/i;
+
+export function wantsOriginal(query: string): boolean {
+  return DOC_WORD.test(String(query || ""));
+}
+
 export async function answerFromEverything(userId: string, query: string, locale = "ru"): Promise<{ text: string; sources: Source[]; files: { url: string; title: string }[] }> {
   const found = await searchEverything(userId, query);
   if (!found.length) return { text: NOTHING[locale] || NOTHING.ru, sources: [], files: [] };
@@ -303,12 +313,20 @@ export async function answerFromEverything(userId: string, query: string, locale
     if (sources.length >= 3) break;
   }
 
-  // Сами файлы: если нашлись документы со сканом, человеку нужен ОРИГИНАЛ,
-  // а не пересказ его содержимого. Больше двух не шлём — это уже свалка.
-  const files = found
-    .filter((f) => f.src === "doc" && f.fileUrl)
-    .slice(0, 2)
-    .map((f) => ({ url: String(f.fileUrl), title: f.title || "документ" }));
+  // Сами файлы: если человек ПРОСИТ документ, ему нужен оригинал, а не пересказ
+  // содержимого. Но только если просит.
+  //
+  // Живой случай: на вопрос «напомни, какая у меня была мысль про то, что душе не
+  // нужна еда» бот прислал чужой пост из соцсети и техпаспорт машины с VIN —
+  // просто потому, что поиск зацепил их по касательной. Присылать скан документа
+  // в ответ на размышление — это не услужливость, а утечка: человек её не просил
+  // и не ждёт. Ссылки на первоисточники под ответом остаются в любом случае.
+  const files = wantsOriginal(query)
+    ? found
+        .filter((f) => f.src === "doc" && f.fileUrl)
+        .slice(0, 2)
+        .map((f) => ({ url: String(f.fileUrl), title: f.title || "документ" }))
+    : [];
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return { text: found.slice(0, 5).map((f) => `• [${SRC_LABEL[f.src]}${f.date ? `, ${f.date}` : ""}] ${f.text.slice(0, 200)}`).join("\n"), sources, files };

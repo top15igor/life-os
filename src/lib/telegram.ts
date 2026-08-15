@@ -71,6 +71,7 @@ export async function sendDocument(
   filename: string,
   extra?: Record<string, any>,
 ): Promise<boolean> {
+  if (capture("sendDocument", chatId, filename, extra)) return true;
   try {
     const form = new FormData();
     form.append("chat_id", String(chatId));
@@ -92,6 +93,7 @@ export async function sendDocument(
 // или file_id. Возвращает true при успехе (по ссылке лимит ~20 МБ; крупнее — вернёт false,
 // тогда в чат уходит кнопка «Скачать видео» со ссылкой на файл в хранилище).
 export async function sendVideo(chatId: number, video: string, extra?: Record<string, any>): Promise<boolean> {
+  if (capture("sendVideo", chatId, video, extra)) return true;
   try {
     const r = await fetch(`${API}/sendVideo`, {
       method: "POST",
@@ -107,6 +109,9 @@ export async function sendVideo(chatId: number, video: string, extra?: Record<st
 
 // Отправить одно фото (по публичной ссылке или file_id).
 export async function sendPhoto(chatId: number, photo: string, extra?: Record<string, any>): Promise<boolean> {
+  // Перехват обязателен: без него самопроверка шлёт живому человеку настоящие
+  // фото и сканы — тем самым «оригиналом документа», который она и проверяет.
+  if (capture("sendPhoto", chatId, photo, extra)) return true;
   try {
     const r = await fetch(`${API}/sendPhoto`, {
       method: "POST",
@@ -143,6 +148,7 @@ export async function sendDocumentUrl(chatId: number, url: string, extra?: Recor
 export async function sendMediaGroup(chatId: number, items: Array<Record<string, any>>): Promise<boolean> {
   const clean = items.filter((it) => it && it.media);
   if (!clean.length) return false;
+  if (capture("sendMediaGroup", chatId, clean.map((it) => String(it.media)).join(" "))) return true;
   // Один элемент группой не отправить — уходит обычным sendPhoto/sendVideo.
   if (clean.length === 1) {
     const it = clean[0];
