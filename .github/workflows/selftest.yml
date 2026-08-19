@@ -14,8 +14,12 @@ name: Bot self-test
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # лёгкий прогон каждые 15 минут
-    - cron: "7 */6 * * *"  # полный прогон раз в 6 часов
+    - cron: "*/15 * * * *" # лёгкий прогон каждые 15 минут (без AI, почти бесплатно)
+    # Полный прогон — дважды в сутки, а не круглосуточно. Регрессии появляются в
+    # момент деплоя, а не сами по себе в четыре утра: после каждого деплоя прогон
+    # запускается руками, а расписание здесь — страховка. Именно круглосуточный
+    # полный прогон съел почти весь августовский счёт за API.
+    - cron: "7 6,18 * * *" # полный прогон: утром и вечером (UTC)
     - cron: "20 6 * * *"   # утренний разбор: что сломалось за сутки
     - cron: "40 7 * * 1"   # понедельник: разбор вопросов бота — что работает, что нет
   workflow_dispatch:
@@ -33,10 +37,18 @@ jobs:
       - name: Run self-test
         run: |
           MODE="light"
-          if [ "${{ github.event.schedule }}" = "7 */6 * * *" ]; then MODE="full"; fi
+          if [ "${{ github.event.schedule }}" = "7 6,18 * * *" ]; then MODE="full"; fi
           if [ -n "${{ github.event.inputs.mode }}" ]; then MODE="${{ github.event.inputs.mode }}"; fi
           echo "mode=$MODE"
-          curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=$MODE" | tee result.json
+          if [ "$MODE" = "full" ]; then
+            # Обе половины подряд с явными номерами: авточередование по времени
+            # при запусках в 6:07 и 18:07 выбирало бы одну и ту же половину вечно.
+            curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=full&of=2&part=0" | tee result.json
+            python3 -c "import json,sys; d=json.load(open('result.json')); sys.exit(0 if d.get('ok') else 1)"
+            curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=full&of=2&part=1" | tee result.json
+          else
+            curl -fsS --max-time 300 "${APP_URL}/api/selftest?key=${CRON_SECRET}&mode=light" | tee result.json
+          fi
           # Падение шага = красный прогон в Actions, чтобы поломка была видна и там.
           python3 -c "import json,sys; d=json.load(open('result.json')); sys.exit(0 if d.get('ok') else 1)"
         env:
