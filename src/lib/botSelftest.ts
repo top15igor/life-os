@@ -874,7 +874,11 @@ export async function runSelftest(origin: string, mode: Mode = "light", part?: P
         await new Promise((r) => setTimeout(r, 1200));
         why = await sc.verifyDb();
       }
-      steps.push({ name: sc.name, ok: !why, why: why || undefined, ms: Date.now() - s0 });
+      // К причине провала прикладываем, что бот РЕАЛЬНО ответил. Без этого отчёт
+      // вроде «задача не появилась в базе» одинаково выглядит и когда бот не понял
+      // команду, и когда у него отвалился мозг, — а чинится это по-разному.
+      const said = texts(sent).join(" | ").replace(/\s+/g, " ").slice(0, 220);
+      steps.push({ name: sc.name, ok: !why, why: why ? `${why} · бот ответил: «${said}»` : undefined, ms: Date.now() - s0 });
     } catch (e: any) {
       steps.push({ name: sc.name, ok: false, why: String(e?.message || e).slice(0, 200), ms: Date.now() - s0 });
     }
