@@ -949,7 +949,12 @@ export async function runSelftest(origin: string, mode: Mode = "light", part?: P
       try {
         const sent = await fire(origin, secret, message(c.say));
         const broken = notBroken(sent);
-        const why = broken || await judgeAnswer(c, texts(sent).join("\n"));
+        // Пустой ответ — отдельный диагноз. Судья на пустоте пишет «ответ не
+        // предоставлен», и непонятно, бот промолчал или проверка сломалась.
+        const ans = texts(sent).join("\n");
+        const why = broken || (!ans.trim()
+          ? `бот ответил пустым сообщением (методы: ${sent.map((x) => x.method).join(", ") || "ничего"})`
+          : await judgeAnswer(c, ans));
         steps.push({ name: c.name, ok: !why, why: why || undefined, ms: Date.now() - s0 });
       } catch (e: any) {
         steps.push({ name: c.name, ok: false, why: String(e?.message || e).slice(0, 200), ms: Date.now() - s0 });
