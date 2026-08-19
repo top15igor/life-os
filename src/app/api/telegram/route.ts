@@ -286,6 +286,16 @@ const EMPTY_ADD_ASK: Record<string, string> = {
 // Мозг не ответил. Сказанное сохранено — это главное, — но если человек просил
 // что-то сделать, честнее сказать сразу, чем оставить его в уверенности, что
 // задача заведена.
+// Действие вернуло пустой текст. Такого быть не должно, но если случилось —
+// честная строка лучше немого сообщения.
+const EMPTY_REPLY: Record<string, string> = {
+  ru: "Я запутался и не уверен, что сделал это правильно. Скажи, пожалуйста, ещё раз — одной фразой.",
+  en: "I got confused and I'm not sure I did that right. Please say it once more, in one phrase.",
+  uk: "Я заплутався і не впевнений, що зробив це правильно. Скажи, будь ласка, ще раз — однією фразою.",
+  fr: "Je me suis emmêlé et je ne suis pas sûr d'avoir bien fait. Redis-le moi en une phrase, s'il te plaît.",
+  es: "Me confundí y no estoy seguro de haberlo hecho bien. Dímelo otra vez, en una frase, por favor.",
+};
+
 const BRAIN_FAIL: Record<string, string> = {
   ru: "⚠️ Я сохранил сказанное, но подумать сейчас не смог — сбой на моей стороне. Если это была команда (задача, напоминание, трата), повтори её, пожалуйста, ещё раз.",
   en: "⚠️ I saved what you said, but couldn't think it through — a glitch on my side. If that was a command (task, reminder, expense), please say it once more.",
@@ -2828,8 +2838,15 @@ async function handleUpdate(req: NextRequest) {
         }
 
         // Ответы AI-экшенов (например, из Базы знаний) приходят в markdown — конвертируем.
-        const combined = [{ text: res.text, html: res.html }, ...moreParts]
+        let combined = [{ text: res.text, html: res.html }, ...moreParts]
           .map((p) => (p.html ? p.text : mdToTelegram(p.text) || p.text)).join("\n");
+        // Пустой ответ — всегда баг, но молчать из-за него нельзя: человек
+        // отправил команду и смотрит на экран. Говорим честно и пишем в журнал,
+        // КАКОЕ действие вернуло пустоту, — по этой записи баг и будет пойман.
+        if (!combined.trim()) {
+          logError("bot:empty-reply", new Error("action returned empty text"), { userId: user.id, detail: route.name });
+          combined = EMPTY_REPLY[langOf(user, msg)] || EMPTY_REPLY.ru;
+        }
         // Действие может отдать файл (выгрузка заметок) — шлём документом.
         if (res.file) {
           await sendDocument(chatId, Buffer.from(res.file.text, "utf8"), res.file.name, { caption: combined, parse_mode: "HTML" });
