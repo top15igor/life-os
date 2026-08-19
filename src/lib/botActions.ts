@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { indexRow } from "./vaultIndex";
 import { logClaude } from "./usage";
+import { rememberClarify } from "./clarify";
 import { DREAM_SPHERES } from "./ai";
 import { createReminder, localToISO, deleteReminder } from "./reminders";
 import type { Recurrence } from "./googleCalendar";
@@ -75,15 +76,15 @@ export const ACTION_TOOLS: any[] = [
       type: "object",
       properties: {
         text: { type: "string", description: "что напомнить, без слова «напомни»" },
-        date: { type: "string", description: "дата YYYY-MM-DD по местному времени пользователя" },
-        time: { type: "string", description: "время HH:MM 24ч по местному; не указывай, если на весь день" },
+        date: { type: "string", description: "дата YYYY-MM-DD по местному времени, ТОЛЬКО если человек назвал день («завтра», «в субботу», «15 июля») или время («через час» — значит сегодня). НЕ выдумывай: не назвал ни дня, ни времени — не заполняй, бот сам спросит «когда?»." },
+        time: { type: "string", description: "время HH:MM 24ч по местному, ТОЛЬКО если названо или следует из слов («через час», «вечером»); не выдумывай и не указывай для «на весь день»" },
         all_day: { type: "boolean", description: "true, если без конкретного времени (день рождения и т.п.)" },
         recurrence: { type: "string", enum: ["none", "hourly", "daily", "weekly", "monthly", "yearly"], description: "повтор: «каждый день/неделю/месяц/год»; hourly — «каждый час» (тогда задай from_hour/to_hour)" },
         from_hour: { type: "number", description: "для hourly: с какого часа (0–23), напр. «с 9 утра» → 9; по умолчанию 9" },
         to_hour: { type: "number", description: "для hourly: до какого часа (0–23), напр. «до 9 вечера» → 21; по умолчанию 21" },
         remind_min: { type: "number", description: "за сколько минут предупредить, если названо (10/30/60/1440); иначе не указывай" },
       },
-      required: ["text", "date"],
+      required: ["text"],
     },
   },
   { name: "complete_task", description: "Отметить существующую задачу ВЫПОЛНЕННОЙ (она остаётся в списке, но помечается сделанной). НЕ выбирай на «убери», «удали», «сотри», «мне это больше не нужно» — это delete_item. Команда «отметь задачу … выполненной», «заверши задачу …», «выполнил …». query — слова для поиска задачи.", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
@@ -819,12 +820,12 @@ const M: Record<Lang, any> = {
 };
 
 // Reminder confirmation strings (kept separate from M for brevity).
-const REMIND_MSG: Record<Lang, { label: (t: string, w: string) => string; at: string; allDayNote: string; rep: Record<Recurrence, string>; hourly: (from: number, to: number) => string }> = {
-  ru: { label: (t, w) => `⏰ Напомню: «${t}» — ${w}.`, at: "в", allDayNote: "весь день", rep: { daily: " · каждый день", weekly: " · каждую неделю", monthly: " · каждый месяц", yearly: " · каждый год" }, hourly: (f, t) => ` · каждый час с ${f}:00 до ${t}:00` },
-  en: { label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" }, hourly: (f, t) => ` · every hour from ${f}:00 to ${t}:00` },
-  uk: { label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" }, hourly: (f, t) => ` · щогодини з ${f}:00 до ${t}:00` },
-  fr: { label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" }, hourly: (f, t) => ` · chaque heure de ${f}h à ${t}h` },
-  es: { label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" }, hourly: (f, t) => ` · cada hora de ${f}:00 a ${t}:00` },
+const REMIND_MSG: Record<Lang, { whenAsk: (t: string) => string; btns: string[]; label: (t: string, w: string) => string; at: string; allDayNote: string; rep: Record<Recurrence, string>; hourly: (from: number, to: number) => string }> = {
+  ru: { whenAsk: (t: string) => `Когда напомнить «${t}»? Нажми или ответь словами («завтра в 9», «через 2 часа»).`, btns: ["Через час", "Сегодня в 19:00", "Завтра в 9:00"], label: (t, w) => `⏰ Напомню: «${t}» — ${w}.`, at: "в", allDayNote: "весь день", rep: { daily: " · каждый день", weekly: " · каждую неделю", monthly: " · каждый месяц", yearly: " · каждый год" }, hourly: (f, t) => ` · каждый час с ${f}:00 до ${t}:00` },
+  en: { whenAsk: (t: string) => `When should I remind you about “${t}”? Tap or answer in words (“tomorrow at 9”, “in 2 hours”).`, btns: ["In an hour", "Today at 19:00", "Tomorrow at 9:00"], label: (t, w) => `⏰ I'll remind you: “${t}” — ${w}.`, at: "at", allDayNote: "all day", rep: { daily: " · every day", weekly: " · every week", monthly: " · every month", yearly: " · every year" }, hourly: (f, t) => ` · every hour from ${f}:00 to ${t}:00` },
+  uk: { whenAsk: (t: string) => `Коли нагадати «${t}»? Натисни або відповідай словами («завтра о 9», «через 2 години»).`, btns: ["За годину", "Сьогодні о 19:00", "Завтра о 9:00"], label: (t, w) => `⏰ Нагадаю: «${t}» — ${w}.`, at: "о", allDayNote: "весь день", rep: { daily: " · щодня", weekly: " · щотижня", monthly: " · щомісяця", yearly: " · щороку" }, hourly: (f, t) => ` · щогодини з ${f}:00 до ${t}:00` },
+  fr: { whenAsk: (t: string) => `Quand te rappeler « ${t} » ? Appuie ou réponds en mots (« demain à 9h », « dans 2 heures »).`, btns: ["Dans une heure", "Ce soir à 19h", "Demain à 9h"], label: (t, w) => `⏰ Je te rappellerai : « ${t} » — ${w}.`, at: "à", allDayNote: "toute la journée", rep: { daily: " · chaque jour", weekly: " · chaque semaine", monthly: " · chaque mois", yearly: " · chaque année" }, hourly: (f, t) => ` · chaque heure de ${f}h à ${t}h` },
+  es: { whenAsk: (t: string) => `¿Cuándo te recuerdo «${t}»? Toca o responde con palabras («mañana a las 9», «en 2 horas»).`, btns: ["En una hora", "Hoy a las 19:00", "Mañana a las 9:00"], label: (t, w) => `⏰ Te recordaré: «${t}» — ${w}.`, at: "a las", allDayNote: "todo el día", rep: { daily: " · cada día", weekly: " · cada semana", monthly: " · cada mes", yearly: " · cada año" }, hourly: (f, t) => ` · cada hora de ${f}:00 a ${t}:00` },
 };
 
 // Строки для «что у меня сегодня/завтра» и «отмени напоминание».
@@ -944,7 +945,20 @@ export async function runAction(userId: string, name: string, input: any, lang: 
     if (name === "set_reminder") {
       const t = String(input?.text || "").trim();
       const date = String(input?.date || "").trim();
-      if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
+      if (!t) return { text: s.fail };
+      // «Напомни купить молоко» — без дня и времени. Раньше date был обязательным
+      // полем, и модель ВЫДУМЫВАЛА его (исследователь поймал это ~55 раз: «бот
+      // поставил напоминание на выдуманное время»). Выдуманное напоминание хуже
+      // вопроса: оно срабатывает, когда не ждут, и молчит, когда надо.
+      if (!date) {
+        const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
+        await rememberClarify(userId, rm.whenAsk(t), `напомни: ${t}`);
+        return {
+          text: rm.whenAsk(t),
+          markup: { inline_keyboard: rm.btns.map((b) => [{ text: b, callback_data: `clar:${b.slice(0, 50)}` }]) },
+        };
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
       const time = input?.time ? String(input.time).trim() : null;
       const allDay = !!input?.all_day || !time;
       // Повтор: стандартный (день/неделя/месяц/год) или почасовой с окном
