@@ -41,7 +41,10 @@ export type Route =
   // maybeVault — мозг сам сказал, что это похоже на справку. По нему решаем,
   // показывать ли кнопку «Это в хранилище»: под рассказом о пляже с детьми
   // такой вопрос неуместен и выглядит так, будто бот не понял, что прочитал.
-  | { kind: "note"; maybeVault?: boolean };
+  // brainFailed — роутер не смог подумать (сбой или перегрузка провайдера).
+  // Внешне это неотличимо от обычной записи, поэтому флаг обязателен: без него
+  // сломанный мозг выглядит как «человек просто рассказал о своём дне».
+  | { kind: "note"; maybeVault?: boolean; brainFailed?: boolean };
 
 export const ACTION_TOOLS: any[] = [
   { name: "add_goal", description: "Добавить цель на год. Только при явной команде вроде «добавь цель…», «поставь цель…».", input_schema: { type: "object", properties: { title: { type: "string" } }, required: ["title"] } },
@@ -516,8 +519,16 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       .filter((b: any) => { const k = sig(b); if (seen.has(k)) return false; seen.add(k); return true; })
       .map((b: any) => ({ name: b.name, input: b.input || {} }));
     return { kind: "action", name, input: block.input || {}, ...(more.length ? { more } : {}) };
-  } catch {
-    return { kind: "note" }; // при ошибке безопаснее сохранить как запись
+  } catch (e) {
+    // Мозг не ответил — сохранить как запись безопаснее всего: сказанное человеком
+    // не пропадёт. Но раньше ошибка глоталась МОЛЧА, и это оказалось хуже самой
+    // ошибки: «добавь задачу» тихо превращалось в дневниковую запись, бот бодро
+    // отвечал «Запись сохранена», и понять, что он вообще не думал, было нельзя
+    // ни человеку, ни нам. Один прогон самопроверки показал шесть разных
+    // «багов», а причина была одна.
+    // Текст записи в журнал не кладём — там личное; для диагноза хватает длины.
+    await logError("bot:route", e, { userId, detail: `len=${String(text || "").length}` });
+    return { kind: "note", brainFailed: true };
   }
 }
 

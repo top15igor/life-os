@@ -283,6 +283,17 @@ const EMPTY_ADD_ASK: Record<string, string> = {
   es: "¿Qué anoto exactamente? Dime el texto y lo guardo.",
 };
 
+// Мозг не ответил. Сказанное сохранено — это главное, — но если человек просил
+// что-то сделать, честнее сказать сразу, чем оставить его в уверенности, что
+// задача заведена.
+const BRAIN_FAIL: Record<string, string> = {
+  ru: "⚠️ Я сохранил сказанное, но подумать сейчас не смог — сбой на моей стороне. Если это была команда (задача, напоминание, трата), повтори её, пожалуйста, ещё раз.",
+  en: "⚠️ I saved what you said, but couldn't think it through — a glitch on my side. If that was a command (task, reminder, expense), please say it once more.",
+  uk: "⚠️ Я зберіг сказане, але подумати зараз не зміг — збій на моєму боці. Якщо це була команда (завдання, нагадування, витрата), повтори її, будь ласка, ще раз.",
+  fr: "⚠️ J'ai enregistré ce que tu as dit, mais je n'ai pas pu réfléchir — une panne de mon côté. Si c'était une commande (tâche, rappel, dépense), répète-la, s'il te plaît.",
+  es: "⚠️ Guardé lo que dijiste, pero no pude pensarlo — un fallo de mi lado. Si era un comando (tarea, recordatorio, gasto), repítelo, por favor.",
+};
+
 const REM_CB: Record<string, { done: string; snoozed: string; gone: string; canceled: string }> = {
   ru: { done: "Готово ✅", snoozed: "Отложил на час ⏰", gone: "Это напоминание уже удалено.", canceled: "Отменено" },
   en: { done: "Done ✅", snoozed: "Snoozed for an hour ⏰", gone: "This reminder is already gone.", canceled: "Canceled" },
@@ -2688,6 +2699,13 @@ async function handleUpdate(req: NextRequest) {
       // Раньше ветка стояла раньше роутера и глотала ВСЁ подряд: начал обсуждать
       // идею — и сутки любое «напомни завтра» уходило в то же обсуждение.
       // Теперь любая явная команда работает как обычно, а обсуждение просто ждёт.
+      // Мозг не ответил (сбой или перегрузка провайдера). Сказанное сохраним —
+      // терять его нельзя, — но делать вид, что всё как обычно, нечестно: человек
+      // просил что-то СДЕЛАТЬ, а мы этого не сделали. Одна строка правды дешевле
+      // молчания: он повторит команду, а не узнает через неделю, что задачи нет.
+      if (route.kind === "note" && (route as any).brainFailed) {
+        await sendMessage(chatId, BRAIN_FAIL[langOf(user, msg)] || BRAIN_FAIL.ru);
+      }
       if (route.kind === "note" && inIdea) {
         const lng = langOf(user, msg);
         const turn = await converseIdea(user.id, text);
