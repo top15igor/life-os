@@ -82,6 +82,21 @@ async function testSpendCount(): Promise<number> {
   }
 }
 
+// Сумма-маркер для проверки правки трат. Смотрим, какая сумма стоит в записи.
+async function testSpendAmount(note: string): Promise<number | null> {
+  try {
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+    if (!(u as any)?.id) return null;
+    const { data } = await db.from("finance_tx").select("amount").eq("user_id", (u as any).id)
+      .ilike("note", `%${note}%`).order("created_at", { ascending: false }).limit(1);
+    const row = ((data as any[]) || [])[0];
+    return row ? Number(row.amount) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function testTaskExists(): Promise<boolean> {
   try {
     const db = supabaseAdmin();
@@ -532,6 +547,29 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "«Было не 500, а 350» находит трату по сумме",
+    heavy: true,
+    // Самый частый улов исследователя (~80 падений): человек поправляет только
+    // сумму, не называя предмет. Роутер выдумывал слова для поиска из прошлого
+    // разговора — и бот отвечал «не нашёл трату про хлеб», которого не было.
+    chain: () => [
+      message("потратил 4517 на кофейню для самопроверки"),
+      message("стоп, я ошибся, было не 4517, а 4350"),
+    ],
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join("\n");
+      return /не нашёл трату про/i.test(joined) ? "бот искал трату по выдуманным словам" : null;
+    },
+    verifyDb: async () => {
+      const a = await testSpendAmount("кофейн");
+      if (a === 4350) return null;
+      if (a === 4517) return "сумма осталась старой — правка не применилась";
+      return `в «Деньгах» не то, что ждали: ${a === null ? "траты нет вообще" : a}`;
+    },
+  },
+  {
     name: "Продиктованные траты попадают в «Деньги»",
     heavy: true,
     // Живой случай: «можешь, пожалуйста, записать сегодняшние расходы? бассейн 25
@@ -839,7 +877,7 @@ async function cleanup(): Promise<void> {
   const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
   const id = (u as any)?.id;
   if (!id) return;
-  for (const t of ["entries", "reminders", "companion_messages", "feedback", "tasks", "notes", "goals", "ideas"]) {
+  for (const t of ["entries", "reminders", "companion_messages", "feedback", "tasks", "notes", "goals", "ideas", "finance_tx"]) {
     try { await db.from(t).delete().eq("user_id", id); } catch { /* таблицы может не быть */ }
   }
   // Сбрасываем ведущие режимы, чтобы следующий прогон стартовал с чистого листа.

@@ -291,12 +291,13 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "fix_finance",
     description:
-      "ИСПРАВИТЬ или УДАЛИТЬ уже записанную трату/доход: «я потратил не 500, а 300», «исправь трату на бензин — было 800», «удали трату на кофе», «это не расход, я ошибся». query — по чему искать (на что была трата: «бензин», «кофе»); amount — новая сумма, если названа; remove — true, если операцию надо убрать совсем. НЕ используй для НОВОЙ траты — новая записывается обычной записью.",
+      "ИСПРАВИТЬ или УДАЛИТЬ уже записанную трату/доход: «я потратил не 500, а 300», «стоп, я ошибся, было не 500, а 350», «исправь трату на бензин — было 800», «удали трату на кофе». Самый частый случай — человек называет ТОЛЬКО суммы, без предмета: тогда query НЕ заполняй вовсе, а заполни old_amount (что записано сейчас) и amount (как должно быть). НЕ используй для НОВОЙ траты — новая записывается обычной записью.",
     input_schema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "на что была трата/доход — слова для поиска" },
-        amount: { type: "number", description: "новая сумма, если человек её назвал" },
+        query: { type: "string", description: "на что была трата — слова ТОЛЬКО из этой реплики («бензин», «кофе»). Если человек предмет не назвал — НЕ выдумывай и не бери из прошлых сообщений, оставь пустым: трату найдём по сумме." },
+        old_amount: { type: "number", description: "сумма, которая записана сейчас (в «было не 500, а 350» это 500)" },
+        amount: { type: "number", description: "новая, правильная сумма (в «было не 500, а 350» это 350)" },
         remove: { type: "boolean", description: "true — удалить операцию совсем" },
       },
       required: ["query"],
@@ -689,7 +690,7 @@ const M: Record<Lang, any> = {
     undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
     cant: { text: (w: string) => `Honestly: ${w ? `\u201c${w}\u201d is` : "that\u2019s"} something I can\u2019t do. I live inside LIFE OS and can\u2019t act in the outside world.\n\nWhat I can do: save it, set a reminder or a task \u2014 tell me which.` },
-    fin: { unclear: "I didn\u2019t catch what to fix. Say something like \u201cit was 300, not 500, for fuel\u201d.", none: (q: string) => `No transaction about \u201c${q}\u201d in the last month.`, which: "Found several. Which one should I fix?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Fixed: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Removed ${a}${n ? ` (${n})` : ""}.` },
+    fin: { unclear: "I didn\u2019t catch what to fix. Say something like \u201cit was 300, not 500, for fuel\u201d.", none: (q: string) => `No transaction about \u201c${q}\u201d in the last month.`, empty: "You have no recorded transactions yet \u2014 nothing to fix. Tell me an expense and I\u2019ll log it.", notThatOne: (q: string) => `No transaction about \u201c${q}\u201d in the last month. Maybe this latest one? Tap and I\u2019ll fix it:`, which: "Found several. Which one should I fix?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Fixed: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Removed ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "task", note: "note", goal: "goal", memory: "the photo/document", saved: "the saved item", book: "the book", unclear: "I didn\u2019t catch what to remove. Say something like \u201cdelete the task order water\u201d.", none: (l: string) => `Couldn\u2019t find that ${l} \u2014 maybe it\u2019s worded differently.`, which: (l: string) => `Found several. Which ${l} should I remove?`, done: (l: string, t: string) => `\ud83d\uddd1 Removed the ${l}: \u201c${t}\u201d.` },
     idea: { head: "\ud83d\udca1 Got it \u2014 that's a LIFE OS idea. A couple of questions so it reaches the owner undistorted.", fallback: "Noted. Say a bit more and I'll write it up.", similar: (n: number, t: string, st: string) => `Looks like this was suggested already \u2014 idea #${n}: \u201c${t}\u201d (${st}). If yours is different, tell me how \u2014 or say \u201cback to idea ${n}\u201d to pick up where we left off.`, notFound: "No such idea. Say it differently or give me its number \u2014 it\u2019s on the Ideas page.", noneAtAll: "We haven\u2019t finished any idea yet. Tell me what you\u2019re proposing and we\u2019ll shape it.", moved: "Moved the diary entry into the idea discussion", movedHead: "\ud83d\udca1 Got it \u2014 not a diary entry. I removed it and we continue as a LIFE OS idea." },
     rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
@@ -765,7 +766,7 @@ const M: Record<Lang, any> = {
     undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
     cant: { text: (w: string) => `Honn\u00eatement : ${w ? `\u00ab ${w} \u00bb, je` : "je"} ne sais pas faire \u00e7a. Je vis dans LIFE OS et je ne peux pas agir dans le monde ext\u00e9rieur.\n\nEn revanche je peux le noter, cr\u00e9er un rappel ou une t\u00e2che \u2014 dis-moi ce qu\u2019il te faut.` },
-    fin: { unclear: "Je n\u2019ai pas compris quoi corriger. Dis par exemple \u00ab c\u2019\u00e9tait 300, pas 500, pour l\u2019essence \u00bb.", none: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois.`, which: "J\u2019en ai trouv\u00e9 plusieurs. Laquelle corriger ?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corrig\u00e9 : ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Supprim\u00e9 : ${a}${n ? ` (${n})` : ""}.` },
+    fin: { unclear: "Je n\u2019ai pas compris quoi corriger. Dis par exemple \u00ab c\u2019\u00e9tait 300, pas 500, pour l\u2019essence \u00bb.", none: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois.`, empty: "Tu n\u2019as encore aucune op\u00e9ration enregistr\u00e9e \u2014 rien \u00e0 corriger. Dis-moi une d\u00e9pense et je la note.", notThatOne: (q: string) => `Aucune op\u00e9ration \u00ab ${q} \u00bb ce dernier mois. Peut-\u00eatre celle-ci, la derni\u00e8re ? Appuie et je corrige :`, which: "J\u2019en ai trouv\u00e9 plusieurs. Laquelle corriger ?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corrig\u00e9 : ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Supprim\u00e9 : ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "t\u00e2che", note: "note", goal: "objectif", memory: "la photo/le document", saved: "l\u2019\u00e9l\u00e9ment enregistr\u00e9", book: "le livre", unclear: "Je n\u2019ai pas compris quoi supprimer. Dis par exemple \u00ab supprime la t\u00e2che commander de l\u2019eau \u00bb.", none: (l: string) => `Je n\u2019ai pas trouv\u00e9 ce ${l}.`, which: (l: string) => `J\u2019en ai trouv\u00e9 plusieurs. Lequel supprimer ?`, done: (l: string, t: string) => `\ud83d\uddd1 Supprim\u00e9 : \u00ab ${t} \u00bb.` },
     idea: { head: "\ud83d\udca1 Got it \u2014 that's a LIFE OS idea. A couple of questions so it reaches the owner undistorted.", fallback: "Noted. Say a bit more and I'll write it up.", similar: (n: number, t: string, st: string) => `Looks like this was suggested already \u2014 idea #${n}: \u201c${t}\u201d (${st}). If yours is different, tell me how \u2014 or say \u201cback to idea ${n}\u201d to pick up where we left off.`, notFound: "No such idea. Say it differently or give me its number \u2014 it\u2019s on the Ideas page.", noneAtAll: "We haven\u2019t finished any idea yet. Tell me what you\u2019re proposing and we\u2019ll shape it.", moved: "Moved the diary entry into the idea discussion", movedHead: "\ud83d\udca1 Got it \u2014 not a diary entry. I removed it and we continue as a LIFE OS idea." },
     rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
@@ -803,7 +804,7 @@ const M: Record<Lang, any> = {
     undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
     cant: { text: (w: string) => `Con sinceridad: ${w ? `\u00ab${w}\u00bb es algo que` : "eso"} no s\u00e9 hacer. Vivo dentro de LIFE OS y no puedo actuar en el mundo exterior.\n\nLo que s\u00ed puedo: anotarlo, poner un recordatorio o una tarea \u2014 dime qu\u00e9 prefieres.` },
-    fin: { unclear: "No entend\u00ed qu\u00e9 corregir. Di por ejemplo \u00abfueron 300, no 500, de gasolina\u00bb.", none: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes.`, which: "Encontr\u00e9 varios. \u00bfCu\u00e1l corrijo?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corregido: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Quit\u00e9 ${a}${n ? ` (${n})` : ""}.` },
+    fin: { unclear: "No entend\u00ed qu\u00e9 corregir. Di por ejemplo \u00abfueron 300, no 500, de gasolina\u00bb.", none: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes.`, empty: "A\u00fan no tienes operaciones registradas \u2014 nada que corregir. Dime un gasto y lo anoto.", notThatOne: (q: string) => `No encontr\u00e9 ning\u00fan gasto sobre \u00ab${q}\u00bb en el \u00faltimo mes. \u00bfQuiz\u00e1 este, el \u00faltimo? Toca y lo corrijo:`, which: "Encontr\u00e9 varios. \u00bfCu\u00e1l corrijo?", fixed: (a: string, b: string, n: string) => `\ud83d\udcb8 Corregido: ${a} \u2192 ${b}${n ? ` (${n})` : ""}.`, removed: (a: string, n: string) => `\ud83d\uddd1 Quit\u00e9 ${a}${n ? ` (${n})` : ""}.` },
     del: { task: "tarea", note: "nota", goal: "objetivo", memory: "la foto/el documento", saved: "el elemento guardado", book: "el libro", unclear: "No entend\u00ed qu\u00e9 quitar. Di por ejemplo \u00abelimina la tarea pedir agua\u00bb.", none: (l: string) => `No encontr\u00e9 esa ${l}.`, which: (l: string) => `Encontr\u00e9 varias. \u00bfCu\u00e1l ${l} quito?`, done: (l: string, t: string) => `\ud83d\uddd1 Quit\u00e9 la ${l}: \u00ab${t}\u00bb.` },
     idea: { head: "\ud83d\udca1 Got it \u2014 that's a LIFE OS idea. A couple of questions so it reaches the owner undistorted.", fallback: "Noted. Say a bit more and I'll write it up.", similar: (n: number, t: string, st: string) => `Looks like this was suggested already \u2014 idea #${n}: \u201c${t}\u201d (${st}). If yours is different, tell me how \u2014 or say \u201cback to idea ${n}\u201d to pick up where we left off.`, notFound: "No such idea. Say it differently or give me its number \u2014 it\u2019s on the Ideas page.", noneAtAll: "We haven\u2019t finished any idea yet. Tell me what you\u2019re proposing and we\u2019ll shape it.", moved: "Moved the diary entry into the idea discussion", movedHead: "\ud83d\udca1 Got it \u2014 not a diary entry. I removed it and we continue as a LIFE OS idea." },
     rules: { head: "\ud83d\udccc Your rules:", foot: "Say \u201cdrop the rule about \u2026\u201d to remove one.", empty: "No rules yet. Try: \u201cwhen I write about training, file it under the Sport project\u201d.", added: (t: string) => `\ud83d\udccc Got it: \u201c${t}\u201d. I\u2019ll apply it to new entries.`, dropped: (t: string) => `Removed the rule: \u201c${t}\u201d.`, notFound: "No such rule. Say \u201cshow my rules\u201d and I\u2019ll list them." },
@@ -1456,9 +1457,14 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // в отчёте и не может поправить словами. Отдельного действия не было вовсе.
       const F = (s as any).fin;
       const q = String(input?.query || "").trim();
-      if (!q) return { text: F.unclear };
+      const oldAmount = Number(input?.old_amount);
       const newAmount = Number(input?.amount);
       const remove = input?.remove === true;
+      // Раньше без слов для поиска мы сдавались сразу — и роутер, вынужденный
+      // что-то вписать, выдумывал «хлеб» или «молоко» из прошлого разговора.
+      // Исследователь поймал это ~80 раз: «стоп, было не 500, а 350» — в этой
+      // фразе предмета нет, есть только суммы. Сумма — такой же адрес траты.
+      if (!q && !(Number.isFinite(oldAmount) && oldAmount > 0)) return { text: F.unclear };
       if (!remove && !(Number.isFinite(newAmount) && newAmount > 0)) return { text: F.unclear };
 
       // Ищем среди операций за последний месяц: правят обычно свежее.
@@ -1468,16 +1474,39 @@ export async function runAction(userId: string, name: string, input: any, lang: 
         .eq("user_id", userId).gte("day", since)
         .order("day", { ascending: false }).limit(200);
       if (error) return { text: s.fail };
+      // Совсем нет операций — так и говорим. «Не нашёл трату про хлеб» на пустом
+      // кошельке звучит как поломка, а не как правда.
+      if (!((rows || []) as any[]).length) return { text: F.empty };
 
-      const stems = searchStems(q);
       const hay = (r: any) => normName(`${r.note || ""} ${r.category || ""}`);
-      const scored = ((rows || []) as any[])
-        .map((r) => ({ r, score: stems.filter((st) => hay(r).includes(st)).length }))
-        .filter((x) => x.score > 0)
-        .sort((a, b) => b.score - a.score);
-      if (!scored.length) return { text: F.none(q) };
+      let matched: any[] = [];
+      if (q) {
+        const stems = searchStems(q);
+        const scored = ((rows || []) as any[])
+          .map((r) => ({ r, score: stems.filter((st) => hay(r).includes(st)).length }))
+          .filter((x) => x.score > 0)
+          .sort((a, b) => b.score - a.score);
+        matched = scored.filter((x) => x.score === scored[0]?.score).map((x) => x.r);
+      }
+      // По сумме: и когда слов не было, и когда слова ничего не дали, а сумма есть.
+      if (!matched.length && Number.isFinite(oldAmount) && oldAmount > 0) {
+        matched = ((rows || []) as any[]).filter((r) => Number(r.amount) === oldAmount);
+      }
+      // Последняя соломинка: человек явно правит трату, а зацепиться не за что —
+      // предлагаем самую свежую кнопкой, но ничего не меняем без его тапа.
+      if (!matched.length) {
+        const last = ((rows || []) as any[])[0];
+        const moneyOf = (r: any) => `${Number(r.amount)}${r.currency ? " " + r.currency : ""}`;
+        return {
+          text: F.notThatOne(q || String(oldAmount || "")),
+          markup: { inline_keyboard: [[{
+            text: `${last.day.slice(8, 10)}.${last.day.slice(5, 7)} · ${moneyOf(last)} · ${String(last.note || last.category || "").slice(0, 25)}`,
+            callback_data: `fin:${remove ? "d" : Math.round(newAmount)}:${last.id}`,
+          }]] },
+        };
+      }
 
-      const top = scored.filter((x) => x.score === scored[0].score);
+      const top = matched.map((r) => ({ r }));
       const money = (r: any) => `${Number(r.amount)}${r.currency ? " " + r.currency : ""}`;
       if (top.length > 1) {
         // Выбор кнопкой: суммы и даты у операций разные, и по ним человек
