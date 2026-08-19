@@ -2959,7 +2959,12 @@ function formatConfirm(a: Analysis, streak: number, lang: string, financeSaved =
   // все задачи, все инсайты, все теги и метрики.
   const rest: string[] = [];
   const gist = (a.summary || "").trim();
-  if (gist) {
+  // «Коротко», слово в слово повторяющее саму запись, — это не пересказ, а вторая
+  // копия того же текста. Человек видит один и тот же абзац дважды и справедливо
+  // не понимает, зачем. Сравниваем по сути: без знаков, регистра и ё/е.
+  const bare = (x: string) => x.toLowerCase().replace(/ё/g, "е").replace(/[^\p{L}\p{N}]+/gu, "");
+  const sameAsText = !!gist && bare(gist) === bare(fullText || "");
+  if (gist && !sameAsText) {
     // Для голоса резюме идёт отдельной строкой «Коротко» (под полной расшифровкой);
     // для текста — это основной текст подтверждения.
     if (isVoice) rest.push("", `💬 <b>${L.gist}:</b> ${esc(gist)}`);

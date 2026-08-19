@@ -67,6 +67,21 @@ async function testTaskState(): Promise<"gone" | "done" | "open"> {
   }
 }
 
+// Легли ли продиктованные траты в «Деньги». Возвращает, сколько нашлось из трёх.
+const SPEND_MARK = 4243;
+async function testSpendCount(): Promise<number> {
+  try {
+    const db = supabaseAdmin();
+    const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+    if (!(u as any)?.id) return 0;
+    const { data } = await db.from("finance_tx").select("id, amount").eq("user_id", (u as any).id)
+      .in("amount", [SPEND_MARK, SPEND_MARK + 1, SPEND_MARK + 2]).limit(5);
+    return ((data as any[]) || []).length;
+  } catch {
+    return 0;
+  }
+}
+
 async function testTaskExists(): Promise<boolean> {
   try {
     const db = supabaseAdmin();
@@ -514,6 +529,23 @@ const SCENARIOS: Scenario[] = [
       return /рейкьявик|reykjav|исланд|iceland|snorrabraut/i.test(joined)
         ? null
         : "в ответе нет места из ссылки — бот её не прочитал";
+    },
+  },
+  {
+    name: "Продиктованные траты попадают в «Деньги»",
+    heavy: true,
+    // Живой случай: «можешь, пожалуйста, записать сегодняшние расходы? бассейн 25
+    // евро и продукты 90 евро, а также проезд 20 евро» — бот сохранил это записью
+    // в дневник и не завёл ни одной траты. Вежливая просьба — всё равно перечень
+    // расходов, а не рассказ.
+    send: () =>
+      message(
+        `можешь, пожалуйста, записать сегодняшние расходы? бассейн ${SPEND_MARK} евро и продукты ${SPEND_MARK + 1} евро, а также проезд на транспорте ${SPEND_MARK + 2} евро`,
+      ),
+    check: (sent) => notBroken(sent),
+    verifyDb: async () => {
+      const n = await testSpendCount();
+      return n >= 3 ? null : `из трёх названных трат в «Деньги» попало ${n}`;
     },
   },
   {
