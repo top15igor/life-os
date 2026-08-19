@@ -43,8 +43,23 @@ export async function GET() {
     .map(([name, v]) => ({ name, ...v }))
     .sort((a, b) => b.count - a.count);
 
+  // Свежие ошибки за сутки: когда проверка говорит «бот ответил пустым
+  // сообщением», именно здесь видно, какое действие вернуло пустоту.
+  const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const { data: errs } = await db.from("error_log")
+    .select("scope, message, detail, created_at")
+    .gte("created_at", dayAgo)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
   return NextResponse.json({
     ok: true,
+    recentErrors: ((errs as any[]) || []).map((e) => ({
+      at: String(e.created_at).slice(5, 16),
+      scope: e.scope,
+      detail: e.detail || null,
+      message: String(e.message || "").slice(0, 120),
+    })),
     runs: rows.length,
     modes,
     daysCovered: days.size,
