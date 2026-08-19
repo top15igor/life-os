@@ -484,9 +484,19 @@ export async function lastReplyWasAction(userId: string, withinMs = 30 * 60 * 10
 // именно тут: «найди что интересного вокруг» уходило искать по личному архиву
 // вместо мира, а ответ на только что заданный ботом вопрос — в дневник.
 export async function routeMessage(text: string, userId?: string, tzOffset?: number | null, lastBot?: string | null, focus?: string | null): Promise<Route> {
-  try {
+  // Перегрузка провайдера (429/529/5xx) — временная и лечится повтором. У разбора
+  // записи повтор и запасная модель есть давно, а роутер падал с первого раза —
+  // и после перевода на sonnet это стало заметно: во второй половине плотного
+  // прогона самопроверки лимит запросов в минуту кончался, роутер молча
+  // отваливался, и пять сценариев подряд «ломались» по одной невидимой причине.
+  const retryable = (e: any): boolean => {
+    const st = e?.status ?? e?.response?.status;
+    return st === 429 || st === 529 || (typeof st === "number" && st >= 500 && st < 600);
+  };
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const attempt = async (model: string) => {
     const resp = await client().messages.create({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: 220,
       // SYS статичен → кэшируем (одна кэш-точка покрывает и tools). Время меняется
       // каждую минуту — держим его отдельным НЕкэшируемым блоком после SYS.
@@ -502,7 +512,18 @@ export async function routeMessage(text: string, userId?: string, tzOffset?: num
       tools: ACTION_TOOLS,
       tool_choice: { type: "any" },
     });
-    logClaude(userId, "bot_route", "sonnet", (resp as any).usage);
+    logClaude(userId, "bot_route", model.includes("haiku") ? "haiku" : "sonnet", (resp as any).usage);
+    return resp;
+  };
+  try {
+    // 1) sonnet с повторами; 2) запасная haiku (при перегрузке обычно доступнее):
+    //    дешёвый роутер хуже сильного, но несравнимо лучше несработавшего.
+    let resp: any = null, lastErr: any = null;
+    for (let i = 0; i < 3 && !resp; i++) {
+      try { resp = await attempt("claude-sonnet-4-6"); }
+      catch (e) { lastErr = e; if (!retryable(e) || i === 2) break; await sleep(400 * Math.pow(2, i)); }
+    }
+    if (!resp) { try { resp = await attempt("claude-haiku-4-5-20251001"); } catch { throw lastErr; } }
     const blocks: any[] = resp.content.filter((c: any) => c.type === "tool_use");
     const block: any = blocks[0];
     const name = block?.name;
