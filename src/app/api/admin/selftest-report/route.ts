@@ -52,8 +52,32 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(30);
 
+  // Расход по дням из таблицы usage: по этой картине видно и цену тестов,
+  // и «дыры» — дни, за которые логирование почему-то молчало.
+  const monthAgo = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const { data: usage } = await db.from("usage")
+    .select("created_at, cost_cents, kind")
+    .gte("created_at", monthAgo)
+    .order("created_at", { ascending: false })
+    .limit(20000);
+  const byDay: Record<string, { cents: number; calls: number }> = {};
+  const byKind: Record<string, number> = {};
+  for (const r of (usage as any[]) || []) {
+    const d = String(r.created_at).slice(0, 10);
+    byDay[d] = byDay[d] || { cents: 0, calls: 0 };
+    byDay[d].cents += Number(r.cost_cents || 0);
+    byDay[d].calls++;
+    byKind[r.kind] = (byKind[r.kind] || 0) + Number(r.cost_cents || 0);
+  }
+  const usageByDay = Object.entries(byDay).sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([day, v]) => ({ day, usd: Math.round(v.cents) / 100, calls: v.calls }));
+  const usageByKind = Object.entries(byKind).sort((a, b) => b[1] - a[1]).slice(0, 12)
+    .map(([kind, cents]) => ({ kind, usd: Math.round(cents) / 100 }));
+
   return NextResponse.json({
     ok: true,
+    usageByDay,
+    usageByKind,
     recentErrors: ((errs as any[]) || []).map((e) => ({
       at: String(e.created_at).slice(5, 16),
       scope: e.scope,
