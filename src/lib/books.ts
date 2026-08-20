@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { logClaude } from "./usage";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { indexRow } from "./vaultIndex";
 import { getHandle } from "./handle";
@@ -335,6 +336,8 @@ export async function recommendBooks(userId: string, books: Book[], locale = "ru
   };
   try {
     const msg = await client.messages.create({
+      // Стоимость пишем в карточку расходов: этот вызов был одним из четырёх
+      // «слепых пятен», из-за которых карточка недосчитывала реальный счёт.
       model: "claude-sonnet-4-6",
       max_tokens: 900,
       tools: [TOOL as any],
@@ -344,6 +347,7 @@ export async function recommendBooks(userId: string, books: Book[], locale = "ru
         content: `These books resonated with the reader:\n${basis.slice(0, 25).join("\n")}\n\nRecommend 6 other books they're likely to enjoy. Avoid any already listed. For each: title, author, and a one-sentence "why" written in ${lang}. Mix well-known and lesser-known picks.`,
       }],
     });
+    logClaude(userId, "books-recommend", "sonnet", (msg as any).usage);
     const block = msg.content.find((b) => b.type === "tool_use");
     if (!block || block.type !== "tool_use") return [];
     const recs = ((block.input as any).books || []) as Recommendation[];

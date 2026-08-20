@@ -2704,7 +2704,13 @@ async function handleUpdate(req: NextRequest) {
       const ctx = inIdea
         ? `${ctx0 || ""}\n\nСЕЙЧАС ИДЁТ ОБСУЖДЕНИЕ ИДЕИ ПО ПРОДУКТУ LIFE OS. Реплики человека — часть этого разговора: если он рассуждает, уточняет, соглашается или возражает, это save_entry (свободная речь). Выбирай действие ТОЛЬКО если он явно просит сделать что-то со своими данными прямо сейчас.`
         : ctx0;
-      const route = await routeMessage(text, user.id, (user as any).tz_offset, ctx, hasReference(text) ? await focusLine(user.id) : null);
+      let route = await routeMessage(text, user.id, (user as any).tz_offset, ctx, hasReference(text) ? await focusLine(user.id) : null);
+      // just_ack — страховка от худшего провала: если модель приняла ДЛИННУЮ
+      // живую реплику за связку «ок/спасибо», слова человека пропали бы без
+      // следа. Длинное — всегда запись; связки длинными не бывают.
+      if (route.kind === "action" && route.name === "just_ack" && text.trim().length > 60) {
+        route = { kind: "note" };
+      }
       // Разговор об идее продолжается, только если человек говорит свободно.
       // Раньше ветка стояла раньше роутера и глотала ВСЁ подряд: начал обсуждать
       // идею — и сутки любое «напомни завтра» уходило в то же обсуждение.

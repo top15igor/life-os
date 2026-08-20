@@ -547,6 +547,44 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "«Запиши мне» без содержимого — вопрос, а не враньё «Записал!»",
+    heavy: true,
+    // Улов исследователя №4 (~20 падений): на «запиши мне» бот бодро отвечал
+    // «Запись сохранена», не зная, что сохранять. Уверенное враньё хуже вопроса.
+    send: () => message("запиши мне"),
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join("\n");
+      if (/запись сохранена|записал|сохранил/i.test(joined)) return "бот заявил «записал», не зная что";
+      return /что именно|что записать|який саме|what exactly|что сохранить/i.test(joined)
+        ? null
+        : `вместо вопроса «что записать?» пришло: «${joined.slice(0, 100)}»`;
+    },
+  },
+  {
+    name: "«Спасибо, забей» не сохраняется записью в дневник",
+    heavy: true,
+    // Вторая половина того же улова: «забей на это» сохранялось записью — бот
+    // делал противоположное сказанному и рапортовал «Записал!».
+    send: () => message("спасибо, забей на это"),
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join("\n");
+      return /запись сохранена|записал в дневник/i.test(joined) ? "«забей» сохранилось записью в дневник" : null;
+    },
+    verifyDb: async () => {
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+        if (!(u as any)?.id) return null;
+        const { data } = await db.from("entries").select("id").eq("user_id", (u as any).id).ilike("raw_text", "%забей на это%").limit(1);
+        return ((data as any[]) || []).length ? "«забей на это» легло записью в дневник" : null;
+      } catch { return null; }
+    },
+  },
+  {
     name: "Напоминание без времени: бот спрашивает «когда?», а не выдумывает",
     heavy: true,
     // Улов исследователя №2 (~55 падений): «напомни купить молоко» — и бот
@@ -790,6 +828,14 @@ type QualityCase = { name: string; say: string; expect: string };
 // про одно: бот не понял, что от него хотят, или понял не то. Здесь проверяется
 // не формулировка ответа, а КУДА ушла команда: выключить рассылку, перенести,
 // отменить, поправить — это разные действия, и путать их нельзя.
+// Пустой архив — не повод для сочинительства: даты регистрации, «дневник пустой»,
+// выдуманные напоминания. Улов исследователя №5 (~15 падений).
+const EMPTY_SEARCH_CASE: QualityCase = {
+  name: "Поиск по пустому архиву: честное «нет», без выдумок",
+  say: "а где я писал про отпуск?",
+  expect: "Бот честно говорит, что записей про отпуск не нашёл. Провал — если он выдумывает факты, которых не может знать: «ты недавно зарегистрировался», «дневник пустой уже N дней», ссылки на конкретные несуществующие записи или напоминания.",
+};
+
 const COMMAND_CASES: QualityCase[] = [
   {
     name: "Команда: идея по продукту уходит в обсуждение, а не в дневник",
@@ -965,7 +1011,7 @@ export async function runSelftest(origin: string, mode: Mode = "light", part?: P
   // без истории, иначе ловим не галлюцинацию, а собственный мусор.
   if (mode === "full") {
     await cleanup().catch(() => {});
-    for (const c of slice([...COMMAND_CASES, ...QUALITY_CASES], part)) {
+    for (const c of slice([...COMMAND_CASES, EMPTY_SEARCH_CASE, ...QUALITY_CASES], part)) {
       const s0 = Date.now();
       try {
         const sent = await fire(origin, secret, message(c.say));

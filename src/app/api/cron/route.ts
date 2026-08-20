@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logClaude } from "@/lib/usage";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getCurrentUser } from "@/lib/auth";
 import { syncGoogleHealth, googleHealthUserIds } from "@/lib/googleHealth";
@@ -171,6 +172,7 @@ async function weeklyDigest(userId: string, lang: Lang): Promise<string | null> 
       max_tokens: 600,
       messages: [{ role: "user", content: prompt }],
     });
+    logClaude(userId, "weekly-digest", "sonnet", (r as any).usage);
     const text = r.content.filter((b) => b.type === "text").map((b: any) => b.text).join("\n").trim();
     return `${m.digestHeader}\n\n${text}`;
   } catch {

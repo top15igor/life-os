@@ -8,6 +8,7 @@
 // ============================================================
 
 import Anthropic from "@anthropic-ai/sdk";
+import { logClaude } from "./usage";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { normalizeMorningPrefs } from "./morningPrefs";
 
@@ -47,7 +48,7 @@ export async function setHorizon(userId: string, taskId: string, horizon: Horizo
 }
 
 // AI-раскладка списка задач по горизонтам. Возвращает массив, выровненный по входу.
-async function classifyAI(tasks: { text: string }[]): Promise<Horizon[]> {
+async function classifyAI(tasks: { text: string }[], userId?: string): Promise<Horizon[]> {
   const list = tasks.map((t, i) => `${i + 1}. ${t.text}`).join("\n");
   const prompt = `Ты помогаешь разложить личные задачи по трём горизонтам планирования:
 - "today" — срочное, разовое, «на сегодня/завтра», то, что логично сделать прямо сейчас;
@@ -60,6 +61,7 @@ ${list}
 Ответь СТРОГО валидным JSON-массивом из ${tasks.length} строк, по одной на каждую задачу в том же порядке, каждая — одно из: "today", "week", "month". Без пояснений, только массив.`;
   try {
     const m = await client().messages.create({ model: "claude-haiku-4-5-20251001", max_tokens: 800, temperature: 0.2, messages: [{ role: "user", content: prompt }] });
+    logClaude(userId, "task-horizon", "haiku", (m as any).usage);
     const raw = m.content.map((c: any) => (c.type === "text" ? c.text : "")).join("").trim();
     const json = raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1);
     const arr = JSON.parse(json);
@@ -75,7 +77,7 @@ export async function ensureHorizons(userId: string, tasks: { id: string; text: 
   const map: Record<string, Horizon> = { ...(prefs.taskHorizons || {}) };
   const missing = tasks.filter((t) => !map[t.id]);
   if (missing.length) {
-    const buckets = await classifyAI(missing);
+    const buckets = await classifyAI(missing, userId);
     missing.forEach((t, i) => { map[t.id] = buckets[i] || "week"; });
     // подчищаем горизонты задач, которых уже нет среди открытых (чтобы jsonb не рос вечно)
     const alive = new Set(tasks.map((t) => t.id));

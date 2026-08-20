@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { logClaude } from "@/lib/usage";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getBookMeta, bookVoicePreamble } from "@/lib/book";
 import Anthropic from "@anthropic-ai/sdk";
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
       tool_choice: { type: "tool", name: "chapter" },
       messages: [{ role: "user", content: prompt }],
     });
+    logClaude(user.id, "lifebook-chapter", "sonnet", (m as any).usage);
     const block = m.content.find((b) => b.type === "tool_use");
     const chapter = block && block.type === "tool_use" ? block.input : null;
     return NextResponse.json({ ok: true, chapter });
