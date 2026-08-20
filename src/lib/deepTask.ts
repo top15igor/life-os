@@ -119,9 +119,10 @@ export async function deepSummary(userId: string, topic: string, locale = "ru"):
       if (text) return { text, items: found.length, sources };
     } catch (e) {
       if (model === models[models.length - 1]) {
-        return { text: facts.slice(0, 3000), items: found.length, sources };
+        return { text: facts.slice(0, 3000) || (NOTHING[locale] || NOTHING.ru)(t), items: found.length, sources };
       }
     }
   }
-  return { text: facts.slice(0, 3000), items: found.length, sources };
+  // Пустой отчёт — это не отчёт: лучше честное «не нашёл», чем немое сообщение.
+  return { text: facts.slice(0, 3000) || (NOTHING[locale] || NOTHING.ru)(t), items: found.length, sources };
 }

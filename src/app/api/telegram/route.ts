@@ -2764,7 +2764,10 @@ async function handleUpdate(req: NextRequest) {
             const second = await routeMessage(text, user.id, (user as any).tz_offset, retryCtx, hasReference(text) ? await focusLine(user.id) : null);
             if (second.kind === "action" && second.name !== route.name) {
               const alt = await runAction(user.id, second.name, second.input, lang, (user as any).tz_offset);
-              if (!looksLikeDeadEnd(alt.text)) res = alt;
+              // Пустой ответ — не «не тупик», а худший из тупиков: looksLikeDeadEnd("")
+              // возвращал false, и пустота замещала нормальное «не нашёл» первой
+              // попытки. Человек получал немое сообщение.
+              if (alt.text?.trim() && !looksLikeDeadEnd(alt.text)) res = alt;
             }
           } catch (e) { await logError("bot:retry", e, { userId: user.id, chatId }); }
         }
