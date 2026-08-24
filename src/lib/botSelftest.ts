@@ -547,6 +547,30 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
+    name: "Русская речь при английском Telegram — ответ по-русски",
+    heavy: true,
+    // Живой случай Максима: телефон на английском, говорит по-русски — бот
+    // отвечал страницей английского текста. Язык речи важнее языка интерфейса.
+    send: () => ({
+      update_id: uid(),
+      message: {
+        message_id: uid(),
+        from: { id: TEST_CHAT, is_bot: false, first_name: TEST_NAME, language_code: "en" },
+        chat: { id: TEST_CHAT, type: "private" },
+        date: Math.floor(Date.now() / 1000),
+        text: "что у меня сегодня по планам?",
+      },
+    }),
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join(" ");
+      const cyr = (joined.match(/[а-яё]/gi) || []).length;
+      const lat = (joined.match(/[a-z]/gi) || []).length;
+      return cyr >= lat ? null : `ответ ушёл не по-русски: «${joined.slice(0, 80)}»`;
+    },
+  },
+  {
     name: "«Запиши мне» без содержимого — вопрос, а не враньё «Записал!»",
     heavy: true,
     // Улов исследователя №4 (~20 падений): на «запиши мне» бот бодро отвечал

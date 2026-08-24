@@ -102,8 +102,13 @@ async function gatherContext(userId: string): Promise<string> {
       .from("entries")
       .select("entry_date, summary, raw_text")
       .eq("user_id", userId)
-      .order("entry_date", { ascending: true })
-      .limit(200),
+      // СВЕЖИЕ записи, старейшие — за бортом. ascending+limit брал первые 200
+      // с НАЧАЛА дневника: у активного человека новое никогда не попадало в
+      // контекст, и AI-друг «помнил» только далёкое прошлое (случай Максима:
+      // «я же писал из Кореи пару дней назад» — а бот про 9 августа).
+      .order("entry_date", { ascending: false })
+      .limit(200)
+      .then((r: any) => ({ ...r, data: (r.data || []).reverse() })),
     getFinanceSummary(userId).catch(() => ""),
     getAccountFacts(userId),
     // Те же точные данные, что и у «Спроси свою жизнь»: AI-друг не должен

@@ -71,10 +71,12 @@ export async function buildLifeOverview(userId: string, fresh = false): Promise<
     .from("entries")
     .select("entry_date, summary, raw_text")
     .eq("user_id", userId)
-    .order("entry_date", { ascending: true })
+    // Свежие, не старейшие: ascending+limit отрезал всё новое после 200-й записи.
+    .order("entry_date", { ascending: false })
     .limit(200);
 
-  const list = entries || [];
+  // Хронология для рассказа: свежие пришли первыми, разворачиваем.
+  const list = (entries || []).reverse();
   const count = list.length;
   const today = new Date().toISOString().slice(0, 10);
   const base: LifeOverview = { happiness: [], energyGivers: [], energyDrainers: [], chains: [], patterns: [], entryCount: count };

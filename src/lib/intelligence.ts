@@ -55,7 +55,8 @@ export async function buildIntelligence(userId: string, entryId: string): Promis
     .select("id, entry_date, summary, raw_text")
     .eq("user_id", userId)
     .neq("id", entryId)
-    .order("entry_date", { ascending: true })
+    // Свежие, не старейшие: сходства ищутся в актуальной жизни, а не в архиве.
+    .order("entry_date", { ascending: false })
     .limit(80);
 
   const list = others || [];

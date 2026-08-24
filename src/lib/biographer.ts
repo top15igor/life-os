@@ -21,8 +21,10 @@ export async function askLife(userId: string, question: string, lang: string = "
       .from("entries")
       .select("entry_date, summary, raw_text")
       .eq("user_id", userId)
-      .order("entry_date", { ascending: true })
-      .limit(200),
+      // Свежие, не старейшие: ascending+limit отрезал всё новое после 200-й записи.
+      .order("entry_date", { ascending: false })
+      .limit(200)
+      .then((r: any) => ({ ...r, data: (r.data || []).reverse() })),
     getFinanceSummary(userId).catch(() => ""),
     getAccountFacts(userId),
     // Здоровье, настроение, вес, задачи, обещания, напоминания, люди, книги.

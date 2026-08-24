@@ -86,7 +86,17 @@ function pickLang(code?: string): "ru" | "en" | "uk" | "fr" | "es" {
 function langOf(user: any, msg: any): "ru" | "en" | "uk" | "fr" | "es" {
   const v = user?.lang;
   if (v === "ru" || v === "en" || v === "uk" || v === "fr" || v === "es") return v;
-  return pickLang(msg?.from?.language_code);
+  // Язык самой речи важнее языка интерфейса Telegram. Живой случай: Максим
+  // говорит по-русски, но телефон у него на английском — и бот отвечал ему
+  // страницей английского текста, а собственная инструкция запрещала
+  // «переключаться». Для голосовых расшифровка кладётся в msg._said.
+  const said = String(msg?._said || msg?.text || "");
+  const cyr = (said.match(/[а-яёіїєґ]/gi) || []).length;
+  const base = pickLang(msg?.from?.language_code);
+  if (cyr >= 3 && base !== "ru" && base !== "uk") {
+    return /[іїєґ]/i.test(said) ? "uk" : "ru";
+  }
+  return base;
 }
 
 // Меню выбора языка (inline-кнопки) и подтверждения.
@@ -2350,6 +2360,9 @@ async function handleUpdate(req: NextRequest) {
       const url = await getFileUrl(fileId);
       voiceFileUrl = url;
       text = await transcribe(url, user.id);
+      // Для определения языка ответа: голосовое не имеет msg.text, а язык
+      // интерфейса Telegram может не совпадать с языком речи.
+      (msg as any)._said = text;
       logUsage(user.id, "transcribe", 0, 0, 0.5);
       // Расшифровку длинного сообщения отдаём сразу: даже если AI-разбор потом
       // упадёт или не успеет, сказанное человеком уже у него на руках.
