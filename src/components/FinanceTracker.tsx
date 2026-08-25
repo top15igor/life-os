@@ -587,14 +587,13 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
   // Группировка операций по дням (с учётом выбранного в календаре дня).
   const byDay = new Map<string, Tx[]>();
-  const catTxs = selectedCat ? txs.filter((t) => t.kind === "expense" && (t.category || "other") === selectedCat) : txs;
-  for (const t of catTxs) { const list = byDay.get(t.day) ?? []; list.push(t); byDay.set(t.day, list); }
+  for (const t of txs) { const list = byDay.get(t.day) ?? []; list.push(t); byDay.set(t.day, list); }
   const days = [...byDay.keys()].sort().reverse().filter((d) => !selDay || d === selDay);
 
   // По умолчанию показываем только свежие операции; «Показать ещё» разворачивает.
   const OPS_PREVIEW = 6;
   const opsCount = days.reduce((n, d) => n + (byDay.get(d)?.length ?? 0), 0);
-  const opsLimit = showAllOps || selDay || selectedCat ? Infinity : OPS_PREVIEW;
+  const opsLimit = showAllOps || selDay ? Infinity : OPS_PREVIEW;
   const visDays: { day: string; items: Tx[] }[] = [];
   let opsShown = 0;
   for (const d of days) {
@@ -1189,16 +1188,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         <div className="card" id="fin-ops">
           <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
-            {selectedCat && (() => {
-              const cm = catView("expense", selectedCat, locale);
-              return (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "3px 10px", borderRadius: 999, background: `${cm.color}1f`, color: "var(--text)" }}>
-                  {cm.icon} <b>{cm.label}</b>
-                  <span style={{ color: "var(--text-3)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).catOps(opsCount)}</span>
-                  <button onClick={() => { setSelectedCat(null); setMoveTo(""); }} title={(CAT_MGR[locale] || CAT_MGR.ru).back} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-2)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
-                </span>
-              );
-            })()}
           </div>
 
           {visDays.map(({ day: d, items }) => (
@@ -1232,7 +1221,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               })}
             </div>
           ))}
-          {!selDay && !selectedCat && opsCount > OPS_PREVIEW && (
+          {!selDay && opsCount > OPS_PREVIEW && (
             <button onClick={() => setShowAllOps((v) => !v)}
               style={{ ...btnG, width: "100%", justifyContent: "center", marginTop: 4, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
               {showAllOps
@@ -1283,9 +1272,17 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               const barPct = hasBudget ? Math.min(100, c.budgetPct || 0) : Math.min(100, (c.pct / maxPct) * 100);
               const barColor = hasBudget ? budgetColor(c.budgetPct || 0) : m.color;
               const isOpen = selectedCat === (c.category || "other");
-              const drill = () => { setSelectedCat(isOpen ? null : (c.category || "other")); setMoveTo(""); };
+              const rowId = `cat-row-${c.category || "other"}`;
+              const drill = () => {
+                const willOpen = !isOpen;
+                setSelectedCat(isOpen ? null : (c.category || "other"));
+                setMoveTo("");
+                // После раскрытия подтягиваем экран к самой категории: страница
+                // перестраивается, и без этого мышь повисала над пустотой.
+                if (willOpen) setTimeout(() => document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+              };
               return (
-                <div key={c.category} style={{ padding: "9px 0", borderTop: ci ? "1px solid var(--border)" : "none" }}>
+                <div key={c.category} id={rowId} style={{ padding: "9px 0", borderTop: ci ? "1px solid var(--border)" : "none", scrollMarginTop: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
                     <button onClick={drill} title={m.label} style={{ width: 32, height: 32, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{m.icon}</button>
                     <div onClick={drill} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
