@@ -403,8 +403,8 @@ const SCENARIOS: Scenario[] = [
         // Модель могла задать ещё вопрос вместо финала — это не поломка, если
         // постановки не обещали. Обещали и не показали — вот это поломка.
         const promised = texts(sent).some((t) => /постановк|собрал/i.test(t));
-        const last = String(sent[sent.length - 1]?.text || "").replace(/\s+/g, " ").slice(0, 160);
-        return promised ? `бот сказал «собрал постановку», но саму постановку не показал (последний ответ: «${last}»)` : null;
+        const dump = sent.map((m, i) => `#${i} ${m.method}[${m.buttons.join("/")}]: ${String(m.text || "").replace(/\s+/g, " ").slice(0, 90)}`).join(" || ");
+        return promised ? `бот сказал «собрал постановку», но саму постановку не показал — ${dump}` : null;
       }
       if (!withPreview.buttons.some((b) => /отправ|сохран/i.test(b))) return "постановка пришла без кнопки «Отправить»";
       return null;
