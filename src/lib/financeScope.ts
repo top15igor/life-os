@@ -10,8 +10,9 @@ const TRANSFER_RE =
   /на (білу|чорну|свою|іншу)?\s*карт|на картку|з картки на картку|поповнення|переказ|перевод|готівк|банкомат|зняття|cash|atm|власн(і|ий)|between accounts|own transfer|поповнення картки/i;
 // Masked card number like 414962****7351 -> card-to-card transfer.
 const CARD_RE = /\*{2,}\s*\d{3,4}/;
-// "Артур І." / "Павло З." — person name with initial => P2P transfer.
-const PERSON_RE = /^[А-ЯІЇЄҐ][а-яіїєґ'ʼ]+\s+[А-ЯІЇЄҐ][а-яіїєґ'ʼ]?\.?$/;
+// "Артур І." / "Павло З." / "Vitalii U." — person name with initial => P2P
+// transfer. Latin included: Monobank often writes recipients in transliteration.
+const PERSON_RE = /^[A-ZА-ЯІЇЄҐ][a-zа-яіїєґ'ʼ]+\s+[A-ZА-ЯІЇЄҐ][a-zа-яіїєґ'ʼ]?\.?$/;
 // Business: invoices, counterparties, VAT, contracts.
 const BUSINESS_RE =
   /рахунок|рахунок[- ]?фактур|зг\.?\s*рах|оплата за товар|за товар зг|накладн|\bтов\b|\bтзов\b|\bфоп\b|\bпп\b|\bпдв\b|invoice|факту?ра|договор|договір|дистриб|постач|оптов/i;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
-type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null };
+type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null };
 type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number; limit: number | null; over: boolean; budgetPct: number | null }[] };
 type DaySlice = { day: string; count: number; income: number; expense: number; net: number };
 type Data = {
@@ -67,6 +67,14 @@ const CUR = [
   { code: "TRY", sym: "₺" }, { code: "AED", sym: "AED" },
 ];
 const symOf = (c: string) => CUR.find((x) => x.code === c)?.sym || c;
+
+const SCOPE_L: Record<string, { personal: string; business: string; transfer: string }> = {
+  ru: { personal: "Личное", business: "Бизнес", transfer: "Перевод" },
+  en: { personal: "Personal", business: "Business", transfer: "Transfer" },
+  uk: { personal: "Особисте", business: "Бізнес", transfer: "Переказ" },
+  fr: { personal: "Perso", business: "Business", transfer: "Virement" },
+  es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
+};
 
 const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string }> = {
   ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
@@ -178,6 +186,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [eSubcategory, setESubcategory] = useState("");
   const [eNote, setENote] = useState("");
   const [eDay, setEDay] = useState(todayISO());
+  const [eScope, setEScope] = useState<"personal" | "business" | "transfer">("personal");
 
   // Пользовательские категории (вариант А): грузим список и держим реестр для catView.
   const [custom, setCustom] = useState<CustomCat[]>([]);
@@ -450,6 +459,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setESubcategory(t.subcategory || "");
     setENote(t.note || "");
     setEDay(t.day);
+    setEScope((t.scope === "business" || t.scope === "transfer") ? t.scope : "personal");
   }
 
   async function saveEdit() {
@@ -459,7 +469,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setBusy(true);
     const r = await fetch("/api/finance", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eCategory.trim() || null, subcategory: eSubcategory.trim() || null, note: eNote.trim() || null }),
+      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eCategory.trim() || null, subcategory: eSubcategory.trim() || null, note: eNote.trim() || null, scope: eScope }),
     });
     setBusy(false);
     if (r.ok) { setEditTx(null); router.refresh(); }
@@ -1142,6 +1152,15 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                             background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
                             color: eKind === k ? "#fff" : "var(--text-2)",
                           }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                        {(["personal", "business", "transfer"] as const).map((sc) => (
+                          <button key={sc} onClick={() => setEScope(sc)} style={{
+                            flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                            background: eScope === sc ? "var(--accent)" : "transparent",
+                            color: eScope === sc ? "#fff" : "var(--text-2)",
+                          }}>{(SCOPE_L[locale] || SCOPE_L.ru)[sc]}</button>
                         ))}
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>

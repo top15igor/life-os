@@ -1,3 +1,4 @@
+import { classifyScope } from "./financeScope";
 import { supabaseAdmin } from "./supabaseAdmin";
 import { type Analysis, EXPENSE_CAT_KEYS, INCOME_CAT_KEYS, FINANCE_CURRENCIES } from "./ai";
 import { embedToVectorString } from "./embeddings";
@@ -157,7 +158,11 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
         // Возвращаем итоговую валюту в исходный объект: бот показывает подтверждение по
         // analysis.finance, и без этого символ в сообщении (напр. $) расходился с сохранённым (€).
         f.currency = currency;
-        return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note: f.note ? String(f.note).slice(0, 200) : null };
+        const note = f.note ? String(f.note).slice(0, 200) : null;
+        // Перевод с карты на карту — не расход. Тот же классификатор, что у
+        // банковского импорта: продиктованное «перекинул 5000 на белую карту»
+        // не должно раздувать расходы месяца.
+        return { entry_id: id, user_id: owner, day: txDay, kind, amount: Number(f.amount), currency, category, note, scope: classifyScope({ note, category }) };
       });
     // Дедуп извлечённых AI операций: НЕ плодим повторную запись, если такая же
     // (день + тип + сумма + валюта + категория) уже есть в кошельке. Такое бывает, когда
@@ -190,8 +195,8 @@ export async function attachDerived(owner: string, id: string, a: Analysis, day?
     if (fresh.length) {
       let { error: finErr } = await db.from("finance_tx").insert(fresh);
       // Старая схема без колонки entry_id — повторяем вставку без неё.
-      if (finErr && /entry_id|column|schema cache/i.test(finErr.message)) {
-        const bare = fresh.map(({ entry_id, ...rest }) => rest);
+      if (finErr && /entry_id|scope|column|schema cache/i.test(finErr.message)) {
+        const bare = fresh.map(({ entry_id, scope, ...rest }: any) => rest);
         ({ error: finErr } = await db.from("finance_tx").insert(bare));
       }
       if (finErr) { financeError = finErr.message; console.error("finance insert failed", finErr); }

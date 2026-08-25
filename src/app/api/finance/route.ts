@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { classifyScope } from "@/lib/financeScope";
 
 export const runtime = "nodejs";
 
@@ -25,11 +26,16 @@ export async function POST(req: NextRequest) {
   }
 
   const db = supabaseAdmin();
-  const row: any = { user_id: user.id, day, kind, amount, currency, category, subcategory, note };
+  // Scope: явный из формы, иначе — автоматически по заметке («переказ на
+  // картку», имя с инициалом). Тот же классификатор, что у банковского импорта.
+  const scope = ["personal", "business", "transfer"].includes(body?.scope)
+    ? body.scope
+    : classifyScope({ note, category });
+  const row: any = { user_id: user.id, day, kind, amount, currency, category, subcategory, note, scope };
   let { error } = await db.from("finance_tx").insert(row);
   // Старая база без колонки subcategory — вставляем без неё.
-  if (error && /subcategory|column|schema cache/i.test(error.message)) {
-    const { subcategory: _s, ...bare } = row;
+  if (error && /subcategory|scope|column|schema cache/i.test(error.message)) {
+    const { subcategory: _s, scope: _sc, ...bare } = row;
     ({ error } = await db.from("finance_tx").insert(bare));
   }
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -60,6 +66,7 @@ export async function PATCH(req: NextRequest) {
   if (body?.currency != null) upd.currency = CURRENCIES.includes(String(body.currency)) ? String(body.currency) : "USD";
   if (body?.category !== undefined) upd.category = body.category ? String(body.category).slice(0, 40) : null;
   if (body?.subcategory !== undefined) upd.subcategory = body.subcategory ? String(body.subcategory).slice(0, 40) : null;
+  if (body?.scope !== undefined && ["personal", "business", "transfer"].includes(body.scope)) upd.scope = body.scope;
   if (body?.note !== undefined) upd.note = body.note ? String(body.note).slice(0, 200) : null;
 
   if (!Object.keys(upd).length) return NextResponse.json({ ok: false, error: "nothing" }, { status: 400 });
