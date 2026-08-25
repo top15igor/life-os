@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured } from "@/lib/telegram";
+import { getFileUrl, sendMessage, sendChatAction, mdToTelegram, mdToPlain, answerCallback, sendVoice, sendVideo, sendDocument, sendDocumentUrl, sendPhoto, editMessageText, runCaptured, debugMark } from "@/lib/telegram";
 import { tempFileUrl, isPdfUrl, signForWeb } from "@/lib/fileLink";
 import { applyPlan, forgetPlan } from "@/lib/bulkOps";
 import { remember } from "@/lib/talkLog";
@@ -2708,6 +2708,7 @@ async function handleUpdate(req: NextRequest) {
         && (route.kind === "question" || (route.kind === "action" && ["just_ack", "cannot_do", "ask_clarify", "ask_question"].includes(route.name)))) {
         route = { kind: "note" };
       }
+      debugMark(`route:${route.kind}${route.kind === "action" ? ":" + route.name : ""}:inIdea=${inIdea}`);
       // Разговор об идее продолжается, только если человек говорит свободно.
       // Раньше ветка стояла раньше роутера и глотала ВСЁ подряд: начал обсуждать
       // идею — и сутки любое «напомни завтра» уходило в то же обсуждение.

@@ -33,6 +33,14 @@ function capture(method: string, chatId: number, text?: string, extra?: Record<s
   return true;
 }
 
+// Отметка «какой дорогой пошёл обработчик» — видна ТОЛЬКО в самопроверке
+// (капчур), живым людям ничего не уходит. Нужна, когда сценарий падает, а
+// по одним текстам не понять, какая ветка ответила.
+export function debugMark(tag: string): void {
+  const store = sink.getStore();
+  if (store) store.push({ method: "debug", chatId: 0, text: String(tag).slice(0, 200), buttons: [] });
+}
+
 // Выполнить обработчик, перехватывая всё, что бот пытается отправить.
 export async function runCaptured<T>(fn: () => Promise<T>): Promise<{ result: T; sent: SentMessage[] }> {
   const store: SentMessage[] = [];
