@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
-type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null };
+type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null; amountBase?: number };
 type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number; limit: number | null; over: boolean; budgetPct: number | null }[] };
 type DaySlice = { day: string; count: number; income: number; expense: number; net: number };
 type Data = {
@@ -603,6 +603,62 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   }
   const opsHidden = opsCount - opsShown;
 
+  // Сумма для показа: главная цифра — всегда в основной валюте, оригинал — в
+  // скобках. Когда весь месяц в одной валюте, скобки не нужны.
+  function moneyPair(t: Tx): { main: string; orig: string | null } {
+    if (t.currency === base || t.amountBase == null) {
+      return { main: fmtMoney(t.amount, t.currency, locale), orig: null };
+    }
+    return { main: fmtMoney(t.amountBase, base, locale), orig: fmtMoney(t.amount, t.currency, locale) };
+  }
+
+  // Форма правки операции — одна на оба места: список операций и аккордеон
+  // категории. Раньше карандаш в аккордеоне «перекидывал» наверх в другой блок.
+  function renderEdit(t: Tx) {
+    return (
+                    <div style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
+                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                        {(["expense", "income"] as const).map((k) => (
+                          <button key={k} onClick={() => setEKind(k)} style={{
+                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
+                            color: eKind === k ? "#fff" : "var(--text-2)",
+                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                        {(["personal", "business", "transfer"] as const).map((sc) => (
+                          <button key={sc} onClick={() => setEScope(sc)} style={{
+                            flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                            background: eScope === sc ? "var(--accent)" : "transparent",
+                            color: eScope === sc ? "#fff" : "var(--text-2)",
+                          }}>{(SCOPE_L[locale] || SCOPE_L.ru)[sc]}</button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                        <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
+                        <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
+                          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
+                        </select>
+                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+                      </div>
+                      <select value={eCategory} onChange={(e) => setECategory(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
+                        {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
+                        {eCategory && !pickerCats(eKind).some((o) => o.key === eCategory) && <option value={eCategory}>{eCategory}</option>}
+                      </select>
+                      <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
+                        <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
+                        <button disabled={busy} onClick={() => { setEditTx(null); del(t.id); }} title={s.delConfirm} style={{ ...btnG, color: "#ef4444" }}>
+                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                        </button>
+                      </div>
+                    </div>
+    );
+  }
+
   function dayLabel(d: string) {
     const t = todayISO();
     if (d === t) return s.today;
@@ -1132,48 +1188,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                 const m = catView(t.kind, t.category, locale);
                 const pos = t.kind === "income";
                 if (editTx === t.id) {
-                  return (
-                    <div key={t.id} style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
-                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
-                        {(["expense", "income"] as const).map((k) => (
-                          <button key={k} onClick={() => setEKind(k)} style={{
-                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
-                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
-                            color: eKind === k ? "#fff" : "var(--text-2)",
-                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
-                        {(["personal", "business", "transfer"] as const).map((sc) => (
-                          <button key={sc} onClick={() => setEScope(sc)} style={{
-                            flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
-                            background: eScope === sc ? "var(--accent)" : "transparent",
-                            color: eScope === sc ? "#fff" : "var(--text-2)",
-                          }}>{(SCOPE_L[locale] || SCOPE_L.ru)[sc]}</button>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                        <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
-                        <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
-                          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
-                        </select>
-                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
-                      </div>
-                      <select value={eCategory} onChange={(e) => setECategory(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
-                        {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
-                        {eCategory && !pickerCats(eKind).some((o) => o.key === eCategory) && <option value={eCategory}>{eCategory}</option>}
-                      </select>
-                      <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
-                        <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
-                        <button disabled={busy} onClick={() => { setEditTx(null); del(t.id); }} title={s.delConfirm} style={{ ...btnG, color: "#ef4444" }}>
-                          <i className="ti ti-trash" style={{ fontSize: 15 }} />
-                        </button>
-                      </div>
-                    </div>
-                  );
+                  return <div key={t.id}>{renderEdit(t)}</div>;
                 }
                 return (
                   <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
@@ -1185,8 +1200,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                       </div>
                       {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
                     </div>
-                    <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer" }}>
-                      {pos ? "+" : "−"}{fmtMoney(t.amount, t.currency, locale)}
+                    <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer", textAlign: "right" }}>
+                      {pos ? "+" : "−"}{moneyPair(t).main}
+                      {moneyPair(t).orig && <div style={{ fontSize: 11, fontWeight: 400, color: "var(--text-3)" }}>({moneyPair(t).orig})</div>}
                     </div>
                     <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
                       <i className="ti ti-pencil" style={{ fontSize: 15 }} />
@@ -1334,22 +1350,27 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                           </select>
                           <button disabled={busy || !moveTo} onClick={moveAllTo} style={{ ...btnP, padding: "5px 12px", fontSize: 12, opacity: moveTo ? 1 : 0.5 }}>{s.save}</button>
                         </div>
-                        {rows.map((t) => (
+                        {rows.map((t) => {
+                          if (editTx === t.id) return <div key={t.id} style={{ borderTop: "1px solid var(--border)" }}>{renderEdit(t)}</div>;
+                          const mp = moneyPair(t);
+                          return (
                           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid var(--border)", fontSize: 12.5 }}>
                             <span style={{ color: "var(--text-3)", flexShrink: 0, width: 42 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)}</span>
                             <span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-2)" }}>
                               {t.subcategory && <span style={{ color: m.color, marginRight: 5 }}>{t.subcategory}</span>}
                               {t.note || "—"}
                             </span>
-                            <b style={{ whiteSpace: "nowrap" }}>−{fmtMoney(t.amount, t.currency, locale)}</b>
-                            <button onClick={() => { startEdit(t); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
+                            <b style={{ whiteSpace: "nowrap" }}>−{mp.main}</b>
+                            {mp.orig && <span style={{ color: "var(--text-3)", whiteSpace: "nowrap" }}>({mp.orig})</span>}
+                            <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
                               <i className="ti ti-pencil" style={{ fontSize: 14 }} />
                             </button>
                             <button onClick={() => del(t.id)} aria-label="delete" title={s.delConfirm} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
                               <i className="ti ti-trash" style={{ fontSize: 14 }} />
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}

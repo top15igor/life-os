@@ -44,6 +44,10 @@ export type Tx = {
   category: string | null;
   subcategory: string | null;
   note: string | null;
+  scope?: string | null;
+  // Сумма в основной валюте пользователя (по курсу на месяц операции). Для
+  // интерфейса: главная цифра всегда в одной валюте, оригинал — в скобках.
+  amountBase?: number;
 };
 
 // Сводка по одному дню месяца (в основной валюте) — для календаря.
@@ -204,6 +208,7 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   const dayMap = new Map<string, { count: number; income: number; expense: number }>();
   for (const t of txs) {
     const v = toBase(t.amount, t.currency);
+    (t as any).amountBase = round2(v);
     const d = dayMap.get(t.day) || { count: 0, income: 0, expense: 0 };
     d.count++;
     if (t.kind === "income") { income += v; d.income += v; }
