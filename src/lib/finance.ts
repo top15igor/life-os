@@ -105,9 +105,20 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   // Лёгкий обзор всех операций (день+валюта) — для списка месяцев, валют и
   // основной валюты. Грузим только два столбца, чтобы покрыть всю историю без
   // упора в лимит строк (важно: у пользователя могут быть тысячи операций).
-  // Обзор истории и операции месяца независимы — стартуем оба сразу, ждём вместе.
+  // Обзор истории, операции месяца, настройки и бюджеты независимы —
+  // стартуем всё сразу, ждём по мере надобности.
   const overviewP: Promise<Array<{ day: string; currency: string }>> =
     fetchAllTx(db, "day, currency", userId).catch(() => []);
+  const settingsP = db.from("finance_settings").select("base_currency, rates").eq("user_id", userId).maybeSingle()
+    .then((r) => r.data, () => null);
+  const budgetsP = db.from("finance_budget").select("category, subcategory, amount").eq("user_id", userId)
+    .then(async (r) => {
+      if (r.error && /subcategory|column|schema cache/i.test(r.error.message)) {
+        const alt = await db.from("finance_budget").select("category, amount").eq("user_id", userId);
+        return alt.data || [];
+      }
+      return r.data || [];
+    }, () => []);
 
   // Операции выбранного месяца — запрашиваем напрямую по диапазону дат
   // [1-е число месяца; 1-е число следующего месяца). Через «< следующий месяц»,
@@ -149,7 +160,7 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
     base = [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
   }
   try {
-    const { data: st } = await db.from("finance_settings").select("base_currency, rates").eq("user_id", userId).maybeSingle();
+    const st: any = await settingsP;
     if (st?.base_currency) base = st.base_currency;
     if (st?.rates && typeof st.rates === "object") {
       for (const [k, v] of Object.entries(st.rates as Record<string, any>)) {
@@ -219,10 +230,7 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   const budgets = new Map<string, number>();              // лимит на категорию целиком
   const subBudgets = new Map<string, number>();           // лимит на «категория|подкатегория»
   try {
-    let { data: bs, error } = await db.from("finance_budget").select("category, subcategory, amount").eq("user_id", userId);
-    if (error && /subcategory|column|schema cache/i.test(error.message)) {
-      ({ data: bs } = (await db.from("finance_budget").select("category, amount").eq("user_id", userId)) as any);
-    }
+    const bs: any[] = (await budgetsP) as any[];
     for (const b of bs || []) {
       const sub = ((b as any).subcategory || "") as string;
       if (sub) subBudgets.set(`${b.category}|${sub}`, Number(b.amount));
