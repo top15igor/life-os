@@ -457,7 +457,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setEAmount(String(t.amount));
     setECurrency(t.currency);
     setEKind(t.kind);
-    setECategory(t.category || "");
+    // Пустая категория в базе означает «Другое» — селект должен показывать
+    // именно его, а не первую попавшуюся опцию.
+    setECategory(t.category || "other");
     setESubcategory(t.subcategory || "");
     setENote(t.note || "");
     setEDay(t.day);
