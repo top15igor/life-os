@@ -547,27 +547,21 @@ const SCENARIOS: Scenario[] = [
     },
   },
   {
-    name: "Русская речь при английском Telegram — ответ по-русски",
+    name: "Русская речь при английском профиле — ответ по-русски",
     heavy: true,
-    // Живой случай Максима: телефон на английском, говорит по-русски — бот
-    // отвечал страницей английского текста. Язык речи важнее языка интерфейса.
-    send: () => ({
-      update_id: uid(),
-      message: {
-        message_id: uid(),
-        from: { id: TEST_CHAT, is_bot: false, first_name: TEST_NAME, language_code: "en" },
-        chat: { id: TEST_CHAT, type: "private" },
-        date: Math.floor(Date.now() / 1000),
-        text: "что у меня сегодня по планам?",
-      },
-    }),
+    // Живой случай Максима: телефон на английском, «en» записался в профиль при
+    // регистрации как догадка — и бот отвечал страницей английского текста на
+    // русские голосовые. Проверяем честно: ставим профилю английский, задаём
+    // вопрос по-русски, возвращаем русский.
+    chain: () => [callback("lang:en"), message("что у меня сегодня по планам?"), callback("lang:ru")],
     check: (sent) => {
       const broken = notBroken(sent);
       if (broken) return broken;
-      const joined = texts(sent).join(" ");
-      const cyr = (joined.match(/[а-яё]/gi) || []).length;
-      const lat = (joined.match(/[a-z]/gi) || []).length;
-      return cyr >= lat ? null : `ответ ушёл не по-русски: «${joined.slice(0, 80)}»`;
+      // Смотрим на самый длинный ответ: короткие — это подтверждения смены языка.
+      const longest = texts(sent).sort((a, b) => b.length - a.length)[0] || "";
+      const cyr = (longest.match(/[а-яё]/gi) || []).length;
+      const lat = (longest.match(/[a-z]/gi) || []).length;
+      return cyr > lat ? null : `ответ ушёл не по-русски: «${longest.slice(0, 80)}»`;
     },
   },
   {
