@@ -1257,35 +1257,42 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
             <i className="ti ti-chart-donut" style={{ fontSize: 15, color: "var(--accent)" }} />{s.byCategory}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {byCategory.map((c) => {
+          <div>
+            {byCategory.map((c, ci) => {
               const m = catView("expense", c.category, locale);
               const hasBudget = c.limit != null;
-              const barPct = hasBudget ? Math.min(100, c.budgetPct || 0) : Math.min(100, c.pct);
+              // Полоска без лимита — относительно САМОЙ БОЛЬШОЙ категории:
+              // пропорции читаются сразу. Абсолютные проценты давали «45% =
+              // полполосы», и десять серых дорожек сливались в тельняшку.
+              const maxPct = Math.max(1, ...byCategory.map((x) => x.pct));
+              const barPct = hasBudget ? Math.min(100, c.budgetPct || 0) : Math.min(100, (c.pct / maxPct) * 100);
               const barColor = hasBudget ? budgetColor(c.budgetPct || 0) : m.color;
+              const isOpen = selectedCat === (c.category || "other");
+              const drill = () => { setSelectedCat(isOpen ? null : (c.category || "other")); setMoveTo(""); };
               return (
-                <div key={c.category}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 4, gap: 8 }}>
-                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setMoveTo(""); }}
-                      title={m.label} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}>
-                      <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: selectedCat === (c.category || "other") ? "underline" : "none" }}>{m.label}</span>
-                      <i className="ti ti-chevron-right" style={{ fontSize: 12, color: "var(--text-3)", flexShrink: 0 }} />
-                      {!hasBudget && <span style={{ color: "var(--text-3)", fontSize: 12, flexShrink: 0 }}>{c.pct}%</span>}
-                      {c.over && <span style={{ fontSize: 11, color: "#ef4444", background: "#ef44441a", padding: "1px 7px", borderRadius: 10 }}>{s.over} {fmtMoney(c.amount - (c.limit || 0), base, locale)}</span>}
-                    </span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      <b>{fmtMoney(c.amount, base, locale)}</b>
-                      {hasBudget && <span style={{ color: "var(--text-3)", fontSize: 12 }}>{s.ofLimit} {fmtMoney(c.limit!, base, locale)}</span>}
-                      <button onClick={() => { setEditBudget(editBudget === c.category ? null : c.category); setBudgetVal(c.limit != null ? String(c.limit) : ""); setAddBudgetOpen(false); }} title={hasBudget ? s.editLimit : s.setLimit} style={{ background: "none", border: "none", cursor: "pointer", color: hasBudget ? "var(--accent)" : "var(--text-3)", padding: 2 }}>
-                        <i className={`ti ${hasBudget ? "ti-edit" : "ti-target"}`} style={{ fontSize: 14 }} />
-                      </button>
-                    </span>
+                <div key={c.category} style={{ padding: "9px 0", borderTop: ci ? "1px solid var(--border)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <button onClick={drill} title={m.label} style={{ width: 32, height: 32, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{m.icon}</button>
+                    <div onClick={drill} style={{ minWidth: 0, flex: 1, cursor: "pointer" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 600 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</span>
+                        <i className={`ti ti-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 12, color: "var(--text-3)", flexShrink: 0 }} />
+                        {c.over && <span style={{ fontSize: 10.5, fontWeight: 500, color: "#ef4444", background: "#ef44441a", padding: "1px 7px", borderRadius: 10, flexShrink: 0 }}>{s.over} {fmtMoney(c.amount - (c.limit || 0), base, locale)}</span>}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 1 }}>
+                        {c.pct}%{hasBudget ? ` · ${s.ofLimit} ${fmtMoney(c.limit!, base, locale)}` : ""}
+                      </div>
+                    </div>
+                    <b style={{ fontSize: 14, flexShrink: 0 }}>{fmtMoney(c.amount, base, locale)}</b>
+                    <button onClick={() => { setEditBudget(editBudget === c.category ? null : c.category); setBudgetVal(c.limit != null ? String(c.limit) : ""); setAddBudgetOpen(false); }} title={hasBudget ? s.editLimit : s.setLimit} style={{ background: "none", border: "none", cursor: "pointer", color: hasBudget ? "var(--accent)" : "var(--border)", padding: 2, flexShrink: 0 }}>
+                      <i className={`ti ${hasBudget ? "ti-edit" : "ti-target"}`} style={{ fontSize: 14 }} />
+                    </button>
                   </div>
-                  <div style={{ height: 7, background: "var(--surface-2)", borderRadius: 5, overflow: "hidden" }}>
-                    <div style={{ width: `max(${barPct}%, 4px)`, height: "100%", background: barColor, borderRadius: 5 }} />
+                  <div style={{ height: 4, background: hasBudget ? "var(--surface-2)" : "transparent", borderRadius: 3, overflow: "hidden", marginTop: 7, marginLeft: 43 }}>
+                    <div style={{ width: `max(${barPct}%, 2.5%)`, height: "100%", background: barColor, borderRadius: 3, opacity: hasBudget ? 1 : 0.85 }} />
                   </div>
                   {c.subs.length > 0 && (
-                    <div style={{ marginTop: 6, marginLeft: 8, display: "flex", flexDirection: "column", gap: 5 }}>
+                    <div style={{ marginTop: 6, marginLeft: 43, display: "flex", flexDirection: "column", gap: 5 }}>
                       {c.subs.map((sub) => {
                         const subKey = `${c.category}|${sub.name}`;
                         const sHas = sub.limit != null;
