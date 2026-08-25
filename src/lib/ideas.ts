@@ -211,6 +211,25 @@ export async function converse(userId: string, text: string): Promise<Turn> {
       };
     }
 
+    // Человек прямо сказал «хватит, отправляй» — а модель вместо вызова finish
+    // иногда просто РАССКАЗЫВАЕТ, что собрала постановку (живой случай Игоря
+    // 26.08: «Собрал постановку — вот что получилось», и ничего следом).
+    // На явную команду полагаться на настроение модели нельзя: собираем
+    // постановку принудительно, тем же путём, что и кнопка «Хватит, отправляй».
+    const wantsSend = /(хватит|достаточно|отправляй|отправь|отправить|собирай|собери|enough|send it)/i.test(String(text));
+    // Второй вариант того же провала: модель сама ЗАЯВЛЯЕТ «собрал постановку»,
+    // не вызвав инструмент, — обещание без постановки хуже лишнего вопроса.
+    const replyClaims = /(собрал|собрала|собираю|готова)\s+постановк|вот что получилось/i.test(said);
+    if (wantsSend || replyClaims) {
+      const sum = await summarize(userId, d.msgs);
+      if (sum?.title) {
+        const reply = (said || "Собрал постановку.").slice(0, 600);
+        d.msgs.push({ r: "a", t: reply });
+        await putDraft(userId, d);
+        return { reply, ready: sum, msgs: d.msgs };
+      }
+    }
+
     const reply = said || "Расскажи чуть подробнее.";
     d.msgs.push({ r: "a", t: reply.slice(0, 1500) });
     await putDraft(userId, d);
