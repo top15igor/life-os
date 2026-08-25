@@ -81,7 +81,9 @@ export type FinanceData = {
   balance: number; // доход − расход за месяц
   byCategory: CatSlice[]; // расходы по категориям за месяц (по убыванию)
   byDay: DaySlice[]; // сводка по дням месяца — для календаря
-  budgetTotal: { limit: number; spent: number; pct: number; over: boolean } | null; // сводный бюджет
+  // Сводный бюджет. mode: "all" — общий лимит на ВСЕ расходы месяца
+  // (finance_budget.category = "__all__"); "cats" — сумма лимитов по категориям.
+  budgetTotal: { limit: number; spent: number; pct: number; over: boolean; mode: "all" | "cats" } | null;
   txs: Tx[]; // операции за месяц (свежие сверху, в исходной валюте)
   monthsWithData: string[]; // месяцы, где есть операции
   hasAny: boolean; // есть ли вообще хоть одна операция
@@ -234,9 +236,12 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   // Бюджеты по категориям и подкатегориям (лимиты — в основной валюте).
   const budgets = new Map<string, number>();              // лимит на категорию целиком
   const subBudgets = new Map<string, number>();           // лимит на «категория|подкатегория»
+  let overallLimit = 0;
   try {
     const bs: any[] = (await budgetsP) as any[];
     for (const b of bs || []) {
+      // "__all__" — общий лимит месяца, он не относится ни к одной категории.
+      if ((b as any).category === "__all__") { overallLimit = Number((b as any).amount) || 0; continue; }
       const sub = ((b as any).subcategory || "") as string;
       if (sub) subBudgets.set(`${b.category}|${sub}`, Number(b.amount));
       else budgets.set(b.category as string, Number(b.amount));
@@ -271,12 +276,16 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
     })
     .sort((a, b) => b.amount - a.amount);
 
-  // Сводный бюджет = сумма всех лимитов против суммы расходов по этим категориям.
+  // Сводный бюджет. Общий лимит («не больше N в месяц на всё») главнее суммы
+  // лимитов по категориям: если он задан, полоса меряет ВСЕ расходы месяца.
   let budgetTotal: FinanceData["budgetTotal"] = null;
-  if (budgets.size) {
+  if (overallLimit > 0) {
+    const spent = round2(expense);
+    budgetTotal = { limit: round2(overallLimit), spent, pct: Math.round((spent / overallLimit) * 100), over: spent > overallLimit, mode: "all" };
+  } else if (budgets.size) {
     const limit = round2([...budgets.values()].reduce((a, b) => a + b, 0));
     const spent = round2([...budgets.keys()].reduce((a, c) => a + (catMap.get(c) || 0), 0));
-    budgetTotal = { limit, spent, pct: limit > 0 ? Math.round((spent / limit) * 100) : 0, over: spent > limit };
+    budgetTotal = { limit, spent, pct: limit > 0 ? Math.round((spent / limit) * 100) : 0, over: spent > limit, mode: "cats" };
   }
 
   return {
