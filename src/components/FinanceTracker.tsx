@@ -78,12 +78,12 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
 };
 
-const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string }> = {
-  ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
-  en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
-  uk: { title: "Мої категорії", rename: "Перейменувати", delWhere: "Куди перенести її операції?", delGo: "Видалити й перенести", moveAll: "Перенести все в…", moveMonth: "за цей місяць", moveEver: "за весь час", catOps: (n: number) => `операцій: ${n}`, back: "Всі категорії", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
-  fr: { title: "Mes catégories", rename: "Renommer", delWhere: "Où déplacer ses opérations ?", delGo: "Supprimer et déplacer", moveAll: "Tout déplacer vers…", moveMonth: "ce mois", moveEver: "toujours", catOps: (n: number) => `opérations : ${n}`, back: "Toutes les catégories", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
-  es: { title: "Mis categorías", rename: "Renombrar", delWhere: "¿A dónde mover sus operaciones?", delGo: "Eliminar y mover", moveAll: "Mover todo a…", moveMonth: "este mes", moveEver: "todo el tiempo", catOps: (n: number) => `operaciones: ${n}`, back: "Todas las categorías", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
+const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string }> = {
+  ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", total: "Итого", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
+  en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", total: "Total", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
+  uk: { title: "Мої категорії", rename: "Перейменувати", delWhere: "Куди перенести її операції?", delGo: "Видалити й перенести", moveAll: "Перенести все в…", moveMonth: "за цей місяць", moveEver: "за весь час", catOps: (n: number) => `операцій: ${n}`, back: "Всі категорії", total: "Разом", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
+  fr: { title: "Mes catégories", rename: "Renommer", delWhere: "Où déplacer ses opérations ?", delGo: "Supprimer et déplacer", moveAll: "Tout déplacer vers…", moveMonth: "ce mois", moveEver: "toujours", catOps: (n: number) => `opérations : ${n}`, back: "Toutes les catégories", total: "Total", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
+  es: { title: "Mis categorías", rename: "Renombrar", delWhere: "¿A dónde mover sus operaciones?", delGo: "Eliminar y mover", moveAll: "Mover todo a…", moveMonth: "este mes", moveEver: "todo el tiempo", catOps: (n: number) => `operaciones: ${n}`, back: "Todas las categorías", total: "Total", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -1380,8 +1380,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                               {t.subcategory && <span style={{ color: m.color, marginRight: 5 }}>{t.subcategory}</span>}
                               {t.note || "—"}
                             </span>
-                            <b style={{ whiteSpace: "nowrap" }}>−{mp.main}</b>
-                            {mp.orig && <span style={{ color: "var(--text-3)", whiteSpace: "nowrap" }}>({mp.orig})</span>}
+                            {/* Две колонки сумм друг под другом: чёрная — основная валюта,
+                                серая — чем реально платили. Выровнены по правому краю,
+                                чтобы валютные и обычные строки читались одним столбцом. */}
+                            <b style={{ whiteSpace: "nowrap", width: 110, textAlign: "right", flexShrink: 0 }}>−{mp.main}</b>
+                            <span style={{ color: "var(--text-3)", whiteSpace: "nowrap", width: 100, textAlign: "right", flexShrink: 0, fontSize: 11.5 }}>{mp.orig ? `(${mp.orig})` : ""}</span>
                             <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
                               <i className="ti ti-pencil" style={{ fontSize: 14 }} />
                             </button>
@@ -1391,6 +1394,22 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                           </div>
                           );
                         })}
+                        {rows.length > 0 && (() => {
+                          // Итог раскрытой категории: сумма в основной валюте; если вся
+                          // «валютная» часть в одной валюте — её итог серым во второй колонке.
+                          const totalBase = rows.reduce((n, t) => n + (t.amountBase ?? t.amount), 0);
+                          const foreign = rows.filter((t) => t.currency !== base);
+                          const curs = [...new Set(foreign.map((t) => t.currency))];
+                          const origTotal = curs.length === 1 ? fmtMoney(foreign.reduce((n, t) => n + t.amount, 0), curs[0], locale) : null;
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0 2px", borderTop: "2px solid var(--border)", fontSize: 12.5 }}>
+                              <span style={{ flex: 1, fontWeight: 600 }}>{(CAT_MGR[locale] || CAT_MGR.ru).total}</span>
+                              <b style={{ whiteSpace: "nowrap", width: 110, textAlign: "right", flexShrink: 0, fontSize: 13.5 }}>−{fmtMoney(totalBase, base, locale)}</b>
+                              <span style={{ color: "var(--text-3)", whiteSpace: "nowrap", width: 100, textAlign: "right", flexShrink: 0, fontSize: 11.5 }}>{origTotal ? `(${origTotal})` : ""}</span>
+                              <span style={{ width: 44, flexShrink: 0 }} />
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })()}
