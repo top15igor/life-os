@@ -1103,11 +1103,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
             {selectedCat && (() => {
               const cm = catView("expense", selectedCat, locale);
-              const sum = catTxs.reduce((n, t) => n + (t.kind === "expense" ? t.amount : 0), 0);
               return (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "3px 10px", borderRadius: 999, background: `${cm.color}1f`, color: "var(--text)" }}>
                   {cm.icon} <b>{cm.label}</b>
-                  <span style={{ color: "var(--text-3)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).catOps(catTxs.length)}</span>
+                  <span style={{ color: "var(--text-3)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).catOps(opsCount)}</span>
                   <button onClick={() => { setSelectedCat(null); setMoveTo(""); }} title={(CAT_MGR[locale] || CAT_MGR.ru).back} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-2)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
                 </span>
               );
@@ -1184,6 +1183,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                     <button onClick={() => startEdit(t)} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
                       <i className="ti ti-pencil" style={{ fontSize: 15 }} />
                     </button>
+                    <button onClick={() => del(t.id)} aria-label="delete" title={s.delConfirm} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 4, flexShrink: 0 }}>
+                      <i className="ti ti-trash" style={{ fontSize: 15 }} />
+                    </button>
                   </div>
                 );
               })}
@@ -1238,7 +1240,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               return (
                 <div key={c.category}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 4, gap: 8 }}>
-                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setSelectedDay(null); setMoveTo(""); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setMoveTo(""); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
                       title={m.label} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}>
                       <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: selectedCat === (c.category || "other") ? "underline" : "none" }}>{m.label}</span>
                       <i className="ti ti-chevron-right" style={{ fontSize: 12, color: "var(--text-3)", flexShrink: 0 }} />
