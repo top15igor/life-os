@@ -37,6 +37,27 @@ export async function POST(req: NextRequest) {
   const emoji = body?.emoji ? String(body.emoji).slice(0, 8) : null;
   const kind = body?.kind === "income" ? "income" : "expense";
   if (!label) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
+
+  // Переопределение встроенной категории: явный slug (напр. "food") — свои
+  // имя и иконка поверх стандартных. Одна строка на (user, kind, slug).
+  const explicitSlug = body?.slug ? String(body.slug).toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 40) : "";
+  if (explicitSlug) {
+    const db2 = supabaseAdmin();
+    const { data: ex } = await db2.from("finance_categories")
+      .select("id").eq("user_id", user.id).eq("kind", kind).eq("slug", explicitSlug).maybeSingle();
+    if (ex?.id) {
+      const { data, error } = await db2.from("finance_categories")
+        .update({ label, emoji }).eq("id", (ex as any).id).eq("user_id", user.id)
+        .select("id, slug, label, emoji, kind").single();
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: true, category: data });
+    }
+    const { data, error } = await db2.from("finance_categories")
+      .insert({ user_id: user.id, slug: explicitSlug, label, emoji, kind })
+      .select("id, slug, label, emoji, kind").single();
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, category: data });
+  }
   // slug уникален в рамках (user, kind); при коллизии добавляем суффикс.
   const base = slugify(label);
   const db = supabaseAdmin();

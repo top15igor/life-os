@@ -78,12 +78,12 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
 };
 
-const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string }> = {
-  ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", total: "Итого", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
-  en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", total: "Total", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
-  uk: { title: "Мої категорії", rename: "Перейменувати", delWhere: "Куди перенести її операції?", delGo: "Видалити й перенести", moveAll: "Перенести все в…", moveMonth: "за цей місяць", moveEver: "за весь час", catOps: (n: number) => `операцій: ${n}`, back: "Всі категорії", total: "Разом", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
-  fr: { title: "Mes catégories", rename: "Renommer", delWhere: "Où déplacer ses opérations ?", delGo: "Supprimer et déplacer", moveAll: "Tout déplacer vers…", moveMonth: "ce mois", moveEver: "toujours", catOps: (n: number) => `opérations : ${n}`, back: "Toutes les catégories", total: "Total", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
-  es: { title: "Mis categorías", rename: "Renombrar", delWhere: "¿A dónde mover sus operaciones?", delGo: "Eliminar y mover", moveAll: "Mover todo a…", moveMonth: "este mes", moveEver: "todo el tiempo", catOps: (n: number) => `operaciones: ${n}`, back: "Todas las categorías", total: "Total", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
+const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string; stdT: string; reset: string }> = {
+  ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", total: "Итого", stdT: "Стандартные — можно переименовать и сменить иконку", reset: "Сбросить", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
+  en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", total: "Total", stdT: "Standard — rename or change the icon", reset: "Reset", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
+  uk: { title: "Мої категорії", rename: "Перейменувати", delWhere: "Куди перенести її операції?", delGo: "Видалити й перенести", moveAll: "Перенести все в…", moveMonth: "за цей місяць", moveEver: "за весь час", catOps: (n: number) => `операцій: ${n}`, back: "Всі категорії", total: "Разом", stdT: "Стандартні — можна перейменувати і змінити іконку", reset: "Скинути", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
+  fr: { title: "Mes catégories", rename: "Renommer", delWhere: "Où déplacer ses opérations ?", delGo: "Supprimer et déplacer", moveAll: "Tout déplacer vers…", moveMonth: "ce mois", moveEver: "toujours", catOps: (n: number) => `opérations : ${n}`, back: "Toutes les catégories", total: "Total", stdT: "Standards — renommer ou changer l'icône", reset: "Réinitialiser", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
+  es: { title: "Mis categorías", rename: "Renombrar", delWhere: "¿A dónde mover sus operaciones?", delGo: "Eliminar y mover", moveAll: "Mover todo a…", moveMonth: "este mes", moveEver: "todo el tiempo", catOps: (n: number) => `operaciones: ${n}`, back: "Todas las categorías", total: "Total", stdT: "Estándar — renombrar o cambiar el icono", reset: "Restablecer", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -136,7 +136,10 @@ let CUSTOM_CAT_VIEW: Record<string, { label: string; emoji: string | null }> = {
 function catView(kind: "income" | "expense", key: string | null, locale: string): { icon: string; color: string; label: string } {
   const list = kind === "income" ? INCOME_CATS : EXPENSE_CATS;
   const preset = key ? list.find((c) => c.key === key) : null;
-  if (preset) return { icon: preset.icon, color: preset.color, label: (preset.l as any)[locale] || preset.l.ru };
+  // Личное переопределение (имя/иконка) главнее пресета: человек может
+  // переименовать «Продукты» в «Еда» и поставить свой эмодзи.
+  const ov = key ? CUSTOM_CAT_VIEW[`${kind}:${key}`] : null;
+  if (preset) return { icon: ov?.emoji || preset.icon, color: preset.color, label: ov?.label || (preset.l as any)[locale] || preset.l.ru };
   if (!key) { const o = list[list.length - 1]; return { icon: o.icon, color: o.color, label: (o.l as any)[locale] || o.l.ru }; }
   const custom = CUSTOM_CAT_VIEW[`${kind}:${key}`];
   if (custom) return { icon: custom.emoji || (kind === "income" ? "💰" : "🏷️"), color: hashColor(key), label: custom.label };
@@ -213,14 +216,45 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setDelCatId(null);
     router.refresh();
   }
-  // Переименование: меняется подпись, слаг (и разложенные операции) не трогаем.
+  // Переименование: меняется подпись и иконка, слаг (и разложенные операции)
+  // не трогаем.
   const [renameCatId, setRenameCatId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState("");
+  const [renameEmoji, setRenameEmoji] = useState("");
   async function renameCustomCat(id: string) {
     const label = renameVal.trim();
     if (!label) return;
-    const r = await fetch("/api/finance/categories", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, label }) }).then((x) => x.json()).catch(() => null);
-    if (r?.ok) { setCustom((cs) => cs.map((c) => (c.id === id ? { ...c, label } : c))); setRenameCatId(null); router.refresh(); }
+    const emoji = renameEmoji.trim() || null;
+    const r = await fetch("/api/finance/categories", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, label, emoji }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok) { setCustom((cs) => cs.map((c) => (c.id === id ? { ...c, label, emoji } : c))); setRenameCatId(null); router.refresh(); }
+  }
+
+  // Редактор СТАНДАРТНЫХ категорий: свои имя и иконка поверх пресета
+  // (строка-переопределение с тем же слагом в finance_categories).
+  const [stdEditKey, setStdEditKey] = useState<string | null>(null); // `${kind}:${key}`
+  const [stdLabel, setStdLabel] = useState("");
+  const [stdEmoji, setStdEmoji] = useState("");
+  async function saveStdCat() {
+    if (!stdEditKey) return;
+    const [kind, slug] = stdEditKey.split(":");
+    const label = stdLabel.trim();
+    if (!label) return;
+    const r = await fetch("/api/finance/categories", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, kind, label, emoji: stdEmoji.trim() || null }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok && r.category) {
+      setCustom((cs) => [...cs.filter((c) => !(c.kind === kind && c.slug === slug)), r.category]);
+      setStdEditKey(null); router.refresh();
+    }
+  }
+  async function resetStdCat() {
+    if (!stdEditKey) return;
+    const [kind, slug] = stdEditKey.split(":");
+    const row = custom.find((c) => c.kind === kind && c.slug === slug);
+    if (row) {
+      // moveTo = тот же слаг: строка-переопределение удаляется, операции не трогаются.
+      await fetch(`/api/finance/categories?id=${encodeURIComponent(row.id)}&moveTo=${encodeURIComponent(slug)}`, { method: "DELETE" }).catch(() => {});
+      setCustom((cs) => cs.filter((c) => c.id !== row.id));
+    }
+    setStdEditKey(null); router.refresh();
   }
 
   // Проваливание в категорию: клик по строке «Расходы по категориям» фильтрует
@@ -426,8 +460,12 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const isCur = month === todayISO().slice(0, 7);
   // Категории для пикера: встроенные + пользовательские (перед «Другое»).
   function pickerCats(k: "income" | "expense") {
-    const builtin = (k === "income" ? INCOME_CATS : EXPENSE_CATS).map((c) => ({ key: c.key, icon: c.icon, color: c.color, label: (c.l as any)[locale] || c.l.ru }));
-    const cust = custom.filter((c) => c.kind === k).map((c) => ({ key: c.slug, icon: c.emoji || "🏷️", color: hashColor(c.slug), label: c.label }));
+    const builtinKeys = new Set((k === "income" ? INCOME_CATS : EXPENSE_CATS).map((c) => c.key));
+    const builtin = (k === "income" ? INCOME_CATS : EXPENSE_CATS).map((c) => {
+      const ov = CUSTOM_CAT_VIEW[`${k}:${c.key}`];
+      return { key: c.key, icon: ov?.emoji || c.icon, color: c.color, label: ov?.label || (c.l as any)[locale] || c.l.ru };
+    });
+    const cust = custom.filter((c) => c.kind === k && !builtinKeys.has(c.slug)).map((c) => ({ key: c.slug, icon: c.emoji || "🏷️", color: hashColor(c.slug), label: c.label }));
     if (!cust.length) return builtin;
     const i = builtin.findIndex((b) => b.key === "other");
     if (i >= 0) builtin.splice(i, 0, ...cust); else builtin.push(...cust);
@@ -950,13 +988,45 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               <i className="ti ti-tags" style={{ fontSize: 15, color: "var(--accent)" }} />{(CAT_MGR[locale] || CAT_MGR.ru).title}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).hint}</div>
-            {custom.length > 0 && (
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", margin: "2px 0 6px" }}>{(CAT_MGR[locale] || CAT_MGR.ru).stdT}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 12 }}>
+              {([["expense", EXPENSE_CATS], ["income", INCOME_CATS]] as const).flatMap(([k, list]) =>
+                list.map((c) => {
+                  const keyId = `${k}:${c.key}`;
+                  const ov = custom.find((x) => x.kind === k && x.slug === c.key);
+                  if (stdEditKey === keyId) {
+                    return (
+                      <span key={keyId} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "4px 8px", borderRadius: 999, border: "1px solid var(--accent)", background: "var(--surface)" }}>
+                        <input value={stdEmoji} onChange={(e) => setStdEmoji(e.target.value)} maxLength={4} style={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
+                        <input autoFocus value={stdLabel} onChange={(e) => setStdLabel(e.target.value)} maxLength={40}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveStdCat(); if (e.key === "Escape") setStdEditKey(null); }}
+                          style={{ ...input, width: 110, padding: "3px 8px", fontSize: 12.5 }} />
+                        <button onClick={saveStdCat} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--accent)", padding: 0 }}><i className="ti ti-check" style={{ fontSize: 15 }} /></button>
+                        {ov && <button onClick={resetStdCat} title={(CAT_MGR[locale] || CAT_MGR.ru).reset} style={{ border: "none", background: "none", cursor: "pointer", color: "#ef4444", padding: 0 }}><i className="ti ti-arrow-back-up" style={{ fontSize: 14 }} /></button>}
+                        <button onClick={() => setStdEditKey(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={keyId} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "4px 10px", borderRadius: 999, border: ov ? "1px solid var(--accent)" : "1px solid var(--border)", background: "var(--surface)" }}>
+                      <span>{ov?.emoji || c.icon}</span>{ov?.label || (c.l as any)[locale] || c.l.ru}
+                      <span style={{ fontSize: 10, color: "var(--text-3)" }}>{k === "income" ? "▲" : "▼"}</span>
+                      <button onClick={() => { setStdEditKey(keyId); setStdLabel(ov?.label || (c.l as any)[locale] || c.l.ru); setStdEmoji(ov?.emoji || c.icon); setRenameCatId(null); setDelCatId(null); }} title={(CAT_MGR[locale] || CAT_MGR.ru).rename} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
+                        <i className="ti ti-pencil" style={{ fontSize: 13 }} />
+                      </button>
+                    </span>
+                  );
+                })
+              )}
+            </div>
+            {custom.filter((c) => !EXPENSE_CATS.some((b) => b.key === c.slug && c.kind === "expense") && !INCOME_CATS.some((b) => b.key === c.slug && c.kind === "income")).length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
-                {custom.map((c) => (
+                {custom.filter((c) => !EXPENSE_CATS.some((b) => b.key === c.slug && c.kind === "expense") && !INCOME_CATS.some((b) => b.key === c.slug && c.kind === "income")).map((c) => (
                   <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "5px 10px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--surface)" }}>
                     <span>{c.emoji || "🏷️"}</span>
                     {renameCatId === c.id ? (
                       <>
+                        <input value={renameEmoji} onChange={(e) => setRenameEmoji(e.target.value)} maxLength={4} style={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
                         <input autoFocus value={renameVal} onChange={(e) => setRenameVal(e.target.value)} maxLength={40}
                           onKeyDown={(e) => { if (e.key === "Enter") renameCustomCat(c.id); if (e.key === "Escape") setRenameCatId(null); }}
                           style={{ ...input, width: 130, padding: "3px 8px", fontSize: 12.5 }} />
@@ -968,7 +1038,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                       <>
                         {c.label}
                         <span style={{ fontSize: 10, color: "var(--text-3)" }}>{c.kind === "income" ? "▲" : "▼"}</span>
-                        <button onClick={() => { setRenameCatId(c.id); setRenameVal(c.label); setDelCatId(null); }} title={(CAT_MGR[locale] || CAT_MGR.ru).rename} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
+                        <button onClick={() => { setRenameCatId(c.id); setRenameVal(c.label); setRenameEmoji(c.emoji || ""); setDelCatId(null); setStdEditKey(null); }} title={(CAT_MGR[locale] || CAT_MGR.ru).rename} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
                           <i className="ti ti-pencil" style={{ fontSize: 13 }} />
                         </button>
                         <button onClick={() => { setDelCatId(delCatId === c.id ? null : c.id); setDelCatTo("other"); setRenameCatId(null); }} aria-label="delete" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 15, lineHeight: 1, padding: 0 }}>×</button>
