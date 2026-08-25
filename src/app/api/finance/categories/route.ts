@@ -54,14 +54,50 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Переименование своей категории. Slug не меняем: на него ссылаются операции
+// и правила AI — меняется только то, что видит человек.
+export async function PATCH(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const id = String(body?.id || "");
+  if (!id) return NextResponse.json({ ok: false, error: "no_id" }, { status: 400 });
+  const upd: any = {};
+  if (body?.label !== undefined) {
+    const label = String(body.label || "").trim().slice(0, 40);
+    if (!label) return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
+    upd.label = label;
+  }
+  if (body?.emoji !== undefined) upd.emoji = body.emoji ? String(body.emoji).slice(0, 8) : null;
+  if (!Object.keys(upd).length) return NextResponse.json({ ok: false, error: "nothing" }, { status: 400 });
+  try {
+    const { data, error } = await supabaseAdmin().from("finance_categories")
+      .update(upd).eq("id", id).eq("user_id", user.id).select("id, slug, label, emoji, kind").single();
+    if (error) throw error;
+    return NextResponse.json({ ok: true, category: data });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || "save_failed" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
-  const id = new URL(req.url).searchParams.get("id");
+  const url = new URL(req.url);
+  const id = url.searchParams.get("id");
+  // Куда девать операции удаляемой категории. Без переноса они остались бы с
+  // «осиротевшим» слагом и висели в отчётах непонятной строкой.
+  const moveTo = String(url.searchParams.get("moveTo") || "other").slice(0, 40);
   if (!id) return NextResponse.json({ ok: false, error: "no_id" }, { status: 400 });
   try {
-    await supabaseAdmin().from("finance_categories").delete().eq("id", id).eq("user_id", user.id);
-    return NextResponse.json({ ok: true });
+    const db = supabaseAdmin();
+    const { data: cat } = await db.from("finance_categories")
+      .select("slug, kind").eq("id", id).eq("user_id", user.id).maybeSingle();
+    if (!cat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+    const { data: moved } = await db.from("finance_tx").update({ category: moveTo })
+      .eq("user_id", user.id).eq("kind", (cat as any).kind).eq("category", (cat as any).slug).select("id");
+    await db.from("finance_categories").delete().eq("id", id).eq("user_id", user.id);
+    return NextResponse.json({ ok: true, moved: (moved || []).length });
   } catch {
     return NextResponse.json({ ok: false }, { status: 500 });
   }

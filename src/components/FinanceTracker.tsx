@@ -68,12 +68,12 @@ const CUR = [
 ];
 const symOf = (c: string) => CUR.find((x) => x.code === c)?.sym || c;
 
-const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string }> = {
-  ru: { title: "Мои категории", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
-  en: { title: "My categories", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
-  uk: { title: "Мої категорії", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
-  fr: { title: "Mes catégories", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
-  es: { title: "Mis categorías", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
+const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string }> = {
+  ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
+  en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
+  uk: { title: "Мої категорії", rename: "Перейменувати", delWhere: "Куди перенести її операції?", delGo: "Видалити й перенести", moveAll: "Перенести все в…", moveMonth: "за цей місяць", moveEver: "за весь час", catOps: (n: number) => `операцій: ${n}`, back: "Всі категорії", hint: "Додай свою статтю витрат/доходів — бот і AI почнуть у неї розкладати.", ph: "Назва (напр. Штрафи)", expense: "Витрата", income: "Дохід", add: "Додати" },
+  fr: { title: "Mes catégories", rename: "Renommer", delWhere: "Où déplacer ses opérations ?", delGo: "Supprimer et déplacer", moveAll: "Tout déplacer vers…", moveMonth: "ce mois", moveEver: "toujours", catOps: (n: number) => `opérations : ${n}`, back: "Toutes les catégories", hint: "Ajoute ta propre catégorie — le bot et l'IA la rempliront.", ph: "Nom (ex. Amendes)", expense: "Dépense", income: "Revenu", add: "Ajouter" },
+  es: { title: "Mis categorías", rename: "Renombrar", delWhere: "¿A dónde mover sus operaciones?", delGo: "Eliminar y mover", moveAll: "Mover todo a…", moveMonth: "este mes", moveEver: "todo el tiempo", catOps: (n: number) => `operaciones: ${n}`, back: "Todas las categorías", hint: "Añade tu propia categoría de gasto/ingreso — el bot y la IA empezarán a clasificar en ella.", ph: "Nombre (p. ej. Multas)", expense: "Gasto", income: "Ingreso", add: "Añadir" },
 };
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -192,9 +192,37 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const r = await fetch("/api/finance/categories", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label, emoji: newCatEmoji.trim() || null, kind: newCatKind }) }).then((x) => x.json()).catch(() => null);
     if (r?.ok && r.category) { setCustom((cs) => [...cs, r.category]); setNewCatLabel(""); setNewCatEmoji(""); }
   }
-  async function delCustomCat(id: string) {
-    await fetch(`/api/finance/categories?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+  // Удаление своей категории — всегда с переносом операций: без него они
+  // остались бы «осиротевшими» и висели в отчётах непонятной строкой.
+  const [delCatId, setDelCatId] = useState<string | null>(null);
+  const [delCatTo, setDelCatTo] = useState("other");
+  async function delCustomCat(id: string, moveTo: string) {
+    await fetch(`/api/finance/categories?id=${encodeURIComponent(id)}&moveTo=${encodeURIComponent(moveTo)}`, { method: "DELETE" }).catch(() => {});
     setCustom((cs) => cs.filter((c) => c.id !== id));
+    setDelCatId(null);
+    router.refresh();
+  }
+  // Переименование: меняется подпись, слаг (и разложенные операции) не трогаем.
+  const [renameCatId, setRenameCatId] = useState<string | null>(null);
+  const [renameVal, setRenameVal] = useState("");
+  async function renameCustomCat(id: string) {
+    const label = renameVal.trim();
+    if (!label) return;
+    const r = await fetch("/api/finance/categories", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, label }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok) { setCustom((cs) => cs.map((c) => (c.id === id ? { ...c, label } : c))); setRenameCatId(null); router.refresh(); }
+  }
+
+  // Проваливание в категорию: клик по строке «Расходы по категориям» фильтрует
+  // список операций — видно каждую трату, из которой сложилась сумма.
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [moveTo, setMoveTo] = useState("");
+  const [moveScope, setMoveScope] = useState<"month" | "all">("month");
+  async function moveAllTo() {
+    if (!selectedCat || !moveTo || moveTo === selectedCat) return;
+    setBusy(true);
+    const r = await fetch("/api/finance/recat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ from: selectedCat, to: moveTo, kind: "expense", scope: moveScope, month }) }).then((x) => x.json()).catch(() => null);
+    setBusy(false);
+    if (r?.ok) { setSelectedCat(null); setMoveTo(""); router.refresh(); }
   }
 
   // Календарь-выбор месяца/года.
@@ -545,13 +573,14 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
   // Группировка операций по дням (с учётом выбранного в календаре дня).
   const byDay = new Map<string, Tx[]>();
-  for (const t of txs) { const list = byDay.get(t.day) ?? []; list.push(t); byDay.set(t.day, list); }
+  const catTxs = selectedCat ? txs.filter((t) => t.kind === "expense" && (t.category || "other") === selectedCat) : txs;
+  for (const t of catTxs) { const list = byDay.get(t.day) ?? []; list.push(t); byDay.set(t.day, list); }
   const days = [...byDay.keys()].sort().reverse().filter((d) => !selDay || d === selDay);
 
   // По умолчанию показываем только свежие операции; «Показать ещё» разворачивает.
   const OPS_PREVIEW = 6;
   const opsCount = days.reduce((n, d) => n + (byDay.get(d)?.length ?? 0), 0);
-  const opsLimit = showAllOps || selDay ? Infinity : OPS_PREVIEW;
+  const opsLimit = showAllOps || selDay || selectedCat ? Infinity : OPS_PREVIEW;
   const visDays: { day: string; items: Tx[] }[] = [];
   let opsShown = 0;
   for (const d of days) {
@@ -786,13 +815,45 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
                 {custom.map((c) => (
                   <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, padding: "5px 10px", borderRadius: 999, border: "1px solid var(--border)", background: "var(--surface)" }}>
-                    <span>{c.emoji || "🏷️"}</span>{c.label}
-                    <span style={{ fontSize: 10, color: "var(--text-3)" }}>{c.kind === "income" ? "▲" : "▼"}</span>
-                    <button onClick={() => delCustomCat(c.id)} aria-label="delete" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 15, lineHeight: 1, padding: 0 }}>×</button>
+                    <span>{c.emoji || "🏷️"}</span>
+                    {renameCatId === c.id ? (
+                      <>
+                        <input autoFocus value={renameVal} onChange={(e) => setRenameVal(e.target.value)} maxLength={40}
+                          onKeyDown={(e) => { if (e.key === "Enter") renameCustomCat(c.id); if (e.key === "Escape") setRenameCatId(null); }}
+                          style={{ ...input, width: 130, padding: "3px 8px", fontSize: 12.5 }} />
+                        <button onClick={() => renameCustomCat(c.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--accent)", padding: 0 }}>
+                          <i className="ti ti-check" style={{ fontSize: 15 }} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {c.label}
+                        <span style={{ fontSize: 10, color: "var(--text-3)" }}>{c.kind === "income" ? "▲" : "▼"}</span>
+                        <button onClick={() => { setRenameCatId(c.id); setRenameVal(c.label); setDelCatId(null); }} title={(CAT_MGR[locale] || CAT_MGR.ru).rename} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
+                          <i className="ti ti-pencil" style={{ fontSize: 13 }} />
+                        </button>
+                        <button onClick={() => { setDelCatId(delCatId === c.id ? null : c.id); setDelCatTo("other"); setRenameCatId(null); }} aria-label="delete" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 15, lineHeight: 1, padding: 0 }}>×</button>
+                      </>
+                    )}
                   </span>
                 ))}
               </div>
             )}
+            {delCatId && (() => {
+              const dc = custom.find((c) => c.id === delCatId);
+              if (!dc) return null;
+              const targets = pickerCats(dc.kind as "income" | "expense").filter((o) => o.key !== dc.slug);
+              return (
+                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 10, fontSize: 12.5 }}>
+                  <span style={{ color: "var(--text-2)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).delWhere}</span>
+                  <select value={delCatTo} onChange={(e) => setDelCatTo(e.target.value)} style={{ ...input, width: 160, padding: "5px 8px", fontSize: 12.5 }}>
+                    {targets.map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
+                  </select>
+                  <button onClick={() => delCustomCat(dc.id, delCatTo)} style={{ ...btnG, padding: "5px 11px", fontSize: 12, color: "#ef4444" }}>{(CAT_MGR[locale] || CAT_MGR.ru).delGo}</button>
+                  <button onClick={() => setDelCatId(null)} style={{ ...btnG, padding: "5px 11px", fontSize: 12 }}>{s.cancel}</button>
+                </div>
+              );
+            })()}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
               <input value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center" }} />
               <input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40} style={{ ...input, width: 190 }} />
@@ -1037,10 +1098,35 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           {data.hasAny ? s.empty : s.emptyAll}
         </div>
       ) : (
-        <div className="card">
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+        <div className="card" id="fin-ops">
+          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
+            {selectedCat && (() => {
+              const cm = catView("expense", selectedCat, locale);
+              const sum = catTxs.reduce((n, t) => n + (t.kind === "expense" ? t.amount : 0), 0);
+              return (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, padding: "3px 10px", borderRadius: 999, background: `${cm.color}1f`, color: "var(--text)" }}>
+                  {cm.icon} <b>{cm.label}</b>
+                  <span style={{ color: "var(--text-3)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).catOps(catTxs.length)}</span>
+                  <button onClick={() => { setSelectedCat(null); setMoveTo(""); }} title={(CAT_MGR[locale] || CAT_MGR.ru).back} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-2)", fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                </span>
+              );
+            })()}
           </div>
+          {selectedCat && (
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 12, fontSize: 12.5 }}>
+              <span style={{ color: "var(--text-2)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).moveAll}</span>
+              <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} style={{ ...input, width: 170, padding: "5px 8px", fontSize: 12.5 }}>
+                <option value=""></option>
+                {pickerCats("expense").filter((o) => o.key !== selectedCat).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
+              </select>
+              <select value={moveScope} onChange={(e) => setMoveScope(e.target.value as any)} style={{ ...input, width: 140, padding: "5px 8px", fontSize: 12.5 }}>
+                <option value="month">{(CAT_MGR[locale] || CAT_MGR.ru).moveMonth}</option>
+                <option value="all">{(CAT_MGR[locale] || CAT_MGR.ru).moveEver}</option>
+              </select>
+              <button disabled={busy || !moveTo} onClick={moveAllTo} style={{ ...btnP, padding: "5px 12px", fontSize: 12, opacity: moveTo ? 1 : 0.5 }}>{s.save}</button>
+            </div>
+          )}
           {visDays.map(({ day: d, items }) => (
             <div key={d} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
@@ -1066,7 +1152,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                         </select>
                         <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
                       </div>
-                      <input type="text" placeholder={s.category} value={eCategory} onChange={(e) => setECategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      <select value={eCategory} onChange={(e) => setECategory(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
+                        {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
+                        {eCategory && !pickerCats(eKind).some((o) => o.key === eCategory) && <option value={eCategory}>{eCategory}</option>}
+                      </select>
                       <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
                       <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
                       <div style={{ display: "flex", gap: 8 }}>
@@ -1100,7 +1189,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               })}
             </div>
           ))}
-          {!selDay && opsCount > OPS_PREVIEW && (
+          {!selDay && !selectedCat && opsCount > OPS_PREVIEW && (
             <button onClick={() => setShowAllOps((v) => !v)}
               style={{ ...btnG, width: "100%", justifyContent: "center", marginTop: 4, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
               {showAllOps
@@ -1149,8 +1238,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               return (
                 <div key={c.category}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 4, gap: 8 }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.label}</span>
+                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setSelectedDay(null); setMoveTo(""); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                      title={m.label} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}>
+                      <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: selectedCat === (c.category || "other") ? "underline" : "none" }}>{m.label}</span>
+                      <i className="ti ti-chevron-right" style={{ fontSize: 12, color: "var(--text-3)", flexShrink: 0 }} />
                       {!hasBudget && <span style={{ color: "var(--text-3)", fontSize: 12, flexShrink: 0 }}>{c.pct}%</span>}
                       {c.over && <span style={{ fontSize: 11, color: "#ef4444", background: "#ef44441a", padding: "1px 7px", borderRadius: 10 }}>{s.over} {fmtMoney(c.amount - (c.limit || 0), base, locale)}</span>}
                     </span>
