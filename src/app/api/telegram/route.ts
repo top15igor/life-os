@@ -2220,9 +2220,10 @@ async function handleUpdate(req: NextRequest) {
         const turn = await converseIdea(user.id, `${said}\n\n[к сообщению приложен скриншот экрана]`);
         await noteIdeaShot(user.id, ph.file_id);
         if (turn.ready) {
-          await sendMessage(chatId, turn.reply);
           await stashIdea(user.id, turn.ready);
-          await sendMessage(chatId, ideaPreview(turn.ready, lang), {
+          // Одним сообщением — как в текстовой ветке: реплика не должна
+          // приходить без постановки.
+          await sendMessage(chatId, `${esc(turn.reply)}\n\n${ideaPreview(turn.ready, lang)}`, {
             reply_markup: { inline_keyboard: [[{ text: IDEA_T[lang].send, callback_data: "idea:send" }], [{ text: IDEA_T[lang].more, callback_data: "idea:more" }, { text: IDEA_T[lang].drop, callback_data: "idea:drop" }]] },
           });
         } else {
@@ -2745,9 +2746,10 @@ async function handleUpdate(req: NextRequest) {
         const turn = await converseIdea(user.id, text);
         const editing = await editingIdea(user.id);
         if (turn.ready) {
-          await sendMessage(chatId, turn.reply);
           await stashIdea(user.id, turn.ready);
-          await sendMessage(chatId, ideaPreview(turn.ready, lng), {
+          // Реплика и постановка — ОДНИМ сообщением: раздельная отправка уже
+          // подводила («вот что получилось» дошло, сама постановка — нет).
+          await sendMessage(chatId, `${esc(turn.reply)}\n\n${ideaPreview(turn.ready, lng)}`, {
             reply_markup: { inline_keyboard: [[{ text: editing ? IDEA_T[lng].save : IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
           });
         } else {

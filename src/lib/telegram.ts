@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import { logError } from "./errorLog";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const API = `https://api.telegram.org/bot${TOKEN}`;
@@ -245,11 +246,33 @@ function humanizeDashes(t: string): string {
 // Отправить сообщение пользователю (extra — доп. поля, напр. reply_markup с кнопками).
 export async function sendMessage(chatId: number, text: string, extra?: Record<string, any>): Promise<void> {
   if (capture("sendMessage", chatId, text, extra)) return;
-  await fetch(`${API}/sendMessage`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: humanizeDashes(text), parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }),
-  });
+  // Отказ Telegram нельзя глотать молча: сообщение «Собрал постановку — вот что
+  // получилось» доходило, а сама постановка следом — нет, и никто об этом не
+  // знал. Если API вернул ошибку — след в журнал и повтор БЕЗ разметки:
+  // доставить текст важнее, чем жирный шрифт.
+  const payload = { chat_id: chatId, text: humanizeDashes(text), parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) };
+  try {
+    const r = await fetch(`${API}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) return;
+    const why = await r.text().catch(() => "");
+    logError("tg:send", new Error(`sendMessage ${r.status}`), { chatId, detail: `${why.slice(0, 300)} len=${String(text || "").length}` });
+    const plain = String(payload.text || "").replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    const r2 = await fetch(`${API}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...payload, text: plain, parse_mode: undefined }),
+    });
+    if (!r2.ok) {
+      const why2 = await r2.text().catch(() => "");
+      logError("tg:send-retry", new Error(`sendMessage ${r2.status}`), { chatId, detail: why2.slice(0, 300) });
+    }
+  } catch (e) {
+    logError("tg:send", e, { chatId, detail: `len=${String(text || "").length}` });
+  }
 }
 
 // Заменить текст сообщения (и убрать инлайн-кнопки) — напр. после подтверждения.
