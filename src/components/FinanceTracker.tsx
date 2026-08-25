@@ -618,7 +618,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   // категории. Раньше карандаш в аккордеоне «перекидывал» наверх в другой блок.
   function renderEdit(t: Tx) {
     return (
-                    <div style={{ padding: "10px 0", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", marginBottom: 6 }}>
+                    <div style={{ padding: "8px 0 0" }}>
                       <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
                         {(["expense", "income"] as const).map((k) => (
                           <button key={k} onClick={() => setEKind(k)} style={{
@@ -675,6 +675,24 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
   return (
     <div className="fin-wrap" style={{ position: "relative", paddingBottom: 72 }}>
+      {/* Правка операции — модальным окном. Раньше форма разворачивалась
+          на месте строки: широкая раскладка растягивала кнопки в лапшу,
+          автофокус дёргал страницу, и человек терял, где он находится. */}
+      {editTx && (() => {
+        const t = txs.find((x) => x.id === editTx);
+        if (!t) return null;
+        return (
+          <div onClick={() => setEditTx(null)} style={{ position: "fixed", inset: 0, zIndex: 220, background: "rgba(15, 18, 34, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "min(460px, 100%)", maxHeight: "90vh", overflowY: "auto", background: "var(--surface)", borderRadius: 16, padding: "16px 16px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)} · {t.note || catView(t.kind, t.category, locale).label}</div>
+                <button onClick={() => setEditTx(null)} aria-label="close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
+              </div>
+              {renderEdit(t)}
+            </div>
+          </div>
+        );
+      })()}
       <style>{`
         .fin-wrap button { transition: transform .08s ease, filter .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease; }
         .fin-wrap button:hover:not(:disabled) { filter: brightness(1.04); }
@@ -1189,9 +1207,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               {items.map((t) => {
                 const m = catView(t.kind, t.category, locale);
                 const pos = t.kind === "income";
-                if (editTx === t.id) {
-                  return <div key={t.id}>{renderEdit(t)}</div>;
-                }
                 return (
                   <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
                     <button onClick={() => startEdit(t)} style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}1f`, border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{m.icon}</button>
@@ -1360,7 +1375,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                           <button disabled={busy || !moveTo} onClick={moveAllTo} style={{ ...btnP, padding: "5px 12px", fontSize: 12, opacity: moveTo ? 1 : 0.5 }}>{s.save}</button>
                         </div>
                         {rows.map((t) => {
-                          if (editTx === t.id) return <div key={t.id} style={{ borderTop: "1px solid var(--border)" }}>{renderEdit(t)}</div>;
                           const mp = moneyPair(t);
                           return (
                           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid var(--border)", fontSize: 12.5 }}>
