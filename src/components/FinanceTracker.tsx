@@ -633,6 +633,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const btnG: any = { fontSize: 13.5, padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-2)", cursor: "pointer", fontWeight: 500, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 };
   // Компактная «пилюля» — для главных действий вместо кнопок во всю ширину.
   const btnPill: any = { ...btnP, padding: "10px 22px", borderRadius: 999 };
+  // Блоки внутри «Настроек»: каждая тема в своей рамке, чтобы не сливалось в полотно
+  const secBox: any = { border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px", background: "var(--surface)" };
+  const secHead: any = { fontSize: 13.5, fontWeight: 650, color: "var(--text)", marginBottom: 10, display: "flex", alignItems: "center", gap: 7 };
 
   // Календарь по дням месяца.
   const dayMap = new Map(data.byDay.map((d) => [d.day, d]));
@@ -886,48 +889,55 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
 
       {/* Настройки валют */}
       {setOpenS && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-settings" style={{ fontSize: 15, color: "var(--accent)" }} />{s.settings}
+        <div className="card" style={{ marginBottom: 14, background: "var(--surface-2)" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}>
+            <i className="ti ti-settings" style={{ fontSize: 16, color: "var(--accent)" }} />{s.settings}
           </div>
-          <label style={{ fontSize: 12.5, color: "var(--text-2)", display: "flex", flexDirection: "column", gap: 4, marginBottom: 12, maxWidth: 220 }}>
-            {s.baseCurrency}
-            <select value={baseSel} onChange={(e) => setBaseSel(e.target.value)} style={input}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* Блок: основная валюта и курсы */}
+          <div style={secBox}>
+            <div style={secHead}>
+              <i className="ti ti-coin" style={{ fontSize: 16, color: "var(--accent)" }} />{s.baseCurrency}
+            </div>
+            <select value={baseSel} onChange={(e) => setBaseSel(e.target.value)} style={{ ...input, maxWidth: 220, marginBottom: 10 }}>
               {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
             </select>
-          </label>
-          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 12, lineHeight: 1.5, display: "flex", gap: 6 }}>
-            <i className="ti ti-history" style={{ fontSize: 14, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
-            <span>{s.histNote}</span>
-          </div>
-          {data.currenciesUsed.filter((c) => c !== baseSel).length > 0 && (
-            <>
-              <div style={{ fontSize: 12.5, color: "var(--text-2)", marginBottom: 6 }}>{s.ratesT}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 6 }}>
-                {data.currenciesUsed.filter((c) => c !== baseSel).map((c) => {
-                  const auto = data.autoRates?.[c];
-                  return (
-                  <div key={c} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
-                    <span style={{ minWidth: 72 }}>1 {symOf(c)} =</span>
-                    <input type="number" inputMode="decimal" step="0.0001" value={rateInputs[c] ?? ""} placeholder={auto != null ? String(auto) : ""} onChange={(e) => setRateInputs((r) => ({ ...r, [c]: e.target.value }))} style={{ ...input, width: 120 }} />
-                    <span style={{ color: "var(--text-3)" }}>{symOf(baseSel)}</span>
-                    {auto != null && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{s.rateAuto}</span>}
-                  </div>
-                  );
-                })}
+            <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.5, display: "flex", gap: 6 }}>
+              <i className="ti ti-history" style={{ fontSize: 14, color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+              <span>{s.histNote}</span>
+            </div>
+            {data.currenciesUsed.filter((c) => c !== baseSel).length > 0 && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
+                <div style={{ ...secHead, marginBottom: 8 }}>
+                  <i className="ti ti-arrows-exchange" style={{ fontSize: 16, color: "var(--accent)" }} />{s.ratesT}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+                  {data.currenciesUsed.filter((c) => c !== baseSel).map((c) => {
+                    const auto = data.autoRates?.[c];
+                    return (
+                    <div key={c} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
+                      <span style={{ minWidth: 72 }}>1 {symOf(c)} =</span>
+                      <input type="number" inputMode="decimal" step="0.0001" value={rateInputs[c] ?? ""} placeholder={auto != null ? String(auto) : ""} onChange={(e) => setRateInputs((r) => ({ ...r, [c]: e.target.value }))} style={{ ...input, width: 120 }} />
+                      <span style={{ color: "var(--text-3)" }}>{symOf(baseSel)}</span>
+                      {auto != null && <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{s.rateAuto}</span>}
+                    </div>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.55, background: "var(--surface-2)", borderRadius: 10, padding: "8px 11px" }}>{s.ratesHint}</div>
               </div>
-            </>
-          )}
-          <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 12 }}>{s.ratesHint}</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button disabled={busy} onClick={saveSettings} style={btnP}>{s.save}</button>
-            <button disabled={busy} onClick={() => setSetOpenS(false)} style={btnG}>{s.cancel}</button>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button disabled={busy} onClick={saveSettings} style={btnP}>{s.save}</button>
+              <button disabled={busy} onClick={() => setSetOpenS(false)} style={btnG}>{s.cancel}</button>
+            </div>
           </div>
 
-          {/* Подключение Monobank */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-building-bank" style={{ fontSize: 15, color: "var(--accent)" }} />{s.monoTitle}
+          {/* Блок: подключение Monobank */}
+          <div style={secBox}>
+            <div style={secHead}>
+              <i className="ti ti-building-bank" style={{ fontSize: 16, color: "var(--accent)" }} />{s.monoTitle}
             </div>
             {mono?.connected ? (
               <div>
@@ -954,17 +964,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             {monoMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{monoMsg}</div>}
           </div>
 
-          {/* Экспорт операций в CSV */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-            <a href="/api/finance/export" style={{ ...btnG, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
-              <i className="ti ti-download" style={{ fontSize: 14 }} /> {s.exportCsv}
-            </a>
-          </div>
-
-          {/* Перенос данных из MoneyOK */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-file-import" style={{ fontSize: 15, color: "var(--accent)" }} />{s.importTitle}
+          {/* Блок: перенос из MoneyOK + экспорт в CSV */}
+          <div style={secBox}>
+            <div style={secHead}>
+              <i className="ti ti-file-import" style={{ fontSize: 16, color: "var(--accent)" }} />{s.importTitle}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{s.importHint}</div>
             <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain" style={{ display: "none" }}
@@ -984,12 +987,17 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                 {importMsg.text}
               </div>
             )}
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
+              <a href="/api/finance/export" style={{ ...btnG, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+                <i className="ti ti-download" style={{ fontSize: 14 }} /> {s.exportCsv}
+              </a>
+            </div>
           </div>
 
-          {/* Мои категории (пользовательские статьи расходов/доходов) */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
-            <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-tags" style={{ fontSize: 15, color: "var(--accent)" }} />{(CAT_MGR[locale] || CAT_MGR.ru).title}
+          {/* Блок: мои категории (пользовательские статьи расходов/доходов) */}
+          <div style={secBox}>
+            <div style={secHead}>
+              <i className="ti ti-tags" style={{ fontSize: 16, color: "var(--accent)" }} />{(CAT_MGR[locale] || CAT_MGR.ru).title}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 10, lineHeight: 1.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).hint}</div>
             <div style={{ fontSize: 11.5, color: "var(--text-3)", margin: "2px 0 6px" }}>{(CAT_MGR[locale] || CAT_MGR.ru).stdT}</div>
@@ -1067,7 +1075,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                 </div>
               );
             })()}
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
               <input value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center" }} />
               <input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40} style={{ ...input, width: 190 }} />
               <select value={newCatKind} onChange={(e) => setNewCatKind(e.target.value as any)} style={{ ...input, width: 120 }}>
@@ -1076,6 +1084,8 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               </select>
               <button onClick={addCustomCat} disabled={!newCatLabel.trim()} style={{ ...btnG, opacity: newCatLabel.trim() ? 1 : 0.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
             </div>
+          </div>
+
           </div>
         </div>
       )}
