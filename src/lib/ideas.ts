@@ -467,6 +467,60 @@ export async function createIdea(userId: string, who: { name?: string | null }, 
 
 const esc = (s: string) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// ===== Показ хода разговора =====
+//
+// Подписи и предпросмотр постановки. Жили в вебхуке, но постановку показывает
+// и действие propose_idea (когда роутер отправил реплику туда) — а у него
+// этих строк не было, и постановка ГИБЛА: «Собрал постановку — вот что
+// получилось» приходило без самой постановки (случай Игоря 26.08).
+export const IDEA_T: Record<string, any> = {
+  ru: { skip: "", enough: "📨 Хватит, отправляй", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
+        dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
+        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, working: "Собираю постановку…", save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
+        head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
+  en: { skip: "", enough: "📨 Enough, send it", send: "📨 Send it", more: "Let me add", drop: "Cancel",
+        dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
+        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, working: "Writing it up…", save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
+        head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
+};
+IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
+
+// Постановка человеческим видом. Одна и та же функция показывает и
+// предложение («так?»), и отчёт о том, что ушло, — поэтому хвост с вопросом
+// вызывающий при необходимости убирает.
+export function ideaPreview(d: any, lng: string): string {
+  const T = IDEA_T[lng] || IDEA_T.ru;
+  const out = [`💡 <b>${T.head}</b>`, "", `<b>${esc(d.title || "")}</b>`, esc(d.body || "")];
+  if (d.problem) out.push("", `<b>${T.zach}:</b> ${esc(d.problem)}`);
+  if (d.who) out.push(`<b>${T.komu}:</b> ${esc(d.who)}`);
+  if (d.done_when) out.push(`<b>${T.gotovo}:</b> ${esc(d.done_when)}`);
+  out.push("", T.ok);
+  return out.join("\n");
+}
+
+// Одно сообщение по итогам реплики разговора — ЕДИНОЕ для всех путей (вебхук,
+// фото, действие propose_idea). Если постановка готова: реплика + постановка
+// + кнопка «Отправить» неразрывно, и постановка откладывается для кнопки.
+// Если нет — реплика с кнопками «Хватит, отправляй / Отмена».
+export async function ideaTurnMessage(userId: string, turn: Turn, lng: string, head?: string): Promise<{ text: string; html: true; markup: any }> {
+  const T = IDEA_T[lng] || IDEA_T.ru;
+  const pre = head ? `${esc(head)}\n\n` : "";
+  if (turn.ready) {
+    await stashIdea(userId, turn.ready);
+    const editing = await editingIdea(userId);
+    return {
+      text: `${pre}${esc(turn.reply)}\n\n${ideaPreview(turn.ready, lng)}`,
+      html: true,
+      markup: { inline_keyboard: [[{ text: editing ? T.save : T.send, callback_data: "idea:send" }], [{ text: T.more, callback_data: "idea:more" }, { text: T.drop, callback_data: "idea:drop" }]] },
+    };
+  }
+  return {
+    text: `${pre}${esc(turn.reply)}`,
+    html: true,
+    markup: { inline_keyboard: [[{ text: T.enough, callback_data: "idea:sum" }, { text: T.drop, callback_data: "idea:drop" }]] },
+  };
+}
+
 async function tellOwner(idea: Idea, who: { name?: string | null }): Promise<void> {
   const owner = Number(process.env.TELEGRAM_ALLOWED_CHAT_ID || 0);
   if (!owner) return;

@@ -7,7 +7,7 @@ import { remember } from "@/lib/talkLog";
 import { findQuestion } from "@/lib/entryQuestion";
 import { linkContext } from "@/lib/linkPeek";
 import { rememberClarify, takeClarify, clarifyContext } from "@/lib/clarify";
-import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, stashIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots } from "@/lib/ideas";
+import { getDraft as getIdeaDraft, clearDraft as clearIdeaDraft, converse as converseIdea, summarize as summarizeIdea, createIdea, takeStashed, editingIdea, updateIdea, tellOwnerUpdated, noteIdeaShot, ideaShots, IDEA_T, ideaPreview, ideaTurnMessage } from "@/lib/ideas";
 import { speak } from "@/lib/tts";
 import { transcribe } from "@/lib/transcribe";
 import { archiveVoice } from "@/lib/voiceArchive";
@@ -241,32 +241,8 @@ const JARVIS_ASK: Record<string, string> = {
   es: "Te escucho. Pregúntame lo que quieras sobre tu vida — veo tus entradas, dinero, salud, documentos y lo que acabamos de hablar.",
 };
 
-// Подписи обсуждения идей и предпросмотр постановки.
-const IDEA_T: Record<string, any> = {
-  ru: { skip: "", enough: "📨 Хватит, отправляй", send: "📨 Отправить Игорю", more: "Дополню", drop: "Отмена",
-        dropped: "Убрал черновик. Если передумаешь — просто расскажи заново.", tellMore: "Слушаю — что поправить или добавить?", gone: "Черновик уже не найти, расскажи заново.",
-        sent: (n: number) => `📨 Отправил как идею №${n}. Я напишу тебе, когда по ней будет решение — следить не надо.`, working: "Собираю постановку…", save: "💾 Сохранить правку", saved: (n: number) => `💾 Обновил идею №${n} — Игорь увидит новую версию.`, failed: "Не получилось сохранить, попробуй ещё раз.",
-        head: "Вот как я это понял:", zach: "Зачем", komu: "Кому", gotovo: "Готово, когда", ok: "Так? Если да — отправлю Игорю." },
-  en: { skip: "", enough: "📨 Enough, send it", send: "📨 Send it", more: "Let me add", drop: "Cancel",
-        dropped: "Draft dropped. Tell me again whenever you like.", tellMore: "Go ahead — what would you add?", gone: "That draft is gone, tell me again.",
-        sent: (n: number) => `📨 Sent as idea #${n}. I'll message you when there's a decision — no need to follow up.`, working: "Writing it up…", save: "💾 Save changes", saved: (n: number) => `💾 Updated idea #${n} — the owner sees the new version.`, failed: "Couldn't save it, try again.",
-        head: "Here's how I understood it:", zach: "Why", komu: "For whom", gotovo: "Done when", ok: "Right? If yes, I'll send it." },
-};
-IDEA_T.uk = IDEA_T.ru; IDEA_T.fr = IDEA_T.en; IDEA_T.es = IDEA_T.en;
-
-// Постановка человеческим видом. Одна и та же функция показывает и
-// предложение («так?»), и отчёт о том, что ушло, — поэтому хвост с вопросом
-// вызывающий при необходимости убирает.
-function ideaPreview(d: any, lng: string): string {
-  const T = IDEA_T[lng] || IDEA_T.ru;
-  const e = (x: any) => String(x || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const out = [`💡 <b>${T.head}</b>`, "", `<b>${e(d.title || "")}</b>`, e(d.body || "")];
-  if (d.problem) out.push("", `<b>${T.zach}:</b> ${e(d.problem)}`);
-  if (d.who) out.push(`<b>${T.komu}:</b> ${e(d.who)}`);
-  if (d.done_when) out.push(`<b>${T.gotovo}:</b> ${e(d.done_when)}`);
-  out.push("", T.ok);
-  return out.join("\n");
-}
+// Подписи обсуждения идей и предпросмотр постановки переехали в @/lib/ideas:
+// постановку показывает не только вебхук, но и действие propose_idea.
 
 // Подписи к подтверждению массового изменения.
 const BULK_MSG: Record<string, { ok: (n: number) => string; cancelled: string; expired: string; undo: string }> = {
@@ -2219,18 +2195,10 @@ async function handleUpdate(req: NextRequest) {
         const said = cap || "[прислал скриншот]";
         const turn = await converseIdea(user.id, `${said}\n\n[к сообщению приложен скриншот экрана]`);
         await noteIdeaShot(user.id, ph.file_id);
-        if (turn.ready) {
-          await stashIdea(user.id, turn.ready);
-          // Одним сообщением — как в текстовой ветке: реплика не должна
-          // приходить без постановки.
-          await sendMessage(chatId, `${esc(turn.reply)}\n\n${ideaPreview(turn.ready, lang)}`, {
-            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lang].send, callback_data: "idea:send" }], [{ text: IDEA_T[lang].more, callback_data: "idea:more" }, { text: IDEA_T[lang].drop, callback_data: "idea:drop" }]] },
-          });
-        } else {
-          await sendMessage(chatId, turn.reply, {
-            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lang].enough, callback_data: "idea:sum" }, { text: IDEA_T[lang].drop, callback_data: "idea:drop" }]] },
-          });
-        }
+        // Одним сообщением — как в текстовой ветке: реплика не должна
+        // приходить без постановки.
+        const im = await ideaTurnMessage(user.id, turn, lang);
+        await sendMessage(chatId, im.text, { reply_markup: im.markup });
         return NextResponse.json({ ok: true });
       }
 
@@ -2744,19 +2712,10 @@ async function handleUpdate(req: NextRequest) {
       if (route.kind === "note" && inIdea) {
         const lng = langOf(user, msg);
         const turn = await converseIdea(user.id, text);
-        const editing = await editingIdea(user.id);
-        if (turn.ready) {
-          await stashIdea(user.id, turn.ready);
-          // Реплика и постановка — ОДНИМ сообщением: раздельная отправка уже
-          // подводила («вот что получилось» дошло, сама постановка — нет).
-          await sendMessage(chatId, `${esc(turn.reply)}\n\n${ideaPreview(turn.ready, lng)}`, {
-            reply_markup: { inline_keyboard: [[{ text: editing ? IDEA_T[lng].save : IDEA_T[lng].send, callback_data: "idea:send" }], [{ text: IDEA_T[lng].more, callback_data: "idea:more" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
-          });
-        } else {
-          await sendMessage(chatId, turn.reply, {
-            reply_markup: { inline_keyboard: [[{ text: IDEA_T[lng].enough, callback_data: "idea:sum" }, { text: IDEA_T[lng].drop, callback_data: "idea:drop" }]] },
-          });
-        }
+        // Реплика и постановка — ОДНИМ сообщением: раздельная отправка уже
+        // подводила («вот что получилось» дошло, сама постановка — нет).
+        const im = await ideaTurnMessage(user.id, turn, lng);
+        await sendMessage(chatId, im.text, { reply_markup: im.markup });
         // Наговорил голосом — отвечаем и голосом тоже: текст остаётся, чтобы
         // можно было перечитать, а слушать удобнее на ходу.
         if (isVoice && turn.reply) {

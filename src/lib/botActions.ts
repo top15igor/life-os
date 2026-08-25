@@ -24,7 +24,7 @@ import { amendLastEntry, amendEntryById } from "./amendEntry";
 import { findEntry, findThing, deleteThing } from "./findFix";
 import { listRules as listUserRules, addRule as addUserRule, dropRule as dropUserRule } from "./userRules";
 import { planBulk, rememberPlan } from "./bulkOps";
-import { converse as converseIdea, similarIdea, findIdea, resumeIdea, takeLastEntry, getDraft as getIdeaDraft, listIdeas, STATUS_LABEL } from "./ideas";
+import { converse as converseIdea, similarIdea, findIdea, resumeIdea, takeLastEntry, getDraft as getIdeaDraft, listIdeas, STATUS_LABEL, ideaTurnMessage } from "./ideas";
 import { resetVoiceHint } from "./voiceHints";
 
 // ===== Агентный слой бота: понять ЯВНУЮ команду и выполнить её вместо пользователя. =====
@@ -1658,8 +1658,11 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // говорит «давай продолжим работу над лендингом», и это должно работать
       // так же, как «вернёмся к незаконченной идее».
       if (await getIdeaDraft(userId)) {
+        // Здесь ГИБЛА постановка (случай Игоря 26.08): роутер отправил «да,
+        // верно, собирай» сюда, converse вернул готовую постановку, а наружу
+        // уходил только back.reply — «Собрал постановку», и ничего следом.
         const back = await converseIdea(userId, t);
-        return { text: back.reply };
+        return await ideaTurnMessage(userId, back, lang);
       }
 
       // Похожее уже предлагали — говорим сразу, а не собираем пятую формулировку
@@ -1683,7 +1686,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // Первая реплика разговора. Дальше человек просто отвечает — ветка
       // разговора в вебхуке подхватит, и весь диалог будет с общей памятью.
       const turn = await converseIdea(userId, seed);
-      return { text: `${moved ? I.movedHead : I.head}\n\n${turn.reply}` };
+      return await ideaTurnMessage(userId, turn, lang, moved ? I.movedHead : I.head);
     }
 
     if (name === "just_ack") {
