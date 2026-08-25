@@ -76,6 +76,9 @@ export type FinanceData = {
   rates: Record<string, number>; // курсы остальных валют к основной
   currenciesUsed: string[]; // какие валюты встречаются в операциях
   needsRates: boolean; // есть операции в валюте без курса (итоги неточны)
+  // Курс к основной валюте, который автоматика применяет СЕЙЧАС (НБУ текущего
+  // месяца) — показывается в настройках, чтобы было видно, что берёт система.
+  autoRates: Record<string, number>;
   income: number; // доход за месяц (в основной валюте)
   expense: number; // расход за месяц (в основной валюте)
   balance: number; // доход − расход за месяц
@@ -187,7 +190,8 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   // поэтому операции 2020 и 2023 годов считаются по своим курсам.
   const monthCurs = [...new Set([base, ...txs.map((t) => t.currency)])];
   let usdPer = new Map<string, number>();
-  try { usdPer = await getUsdPerUnit(db, [m], monthCurs); } catch { /* ниже — ручной курс или 1:1 */ }
+  const rateCurs = [...new Set([...monthCurs, ...currenciesUsed, base])];
+  try { usdPer = await getUsdPerUnit(db, [m], rateCurs); } catch { /* ниже — ручной курс или 1:1 */ }
 
   let needsRates = false;
   const toBase = (amount: number, cur: string) => {
@@ -294,6 +298,16 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
     rates,
     currenciesUsed,
     needsRates,
+    autoRates: (() => {
+      const out: Record<string, number> = {};
+      const ub = usdPer.get(`${m}|${base}`);
+      if (ub && ub > 0) for (const c of currenciesUsed) {
+        if (c === base) continue;
+        const uc = usdPer.get(`${m}|${c}`);
+        if (uc && uc > 0) out[c] = Math.round((uc / ub) * 1e6) / 1e6;
+      }
+      return out;
+    })(),
     income,
     expense,
     balance: round2(income - expense),
