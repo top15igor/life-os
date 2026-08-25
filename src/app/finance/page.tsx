@@ -26,7 +26,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const locale = await getLocale();
   const t = getDict(locale);
   const h = hints(locale);
-  const view = (["personal", "business", "transfer", "all"].includes(sp.scope || "") ? sp.scope : "all") as Scope | "all";
+  // По умолчанию — «Личное»: вкладка «Всё» включает переводы между своими
+  // картами, и расходы месяца в ней выглядят страшнее, чем есть (живой случай:
+  // 13 178 € на «Всё» против настоящих 8 551 € личных).
+  const view = (["personal", "business", "transfer", "all"].includes(sp.scope || "") ? sp.scope : "personal") as Scope | "all";
   const data = await getFinanceData(user.id, sp.m, view);
   const lc = (locale === "uk" ? "uk" : locale === "fr" ? "fr" : locale === "en" ? "en" : locale === "es" ? "es" : "ru") as "ru" | "en" | "uk" | "fr" | "es";
 

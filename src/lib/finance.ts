@@ -8,18 +8,29 @@ import { inScope, type Scope } from "./financeScope";
 // обходит), а операций могут быть тысячи — иначе теряются старые месяцы и
 // часть расходов/доходов в сводках.
 async function fetchAllTx(db: SupabaseClient, columns: string, userId: string): Promise<any[]> {
+  // Страницы качаем ВОЛНАМИ по 8 параллельных запросов, а не по одной.
+  // Последовательный проход по 7-8 тысячам строк — это 7-8 круговых задержек
+  // до базы подряд; именно он делал переключение вкладок «долгим».
   const page = 1000;
+  const wave = 8;
   const out: any[] = [];
-  for (let from = 0; from < 200000; from += page) {
-    const { data, error } = await db
-      .from("finance_tx")
-      .select(columns)
-      .eq("user_id", userId)
-      .order("day", { ascending: true })
-      .range(from, from + page - 1);
-    if (error || !data || !data.length) break;
-    out.push(...data);
-    if (data.length < page) break;
+  for (let from = 0; from < 200000; from += page * wave) {
+    const chunks = await Promise.all(
+      Array.from({ length: wave }, (_, i) =>
+        db.from("finance_tx")
+          .select(columns)
+          .eq("user_id", userId)
+          .order("day", { ascending: true })
+          .range(from + i * page, from + (i + 1) * page - 1)
+          .then((r) => (r.error ? [] : r.data || []), () => [])
+      )
+    );
+    let waveFull = true;
+    for (const c of chunks) {
+      out.push(...c);
+      if (c.length < page) { waveFull = false; break; }
+    }
+    if (!waveFull) break;
   }
   return out;
 }
@@ -94,12 +105,9 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
   // Лёгкий обзор всех операций (день+валюта) — для списка месяцев, валют и
   // основной валюты. Грузим только два столбца, чтобы покрыть всю историю без
   // упора в лимит строк (важно: у пользователя могут быть тысячи операций).
-  let overview: Array<{ day: string; currency: string }> = [];
-  try {
-    overview = await fetchAllTx(db, "day, currency", userId);
-  } catch {
-    // таблицы ещё нет — отдаём пустую сводку
-  }
+  // Обзор истории и операции месяца независимы — стартуем оба сразу, ждём вместе.
+  const overviewP: Promise<Array<{ day: string; currency: string }>> =
+    fetchAllTx(db, "day, currency", userId).catch(() => []);
 
   // Операции выбранного месяца — запрашиваем напрямую по диапазону дат
   // [1-е число месяца; 1-е число следующего месяца). Через «< следующий месяц»,
@@ -129,6 +137,7 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
     // нет таблицы — пустой месяц
   }
 
+  const overview = await overviewP;
   const currenciesUsed = [...new Set(overview.map((t) => t.currency))].sort();
 
   // Настройки: основная валюта + курсы. По умолчанию — самая частая валюта операций.
