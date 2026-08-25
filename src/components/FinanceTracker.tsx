@@ -1124,20 +1124,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               );
             })()}
           </div>
-          {selectedCat && (
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 12, fontSize: 12.5 }}>
-              <span style={{ color: "var(--text-2)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).moveAll}</span>
-              <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} style={{ ...input, width: 170, padding: "5px 8px", fontSize: 12.5 }}>
-                <option value=""></option>
-                {pickerCats("expense").filter((o) => o.key !== selectedCat).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
-              </select>
-              <select value={moveScope} onChange={(e) => setMoveScope(e.target.value as any)} style={{ ...input, width: 140, padding: "5px 8px", fontSize: 12.5 }}>
-                <option value="month">{(CAT_MGR[locale] || CAT_MGR.ru).moveMonth}</option>
-                <option value="all">{(CAT_MGR[locale] || CAT_MGR.ru).moveEver}</option>
-              </select>
-              <button disabled={busy || !moveTo} onClick={moveAllTo} style={{ ...btnP, padding: "5px 12px", fontSize: 12, opacity: moveTo ? 1 : 0.5 }}>{s.save}</button>
-            </div>
-          )}
+
           {visDays.map(({ day: d, items }) => (
             <div key={d} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
@@ -1261,7 +1248,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               return (
                 <div key={c.category}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, marginBottom: 4, gap: 8 }}>
-                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setMoveTo(""); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                    <span onClick={() => { setSelectedCat((selectedCat === (c.category || "other")) ? null : (c.category || "other")); setMoveTo(""); }}
                       title={m.label} style={{ display: "inline-flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}>
                       <span>{m.icon}</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: selectedCat === (c.category || "other") ? "underline" : "none" }}>{m.label}</span>
                       <i className="ti ti-chevron-right" style={{ fontSize: 12, color: "var(--text-3)", flexShrink: 0 }} />
@@ -1327,6 +1314,45 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                       <button disabled={busy} onClick={() => setEditBudget(null)} style={{ ...btnG, padding: "6px 12px" }}>{s.cancel}</button>
                     </div>
                   )}
+                  {selectedCat === (c.category || "other") && (() => {
+                    // Раскрытая категория: все операции месяца — прямо здесь,
+                    // где человек кликнул, а не где-то в другом блоке страницы.
+                    const rows = txs
+                      .filter((t) => t.kind === "expense" && (t.category || "other") === selectedCat)
+                      .sort((a, b) => b.day.localeCompare(a.day));
+                    return (
+                      <div style={{ margin: "10px 0 4px", padding: "10px 12px", background: "var(--surface-2)", borderRadius: 12 }}>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: rows.length ? 10 : 0, fontSize: 12.5 }}>
+                          <span style={{ color: "var(--text-2)" }}>{(CAT_MGR[locale] || CAT_MGR.ru).moveAll}</span>
+                          <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} style={{ ...input, width: 160, padding: "5px 8px", fontSize: 12.5 }}>
+                            <option value=""></option>
+                            {pickerCats("expense").filter((o) => o.key !== selectedCat).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
+                          </select>
+                          <select value={moveScope} onChange={(e) => setMoveScope(e.target.value as any)} style={{ ...input, width: 135, padding: "5px 8px", fontSize: 12.5 }}>
+                            <option value="month">{(CAT_MGR[locale] || CAT_MGR.ru).moveMonth}</option>
+                            <option value="all">{(CAT_MGR[locale] || CAT_MGR.ru).moveEver}</option>
+                          </select>
+                          <button disabled={busy || !moveTo} onClick={moveAllTo} style={{ ...btnP, padding: "5px 12px", fontSize: 12, opacity: moveTo ? 1 : 0.5 }}>{s.save}</button>
+                        </div>
+                        {rows.map((t) => (
+                          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid var(--border)", fontSize: 12.5 }}>
+                            <span style={{ color: "var(--text-3)", flexShrink: 0, width: 42 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)}</span>
+                            <span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-2)" }}>
+                              {t.subcategory && <span style={{ color: m.color, marginRight: 5 }}>{t.subcategory}</span>}
+                              {t.note || "—"}
+                            </span>
+                            <b style={{ whiteSpace: "nowrap" }}>−{fmtMoney(t.amount, t.currency, locale)}</b>
+                            <button onClick={() => { startEdit(t); document.getElementById("fin-ops")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
+                              <i className="ti ti-pencil" style={{ fontSize: 14 }} />
+                            </button>
+                            <button onClick={() => del(t.id)} aria-label="delete" title={s.delConfirm} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, flexShrink: 0 }}>
+                              <i className="ti ti-trash" style={{ fontSize: 14 }} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
