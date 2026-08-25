@@ -3,13 +3,33 @@
 //  Док: https://api.monobank.ua/docs/
 // ============================================================
 
-// Числовой код валюты (ISO 4217) → буквенный.
+// Числовой код валюты (ISO 4217) → буквенный. Таблица должна быть ПОЛНОЙ для
+// стран, куда люди реально ездят: живой случай — покупка в Рейкьявике на
+// 23 986 исландских крон записалась как 23 986 ГРИВЕН, потому что кроны (352)
+// в таблице не было, а неизвестный код молча превращался в UAH. Сумма операции
+// в чужой валюте + не та валюта = расходы, завышенные в разы.
 const CUR_NUM: Record<number, string> = {
   980: "UAH", 840: "USD", 978: "EUR", 826: "GBP", 985: "PLN",
   643: "RUB", 398: "KZT", 981: "GEL", 949: "TRY", 784: "AED",
+  352: "ISK", 203: "CZK", 208: "DKK", 578: "NOK", 752: "SEK", 756: "CHF",
+  392: "JPY", 156: "CNY", 410: "KRW", 764: "THB", 704: "VND", 356: "INR",
+  376: "ILS", 946: "RON", 348: "HUF", 975: "BGN", 941: "RSD", 498: "MDL",
+  807: "MKD", 8: "ALL", 977: "BAM", 124: "CAD", 36: "AUD", 554: "NZD",
+  484: "MXN", 986: "BRL", 32: "ARS", 818: "EGP", 504: "MAD", 788: "TND",
+  51: "AMD", 944: "AZN", 860: "UZS", 417: "KGS", 972: "TJS", 702: "SGD",
+  344: "HKD", 901: "TWD", 458: "MYR", 360: "IDR", 608: "PHP", 144: "LKR",
+  682: "SAR", 634: "QAR", 414: "KWD", 48: "BHD", 512: "OMR", 400: "JOD",
+  710: "ZAR", 404: "KES", 834: "TZS", 214: "DOP", 188: "CRC", 604: "PEN",
+  152: "CLP", 170: "COP", 858: "UYU", 191: "HRK",
 };
+// Для СЧЕТОВ (валюта счёта Monobank — всегда из короткого списка) — с запасным UAH.
 export function currencyAlpha(code: number): string {
   return CUR_NUM[code] || "UAH";
+}
+// Для ОПЕРАЦИЙ — без запасного: неизвестный код должен вести к честному
+// фолбэку «сумма по счёту в валюте счёта», а не к чужой сумме в гривнах.
+export function currencyAlphaOrNull(code: number): string | null {
+  return CUR_NUM[code] || null;
 }
 
 // MCC (категория торговой точки) → наш ключ категории. null — не распознано.
@@ -54,12 +74,16 @@ export type MonoMapped = {
 export function mapStatementItem(item: any, accountCurrency?: string): MonoMapped | null {
   if (!item || typeof item.amount !== "number" || !item.id) return null;
   const kind: "income" | "expense" = item.amount < 0 ? "expense" : "income";
-  const opMinor = typeof item.operationAmount === "number" ? item.operationAmount : item.amount;
-  const amount = Math.round((Math.abs(opMinor) / 100) * 100) / 100;
+  // Валюту операции берём ТОЛЬКО если её код нам известен. Неизвестный код —
+  // честный фолбэк: сумма ПО СЧЁТУ в валюте счёта (гривневый эквивалент верен
+  // всегда). Раньше неизвестная валюта превращалась в UAH при сумме операции —
+  // и исландские кроны становились «гривнами» один к одному.
+  const opAlpha = Number.isFinite(Number(item.currencyCode)) ? currencyAlphaOrNull(Number(item.currencyCode)) : null;
+  const useOp = opAlpha !== null && typeof item.operationAmount === "number";
+  const minor = useOp ? item.operationAmount : item.amount;
+  const amount = Math.round((Math.abs(minor) / 100) * 100) / 100;
   if (!(amount > 0)) return null;
-  const currency = Number.isFinite(Number(item.currencyCode))
-    ? currencyAlpha(Number(item.currencyCode))
-    : (accountCurrency || "UAH");
+  const currency = useOp ? (opAlpha as string) : (accountCurrency || "UAH");
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();

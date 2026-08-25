@@ -64,7 +64,9 @@ const INCOME_CATS = [
 const CUR = [
   { code: "USD", sym: "$" }, { code: "EUR", sym: "€" }, { code: "UAH", sym: "₴" }, { code: "RUB", sym: "₽" },
   { code: "GBP", sym: "£" }, { code: "PLN", sym: "zł" }, { code: "KZT", sym: "₸" }, { code: "GEL", sym: "₾" },
-  { code: "TRY", sym: "₺" }, { code: "AED", sym: "AED" },
+  { code: "TRY", sym: "₺" }, { code: "AED", sym: "AED" }, { code: "ISK", sym: "kr" }, { code: "CZK", sym: "Kč" },
+  { code: "NOK", sym: "kr" }, { code: "SEK", sym: "kr" }, { code: "DKK", sym: "kr" }, { code: "CHF", sym: "Fr" },
+  { code: "JPY", sym: "¥" }, { code: "KRW", sym: "₩" }, { code: "THB", sym: "฿" },
 ];
 const symOf = (c: string) => CUR.find((x) => x.code === c)?.sym || c;
 

@@ -41,7 +41,13 @@ function fallbackUsdPerUnit(currency: string, month: string): number | null {
   const uahPerUsd = uahPerUsdFallback(month);
   if (currency === "UAH") return 1 / uahPerUsd;
   if (currency === "EUR") return usdPerEurFallback(month);
-  return null;
+  // Грубые страховочные курсы на случай недоступности НБУ: лучше приблизительно
+  // верная сумма, чем валюта, посчитанная один к одному с долларом.
+  const ROUGH: Record<string, number> = {
+    ISK: 0.0074, CZK: 0.043, DKK: 0.145, NOK: 0.095, SEK: 0.096, CHF: 1.12,
+    JPY: 0.0067, CNY: 0.14, KRW: 0.00073, THB: 0.028, GBP: 1.27, PLN: 0.25,
+  };
+  return ROUGH[currency] ?? null;
 }
 
 // ---- Источник: НБУ ---------------------------------------------------------
