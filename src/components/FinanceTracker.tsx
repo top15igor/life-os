@@ -741,7 +741,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         .fin-fab:active { transform: scale(.95); }
         .fin-top-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; align-items: stretch; }
         .fin-top-grid > .card { margin-bottom: 0; }
-        @media (max-width: 900px) { .fin-top-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .fin-top-grid { grid-template-columns: 1fr; } .fin-top-grid #fin-ops { height: auto !important; min-height: 0 !important; } .fin-top-grid #fin-ops > div[style*="overflow-y"] { max-height: 430px; } }
       `}</style>
 
       {/* Плавающая кнопка быстрого добавления */}
@@ -1222,7 +1222,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           {data.hasAny ? s.empty : s.emptyAll}
         </div>
       ) : (
-        <div className="card" id="fin-ops">
+        <div className="card" id="fin-ops" style={{ display: "flex", flexDirection: "column", height: 0, minHeight: "100%" }}>
           <div style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <i className="ti ti-list" style={{ fontSize: 15, color: "var(--accent)" }} />{s.operations}
             <span style={{ color: "var(--text-3)", fontSize: 12 }}>· {opsCount}</span>
@@ -1230,13 +1230,13 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           {opsWide ? (
             <div style={{ fontSize: 12.5, color: "var(--text-3)", padding: "10px 0" }}>{s.opsMovedNote}</div>
           ) : (
-          <div style={{ maxHeight: 430, overflowY: "auto", overscrollBehavior: "contain", paddingRight: 4, marginRight: -4 }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", paddingRight: 4, marginRight: -4 }}>
           {renderOpsDays()}
           </div>
           )}
           {!opsWide && (
             <button onClick={() => { setOpsWide(true); setTimeout(() => document.getElementById("fin-ops-wide")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120); }}
-              style={{ ...btnG, width: "100%", justifyContent: "center", marginTop: 8, fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              style={{ ...btnG, width: "100%", justifyContent: "center", marginTop: "auto", fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
               <i className="ti ti-arrows-diagonal" style={{ fontSize: 14 }} /> {s.opsShowAll}
             </button>
           )}
