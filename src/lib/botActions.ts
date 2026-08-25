@@ -1631,8 +1631,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       // «не нашёл такой идеи» — он искал в сохранённых, а идея всё это время
       // лежала прямо здесь, в незавершённом разговоре.
       if (await getIdeaDraft(userId)) {
+        // Как и в propose_idea: показ хода разговора единый, иначе готовая
+        // постановка теряется («собрал постановку» без постановки).
         const turn = await converseIdea(userId, q || "давай вернёмся к этой идее");
-        return { text: turn.reply };
+        return await ideaTurnMessage(userId, turn, lang);
       }
 
       const found = await findIdea(userId, q, userId === "00000000-0000-0000-0000-000000000000");
