@@ -85,12 +85,12 @@ const OF_ALL_L: Record<string, string> = {
 };
 
 // Перевод между своими счетами — не расход и не доход: категория ему не нужна.
-const TRANSFER_L: Record<string, { hint: string; addCat: string; out: string; in: string }> = {
-  ru: { hint: "Это перевод между своими счетами или картами — не расход, категория не нужна.", addCat: "➕ Новая категория…", out: "↗️ Ушло со счёта", in: "↘️ Пришло на счёт" },
-  en: { hint: "This is a transfer between your own accounts — not an expense, no category needed.", addCat: "➕ New category…", out: "↗️ Sent from account", in: "↘️ Received to account" },
-  uk: { hint: "Це переказ між своїми рахунками або картками — не витрата, категорія не потрібна.", addCat: "➕ Нова категорія…", out: "↗️ Пішло з рахунку", in: "↘️ Прийшло на рахунок" },
-  fr: { hint: "C'est un virement entre tes propres comptes — pas une dépense, pas de catégorie.", addCat: "➕ Nouvelle catégorie…", out: "↗️ Parti du compte", in: "↘️ Arrivé sur le compte" },
-  es: { hint: "Es una transferencia entre tus propias cuentas — no es un gasto, sin categoría.", addCat: "➕ Nueva categoría…", out: "↗️ Salió de la cuenta", in: "↘️ Llegó a la cuenta" },
+const TRANSFER_L: Record<string, { hint: string; addCat: string; out: string; in: string; fromPh: string; toPh: string }> = {
+  ru: { hint: "Это перевод между своими счетами или картами — не расход, категория не нужна.", addCat: "➕ Новая категория…", out: "↗️ Ушло со счёта", in: "↘️ Пришло на счёт", fromPh: "Откуда (карта или счёт)", toPh: "Куда (карта или счёт)" },
+  en: { hint: "This is a transfer between your own accounts — not an expense, no category needed.", addCat: "➕ New category…", out: "↗️ Sent from account", in: "↘️ Received to account", fromPh: "From (card or account)", toPh: "To (card or account)" },
+  uk: { hint: "Це переказ між своїми рахунками або картками — не витрата, категорія не потрібна.", addCat: "➕ Нова категорія…", out: "↗️ Пішло з рахунку", in: "↘️ Прийшло на рахунок", fromPh: "Звідки (картка або рахунок)", toPh: "Куди (картка або рахунок)" },
+  fr: { hint: "C'est un virement entre tes propres comptes — pas une dépense, pas de catégorie.", addCat: "➕ Nouvelle catégorie…", out: "↗️ Parti du compte", in: "↘️ Arrivé sur le compte", fromPh: "D'où (carte ou compte)", toPh: "Vers où (carte ou compte)" },
+  es: { hint: "Es una transferencia entre tus propias cuentas — no es un gasto, sin categoría.", addCat: "➕ Nueva categoría…", out: "↗️ Salió de la cuenta", in: "↘️ Llegó a la cuenta", fromPh: "Desde (tarjeta o cuenta)", toPh: "Hacia (tarjeta o cuenta)" },
 };
 
 const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string; stdT: string; reset: string }> = {
@@ -229,6 +229,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [eNote, setENote] = useState("");
   const [eDay, setEDay] = useState(todayISO());
   const [eScope, setEScope] = useState<"personal" | "business" | "transfer">("personal");
+  // Перевод: откуда и куда (хранится в заметке как «Откуда → Куда»).
+  const [eFrom, setEFrom] = useState("");
+  const [eTo, setETo] = useState("");
 
   // Пользовательские категории (вариант А): грузим список и держим реестр для catView.
   const [custom, setCustom] = useState<CustomCat[]>([]);
@@ -576,6 +579,10 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setENote(t.note || "");
     setEDay(t.day);
     setEScope((t.scope === "business" || t.scope === "transfer") ? t.scope : "personal");
+    // «Откуда → Куда» из заметки перевода; заметку без стрелки не трогаем.
+    const arrow = String(t.note || "").split("→");
+    if (arrow.length === 2) { setEFrom(arrow[0].trim()); setETo(arrow[1].trim()); }
+    else { setEFrom(""); setETo(""); }
   }
 
   // Человек вписал имя новой категории, но не нажал «Добавить» и сразу жмёт
@@ -604,7 +611,16 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     }
     const r = await fetch("/api/finance", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eScope === "transfer" ? null : cat, subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null), note: eNote.trim() || null, scope: eScope }),
+      body: JSON.stringify({
+        id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency,
+        category: eScope === "transfer" ? null : cat,
+        subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null),
+        // У перевода заметка — это «Откуда → Куда»; если поля пустые, старую не трогаем.
+        note: eScope === "transfer"
+          ? ((eFrom.trim() || eTo.trim()) ? [eFrom.trim(), eTo.trim()].filter(Boolean).join(" → ") : (eNote.trim() || null))
+          : (eNote.trim() || null),
+        scope: eScope,
+      }),
     });
     setBusy(false);
     if (r.ok) { setEditTx(null); router.refresh(); }
@@ -745,6 +761,14 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     return { main: fmtMoney(t.amountBase, base, locale), orig: fmtMoney(t.amount, t.currency, locale) };
   }
 
+  // Подсказки «откуда/куда» для переводов — имена счетов и карт из прошлых
+  // переводов этого месяца (части заметок «X → Y» и заметки целиком).
+  const accSug = [...new Set(
+    txs.filter((t) => t.scope === "transfer")
+      .flatMap((t) => String(t.note || "").split("→").map((x) => x.trim()))
+      .filter((x) => x.length >= 2 && x.length <= 40)
+  )].slice(0, 15);
+
   // Вид операции в списке: перевод — не расход, показываем его «🔁 Перевод»,
   // а не категорией расходов.
   function txView(t: Tx): { icon: string; color: string; label: string } {
@@ -805,12 +829,21 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                         </select>
                         <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
                       </div>
-                      {eScope === "transfer" ? (
+                      {eScope === "transfer" ? (<>
                         <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, background: "var(--surface-2)", borderRadius: 10, padding: "8px 11px", marginBottom: 8, display: "flex", gap: 6 }}>
                           <span style={{ flexShrink: 0 }}>🔁</span>
                           <span>{(TRANSFER_L[locale] || TRANSFER_L.ru).hint}</span>
                         </div>
-                      ) : (<>
+                        {/* Откуда и куда — иначе «ушло/пришло» не отвечает на главный вопрос. */}
+                        <datalist id="fin-acc-sug">
+                          {accSug.map((a) => <option key={a} value={a} />)}
+                        </datalist>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                          <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).fromPh} value={eFrom} onChange={(e) => setEFrom(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
+                          <span style={{ alignSelf: "center", color: "var(--text-3)" }}>→</span>
+                          <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).toPh} value={eTo} onChange={(e) => setETo(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
+                        </div>
+                      </>) : (<>
                       <select value={eCategory} onChange={(e) => { const v = e.target.value; if (v === "__new") { setNcFor("edit"); setNcLabel(""); setNcEmoji(""); } else { setECategory(v); setNcFor(null); } }} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
                         {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
                         {eCategory && !pickerCats(eKind).some((o) => o.key === eCategory) && <option value={eCategory}>{eCategory}</option>}
@@ -828,7 +861,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                       )}
                       <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
                       </>)}
-                      <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+                      {eScope !== "transfer" && (
+                        <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+                      )}
                       <div style={{ display: "flex", gap: 8 }}>
                         <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
                         <button disabled={busy} onClick={() => setEditTx(null)} style={btnG}>{s.cancel}</button>
