@@ -7,7 +7,7 @@
 // список, а не роняем страницу.
 
 import { supabaseAdmin } from "./supabaseAdmin";
-import { signForWeb } from "./fileLink";
+import { signBatchForWeb } from "./fileLink";
 
 export type MapPoint = {
   id: string;
@@ -50,20 +50,21 @@ async function fromMemories(userId: string): Promise<MapPoint[]> {
       .limit(MAX_POINTS);
     if (error) throw error;
     const rows = (data as any[]) || [];
-    return await Promise.all(
-      rows.map(async (r) => ({
-        id: r.id,
-        kind: "memory" as const,
-        lat: Number(r.lat),
-        lng: Number(r.lng),
-        url: r.image_url ? await signForWeb(r.image_url) : null,
-        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
-        title: r.title || r.summary || "",
-        place: r.place_name || null,
-        date: dateOf(r),
-        note: r.note || null,
-      })),
-    );
+    // Подписываем все ссылки одной пачкой: по одной — это сотни запросов к
+    // хранилищу на одну страницу, и часть картинок просто не доезжает.
+    const signed = await signBatchForWeb(rows.flatMap((r) => [r.image_url, r.file_url]));
+    return rows.map((r) => ({
+      id: r.id,
+      kind: "memory" as const,
+      lat: Number(r.lat),
+      lng: Number(r.lng),
+      url: r.image_url ? signed.get(r.image_url) || null : null,
+      video: String(r.mime_type || "").startsWith("video/") && r.file_url ? signed.get(r.file_url) || null : null,
+      title: r.title || r.summary || "",
+      place: r.place_name || null,
+      date: dateOf(r),
+      note: r.note || null,
+    }));
   } catch {
     return [];
   }
@@ -80,20 +81,19 @@ async function fromArchive(userId: string): Promise<MapPoint[]> {
       .limit(MAX_POINTS);
     if (error) throw error;
     const rows = (data as any[]) || [];
-    return await Promise.all(
-      rows.map(async (r) => ({
-        id: r.id,
-        kind: "photo" as const,
-        lat: Number(r.gps_lat),
-        lng: Number(r.gps_lng),
-        url: r.thumb_url ? await signForWeb(r.thumb_url) : null,
-        video: null,
-        title: r.caption || "",
-        place: [r.location_city, r.location_country].filter(Boolean).join(", ") || null,
-        date: dateOf(r),
-        note: r.note || null,
-      })),
-    );
+    const signed = await signBatchForWeb(rows.map((r) => r.thumb_url));
+    return rows.map((r) => ({
+      id: r.id,
+      kind: "photo" as const,
+      lat: Number(r.gps_lat),
+      lng: Number(r.gps_lng),
+      url: r.thumb_url ? signed.get(r.thumb_url) || null : null,
+      video: null,
+      title: r.caption || "",
+      place: [r.location_city, r.location_country].filter(Boolean).join(", ") || null,
+      date: dateOf(r),
+      note: r.note || null,
+    }));
   } catch {
     return [];
   }
@@ -128,15 +128,15 @@ export async function getPhotosWithoutGeo(userId: string, limit = 60): Promise<{
     const rows = ((data as any[]) || []).filter(
       (r) => r.image_url || String(r.mime_type || "").startsWith("video/"),
     );
-    const items = await Promise.all(
-      rows.slice(0, limit).map(async (r) => ({
-        id: r.id,
-        url: r.image_url ? await signForWeb(r.image_url) : null,
-        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
-        title: r.title || r.summary || "",
-        date: dateOf(r),
-      })),
-    );
+    const head = rows.slice(0, limit);
+    const signed = await signBatchForWeb(head.flatMap((r) => [r.image_url, r.file_url]));
+    const items = head.map((r) => ({
+      id: r.id,
+      url: r.image_url ? signed.get(r.image_url) || null : null,
+      video: String(r.mime_type || "").startsWith("video/") && r.file_url ? signed.get(r.file_url) || null : null,
+      title: r.title || r.summary || "",
+      date: dateOf(r),
+    }));
     // Счётчик — по тому же правилу, что и список: обещать «26 фото» и показать
     // из них только снимки было бы обманом.
     return { items, total: rows.length };
@@ -171,17 +171,17 @@ export async function getAllMedia(userId: string, limit = 200): Promise<MediaIte
     const rows = ((data as any[]) || []).filter(
       (r) => r.image_url || String(r.mime_type || "").startsWith("video/"),
     );
-    return await Promise.all(
-      rows.slice(0, limit).map(async (r) => ({
-        id: r.id,
-        url: r.image_url ? await signForWeb(r.image_url) : null,
-        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
-        title: r.title || r.summary || "",
-        date: dateOf(r),
-        lat: r.lat === null || r.lat === undefined ? null : Number(r.lat),
-        lng: r.lng === null || r.lng === undefined ? null : Number(r.lng),
-      })),
-    );
+    const head = rows.slice(0, limit);
+    const signed = await signBatchForWeb(head.flatMap((r) => [r.image_url, r.file_url]));
+    return head.map((r) => ({
+      id: r.id,
+      url: r.image_url ? signed.get(r.image_url) || null : null,
+      video: String(r.mime_type || "").startsWith("video/") && r.file_url ? signed.get(r.file_url) || null : null,
+      title: r.title || r.summary || "",
+      date: dateOf(r),
+      lat: r.lat === null || r.lat === undefined ? null : Number(r.lat),
+      lng: r.lng === null || r.lng === undefined ? null : Number(r.lng),
+    }));
   } catch {
     return [];
   }

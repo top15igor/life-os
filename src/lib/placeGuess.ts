@@ -65,7 +65,9 @@ function variants(raw: string): string[] {
   return out.slice(0, 5);
 }
 
-export async function guessFor(userId: string, memoryId: string): Promise<Guess | null> {
+// force — когда точка уже есть, но человек её переставляет: подсказка нужна
+// именно для того, чтобы поправить промах.
+export async function guessFor(userId: string, memoryId: string, opts?: { force?: boolean }): Promise<Guess | null> {
   try {
     const { data } = await supabaseAdmin()
       .from("memories")
@@ -74,8 +76,9 @@ export async function guessFor(userId: string, memoryId: string): Promise<Guess 
       .eq("user_id", userId)
       .maybeSingle();
     if (!data) return null;
-    // У снимка уже есть точка — предлагать нечего.
-    if ((data as any).lat !== null && (data as any).lat !== undefined) return null;
+    // У снимка уже есть точка — предлагать нечего. Кроме случая, когда её
+    // как раз переставляют.
+    if (!opts?.force && (data as any).lat !== null && (data as any).lat !== undefined) return null;
 
     const raw = placeQueryOf(data);
     if (!raw) return null;

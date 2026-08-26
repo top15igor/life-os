@@ -79,15 +79,61 @@ export async function signListForWeb(urls: string[] | null | undefined): Promise
   return (await Promise.all(urls.map((u) => signForWeb(u)))).filter(Boolean) as string[];
 }
 
-// Подписать список разом: страницы тянут записи одним запросом, и по одной
-// подписывать было бы медленно.
+// Подписать МНОГО ссылок одним махом.
+//
+// Раньше каждая картинка подписывалась отдельным запросом к хранилищу. На
+// странице с тремя сотнями снимков это триста запросов разом: часть из них
+// хранилище отбрасывает, и вместо миниатюры человек видит битую картинку.
+// Хранилище умеет подписывать пачками — этим и пользуемся.
+const SIGN_CHUNK = 100;
+
+export async function signBatchForWeb(urls: (string | null | undefined)[], ttl = TTL_WEB): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const byBucket = new Map<string, Map<string, string>>(); // бакет → путь → исходная ссылка
+
+  for (const u of urls || []) {
+    const url = (u || "").trim();
+    if (!url || out.has(url)) continue;
+    const p = parseStorageUrl(url);
+    if (!p || !PRIVATE_BUCKETS.has(p.bucket)) { out.set(url, url); continue; }
+    let m = byBucket.get(p.bucket);
+    if (!m) { m = new Map(); byBucket.set(p.bucket, m); }
+    m.set(p.path, url);
+  }
+
+  const db = supabaseAdmin();
+  for (const [bucket, paths] of byBucket) {
+    const all = [...paths.keys()];
+    for (let i = 0; i < all.length; i += SIGN_CHUNK) {
+      const chunk = all.slice(i, i + SIGN_CHUNK);
+      try {
+        const { data, error } = await db.storage.from(bucket).createSignedUrls(chunk, ttl);
+        if (error || !data) throw error;
+        for (const row of data as any[]) {
+          const orig = paths.get(String(row?.path || ""));
+          if (orig && row?.signedUrl) out.set(orig, row.signedUrl);
+        }
+      } catch {
+        // Не подписалось — лучше показать исходную ссылку, чем пустое место.
+        for (const path of chunk) {
+          const orig = paths.get(path);
+          if (orig) out.set(orig, orig);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+// Подписать список записей разом.
 export async function signManyForWeb<T extends Record<string, any>>(rows: T[], fields: string[] = ["image_url"]): Promise<T[]> {
-  return Promise.all(
-    (rows || []).map(async (r) => {
-      if (!r) return r;
-      const patch: Record<string, any> = {};
-      for (const f of fields) if (r[f]) patch[f] = await signForWeb(r[f]);
-      return Object.keys(patch).length ? { ...r, ...patch } : r;
-    })
-  );
+  const urls: string[] = [];
+  for (const r of rows || []) for (const f of fields) if (r?.[f]) urls.push(r[f]);
+  const signed = await signBatchForWeb(urls);
+  return (rows || []).map((r) => {
+    if (!r) return r;
+    const patch: Record<string, any> = {};
+    for (const f of fields) if (r[f] && signed.has(r[f])) patch[f] = signed.get(r[f]);
+    return Object.keys(patch).length ? { ...r, ...patch } : r;
+  });
 }

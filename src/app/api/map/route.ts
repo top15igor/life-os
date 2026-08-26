@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   // в координаты, чтобы человек подтвердил одним нажатием, а не искал сам.
   if (action === "guess") {
     if (kind !== "memories") return NextResponse.json({ ok: true, guess: null });
-    const g = await guessFor(user.id, id);
+    const g = await guessFor(user.id, id, { force: body?.force === true });
     return NextResponse.json({ ok: true, guess: g });
   }
 

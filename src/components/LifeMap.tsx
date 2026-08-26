@@ -573,13 +573,13 @@ export default function LifeMap({
   // Снимок без координат: спрашиваем, не узнал ли AI место на нём. Если узнал —
   // подлетаем туда и предлагаем подтвердить. Человеку остаётся одно нажатие
   // вместо поисков по карте.
-  async function askGuess(id: string) {
+  async function askGuess(id: string, force = false) {
     setGuess(null);
     setGuessBusy(true);
     try {
       const r = await fetch("/api/map", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "guess", id, kind: "memory" }),
+        body: JSON.stringify({ action: "guess", id, kind: "memory", force }),
       }).then((x) => x.json());
       const g = r?.guess;
       // Пока ходили на сервер, человек мог передумать и выбрать другой кадр.
@@ -591,8 +591,8 @@ export default function LifeMap({
     setGuessBusy(false);
   }
 
-  function startPlacing(id: string, from: "orphan" | "point" = "orphan") {
-    setPlacing({ id, kind: "memory", from });
+  function startPlacing(id: string, from: "orphan" | "point" = "orphan", kind: "memory" | "photo" = "memory") {
+    setPlacing({ id, kind, from });
     setZoomFirst(false);
     try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
     if (from === "orphan") askGuess(id);
@@ -908,7 +908,7 @@ export default function LifeMap({
                       только в самом конце — удалить. */}
                   <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
                     <button className="lm-act" title={s.zoomIn} onClick={() => zoomToPoint(current)}><i className="ti ti-zoom-in" style={{ fontSize: 15 }} /></button>
-                    <button className="lm-act" title={s.move} onClick={() => { setPlacing({ id: current.id, kind: current.kind, from: "point" }); }}><i className="ti ti-arrows-move" style={{ fontSize: 15 }} /></button>
+                    <button className="lm-act" title={s.move} onClick={() => startPlacing(current.id, "point", current.kind)}><i className="ti ti-arrows-move" style={{ fontSize: 15 }} /></button>
                     <button className="lm-act" title={s.unpin} onClick={() => unpin(current)}><i className="ti ti-map-pin-off" style={{ fontSize: 15 }} /></button>
                     <a className="lm-act" title={s.gmaps} href={`https://www.google.com/maps/search/?api=1&query=${current.lat},${current.lng}`} target="_blank" rel="noreferrer"><i className="ti ti-external-link" style={{ fontSize: 15 }} /></a>
                     <span style={{ flex: 1 }} />
