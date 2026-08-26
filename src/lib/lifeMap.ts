@@ -144,3 +144,45 @@ export async function getPhotosWithoutGeo(userId: string, limit = 60): Promise<{
     return { items: [], total: 0 };
   }
 }
+
+// Вся лента снимков и роликов — и те, что уже стоят точками, и те, что ещё нет.
+// Нужна для полки «Все фото и видео» под картой: нажал на кадр — карта показала
+// его место (а если места нет, предложила поставить точку).
+export type MediaItem = {
+  id: string;
+  url: string | null;
+  video: string | null;
+  title: string;
+  date: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+export async function getAllMedia(userId: string, limit = 200): Promise<MediaItem[]> {
+  try {
+    const { data, error } = await supabaseAdmin()
+      .from("memories")
+      .select("id, title, summary, image_url, file_url, mime_type, mem_date, shot_at, created_at, lat, lng")
+      .eq("user_id", userId)
+      .or(`category.is.null,category.not.in.(${OFF_MAP_CATEGORIES.join(",")})`)
+      .order("created_at", { ascending: false })
+      .limit(limit * 2);
+    if (error) throw error;
+    const rows = ((data as any[]) || []).filter(
+      (r) => r.image_url || String(r.mime_type || "").startsWith("video/"),
+    );
+    return await Promise.all(
+      rows.slice(0, limit).map(async (r) => ({
+        id: r.id,
+        url: r.image_url ? await signForWeb(r.image_url) : null,
+        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
+        title: r.title || r.summary || "",
+        date: dateOf(r),
+        lat: r.lat === null || r.lat === undefined ? null : Number(r.lat),
+        lng: r.lng === null || r.lng === undefined ? null : Number(r.lng),
+      })),
+    );
+  } catch {
+    return [];
+  }
+}

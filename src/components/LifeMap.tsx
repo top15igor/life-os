@@ -29,6 +29,7 @@ export type Point = {
   note: string | null;
 };
 export type Orphan = { id: string; url: string | null; video: string | null; title: string; date: string | null };
+export type MediaItem = { id: string; url: string | null; video: string | null; title: string; date: string | null; lat: number | null; lng: number | null };
 
 const S: Record<string, any> = {
   ru: {
@@ -47,6 +48,7 @@ const S: Record<string, any> = {
     delAsk: "Удалить это фото насовсем? Оно исчезнет и с карты, и из «Памяти».",
     unpinDone: "Снимок вернулся в список без точки",
     dropHere: "Отпусти — поставлю на карту",
+    allTitle: "Все фото и видео", allHint: "Нажми на кадр — покажу его на карте.", showAll: "Показать все", collapse: "Свернуть", noPin: "без точки",
   },
   en: {
     all: "All years", route: "Route", pointsN: (n: number) => `${n} points`, photosN: (n: number) => `${n} photos & videos`,
@@ -64,6 +66,7 @@ const S: Record<string, any> = {
     delAsk: "Delete this photo for good? It disappears from the map and from Memory.",
     unpinDone: "The shot is back in the list without a point",
     dropHere: "Drop it — I'll put it on the map",
+    allTitle: "All photos & videos", allHint: "Tap a shot — I'll show it on the map.", showAll: "Show all", collapse: "Collapse", noPin: "no point",
   },
   uk: {
     all: "Усі роки", route: "Маршрут", pointsN: (n: number) => `${n} точок`, photosN: (n: number) => `${n} фото та відео`,
@@ -81,6 +84,7 @@ const S: Record<string, any> = {
     delAsk: "Видалити це фото назавжди? Воно зникне і з карти, і з «Пам'яті».",
     unpinDone: "Знімок повернувся до списку без точки",
     dropHere: "Відпусти — поставлю на карту",
+    allTitle: "Усі фото та відео", allHint: "Натисни на кадр — покажу його на карті.", showAll: "Показати всі", collapse: "Згорнути", noPin: "без точки",
   },
   fr: {
     all: "Toutes les années", route: "Itinéraire", pointsN: (n: number) => `${n} points`, photosN: (n: number) => `${n} photos et vidéos`,
@@ -98,6 +102,7 @@ const S: Record<string, any> = {
     delAsk: "Supprimer cette photo définitivement ? Elle disparaît de la carte et de la Mémoire.",
     unpinDone: "La photo est revenue dans la liste sans point",
     dropHere: "Lâche — je la mets sur la carte",
+    allTitle: "Toutes les photos et vidéos", allHint: "Touche une photo — je la montre sur la carte.", showAll: "Tout afficher", collapse: "Replier", noPin: "sans point",
   },
   es: {
     all: "Todos los años", route: "Ruta", pointsN: (n: number) => `${n} puntos`, photosN: (n: number) => `${n} fotos y vídeos`,
@@ -115,6 +120,7 @@ const S: Record<string, any> = {
     delAsk: "¿Eliminar esta foto para siempre? Desaparece del mapa y de la Memoria.",
     unpinDone: "La foto volvió a la lista sin punto",
     dropHere: "Suéltala — la pongo en el mapa",
+    allTitle: "Todas las fotos y vídeos", allHint: "Toca una foto — la muestro en el mapa.", showAll: "Mostrar todas", collapse: "Contraer", noPin: "sin punto",
   },
 };
 
@@ -149,6 +155,14 @@ video.lm-shot { cursor: default; object-fit: contain; background: #000; }
 .lm-tool { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .lm-act { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .lm-act.danger:hover { color: #dc2626; border-color: #dc262655; }
+.lm-all { display: flex; flex-wrap: wrap; gap: 6px; }
+.lm-all .lm-cell { width: 58px; height: 58px; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; background: var(--surface-2, #eef2f5); border: 2px solid transparent; }
+.lm-all .lm-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lm-all .lm-cell.on { border-color: var(--accent, #6366f1); }
+.lm-all .lm-cell .mk { position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.lm-all .lm-cell .mk.pin { background: var(--accent, #6366f1); }
+.lm-all .lm-cell .mk.no { background: #f59e0b; }
+.lm-all .lm-cell .vid { position: absolute; left: 2px; top: 2px; color: #fff; font-size: 11px; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
 .lm-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.86); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 18px; cursor: zoom-out; }
 .lm-lightbox img { max-width: 100%; max-height: 100%; border-radius: 10px; }
 html[data-theme="dark"] .leaflet-tile { filter: brightness(.72) contrast(1.06) saturate(.85); }
@@ -206,17 +220,20 @@ function posterOf(file: File): Promise<Blob | null> {
 }
 
 export default function LifeMap({
-  locale, points: initPoints, orphans: initOrphans, orphanTotal,
+  locale, points: initPoints, orphans: initOrphans, orphanTotal, media: initMedia = [],
 }: {
   locale: Locale;
   points: Point[];
   orphans: Orphan[];
   orphanTotal: number;
+  media?: MediaItem[];
 }) {
   const s = S[locale] || S.ru;
   const router = useRouter();
   const [points, setPoints] = useState<Point[]>(initPoints);
   const [orphans, setOrphans] = useState<Orphan[]>(initOrphans);
+  const [media, setMedia] = useState<MediaItem[]>(initMedia);
+  const [allOpen, setAllOpen] = useState(false);
   const [year, setYear] = useState<string>("all");
   const [route, setRoute] = useState(true);
   const [sel, setSel] = useState<Point[] | null>(null);
@@ -245,12 +262,13 @@ export default function LifeMap({
   const chunksRef = useRef<BlobPart[]>([]);
   // Обработчики карты живут дольше рендера, поэтому свежие данные и режимы
   // читаем через ref — иначе клик по карте увидит состояние на момент создания.
-  const stateRef = useRef({ points, year, route, placing, selIds: [] as string[], orphans });
+  const stateRef = useRef({ points, year, route, placing, selIds: [] as string[], orphans, media });
 
   // Страница могла перечитать данные с сервера (после загрузки файла) —
   // подхватываем их, не сбрасывая при этом вид карты.
   useEffect(() => { setPoints(initPoints); }, [initPoints]);
   useEffect(() => { setOrphans(initOrphans); }, [initOrphans]);
+  useEffect(() => { setMedia(initMedia); }, [initMedia]);
 
   const years = useMemo(() => {
     const set = new Set<string>();
@@ -396,10 +414,10 @@ export default function LifeMap({
   }, []);
 
   useEffect(() => {
-    stateRef.current = { points, year, route, placing, selIds: (sel || []).map((p) => p.id), orphans };
+    stateRef.current = { points, year, route, placing, selIds: (sel || []).map((p) => p.id), orphans, media };
     draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, year, route, placing, sel, orphans]);
+  }, [points, year, route, placing, sel, orphans, media]);
 
   // Во весь экран: карта — единственное место приложения, где хочется видеть
   // всю жизнь разом, а не полосу в 600 пикселей.
@@ -544,7 +562,10 @@ export default function LifeMap({
       setPoints((p) => p.map((x) => (x.id === pl.id && x.kind === pl.kind ? { ...x, ...moved } : x)));
       setSel((p) => (p ? p.map((x) => (x.id === pl.id && x.kind === pl.kind ? { ...x, ...moved } : x)) : p));
     } else {
-      const o = stateRef.current.orphans.find((x) => x.id === pl.id);
+      // Кадр мог прийти и из полки «без точки», и из общей ленты — ищем в обеих.
+      const st = stateRef.current;
+      const o = st.orphans.find((x) => x.id === pl.id)
+        || (st.media.find((x) => x.id === pl.id) as any as Orphan | undefined);
       if (!o) return;
       const fresh: Point = { id: o.id, kind: "memory", lat, lng, url: o.url, video: o.video, title: o.title, place, date: o.date, note: null };
       setOrphans((p) => p.filter((x) => x.id !== pl.id));
@@ -552,6 +573,7 @@ export default function LifeMap({
       setSel([fresh]);
       setShot(0);
     }
+    setMedia((m) => m.map((x) => (x.id === pl.id ? { ...x, lat, lng } : x)));
     try { mapRef.current?.panTo([lat, lng], { animate: true, duration: 0.6 }); } catch {}
   }
 
@@ -570,6 +592,7 @@ export default function LifeMap({
   async function unpin(p: Point) {
     dropFromState(p);
     setOrphans((o) => [{ id: p.id, url: p.url, video: p.video, title: p.title, date: p.date }, ...o]);
+    setMedia((m) => m.map((x) => (x.id === p.id ? { ...x, lat: null, lng: null } : x)));
     try {
       await fetch("/api/map", {
         method: "POST", headers: { "content-type": "application/json" },
@@ -581,11 +604,32 @@ export default function LifeMap({
   async function removeForever(p: Point) {
     if (!confirm(s.delAsk)) return;
     dropFromState(p);
+    setMedia((m) => m.filter((x) => x.id !== p.id));
     try {
       await fetch("/api/map", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "delete", id: p.id, kind: p.kind }),
       });
+    } catch {}
+  }
+
+  // Нажатие на кадр в общей ленте: у кадра есть точка — подлетаем к ней и
+  // открываем карточку; точки нет — сразу предлагаем поставить её руками.
+  function showOnMap(item: MediaItem) {
+    try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+    if (item.lat === null || item.lng === null) {
+      setPlacing({ id: item.id, kind: "memory", from: "orphan" });
+      return;
+    }
+    // Кадр может быть спрятан фильтром по годам — тогда снимаем фильтр,
+    // иначе карта улетит в пустое место.
+    if (year !== "all" && !(item.date || "").startsWith(year)) setYear("all");
+    const p = points.find((x) => x.id === item.id);
+    if (p) { setSel([p]); setShot(0); setEditing(false); }
+    setPlacing(null);
+    try {
+      const map = mapRef.current;
+      if (map) map.flyTo([item.lat, item.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
     } catch {}
   }
 
@@ -889,6 +933,39 @@ export default function LifeMap({
                 {o.video && o.url && <span className="play"><i className="ti ti-player-play-filled" /></span>}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Вся лента: и то, что уже на карте, и то, что ждёт точки */}
+      {media.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+            <i className="ti ti-photo" style={{ fontSize: 16, color: "var(--accent, #6366f1)" }} />
+            {s.allTitle}
+            <span style={{ fontWeight: 400, color: "var(--text-3)", fontSize: 12 }}>· {media.length} · {s.allHint}</span>
+            {media.length > 60 && (
+              <button className="lm-chip" style={{ marginLeft: "auto" }} onClick={() => setAllOpen((v) => !v)}>
+                {allOpen ? s.collapse : `${s.showAll} (${media.length})`}
+              </button>
+            )}
+          </div>
+          <div className="lm-all" style={{ marginTop: 10, maxHeight: allOpen ? "none" : 190, overflow: "hidden" }}>
+            {media.map((m) => {
+              const pinned = m.lat !== null && m.lng !== null;
+              return (
+                <div
+                  key={m.id}
+                  className={`lm-cell ${placing?.id === m.id || (current && current.id === m.id) ? "on" : ""}`}
+                  title={`${m.title}${pinned ? "" : " · " + s.noPin}`}
+                  onClick={() => showOnMap(m)}
+                >
+                  {m.url ? <img src={m.url} alt="" /> : <span className="vid"><i className="ti ti-video" style={{ fontSize: 18 }} /></span>}
+                  {m.video && m.url && <span className="vid"><i className="ti ti-player-play-filled" /></span>}
+                  <span className={`mk ${pinned ? "pin" : "no"}`}><i className={`ti ${pinned ? "ti-map-pin" : "ti-question-mark"}`} /></span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

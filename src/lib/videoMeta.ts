@@ -84,16 +84,20 @@ const EDGE = 3 * 1024 * 1024;
 
 export async function readVideoMetaFromUrl(url: string, size?: number): Promise<VideoMeta> {
   const parts: Buffer[] = [];
+  let whole = false; // сервер не понял Range и отдал файл целиком
   const grab = async (range: string) => {
     try {
       const r = await fetch(url, { headers: { Range: range } });
       if (!r.ok && r.status !== 206) return;
+      if (r.status === 200) whole = true;
       const b = Buffer.from(await r.arrayBuffer());
       if (b.length) parts.push(b);
     } catch {}
   };
   await grab(`bytes=0-${EDGE - 1}`);
-  if (!size || size > EDGE) await grab(`bytes=-${EDGE}`);
+  // Второй кусок нужен, только если первый был именно куском: у файла с
+  // «хвостом» метаданные лежат в конце.
+  if (!whole && (!size || size > EDGE)) await grab(`bytes=-${EDGE}`);
   for (const p of parts) {
     const m = readVideoMeta(p);
     if (m.lat !== null || m.shotAt) return m;

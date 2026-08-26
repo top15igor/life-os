@@ -3,7 +3,7 @@ import CaseStrip from "@/components/CaseStrip";
 import TipsRail from "@/components/TipsRail";
 import PageHead from "@/components/PageHead";
 import LifeMap from "@/components/LifeMap";
-import { getMapPoints, getPhotosWithoutGeo } from "@/lib/lifeMap";
+import { getMapPoints, getPhotosWithoutGeo, getAllMedia } from "@/lib/lifeMap";
 import { getLocale } from "@/lib/locale";
 import { getDict } from "@/lib/i18n";
 import { hints } from "@/lib/hints";
@@ -17,7 +17,7 @@ export default async function MapPage() {
   const t = getDict(locale);
   const h = hints(locale);
 
-  const [points, orphans] = await Promise.all([getMapPoints(user.id), getPhotosWithoutGeo(user.id)]);
+  const [points, orphans, media] = await Promise.all([getMapPoints(user.id), getPhotosWithoutGeo(user.id), getAllMedia(user.id)]);
 
   return (
     <div className="shell">
@@ -25,7 +25,7 @@ export default async function MapPage() {
       <main className="main">
         <CaseStrip locale={locale} section="map" />
         <PageHead icon="ti-map-2" color="#0ea5e9" title={t.nav.map} hint={h.map} />
-        <LifeMap locale={locale} points={points} orphans={orphans.items} orphanTotal={orphans.total} />
+        <LifeMap locale={locale} points={points} orphans={orphans.items} orphanTotal={orphans.total} media={media} />
       </main>
       <TipsRail locale={locale} section="map" />
     </div>

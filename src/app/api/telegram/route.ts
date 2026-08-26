@@ -2316,9 +2316,13 @@ async function handleUpdate(req: NextRequest) {
         const { memory, vision, geo } = await createMemoryFromFile(user.id, buf, mime, name, undefined, undefined, { caption: cap, lang });
         let body = `🎬 ${V.saved}\n\n<b>${esc(vision.title)}</b>`;
         const MPV = mapMsg(lang);
-        if (geo) body += `\n\n${geo.place ? MPV.at(esc(geo.place)) : MPV.atRaw}`;
+        // Про карту говорим в обоих случаях: молчаливое «сохранил» оставляет
+        // человека гадать, почему ролика на карте нет.
+        body += geo
+          ? `\n\n${geo.place ? MPV.at(esc(geo.place)) : MPV.atRaw}`
+          : `\n\n${MPV.noGeoVideo}`;
         const rowsV: any[][] = [[{ text: V.open, url: `${origin}/go?next=/memory` }]];
-        if (geo) rowsV.push([mapButton(origin, lang)]);
+        rowsV.push([mapButton(origin, lang)]);
         await sendMessage(chatId, body, memory ? { reply_markup: { inline_keyboard: rowsV } } : undefined);
       } catch (e) {
         logError("bot:video", e, { userId: user.id, chatId });

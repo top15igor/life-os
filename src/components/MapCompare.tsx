@@ -44,6 +44,21 @@ function pinEl(url: string | null) {
   return d;
 }
 
+// ВАЖНО: объявлено снаружи. Компонент, созданный внутри другого, при каждом
+// обновлении состояния считается новым типом — React выбрасывает старую
+// разметку вместе с картами, и остаются пустые серые прямоугольники.
+function Box({ title, tag, pay, sub, inner }: any) {
+  return (
+    <div className="cmp-box">
+      <div ref={inner} className="cmp-map" />
+      <div className="cmp-head">
+        <div className="cmp-title">{title}<span className={`cmp-tag ${pay ? "pay" : ""}`}>{tag}</span></div>
+        <div className="cmp-sub">{sub}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function MapCompare({ points }: { points: CmpPoint[] }) {
   const [note, setNote] = useState("");
   const osmRef = useRef<HTMLDivElement | null>(null);
@@ -55,6 +70,7 @@ export default function MapCompare({ points }: { points: CmpPoint[] }) {
   useEffect(() => {
     let cleanup: Array<() => void> = [];
     (async () => {
+      try {
       const L = (await import("leaflet")).default;
       const gl = (await import("maplibre-gl")).default;
 
@@ -113,21 +129,12 @@ export default function MapCompare({ points }: { points: CmpPoint[] }) {
       if (libRef.current) mkGl(libRef.current, "https://tiles.openfreemap.org/styles/liberty");
       if (darkRef.current) mkGl(darkRef.current, "https://tiles.openfreemap.org/styles/dark");
 
+      } catch (e) { console.error("map compare", e); }
       setNote(points.length ? `На всех картах — твои ${points.length} точек и один и тот же вид: подвинешь одну, поедут остальные.` : "Точек пока нет — карты показывают Рейкьявик.");
     })();
     return () => { cleanup.forEach((f) => f()); cleanup = []; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const Box = ({ title, tag, pay, sub, inner }: any) => (
-    <div className="cmp-box">
-      <div ref={inner} className="cmp-map" />
-      <div className="cmp-head">
-        <div className="cmp-title">{title}<span className={`cmp-tag ${pay ? "pay" : ""}`}>{tag}</span></div>
-        <div className="cmp-sub">{sub}</div>
-      </div>
-    </div>
-  );
 
   return (
     <>
