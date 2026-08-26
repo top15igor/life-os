@@ -81,6 +81,16 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
 };
 
+// ПриватБанк (бизнес/ФОП) через API «Автоклиент». Вебхуков у Привата нет:
+// операции подтягивает почасовая синхронизация и ручной импорт.
+const PRIVAT_L: Record<string, { title: string; hint: string; noPersonal: string; idPh: string; tokenPh: string; namePh: string; connect: string; connected: (n: string | null) => string; disconnect: string; importBtn: string; imported: (n: number) => string; badToken: string; err: string; auto: string }> = {
+  ru: { title: "Банк ПриватБанк (ФОП)", hint: "Подключи бизнес-счета ФОП: зайди в Приват24 для бизнеса → Настройки → «API Автоклиент», создай токен — понадобятся ID клиента и сам токен.", noPersonal: "Личные карты Приват через API не отдаёт — для них можно выгрузить выписку и прислать боту, а автоматика доступна только для счетов ФОП.", idPh: "ID клиента (client id)", tokenPh: "Токен Автоклиента", namePh: "Название (напр. ФОП гривневый) — необязательно", connect: "Подключить", connected: (n) => `✅ Подключено${n ? `: ${n}` : ""}. Новые операции подтягиваются каждый час.`, disconnect: "Отключить", importBtn: "Импорт за 30 дней", imported: (n) => `Импортировано операций: ${n}.`, badToken: "Приват не принял ID или токен. Проверь пару в «API Автоклиент» и попробуй ещё раз.", err: "Не получилось подключить. Попробуй чуть позже.", auto: "Операции ФОП помечаются «Бизнес» автоматически, переводы на свои карты — «Перевод»." },
+  en: { title: "PrivatBank (business)", hint: "Connect FOP business accounts: Privat24 for business → Settings → AutoClient API, create a token — you need the client ID and the token.", noPersonal: "Personal Privat cards have no public API — automation covers business accounts only.", idPh: "Client ID", tokenPh: "AutoClient token", namePh: "Name (e.g. FOP UAH) — optional", connect: "Connect", connected: (n) => `✅ Connected${n ? `: ${n}` : ""}. New operations sync hourly.`, disconnect: "Disconnect", importBtn: "Import 30 days", imported: (n) => `Imported operations: ${n}.`, badToken: "Privat rejected the ID or token. Check the pair in AutoClient API and try again.", err: "Couldn't connect. Try again later.", auto: "FOP operations are marked Business automatically; transfers to own cards — Transfer." },
+  uk: { title: "Банк ПриватБанк (ФОП)", hint: "Підключи бізнес-рахунки ФОП: Приват24 для бізнесу → Налаштування → «API Автоклієнт», створи токен — знадобляться ID клієнта і сам токен.", noPersonal: "Особисті картки Приват через API не віддає — автоматика лише для рахунків ФОП.", idPh: "ID клієнта (client id)", tokenPh: "Токен Автоклієнта", namePh: "Назва (напр. ФОП гривневий) — необовʼязково", connect: "Підключити", connected: (n) => `✅ Підключено${n ? `: ${n}` : ""}. Нові операції підтягуються щогодини.`, disconnect: "Відключити", importBtn: "Імпорт за 30 днів", imported: (n) => `Імпортовано операцій: ${n}.`, badToken: "Приват не прийняв ID або токен. Перевір пару в «API Автоклієнт».", err: "Не вдалося підключити. Спробуй пізніше.", auto: "Операції ФОП позначаються «Бізнес» автоматично, перекази на свої картки — «Переказ»." },
+  fr: { title: "PrivatBank (pro)", hint: "Connecte les comptes pro : Privat24 business → Réglages → API AutoClient, crée un token — il faut l'ID client et le token.", noPersonal: "Les cartes perso Privat n'ont pas d'API publique — l'automatisation couvre les comptes pro.", idPh: "ID client", tokenPh: "Token AutoClient", namePh: "Nom (facultatif)", connect: "Connecter", connected: (n) => `✅ Connecté${n ? ` : ${n}` : ""}. Sync toutes les heures.`, disconnect: "Déconnecter", importBtn: "Importer 30 jours", imported: (n) => `Opérations importées : ${n}.`, badToken: "Privat a rejeté l'ID ou le token.", err: "Connexion impossible. Réessaie plus tard.", auto: "Les opérations pro sont marquées Business automatiquement." },
+  es: { title: "PrivatBank (negocio)", hint: "Conecta las cuentas de negocio: Privat24 business → Ajustes → API AutoClient, crea un token — necesitas el ID de cliente y el token.", noPersonal: "Las tarjetas personales de Privat no tienen API pública — la automatización cubre solo cuentas de negocio.", idPh: "ID de cliente", tokenPh: "Token de AutoClient", namePh: "Nombre (opcional)", connect: "Conectar", connected: (n) => `✅ Conectado${n ? `: ${n}` : ""}. Sincroniza cada hora.`, disconnect: "Desconectar", importBtn: "Importar 30 días", imported: (n) => `Operaciones importadas: ${n}.`, badToken: "Privat rechazó el ID o el token.", err: "No se pudo conectar. Inténtalo más tarde.", auto: "Las operaciones de negocio se marcan Business automáticamente." },
+};
+
 // «Добавить ещё один аккаунт Monobank» — подпись у поля токена, когда уже подключено.
 const MONO_MORE_L: Record<string, string> = {
   ru: "Можно добавить ещё один аккаунт Monobank — например, близкого человека или второй свой (по его токену с api.monobank.ua). Операции всех аккаунтов будут падать в «Деньги» вместе.",
@@ -522,6 +532,47 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
       else setMonoMsg(j?.error === "rate_limited" ? s.monoRate : s.monoErr);
     } catch { setMonoMsg(s.monoErr); }
     setMonoBusy(false);
+  }
+
+  // Подключение ПриватБанка (бизнес/ФОП): null — таблицы нет, фича скрыта.
+  const PV = PRIVAT_L[locale] || PRIVAT_L.ru;
+  const [privat, setPrivat] = useState<{ id: string; name: string | null }[] | null>(null);
+  const [pvId, setPvId] = useState("");
+  const [pvToken, setPvToken] = useState("");
+  const [pvName, setPvName] = useState("");
+  const [pvBusy, setPvBusy] = useState(false);
+  const [pvMsg, setPvMsg] = useState<string | null>(null);
+  async function loadPrivat() {
+    try { const j = await (await fetch("/api/bank/privat")).json(); setPrivat(j?.ok ? (j.connections || []) : null); }
+    catch { setPrivat(null); }
+  }
+  useEffect(() => { loadPrivat(); /* eslint-disable-next-line */ }, []);
+  async function connectPrivat() {
+    if (!pvId.trim() || pvToken.trim().length < 10) { setPvMsg(PV.badToken); return; }
+    setPvBusy(true); setPvMsg(null);
+    try {
+      const r = await fetch("/api/bank/privat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ clientId: pvId.trim(), token: pvToken.trim(), name: pvName.trim() || null }) });
+      const j = await r.json();
+      if (r.ok && j?.ok) { setPvId(""); setPvToken(""); setPvName(""); await loadPrivat(); loadAccounts(); }
+      else setPvMsg(j?.error === "invalid_token" ? PV.badToken : PV.err);
+    } catch { setPvMsg(PV.err); }
+    setPvBusy(false);
+  }
+  async function disconnectPrivat(id: string) {
+    if (!window.confirm(s.monoDisconnectConfirm)) return;
+    setPvBusy(true);
+    await fetch(`/api/bank/privat?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
+    setPvBusy(false); setPvMsg(null);
+    await loadPrivat();
+  }
+  async function importPrivat() {
+    setPvBusy(true); setPvMsg(null);
+    try {
+      const j = await (await fetch("/api/bank/privat/import", { method: "POST" })).json();
+      if (j?.ok) { setPvMsg(PV.imported(j.inserted || 0)); loadAccounts(); router.refresh(); }
+      else setPvMsg(PV.err);
+    } catch { setPvMsg(PV.err); }
+    setPvBusy(false);
   }
 
   // Цели по накоплениям.
@@ -1280,6 +1331,38 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
             </div>
             {monoMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{monoMsg}</div>}
           </div>
+
+          {/* Блок: подключение ПриватБанка (бизнес/ФОП, API Автоклиент) */}
+          {privat !== null && (
+            <div style={secBox}>
+              <div style={secHead}>
+                <i className="ti ti-building-bank" style={{ fontSize: 16, color: "var(--accent)" }} />{PV.title}
+              </div>
+              {privat.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  {privat.map((c) => (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#065f46", background: "#10b9811a", border: "1px solid #6ee7b7", borderRadius: 9, padding: "8px 11px", marginBottom: 6 }}>
+                      <span style={{ flex: 1, minWidth: 0 }}>{PV.connected(c.name)}</span>
+                      <button disabled={pvBusy} onClick={() => disconnectPrivat(c.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "#ef4444", fontSize: 12, flexShrink: 0, padding: 0 }}>{PV.disconnect}</button>
+                    </div>
+                  ))}
+                  <button disabled={pvBusy} onClick={importPrivat} style={btnG}>
+                    <i className="ti ti-history" style={{ fontSize: 14 }} /> {PV.importBtn}
+                  </button>
+                </div>
+              )}
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{PV.hint} {PV.auto}<br />{PV.noPersonal}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                <input type="text" placeholder={PV.idPh} value={pvId} onChange={(e) => setPvId(e.target.value)} style={{ ...input, flex: "1 1 160px", minWidth: 0 }} />
+                <input type="password" placeholder={PV.tokenPh} value={pvToken} onChange={(e) => setPvToken(e.target.value)} style={{ ...input, flex: "2 1 220px", minWidth: 0 }} />
+              </div>
+              <input type="text" placeholder={PV.namePh} value={pvName} onChange={(e) => setPvName(e.target.value)} maxLength={60} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+              <button disabled={pvBusy} onClick={connectPrivat} style={{ ...btnP, opacity: pvBusy ? 0.7 : 1 }}>
+                <i className="ti ti-plug" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {PV.connect}
+              </button>
+              {pvMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{pvMsg}</div>}
+            </div>
+          )}
 
           {/* Блок: перенос из MoneyOK + экспорт в CSV */}
           <div style={secBox}>

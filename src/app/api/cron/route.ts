@@ -23,6 +23,7 @@ import { docExpiryMessage, dueExpiryReminders } from "@/lib/docExpiryNudge";
 import { logPush } from "@/lib/pushLog";
 import { mainKeyboard } from "@/lib/botKeyboard";
 import { autoReleaseInactive } from "@/lib/heirs";
+import { syncPrivatAll } from "@/lib/privatbank";
 import { birthdayGreeting, isBirthdayToday, autoFillBirthdayFromTelegram } from "@/lib/birthday";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -380,6 +381,10 @@ export async function GET(req: NextRequest) {
     console.error("googlehealth cron", e);
   }
 
+  // ПриватБанк (ФОП): вебхуков нет — подтягиваем свежие операции (последние 4 дня).
+  let privatSynced = 0;
+  try { privatSynced = await syncPrivatAll(4); } catch (e) { console.error("privat cron", e); }
+
   // push_enabled может ещё не существовать (миграция не запущена) — мягкий фолбэк.
   let users: any[] | null = null;
   {
@@ -666,5 +671,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, ...stats, fitbitSynced, sunday: isSunday });
+  return NextResponse.json({ ok: true, ...stats, fitbitSynced, privatSynced, sunday: isSunday });
 }

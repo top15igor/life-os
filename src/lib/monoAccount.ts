@@ -8,12 +8,13 @@ import { supabaseAdmin } from "./supabaseAdmin";
 // из bank_monobank.account_id, затем поиск по имени, и только потом создание.
 // Любая ошибка (нет таблицы счетов, нет колонки-связки) — просто null:
 // операции лягут без привязки, как раньше.
-export async function ensureMonoAccount(
+export async function ensureBankAccount(
   userId: string,
-  conn: { id?: string | null; client_name?: string | null; account_id?: string | null }
+  conn: { id?: string | null; name?: string | null; account_id?: string | null },
+  opts: { table: string; emoji: string; fallbackName: string }
 ): Promise<string | null> {
   const db = supabaseAdmin();
-  const name = String(conn.client_name || "Monobank").slice(0, 60);
+  const name = String(conn.name || opts.fallbackName).slice(0, 60);
   try {
     if (conn.account_id) {
       const { data } = await db.from("finance_accounts").select("id").eq("id", conn.account_id).eq("user_id", userId).maybeSingle();
@@ -24,18 +25,25 @@ export async function ensureMonoAccount(
     if (!accId) {
       const { data: created, error } = await db
         .from("finance_accounts")
-        .insert({ user_id: userId, name, emoji: "🏦", currency: "UAH", opening_balance: 0 })
+        .insert({ user_id: userId, name, emoji: opts.emoji, currency: "UAH", opening_balance: 0 })
         .select("id")
         .single();
       if (error || !created) return null;
       accId = (created as any).id;
     }
     if (conn.id && accId) {
-      // Колонки account_id в bank_monobank может ещё не быть — не критично.
-      await db.from("bank_monobank").update({ account_id: accId }).eq("id", conn.id).then(() => undefined, () => undefined);
+      // Колонки account_id в таблице банка может ещё не быть — не критично.
+      await db.from(opts.table).update({ account_id: accId }).eq("id", conn.id).then(() => undefined, () => undefined);
     }
     return accId;
   } catch {
     return null;
   }
+}
+
+export async function ensureMonoAccount(
+  userId: string,
+  conn: { id?: string | null; client_name?: string | null; account_id?: string | null }
+): Promise<string | null> {
+  return ensureBankAccount(userId, { id: conn.id, name: conn.client_name, account_id: conn.account_id }, { table: "bank_monobank", emoji: "🏦", fallbackName: "Monobank" });
 }
