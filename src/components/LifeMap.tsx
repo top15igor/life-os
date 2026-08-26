@@ -159,6 +159,20 @@ html[data-theme="dark"] .lm-map { background: #1a2026; }
 type Cluster = { lat: number; lng: number; items: Point[] };
 type Placing = { id: string; kind: "memory" | "photo"; from: "orphan" | "point" };
 
+// Чувствительность приближения. Вынесено наверх намеренно: это единственные
+// числа, которые захочется подкрутить «на ощупь», и искать их в глубине кода
+// не нужно. Смысл — сколько ПИКСЕЛЕЙ прокрутки даёт один уровень масштаба:
+// меньше число — быстрее приближение.
+//
+// Трекпад макбука шлёт много мелких движений (единицы пикселей за событие),
+// колесо мыши — редкие крупные щелчки (обычно ровно 100). Один делитель на
+// двоих не работает: подходящий трекпаду превращает щелчок колеса в прыжок.
+const ZOOM_PX_TRACKPAD = 60;
+const ZOOM_PX_WHEEL = 110;
+const ZOOM_PX_PINCH = 12;       // щипок двумя пальцами (приходит с ctrl)
+const ZOOM_BOOST_MAX = 1.5;     // резкое движение приближает сильнее плавного
+const ZOOM_MAX_PER_EVENT = 1.1; // страховка от рывка на одном событии
+
 const VIDEO_RE = /\.(mp4|mov|m4v|webm)$/i;
 const isVideoFile = (f: File) => (f.type || "").startsWith("video/") || VIDEO_RE.test(f.name || "");
 
@@ -315,21 +329,28 @@ export default function LifeMap({
       };
       const step = () => {
         raf = 0;
-        if (ease(0.4)) raf = requestAnimationFrame(step);
+        if (ease(0.55)) raf = requestAnimationFrame(step);
       };
       const onWheel = (e: WheelEvent) => {
         e.preventDefault();
         // Разные устройства меряют прокрутку по-разному: пиксели, строки, страницы.
         const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
-        // Щипок по трекпаду приходит тем же событием, но с ctrl и мелкими
-        // числами — ему нужен более крупный шаг, иначе жест «не берёт».
-        const delta = -px / (e.ctrlKey ? 45 : 140);
+        // Щипок отличаем по ctrl, а трекпад от колеса — по размеру движения:
+        // щелчок колеса приходит крупным куском (сотня пикселей и больше),
+        // трекпад сыплет мелочью.
+        const per = e.ctrlKey ? ZOOM_PX_PINCH : Math.abs(px) >= 100 ? ZOOM_PX_WHEEL : ZOOM_PX_TRACKPAD;
+        // Ускорение, как в самой макоси: медленное движение двумя пальцами
+        // приближает аккуратно, резкое — сразу далеко. Без этого приходится
+        // выбирать между «не поймать нужный масштаб» и «крутить полминуты».
+        const boost = e.ctrlKey ? 1 : Math.min(ZOOM_BOOST_MAX, 1 + Math.abs(px) / 60);
+        const raw = (-px / per) * boost;
+        const delta = Math.max(-ZOOM_MAX_PER_EVENT, Math.min(ZOOM_MAX_PER_EVENT, raw));
         const base = target === null ? map.getZoom() : target;
         target = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), base + delta));
         anchor = map.mouseEventToContainerPoint(e);
         // Первый шаг делаем прямо здесь, в самом событии: карта отзывается в
         // тот же миг, а не через кадр. Остальное догоняет плавно.
-        ease(0.5);
+        ease(0.6);
         if (!raf) raf = requestAnimationFrame(step);
       };
       elRef.current.addEventListener("wheel", onWheel, { passive: false });
