@@ -37,6 +37,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Записи про питание и еду.",
     family: "Моменты и события с семьёй.",
     places: "Хронология твоих путешествий: поездки с фото и записями тех дней — и мечты, куда хочешь.",
+    map: "Твоя жизнь на карте: точки из фотографий, соединённые по времени. Нажми на точку — увидишь снимок и свой комментарий к нему.",
     profile: "Твой личный кабинет: личная ссылка, язык, приватность, выход и удаление аккаунта.",
   },
   en: {
@@ -75,6 +76,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Entries about food and nutrition.",
     family: "Moments and events with your family.",
     places: "Your travel timeline: trips with photos and entries from those days — plus dream destinations.",
+    map: "Your life on a map: points from your photos, connected in time. Tap a point to see the shot and your own comment on it.",
     profile: "Your account: personal link, language, privacy, log out and delete account.",
   },
   uk: {
@@ -113,6 +115,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Записи про харчування та їжу.",
     family: "Моменти й події з сім'єю.",
     places: "Хронологія твоїх подорожей: поїздки з фото і записами тих днів — і мрії, куди хочеш.",
+    map: "Твоє життя на карті: точки з фотографій, з'єднані за часом. Натисни на точку — побачиш знімок і свій коментар.",
     profile: "Твій особистий кабінет: посилання, мова, приватність, вихід і видалення акаунта.",
   },
   fr: {
@@ -151,6 +154,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Entrées sur l'alimentation.",
     family: "Moments et événements en famille.",
     places: "La chronologie de tes voyages : séjours avec photos et entrées de ces jours — et tes destinations de rêve.",
+    map: "Ta vie sur une carte : des points issus de tes photos, reliés dans le temps. Touche un point pour voir la photo et ton commentaire.",
     profile: "Ton compte : lien personnel, langue, confidentialité, déconnexion et suppression.",
   },
   es: {
@@ -189,6 +193,7 @@ const H: Record<Locale, Record<string, string>> = {
     food: "Entradas sobre alimentación y comida.",
     family: "Momentos y eventos con la familia.",
     places: "Lugares donde has estado, y adónde sueñas con ir.",
+    map: "Tu vida en un mapa: puntos de tus fotos, unidos en el tiempo. Toca un punto para ver la foto y tu comentario.",
     profile: "Tu cuenta: enlace personal, idioma, privacidad, cerrar sesión y eliminar la cuenta.",
   },
 };

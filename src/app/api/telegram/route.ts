@@ -18,6 +18,7 @@ import { routeMessage, runAction, recentBotContext, renderListMessage, lastReply
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
+import { mapMsg, mapButton, shouldHintFile, markFileHinted, handleLocation } from "@/lib/mapBot";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
@@ -616,11 +617,11 @@ function buttonAction(text?: string): "acquaint" | "diary" | "tasks" | "guide" |
 }
 
 const HELP: Record<string, (o: string) => string> = {
-  ru: (o) => `Что я умею:\n• 🎤 Зажми микрофон справа от поля ввода и наговори — я расшифрую и сохраню.\n• ✍️ Или просто напиши, что произошло.\n• 🧠 Задай вопрос — отвечу по твоему дневнику.\n• 🌐 Сменить язык бота — /lang.\n• 🛠 Что-то сломалось — /problem, разберусь.\n\nВсе разделы и команды — в Инструкции:\n${o}/guide`,
-  en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n• 🌐 Change the bot language — /lang.\n• 🛠 Something broke — /problem, I'll look into it.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
-  uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n• 🌐 Змінити мову бота — /lang.\n• 🛠 Щось зламалося — /problem, розберуся.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
-  fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n• 🌐 Changer la langue du bot — /lang.\n• 🛠 Quelque chose est cassé — /problem, je regarde.\n\nTout est dans le Guide :\n${o}/guide`,
-  es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n• 🌐 Cambiar el idioma del bot — /lang.\n• 🛠 ¿Algo se rompió? — /problem, lo reviso.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
+  ru: (o) => `Что я умею:\n• 🎤 Зажми микрофон справа от поля ввода и наговори — я расшифрую и сохраню.\n• ✍️ Или просто напиши, что произошло.\n• 🧠 Задай вопрос — отвечу по твоему дневнику.\n• 🗺 Пришли фото файлом или геометку — точка встанет на карту жизни (/map).\n• 🌐 Сменить язык бота — /lang.\n• 🛠 Что-то сломалось — /problem, разберусь.\n\nВсе разделы и команды — в Инструкции:\n${o}/guide`,
+  en: (o) => `What I can do:\n• 🎤 Hold the mic next to the input and speak — I'll transcribe and save it.\n• ✍️ Or just type what happened.\n• 🧠 Ask a question — I'll answer from your diary.\n• 🗺 Send a photo as a file or a location pin — it becomes a point on your life map (/map).\n• 🌐 Change the bot language — /lang.\n• 🛠 Something broke — /problem, I'll look into it.\n\nAll sections and commands are in the Guide:\n${o}/guide`,
+  uk: (o) => `Що я вмію:\n• 🎤 Затисни мікрофон біля поля вводу і наговори — я розшифрую та збережу.\n• ✍️ Або просто напиши, що сталося.\n• 🧠 Постав питання — відповім за твоїм щоденником.\n• 🗺 Надішли фото файлом або геомітку — точка стане на карту життя (/map).\n• 🌐 Змінити мову бота — /lang.\n• 🛠 Щось зламалося — /problem, розберуся.\n\nУсі розділи та команди — в Інструкції:\n${o}/guide`,
+  fr: (o) => `Ce que je sais faire :\n• 🎤 Maintiens le micro à côté du champ et parle — je transcris et j'enregistre.\n• ✍️ Ou écris simplement ce qui s'est passé.\n• 🧠 Pose une question — je réponds depuis ton journal.\n• 🗺 Envoie une photo en fichier ou une position — elle devient un point sur ta carte de vie (/map).\n• 🌐 Changer la langue du bot — /lang.\n• 🛠 Quelque chose est cassé — /problem, je regarde.\n\nTout est dans le Guide :\n${o}/guide`,
+  es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n• 🗺 Manda una foto como archivo o una ubicación — será un punto en tu mapa de vida (/map).\n• 🌐 Cambiar el idioma del bot — /lang.\n• 🛠 ¿Algo se rompió? — /problem, lo reviso.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
 };
 
 const LINK_WARN: Record<string, string> = {
@@ -1765,6 +1766,14 @@ async function handleUpdate(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // 🗺 Карта жизни — где ты был, по своим же фотографиям.
+  if (msg.text === "/map") {
+    const lang = langOf(user, msg);
+    const S = mapMsg(lang);
+    await sendMessage(chatId, S.mapIntro, { reply_markup: { inline_keyboard: [[mapButton(origin, lang)]] } });
+    return NextResponse.json({ ok: true });
+  }
+
   if (msg.text === "/link") {
     const lang = langOf(user, msg);
     // Каждый /link выдаёт СВЕЖИЙ одноразовый токен со сроком жизни 1 час (link_ttl.sql):
@@ -2168,6 +2177,26 @@ async function handleUpdate(req: NextRequest) {
   }
 
   try {
+    // 📍 Геометка или место из Telegram → точка на карте жизни. Чаще всего она
+    //    приходит следом за фотографией: «вот это место» — тогда точка достаётся
+    //    самому снимку, а не живёт отдельной строкой.
+    if (msg.location || msg.venue) {
+      const lang = langOf(user, msg);
+      const loc = (msg.venue && msg.venue.location) || msg.location;
+      const lat = Number(loc?.latitude);
+      const lng = Number(loc?.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        try {
+          const res = await handleLocation(user.id, lat, lng, lang, msg.venue?.title || null);
+          await sendMessage(chatId, res.text, { reply_markup: { inline_keyboard: [[mapButton(origin, lang)]] } });
+        } catch (e) {
+          logError("bot:location", e, { userId: user.id, chatId });
+          await sendMessage(chatId, mapMsg(lang).failed);
+        }
+        return NextResponse.json({ ok: true });
+      }
+    }
+
     // 📸 Фото/документ → «Визуальная память» (AI понимает смысл и извлекает данные)
     if (msg.photo && Array.isArray(msg.photo) && msg.photo.length) {
       const lang = langOf(user, msg);
@@ -2228,11 +2257,23 @@ async function handleUpdate(req: NextRequest) {
         const ph = msg.photo[msg.photo.length - 1];
         const fileUrl = await getFileUrl(ph.file_id);
         const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
-        const { memory, vision } = await createMemoryFromImage(user.id, buf, "image/jpeg");
+        const cap = String(msg.caption || "").trim();
+        const { memory, vision, geo } = await createMemoryFromImage(user.id, buf, "image/jpeg", undefined, { caption: cap, lang });
         let body = `📸 ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
         if (vision.summary) body += `\n${esc(vision.summary)}`;
         if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 6).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
-        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
+        // Карта: либо точка встала, либо честно объясняем, почему нет. Сжатое фото
+        // приходит без координат — их вырезает Telegram, и это стоит сказать один
+        // раз, а не при каждом снимке.
+        const MP = mapMsg(lang);
+        if (geo) body += `\n\n${geo.place ? MP.at(esc(geo.place)) : MP.atRaw}`;
+        else if (memory && (await shouldHintFile(user.id))) {
+          body += `\n\n${MP.fileHint}`;
+          await markFileHinted(user.id);
+        }
+        const rows: any[][] = [[{ text: L.open, url: `${origin}/go?next=/memory` }]];
+        if (geo) rows.push([mapButton(origin, lang)]);
+        const extra = memory ? { reply_markup: { inline_keyboard: rows } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
         logError("bot:photo", e, { userId: user.id, chatId });
@@ -2307,11 +2348,19 @@ async function handleUpdate(req: NextRequest) {
       try {
         const fileUrl = await getFileUrl(doc.file_id);
         const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
-        const { memory, vision } = await createMemoryFromFile(user.id, buf, mime, doc.file_name);
+        const { memory, vision, geo } = await createMemoryFromFile(user.id, buf, mime, doc.file_name, undefined, undefined, {
+          caption: String(msg.caption || "").trim(),
+          lang,
+        });
         let body = `${mime === "application/pdf" ? "📄" : "📸"} ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
         if (vision.summary) body += `\n${esc(vision.summary)}`;
         if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 8).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
-        const extra = memory ? { reply_markup: { inline_keyboard: [[{ text: L.open, url: `${origin}/go?next=/memory` }]] } } : undefined;
+        // Снимок файлом — единственная отправка, где координаты доживают до нас.
+        const MPD = mapMsg(lang);
+        if (geo) body += `\n\n${geo.place ? MPD.at(esc(geo.place)) : MPD.atRaw}`;
+        const rowsD: any[][] = [[{ text: L.open, url: `${origin}/go?next=/memory` }]];
+        if (geo) rowsD.push([mapButton(origin, lang)]);
+        const extra = memory ? { reply_markup: { inline_keyboard: rowsD } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
         logError("bot:document", e, { userId: user.id, chatId });

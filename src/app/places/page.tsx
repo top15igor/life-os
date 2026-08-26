@@ -15,11 +15,11 @@ import TravelDiary from "@/components/TravelDiary";
 export const dynamic = "force-dynamic";
 
 const STR: Record<string, any> = {
-  ru: { mentions: "записей", last: "последняя", been: "Все места (справочник)", beenSub: "Переименовать, объединить дубли или скрыть место", wish: "Куда хочу", wishLink: "Все мечты о путешествиях →" },
-  en: { mentions: "entries", last: "last", been: "All places (reference)", beenSub: "Rename, merge duplicates or hide a place", wish: "Where I want to go", wishLink: "All travel dreams →" },
-  uk: { mentions: "записів", last: "остання", been: "Усі місця (довідник)", beenSub: "Перейменувати, об'єднати дублі чи приховати місце", wish: "Куди хочу", wishLink: "Усі мрії про подорожі →" },
-  fr: { mentions: "entrées", last: "dernière", been: "Tous les lieux (référence)", beenSub: "Renommer, fusionner ou masquer un lieu", wish: "Où je veux aller", wishLink: "Tous les rêves de voyage →" },
-  es: { mentions: "entradas", last: "última", been: "Todos los lugares (referencia)", beenSub: "Renombrar, combinar duplicados u ocultar un lugar", wish: "A dónde quiero ir", wishLink: "Todos los sueños de viaje →" },
+  ru: { map: "Карта жизни — точки из твоих фотографий", mentions: "записей", last: "последняя", been: "Все места (справочник)", beenSub: "Переименовать, объединить дубли или скрыть место", wish: "Куда хочу", wishLink: "Все мечты о путешествиях →" },
+  en: { map: "Life map — points from your photos", mentions: "entries", last: "last", been: "All places (reference)", beenSub: "Rename, merge duplicates or hide a place", wish: "Where I want to go", wishLink: "All travel dreams →" },
+  uk: { map: "Карта життя — точки з твоїх фотографій", mentions: "записів", last: "остання", been: "Усі місця (довідник)", beenSub: "Перейменувати, об'єднати дублі чи приховати місце", wish: "Куди хочу", wishLink: "Усі мрії про подорожі →" },
+  fr: { map: "Carte de vie — des points issus de tes photos", mentions: "entrées", last: "dernière", been: "Tous les lieux (référence)", beenSub: "Renommer, fusionner ou masquer un lieu", wish: "Où je veux aller", wishLink: "Tous les rêves de voyage →" },
+  es: { map: "Mapa de vida — puntos de tus fotos", mentions: "entradas", last: "última", been: "Todos los lugares (referencia)", beenSub: "Renombrar, combinar duplicados u ocultar un lugar", wish: "A dónde quiero ir", wishLink: "Todos los sueños de viaje →" },
 };
 
 function SectionTitle({ icon, color, children }: any) {
@@ -85,6 +85,15 @@ export default async function PlacesPage() {
       <main className="main">
         <CaseStrip locale={locale} section="places" />
         <PageHead icon="ti-plane-departure" color="#06b6d4" title={t.nav.places} hint={h.places} />
+
+        {/* Карта жизни — соседний взгляд на те же места: не список, а точки */}
+        <Link href="/map" className="card" style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 14 }}>
+          <span style={{ width: 36, height: 36, borderRadius: 9, background: "#E0F2FE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <i className="ti ti-map-2" style={{ fontSize: 19, color: "#0284c7" }} />
+          </span>
+          <div style={{ fontSize: 13.5, color: "var(--text)" }}>{s.map}</div>
+          <i className="ti ti-chevron-right" style={{ fontSize: 16, color: "var(--text-3)", marginLeft: "auto" }} />
+        </Link>
 
         {/* Хронология путешествий */}
         <TravelDiary locale={locale} trips={trips} suggestions={suggestions} memories={memories} />

@@ -62,6 +62,8 @@ export async function GET(req: NextRequest) {
     reminders_recurrence: await columnExists("reminders", "recurrence"),
     reminders_all_day: await columnExists("reminders", "all_day"),
     reminders_remind_min: await columnExists("reminders", "remind_min"),
+    // Migration 2026-08-26: карта жизни
+    memories_lat: await columnExists("memories", "lat"),
   };
   return NextResponse.json({ ok: true, checks });
 }

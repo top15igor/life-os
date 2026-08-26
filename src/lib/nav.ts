@@ -16,6 +16,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
   { key: "sort", href: "/sort", icon: "ti-inbox" },
   { key: "people", href: "/people", icon: "ti-user-heart" },
   { key: "places", href: "/places", icon: "ti-map-pin" },
+  { key: "map", href: "/map", icon: "ti-map-2" },
   { key: "analytics", href: "/analytics", icon: "ti-sparkles" },
   { key: "lab", href: "/lab", icon: "ti-flask-2" },
   { key: "biographer", href: "/biographer", icon: "ti-messages" },
@@ -38,7 +39,7 @@ export const NAV: { key: string; href: string; icon: string }[] = [
 // это не третья полка, а ярлыки.
 export const NAV_GROUPS: { id: string; keys: string[] }[] = [
   { id: "main", keys: ["today", "diary", "wellness"] },
-  { id: "life", keys: ["plans", "reminders", "finance", "family", "people", "places", "projects", "trace", "lifebook"] },
+  { id: "life", keys: ["plans", "reminders", "finance", "family", "people", "places", "map", "projects", "trace", "lifebook"] },
   { id: "vault", keys: ["notes", "knowledge", "memory", "sort", "books", "wishlist"] },
   { id: "ai", keys: ["analytics", "biographer", "lab"] },
   { id: "more", keys: ["share", "paths", "ideas", "profile"] }, // «guide» вынесен в нижний блок сайдбара (рядом с «Обратной связью»)

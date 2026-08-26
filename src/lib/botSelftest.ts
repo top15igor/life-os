@@ -138,6 +138,15 @@ const message = (text: string) => ({
   message: { message_id: uid(), from: from(), chat: { id: TEST_CHAT, type: "private" }, date: Math.floor(Date.now() / 1000), text },
 });
 
+// Геометка: Telegram присылает её отдельным сообщением без текста.
+const location = (lat: number, lng: number) => ({
+  update_id: uid(),
+  message: {
+    message_id: uid(), from: from(), chat: { id: TEST_CHAT, type: "private" },
+    date: Math.floor(Date.now() / 1000), location: { latitude: lat, longitude: lng },
+  },
+});
+
 const callback = (data: string) => ({
   update_id: uid(),
   callback_query: {
@@ -449,6 +458,40 @@ const SCENARIOS: Scenario[] = [
       if (broken) return broken;
       const joined = texts(sent).join("\n");
       return /1\/3|\?/.test(joined) ? null : "бот не задал первый вопрос";
+    },
+  },
+  {
+    // Карта жизни: сжатое фото приходит без координат, поэтому геометка следом —
+    // основной способ поставить точку. Проверяем, что бот на неё вообще отвечает
+    // и что точка сохраняется в базу, а не только на словах.
+    name: "Геометка ставит точку на карте жизни",
+    send: () => location(43.4832, -1.5586),
+    check: (sent) => {
+      const broken = notBroken(sent);
+      if (broken) return broken;
+      const joined = texts(sent).join("\n");
+      if (!/📍/.test(joined)) return "бот не подтвердил точку на карте";
+      const btns = allButtons(sent).join(" ").toLowerCase();
+      if (!/карт|map|mapa|carte/.test(btns)) return "нет кнопки «Карта жизни»";
+      return null;
+    },
+    verifyDb: async () => {
+      const db = supabaseAdmin();
+      const { data: u } = await db.from("users").select("id").eq("chat_id", TEST_CHAT).maybeSingle();
+      const id = (u as any)?.id;
+      if (!id) return "тестовый пользователь не создался";
+      try {
+        const { data, error } = await db
+          .from("memories").select("id, lat, lng").eq("user_id", id)
+          .not("lat", "is", null).order("created_at", { ascending: false }).limit(1);
+        if (error) throw error;
+        const row = ((data as any[]) || [])[0];
+        if (!row) return "точка не сохранилась (применён ли photo_map.sql?)";
+        if (Math.abs(Number(row.lat) - 43.4832) > 0.01) return "сохранились не те координаты";
+        return null;
+      } catch {
+        return "точку некуда сохранять — не применён photo_map.sql";
+      }
     },
   },
   {
@@ -830,6 +873,7 @@ const SCHEMA_CHECKS: { table: string; column?: string; sql: string; why: string 
   { table: "memories", column: "embedding", sql: "pgvector_vault.sql", why: "хранилище ищется только по буквам: «жильё» не найдёт «квартиру»" },
   { table: "sort_rules", sql: "sort_rules.sql", why: "поправки на «Разобрать» применяются, но не запоминаются правилом" },
   { table: "ideas", sql: "ideas.sql", why: "идеи от людей некуда сохранять — обсуждение проходит впустую" },
+  { table: "memories", column: "lat", sql: "photo_map.sql", why: "карта жизни пустая: координатам фотографий негде храниться" },
 ];
 
 async function checkSchema(): Promise<StepResult[]> {

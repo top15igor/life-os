@@ -43,6 +43,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "Новое", improved: "Улучшено", soon: "Скоро" },
     showAll: "Показать все", collapse: "Свернуть",
     changelog: [
+      { t: "Карта жизни: фотографии становятся точками на карте", d: "Фото лежали в «Памяти» и «Путешествиях» списком, а увидеть свою жизнь картой было нельзя. Теперь есть раздел «Карта жизни»: каждая фотография с координатами встаёт точкой, точки соединяются по времени съёмки — получается видимый маршрут: где ты был, в каком году, в каком порядке. Нажимаешь на точку — открывается сам снимок, дата и место; рядом стопкой лежат остальные фото, снятые там же. К любому снимку можно оставить свой комментарий — написать или наговорить голосом; комментарий личный, его пишешь только ты. Сверху фильтр по годам и переключатель «Маршрут». Откуда берутся координаты: из самого файла снимка. Telegram вырезает их при обычной отправке фото, поэтому надёжных путей три — прислать боту фото ФАЙЛОМ («Отправить без сжатия»), кинуть геометку следом за снимком (бот привяжет её к последнему фото) или поставить точку руками: внизу карты лежат «Фото без точки», выбираешь снимок и тыкаешь в место. Загруженные на сайте фото попадают на карту сами — браузер координаты не режет.", tag: "new" },
       { t: "Категории теперь полностью твои: имя и иконка у любой", d: "Раньше редактировались только собственные категории, и только имя. Теперь в «Настройках и валютах» → «Мои категории» живёт полный редактор: у СВОИХ категорий меняются и имя, и эмодзи (карандашик на ярлыке), а стандартные — «Продукты», «Транспорт», «Кафе» и остальные — можно переименовать и дать им свою иконку: не нравится «Продукты» — пусть будет «Еда 🥦». Это личное переопределение: разложенные операции, лимиты и AI-разбор продолжают работать как раньше, меняется только то, что ты видишь. Переопределённые категории подсвечены рамкой, и одним нажатием (стрелка-возврат) сбрасываются к стандартному виду. Удаление по-прежнему только у своих категорий — и по-прежнему с переносом операций.", tag: "new" },
       { t: "Бюджет месяца: один общий лимит на все расходы", d: "Блок «Бюджет на месяц» в Деньгах раньше умел только складывать лимиты категорий: поставил 500 € на транспорт и 500 € на кафе — полоса следит за этой тысячей, а остальные траты живут сами по себе. Теперь есть второй режим — один общий лимит на всё: «не больше N в месяц и точка». Задаётся прямо в блоке — иконка-мишень рядом с заголовком (или кнопка «Задать общий лимит месяца», если лимитов ещё нет). Когда общий лимит задан, полоса меряет все расходы месяца, а лимиты категорий продолжают работать каждый у себя. Убрать — карандаш → «Убрать лимит», и блок вернётся к сумме категорий. Подпись под полосой всегда объясняет, что именно считается, — больше не нужно гадать, откуда взялась цифра «из 1 000 €».", tag: "new" },
       { t: "Перевод с карты на карту — больше не «расход»", d: "Перекинул деньги со своей карты на свою — а в отчёте это выглядело как трата, и расходы месяца раздувались на ровном месте. Теперь у каждой операции есть переключатель «Личное / Бизнес / Перевод» прямо в правке (карандаш): пометил переводом — и операция уходит из расходов во вкладку «Переводы», история при этом сохраняется. Автоматика тоже стала умнее: «переказ на картку», «на білу картку», имя с инициалом (в том числе латиницей — Vitalii U.) распознаются как перевод при любом способе добавления — банковский импорт, ручная форма, продиктованное боту. А старые операции можно причесать одним разом — классификатор прогоняется по всей истории и помечает найденные переводы, ничего не переводя обратно и не трогая выставленное руками.", tag: "new" },
@@ -154,6 +155,25 @@ const E: Record<Locale, Extras> = {
       { t: "Новый дизайн «Осознанность»", d: "Голос-first главная с большим живым микрофоном. Включается тумблером вверху главной — можно сравнить с классическим.", tag: "new" },
     ],
     features: [
+      {
+        key: "lifemap", icon: "ti-map-2", color: "#0ea5e9", title: "Карта жизни",
+        short: "Все места, где ты был, — точками из твоих же фотографий, соединёнными по времени. Нажал на точку — увидел снимок и оставил к нему свой комментарий.",
+        sections: [
+          { p: "Раздел «Карта жизни» показывает не список мест, а саму карту. Каждый снимок с координатами — точка; точки соединены по времени съёмки, поэтому видно маршрут: где ты был этим летом, куда ездил три года назад, в каком порядке. Точки, снятые рядом, собираются в одну стопку с числом — приблизишь карту, и они разъедутся сами." },
+          { h: "Как поставить точку", steps: [
+            "Пришли фото боту ФАЙЛОМ («Отправить без сжатия») — координаты внутри файла доедут целыми, и точка встанет сама.",
+            "Или пришли обычное фото, а следом — геометку: бот привяжет её к последнему снимку.",
+            "Или загрузи фото на сайте в «Память» — браузер координаты не режет.",
+            "Или поставь точку руками: внизу карты лежат «Фото без точки» — выбери снимок и ткни в место на карте.",
+          ] },
+          { h: "Комментарий к снимку", p: "Нажми на точку — откроется карточка с фотографией, датой и местом. Кнопка «Добавить комментарий» даёт написать или наговорить голосом, что там было. Это твоя личная память: комментарий пишешь только ты, никто другой." },
+          { tips: [
+            "Обычная отправка фото в Telegram стирает координаты — это делает сам мессенджер, поэтому и нужна отправка файлом.",
+            "Фильтр по годам сверху: выбрал год — карта показывает маршрут только за него.",
+            "Переключатель «Маршрут» убирает линии, если хочется смотреть только на точки.",
+          ] },
+        ],
+      },
       {
         key: "devices", icon: "ti-device-watch", color: "#6366f1", title: "Запись без телефона: часы и кнопка-брелок",
         short: "Нажал кнопку на запястье — наговорил — мысль уже в дневнике. Телефон доставать не нужно.",
@@ -439,6 +459,7 @@ const E: Record<Locale, Extras> = {
     badges: { new: "New", improved: "Improved", soon: "Soon" },
     showAll: "Show all", collapse: "Collapse",
     changelog: [
+      { t: "Life map: your photos become points on a map", d: "Photos lived in Memory and Travels as lists — there was no way to see your life as a map. Now there is a “Life map” section: every photo that carries coordinates becomes a point, and the points are connected in the order they were shot — a visible route of where you have been, in which year, in what order. Tap a point and the shot opens with its date and place; the other photos taken there sit next to it. You can leave your own comment on any shot — typed or spoken; the comment is personal, only you write it. On top there is a year filter and a “Route” toggle. Where the coordinates come from: the photo file itself. Telegram strips them from ordinary photo messages, so there are three reliable ways — send the photo to the bot AS A FILE (“without compression”), send a location pin right after the shot (the bot attaches it to the last photo), or place the point by hand: “Photos without a point” sit under the map, you pick a shot and tap the place. Photos uploaded on the site land on the map by themselves — a browser does not strip coordinates.", tag: "new" },
       { t: "Facebook links are saved too now", d: "Until now the bot honestly said \u00abI can\u0027t do that\u00bb to a Facebook link \u2014 it only understood Instagram, YouTube and TikTok. Now Facebook works as well: posts, videos, reels, the short share link and fb.watch. Send a link and AI pulls the full post text, extracts the gist, gives it a title, key points and tags, and files it in your Knowledge Base \u2014 the cover image is copied to our storage (Facebook image links expire within hours). Works in the bot and on the site. If the post sits in a closed group or was deleted, the bot says plainly that it could not fetch it instead of saving an empty card.", tag: "new" },
       { t: "Two shelves instead of nine sections", d: "The site menu now mirrors the same picture of the world the bot uses. Two big blocks: “My life” — events, plans, money, people, places, the book of life; and “My vault” — notes, knowledge base, documents and photos, books, wishlist. The difference is simple: life holds what happened to you, the vault holds what you will look up later (a door code, a contract, a manual). A “Main” block stays on top with the three most-used screens — those are shortcuts, not a third shelf. Before, there were nine sections grouped by accidental traits, and it was impossible to tell where things went: the bot showed one structure, the site another. Order and visibility are still yours to change via “Customize menu”.", tag: "improved" },
       { t: "“Report a problem” — when the bot freezes or answers nonsense", d: "There used to be nowhere to report a breakage: people just left quietly and we never learned anything was broken. The bot now has a /problem command (it's in the command menu too, and a plain phrase like “the bot froze” or “bug” triggers it as well). It offers six options — froze and won't answer, wrong answer, an entry went missing, an error on the site, payments, something else — you tap the closest one and describe it in your own words or by voice. For each case the bot hints at what's actually useful: when it happened, what you sent before the silence, which page it broke on. You can attach a screenshot — just send it as a photo and it goes with the report instead of landing in your diary. You get a report number back, and the “Add details” button lets you send more against the same number. On privacy, plainly: only technical details travel with a report — when your last entry was, how many entries today, language and plan. The content of your entries is never sent, and the bot says so before you start writing.", tag: "new" },
@@ -527,6 +548,25 @@ const E: Record<Locale, Extras> = {
       { t: "New “Mindful” design", d: "A voice-first home with a big living microphone. Toggle it at the top of the home screen to compare with the classic view.", tag: "new" },
     ],
     features: [
+      {
+        key: "lifemap", icon: "ti-map-2", color: "#0ea5e9", title: "Life map",
+        short: "Every place you have been — as points from your own photos, connected in time. Tap a point to see the shot and leave your own comment on it.",
+        sections: [
+          { p: "The Life map section shows the map itself, not a list of places. Every photo with coordinates is a point; points are connected in the order they were shot, so you see the route: where you were this summer, where you went three years ago, in what order. Photos taken close together stack into one point with a count — zoom in and they spread out." },
+          { h: "How a point appears", steps: [
+            "Send the photo to the bot AS A FILE (“without compression”) — the coordinates inside the file survive and the point appears by itself.",
+            "Or send an ordinary photo and then a location pin: the bot attaches it to the last shot.",
+            "Or upload the photo on the site into Memory — a browser does not strip coordinates.",
+            "Or place it by hand: “Photos without a point” sit under the map — pick a shot and tap the place.",
+          ] },
+          { h: "Your comment on a shot", p: "Tap a point and a card opens with the photo, its date and place. “Add a comment” lets you type it or speak it. This is your own memory: only you write the comment, nobody else." },
+          { tips: [
+            "Sending a photo the ordinary way in Telegram wipes the coordinates — the messenger does that, which is why sending as a file matters.",
+            "The year filter on top: pick a year and the map shows only that route.",
+            "The “Route” toggle hides the lines if you want to look at the points alone.",
+          ] },
+        ],
+      },
       {
         key: "devices", icon: "ti-device-watch", color: "#6366f1", title: "Capture without the phone: watch and button keyfob",
         short: "Press the button on your wrist, speak, and the thought is already in your diary. No phone needed.",

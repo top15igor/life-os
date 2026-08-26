@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { indexRow } from "./vaultIndex";
+import { geoTagMemory, type PhotoPoint } from "./photoGeo";
 import { analyzeImage, analyzeDocument, analyzeText, type VisionResult } from "./vision";
 import { extractText } from "./docText";
 
@@ -16,7 +17,7 @@ export type Memory = {
 };
 
 // Загрузить картинку в хранилище, прогнать через AI-зрение и сохранить «память».
-export async function createMemoryFromImage(userId: string, buf: Buffer, mediaType: string, entryId?: string): Promise<{ memory: Memory | null; vision: VisionResult }> {
+export async function createMemoryFromImage(userId: string, buf: Buffer, mediaType: string, entryId?: string, geoOpts?: { caption?: string; lang?: string }): Promise<{ memory: Memory | null; vision: VisionResult; geo: PhotoPoint | null }> {
   const db = supabaseAdmin();
   const ext = mediaType.includes("png") ? "png" : mediaType.includes("webp") ? "webp" : "jpg";
   const path = `${userId}/${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
@@ -67,7 +68,10 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
 
   // Смысловой указатель: без него документ найдётся только по точному слову.
   if (memory?.id) await indexRow("memories", memory.id, userId);
-  return { memory, vision };
+  // Точка на карте жизни: координаты берём из самого файла (и, если их там нет,
+  // из подписи). Снимок без координат просто не встанет на карту — это нормально.
+  const geo = memory?.id ? await geoTagMemory(memory.id, userId, buf, geoOpts) : null;
+  return { memory, vision, geo };
 }
 
 // Загрузить ЛЮБОЙ файл (фото или PDF), распознать его смысл и сохранить в «Визуальную память».
@@ -76,7 +80,7 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
 // напрямую, минуя наш сервер: у хостинга жёсткий предел на размер запроса,
 // и десятимегабайтный PDF через него просто не проходит). Тогда не заливаем
 // повторно, а ссылаемся на готовое.
-export async function createMemoryFromFile(userId: string, buf: Buffer, mediaType: string, fileName?: string, entryId?: string, storedPath?: string): Promise<{ memory: Memory | null; vision: VisionResult }> {
+export async function createMemoryFromFile(userId: string, buf: Buffer, mediaType: string, fileName?: string, entryId?: string, storedPath?: string, geoOpts?: { caption?: string; lang?: string }): Promise<{ memory: Memory | null; vision: VisionResult; geo: PhotoPoint | null }> {
   const db = supabaseAdmin();
   const isImage = mediaType.startsWith("image/");
   const ext = isImage
@@ -138,5 +142,8 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
 
   // Смысловой указатель: без него документ найдётся только по точному слову.
   if (memory?.id) await indexRow("memories", memory.id, userId);
-  return { memory, vision };
+  // Фото, присланное файлом, — единственный путь, где координаты съёмки доходят
+  // до нас целыми: Telegram вырезает их из сжатых картинок.
+  const geo = memory?.id && isImage ? await geoTagMemory(memory.id, userId, buf, geoOpts) : null;
+  return { memory, vision, geo };
 }
