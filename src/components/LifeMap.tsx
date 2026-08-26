@@ -225,6 +225,8 @@ export default function LifeMap({
   const lineRef = useRef<any>(null);
   const fittedRef = useRef(false);
   const roRef = useRef<any>(null);
+  const wheelOffRef = useRef<null | (() => void)>(null);
+  const drawTimerRef = useRef<any>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   // Обработчики карты живут дольше рендера, поэтому свежие данные и режимы
@@ -263,26 +265,82 @@ export default function LifeMap({
       const map = L.map(elRef.current, {
         zoomControl: true,
         worldCopyJump: true,
-        // Плавность. Leaflet по умолчанию прыгает целыми уровнями масштаба —
-        // от этого карта кажется дёрганой. Дробный шаг (zoomSnap: 0) и мелкий
-        // шаг колеса дают то самое «тянется под пальцами» ощущение.
+        // Дробный масштаб: карта может стоять между уровнями, а не только на
+        // целых. Без этого любое приближение — прыжок вдвое.
         zoomSnap: 0,
-        zoomDelta: 0.4,
-        wheelPxPerZoomLevel: 110,
-        wheelDebounceTime: 20,
+        zoomDelta: 0.6,
+        // Колесо и трекпад обрабатываем сами (см. ниже). Родной обработчик
+        // Leaflet копит движение, ждёт паузу и только потом запускает
+        // анимацию — отсюда и «медленно, с задержкой».
+        scrollWheelZoom: false,
         zoomAnimation: true,
-        fadeAnimation: true,
+        fadeAnimation: false, // проявление плиток добавляет ощущение тормозов
         inertia: true,
-        easeLinearity: 0.22,
       }).setView([30, 10], 2);
+      // Подложка — стандартные плитки OpenStreetMap: бесплатные и без ключей.
+      // Красивые «фирменные» слои (CARTO, Stadia) сегодня все просят ключ и
+      // счёт, а ради внешнего вида отдавать ключ в браузер незачем.
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
+        // Плитки грузятся с раздающей сети и не запрашиваются на каждом кадре
+        // приближения — иначе карта половину времени ждёт картинки.
+        updateWhenZooming: false,
+        updateInterval: 150,
+        keepBuffer: 3,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(map);
       LRef.current = L;
       mapRef.current = map;
       layerRef.current = L.layerGroup().addTo(map);
-      map.on("zoomend moveend", () => draw());
+
+      // ===== Приближение колесом и щипком по трекпаду =====
+      //
+      // Родной зум Leaflet устроен «накопил — подождал — проиграл анимацию»:
+      // на трекпаде это читается как задержка и вязкость. Здесь масштаб
+      // меняется каждый кадр и БЕЗ анимации, а плавность даёт догоняющее
+      // движение к цели: карта тянется за пальцем, как в мобильных картах.
+      let target: number | null = null;
+      let anchor: any = null;
+      let raf = 0;
+      // Один шаг к цели. Точку под курсором держим на месте: приближаемся
+      // туда, куда смотрим.
+      const ease = (k: number) => {
+        if (target === null) return false;
+        const cur = map.getZoom();
+        const diff = target - cur;
+        if (Math.abs(diff) < 0.004) { target = null; return false; }
+        const at = anchor ? map.containerPointToLatLng(anchor) : map.getCenter();
+        map.setZoomAround(at, cur + diff * k, { animate: false });
+        return true;
+      };
+      const step = () => {
+        raf = 0;
+        if (ease(0.4)) raf = requestAnimationFrame(step);
+      };
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        // Разные устройства меряют прокрутку по-разному: пиксели, строки, страницы.
+        const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+        // Щипок по трекпаду приходит тем же событием, но с ctrl и мелкими
+        // числами — ему нужен более крупный шаг, иначе жест «не берёт».
+        const delta = -px / (e.ctrlKey ? 45 : 140);
+        const base = target === null ? map.getZoom() : target;
+        target = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), base + delta));
+        anchor = map.mouseEventToContainerPoint(e);
+        // Первый шаг делаем прямо здесь, в самом событии: карта отзывается в
+        // тот же миг, а не через кадр. Остальное догоняет плавно.
+        ease(0.5);
+        if (!raf) raf = requestAnimationFrame(step);
+      };
+      elRef.current.addEventListener("wheel", onWheel, { passive: false });
+      wheelOffRef.current = () => {
+        try { elRef.current?.removeEventListener("wheel", onWheel as any); } catch {}
+        if (raf) cancelAnimationFrame(raf);
+      };
+
+      // Пересборка стопок — не на каждый кадр приближения, а когда движение
+      // улеглось: иначе браузер перерисовывает все точки десятки раз в секунду.
+      map.on("zoomend moveend", () => scheduleDraw());
       map.on("click", (e: any) => {
         const pl = stateRef.current.placing;
         if (pl) putPoint(pl, e.latlng.lat, e.latlng.lng);
@@ -307,6 +365,9 @@ export default function LifeMap({
       dead = true;
       try { roRef.current?.disconnect(); } catch {}
       roRef.current = null;
+      try { wheelOffRef.current?.(); } catch {}
+      wheelOffRef.current = null;
+      if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
       try { mapRef.current?.remove(); } catch {}
       mapRef.current = null;
     };
@@ -337,6 +398,11 @@ export default function LifeMap({
     } catch {}
   }
 
+  function scheduleDraw(delay = 90) {
+    if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
+    drawTimerRef.current = setTimeout(() => { drawTimerRef.current = null; draw(); }, delay);
+  }
+
   function draw() {
     const map = mapRef.current, L = LRef.current, layer = layerRef.current;
     if (!map || !L || !layer) return;
@@ -356,7 +422,7 @@ export default function LifeMap({
         fittedRef.current = true;
         try {
           const b = L.latLngBounds(list.map((p: Point) => [p.lat, p.lng]));
-          map.flyToBounds(b, { padding: [46, 46], maxZoom: 13, duration: 0.9 });
+          map.flyToBounds(b, { padding: [46, 46], maxZoom: 13, duration: 0.55 });
         } catch {}
       }
     }
@@ -473,7 +539,7 @@ export default function LifeMap({
   function zoomToPoint(p: Point) {
     const map = mapRef.current;
     if (!map) return;
-    try { map.flyTo([p.lat, p.lng], Math.max(map.getZoom(), 15), { duration: 0.9 }); } catch {}
+    try { map.flyTo([p.lat, p.lng], Math.max(map.getZoom(), 15), { duration: 0.6 }); } catch {}
   }
 
   // ===== Добавить фото или видео прямо с карты =====
