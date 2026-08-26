@@ -419,6 +419,25 @@ export default function LifeMap({
     } catch {}
   }
 
+  // Разъедутся ли точки стопки, если приблизиться к ним вплотную? Считаем
+  // честно: берём масштаб, на котором они помещаются в кадр, и меряем, на
+  // сколько пикселей разойдутся крайние. Меньше размера самой метки — значит
+  // приближение ничего не покажет, и лучше открыть карточку.
+  function wouldSplit(items: Point[]): boolean {
+    const map = mapRef.current, L = LRef.current;
+    if (!map || !L) return false;
+    try {
+      const b = L.latLngBounds(items.map((i) => [i.lat, i.lng]));
+      const fit = Math.min(map.getBoundsZoom(b, false, L.point(70, 70)), 18);
+      if (fit <= map.getZoom() + 0.05) return false;
+      const a = map.project(b.getNorthWest(), fit);
+      const z = map.project(b.getSouthEast(), fit);
+      return Math.max(Math.abs(a.x - z.x), Math.abs(a.y - z.y)) > 44;
+    } catch {
+      return false;
+    }
+  }
+
   function scheduleDraw(delay = 90) {
     if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
     drawTimerRef.current = setTimeout(() => { drawTimerRef.current = null; draw(); }, delay);
@@ -489,7 +508,20 @@ export default function LifeMap({
         icon: L.divIcon({ html: box, className: "", iconSize: [44, 44], iconAnchor: [22, 22] }),
         keyboard: false,
       });
-      marker.on("click", () => { setSel(c.items); setShot(0); setEditing(false); });
+      marker.on("click", () => {
+        // Нажатие на стопку — это «покажи, что там внутри». Правильный ответ
+        // для карты — приблизиться к этому месту, чтобы точки разъехались.
+        // Но если снимки сделаны буквально в одной точке (или мы уже у предела
+        // приближения), разъезжаться нечему — тогда сразу открываем карточку.
+        if (c.items.length > 1 && wouldSplit(c.items)) {
+          const b = L.latLngBounds(c.items.map((i) => [i.lat, i.lng]));
+          map.flyToBounds(b, { padding: [70, 70], maxZoom: 18, duration: 0.6 });
+          return;
+        }
+        setSel(c.items);
+        setShot(0);
+        setEditing(false);
+      });
       marker.addTo(layer);
     }
   }
