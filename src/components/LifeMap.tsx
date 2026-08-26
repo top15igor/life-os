@@ -49,7 +49,7 @@ const S: Record<string, any> = {
     delAsk: "Удалить это фото насовсем? Оно исчезнет и с карты, и из «Памяти».",
     unpinDone: "Снимок вернулся в список без точки",
     dropHere: "Отпусти — поставлю на карту",
-    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторная", mapSwitch: "Подложка карты — нажми, чтобы сменить",
+    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторная", mapSwitch: "Подложка карты — нажми, чтобы сменить", zoomFirst: "Приблизил — ткни точнее",
     allTitle: "Все фото и видео", allHint: "Нажми на кадр — покажу его на карте.", showAll: "Показать все", collapse: "Свернуть", noPin: "без точки",
   },
   en: {
@@ -68,7 +68,7 @@ const S: Record<string, any> = {
     delAsk: "Delete this photo for good? It disappears from the map and from Memory.",
     unpinDone: "The shot is back in the list without a point",
     dropHere: "Drop it — I'll put it on the map",
-    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vector", mapSwitch: "Base map — tap to change",
+    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vector", mapSwitch: "Base map — tap to change", zoomFirst: "Zoomed in — tap more precisely",
     allTitle: "All photos & videos", allHint: "Tap a shot — I'll show it on the map.", showAll: "Show all", collapse: "Collapse", noPin: "no point",
   },
   uk: {
@@ -87,7 +87,7 @@ const S: Record<string, any> = {
     delAsk: "Видалити це фото назавжди? Воно зникне і з карти, і з «Пам'яті».",
     unpinDone: "Знімок повернувся до списку без точки",
     dropHere: "Відпусти — поставлю на карту",
-    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторна", mapSwitch: "Підкладка карти — натисни, щоб змінити",
+    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторна", mapSwitch: "Підкладка карти — натисни, щоб змінити", zoomFirst: "Наблизив — тицьни точніше",
     allTitle: "Усі фото та відео", allHint: "Натисни на кадр — покажу його на карті.", showAll: "Показати всі", collapse: "Згорнути", noPin: "без точки",
   },
   fr: {
@@ -106,7 +106,7 @@ const S: Record<string, any> = {
     delAsk: "Supprimer cette photo définitivement ? Elle disparaît de la carte et de la Mémoire.",
     unpinDone: "La photo est revenue dans la liste sans point",
     dropHere: "Lâche — je la mets sur la carte",
-    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorielle", mapSwitch: "Fond de carte — touche pour changer",
+    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorielle", mapSwitch: "Fond de carte — touche pour changer", zoomFirst: "Zoom fait — touche plus précisément",
     allTitle: "Toutes les photos et vidéos", allHint: "Touche une photo — je la montre sur la carte.", showAll: "Tout afficher", collapse: "Replier", noPin: "sans point",
   },
   es: {
@@ -125,7 +125,7 @@ const S: Record<string, any> = {
     delAsk: "¿Eliminar esta foto para siempre? Desaparece del mapa y de la Memoria.",
     unpinDone: "La foto volvió a la lista sin punto",
     dropHere: "Suéltala — la pongo en el mapa",
-    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorial", mapSwitch: "Fondo del mapa — toca para cambiar",
+    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorial", mapSwitch: "Fondo del mapa — toca para cambiar", zoomFirst: "Acerqué — toca con más precisión",
     allTitle: "Todas las fotos y vídeos", allHint: "Toca una foto — la muestro en el mapa.", showAll: "Mostrar todas", collapse: "Contraer", noPin: "sin punto",
   },
 };
@@ -178,6 +178,11 @@ html[data-theme="dark"] .lm-map { background: #1a2026; }
 
 type Cluster = { lat: number; lng: number; items: Point[] };
 type Placing = { id: string; kind: "memory" | "photo"; from: "orphan" | "point" };
+
+// С высоты птичьего полёта ткнуть в место невозможно: на мелком масштабе один
+// пиксель — это километры, и снимок улетает в океан. Поэтому первое нажатие с
+// такой высоты не ставит точку, а приближает карту к этому месту.
+const PLACE_MIN_ZOOM = 9;
 
 const VIDEO_RE = /\.(mp4|mov|m4v|webm)$/i;
 const isVideoFile = (f: File) => (f.type || "").startsWith("video/") || VIDEO_RE.test(f.name || "");
@@ -242,6 +247,7 @@ export default function LifeMap({
   const [busy, setBusy] = useState<string | null>(null);
   const [guess, setGuess] = useState<{ id: string; lat: number; lng: number; place: string } | null>(null);
   const [guessBusy, setGuessBusy] = useState(false);
+  const [zoomFirst, setZoomFirst] = useState(false);
   const [provider, setProvider] = useState<Provider>(
     initProvider === "apple" && !appleReady ? "vector" : initProvider,
   );
@@ -485,8 +491,16 @@ export default function LifeMap({
 
   // ===== Поставить/переставить точку =====
   async function putPoint(pl: Placing, lat: number, lng: number) {
+    const eng0 = engRef.current;
+    // Мелкий масштаб — сначала приближаемся, точку ставим следующим нажатием.
+    if (eng0 && eng0.zoom() < PLACE_MIN_ZOOM) {
+      eng0.flyTo(lat, lng, PLACE_MIN_ZOOM + 1);
+      setZoomFirst(true);
+      return;
+    }
     setPlacing(null);
     setGuess(null);
+    setZoomFirst(false);
     let place: string | null = null;
     try {
       const r = await fetch("/api/map", {
@@ -514,7 +528,10 @@ export default function LifeMap({
       setShot(0);
     }
     setMedia((m) => m.map((x) => (x.id === pl.id ? { ...x, lat, lng } : x)));
-    engRef.current?.flyTo(lat, lng);
+    // Показываем, куда именно встала точка: если промах, его видно сразу, и
+    // «Переставить» под рукой.
+    const eng = engRef.current;
+    if (eng) eng.flyTo(lat, lng, Math.max(eng.zoom(), 12));
   }
 
   // ===== Убрать с карты / удалить насовсем =====
@@ -576,6 +593,7 @@ export default function LifeMap({
 
   function startPlacing(id: string, from: "orphan" | "point" = "orphan") {
     setPlacing({ id, kind: "memory", from });
+    setZoomFirst(false);
     try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
     if (from === "orphan") askGuess(id);
   }
@@ -801,11 +819,13 @@ export default function LifeMap({
         {placing && (
           <div className="lm-banner">
             <i className="ti ti-map-pin-plus" style={{ fontSize: 15 }} />
-            {guess && guess.id === placing.id
-              ? s.guessAsk(guess.place)
-              : guessBusy
-                ? s.guessBusy
-                : placing.from === "point" ? s.placingMove : s.placing}
+            {zoomFirst
+              ? s.zoomFirst
+              : guess && guess.id === placing.id
+                ? s.guessAsk(guess.place)
+                : guessBusy
+                  ? s.guessBusy
+                  : placing.from === "point" ? s.placingMove : s.placing}
             {guess && guess.id === placing.id && (
               <button
                 onClick={() => putPoint(placing, guess.lat, guess.lng)}
@@ -814,7 +834,7 @@ export default function LifeMap({
                 {s.guessYes}
               </button>
             )}
-            <button onClick={() => { setPlacing(null); setGuess(null); }} style={{ background: "rgba(255,255,255,.22)", border: "none", color: "#fff", borderRadius: 999, padding: "3px 9px", fontSize: 12, cursor: "pointer" }}>
+            <button onClick={() => { setPlacing(null); setGuess(null); setZoomFirst(false); }} style={{ background: "rgba(255,255,255,.22)", border: "none", color: "#fff", borderRadius: 999, padding: "3px 9px", fontSize: 12, cursor: "pointer" }}>
               {guess && guess.id === placing.id ? s.guessNo : s.cancel}
             </button>
           </div>
