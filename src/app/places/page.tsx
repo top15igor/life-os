@@ -11,6 +11,7 @@ import { hints } from "@/lib/hints";
 import { requireUser } from "@/lib/auth";
 import EntityManager from "@/components/EntityManager";
 import TravelDiary from "@/components/TravelDiary";
+import TravelCalendar from "@/components/TravelCalendar";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,13 @@ export default async function PlacesPage() {
           <div style={{ fontSize: 13.5, color: "var(--text)" }}>{s.map}</div>
           <i className="ti ti-chevron-right" style={{ fontSize: 16, color: "var(--text-3)", marginLeft: "auto" }} />
         </Link>
+
+        {/* Год целиком: когда и куда ездил, закрашенными днями */}
+        {trips.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <TravelCalendar locale={locale} trips={trips as any} />
+          </div>
+        )}
 
         {/* Хронология путешествий */}
         <TravelDiary locale={locale} trips={trips} suggestions={suggestions} memories={memories} />
