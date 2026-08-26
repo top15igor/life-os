@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import "leaflet/dist/leaflet.css";
+import { createEngine, type MapEngine, type LatLng } from "@/lib/mapEngine";
 import type { Locale } from "@/lib/i18n";
 
 // Карта жизни: где ты был — по своим же фотографиям и роликам.
@@ -48,7 +49,7 @@ const S: Record<string, any> = {
     delAsk: "Удалить это фото насовсем? Оно исчезнет и с карты, и из «Памяти».",
     unpinDone: "Снимок вернулся в список без точки",
     dropHere: "Отпусти — поставлю на карту",
-    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…",
+    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Подложка карты",
     allTitle: "Все фото и видео", allHint: "Нажми на кадр — покажу его на карте.", showAll: "Показать все", collapse: "Свернуть", noPin: "без точки",
   },
   en: {
@@ -67,7 +68,7 @@ const S: Record<string, any> = {
     delAsk: "Delete this photo for good? It disappears from the map and from Memory.",
     unpinDone: "The shot is back in the list without a point",
     dropHere: "Drop it — I'll put it on the map",
-    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…",
+    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Map style",
     allTitle: "All photos & videos", allHint: "Tap a shot — I'll show it on the map.", showAll: "Show all", collapse: "Collapse", noPin: "no point",
   },
   uk: {
@@ -86,7 +87,7 @@ const S: Record<string, any> = {
     delAsk: "Видалити це фото назавжди? Воно зникне і з карти, і з «Пам'яті».",
     unpinDone: "Знімок повернувся до списку без точки",
     dropHere: "Відпусти — поставлю на карту",
-    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…",
+    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Підкладка карти",
     allTitle: "Усі фото та відео", allHint: "Натисни на кадр — покажу його на карті.", showAll: "Показати всі", collapse: "Згорнути", noPin: "без точки",
   },
   fr: {
@@ -105,7 +106,7 @@ const S: Record<string, any> = {
     delAsk: "Supprimer cette photo définitivement ? Elle disparaît de la carte et de la Mémoire.",
     unpinDone: "La photo est revenue dans la liste sans point",
     dropHere: "Lâche — je la mets sur la carte",
-    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…",
+    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Fond de carte",
     allTitle: "Toutes les photos et vidéos", allHint: "Touche une photo — je la montre sur la carte.", showAll: "Tout afficher", collapse: "Replier", noPin: "sans point",
   },
   es: {
@@ -124,7 +125,7 @@ const S: Record<string, any> = {
     delAsk: "¿Eliminar esta foto para siempre? Desaparece del mapa y de la Memoria.",
     unpinDone: "La foto volvió a la lista sin punto",
     dropHere: "Suéltala — la pongo en el mapa",
-    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…",
+    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Fondo del mapa",
     allTitle: "Todas las fotos y vídeos", allHint: "Toca una foto — la muestro en el mapa.", showAll: "Mostrar todas", collapse: "Contraer", noPin: "sin punto",
   },
 };
@@ -178,20 +179,6 @@ html[data-theme="dark"] .lm-map { background: #1a2026; }
 type Cluster = { lat: number; lng: number; items: Point[] };
 type Placing = { id: string; kind: "memory" | "photo"; from: "orphan" | "point" };
 
-// Чувствительность приближения. Вынесено наверх намеренно: это единственные
-// числа, которые захочется подкрутить «на ощупь», и искать их в глубине кода
-// не нужно. Смысл — сколько ПИКСЕЛЕЙ прокрутки даёт один уровень масштаба:
-// меньше число — быстрее приближение.
-//
-// Трекпад макбука шлёт много мелких движений (единицы пикселей за событие),
-// колесо мыши — редкие крупные щелчки (обычно ровно 100). Один делитель на
-// двоих не работает: подходящий трекпаду превращает щелчок колеса в прыжок.
-const ZOOM_PX_TRACKPAD = 60;
-const ZOOM_PX_WHEEL = 110;
-const ZOOM_PX_PINCH = 12;       // щипок двумя пальцами (приходит с ctrl)
-const ZOOM_BOOST_MAX = 1.5;     // резкое движение приближает сильнее плавного
-const ZOOM_MAX_PER_EVENT = 1.1; // страховка от рывка на одном событии
-
 const VIDEO_RE = /\.(mp4|mov|m4v|webm)$/i;
 const isVideoFile = (f: File) => (f.type || "").startsWith("video/") || VIDEO_RE.test(f.name || "");
 
@@ -226,12 +213,15 @@ function posterOf(file: File): Promise<Blob | null> {
 
 export default function LifeMap({
   locale, points: initPoints, orphans: initOrphans, orphanTotal, media: initMedia = [],
+  appleReady = false, provider: initProvider = "osm",
 }: {
   locale: Locale;
   points: Point[];
   orphans: Orphan[];
   orphanTotal: number;
   media?: MediaItem[];
+  appleReady?: boolean;
+  provider?: "osm" | "apple";
 }) {
   const s = S[locale] || S.ru;
   const router = useRouter();
@@ -252,18 +242,15 @@ export default function LifeMap({
   const [busy, setBusy] = useState<string | null>(null);
   const [guess, setGuess] = useState<{ id: string; lat: number; lng: number; place: string } | null>(null);
   const [guessBusy, setGuessBusy] = useState(false);
+  const [provider, setProvider] = useState<"osm" | "apple">(appleReady ? initProvider : "osm");
   const [full, setFull] = useState(false);
 
   const elRef = useRef<HTMLDivElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const LRef = useRef<any>(null);
-  const layerRef = useRef<any>(null);
-  const lineRef = useRef<any>(null);
+  const engRef = useRef<MapEngine | null>(null);
   const fittedRef = useRef(false);
   const roRef = useRef<any>(null);
-  const wheelOffRef = useRef<null | (() => void)>(null);
   const drawTimerRef = useRef<any>(null);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -296,112 +283,37 @@ export default function LifeMap({
   };
 
   // ===== Карта =====
+  //
+  // Сама подложка живёт отдельно (mapEngine): OpenStreetMap и карты Apple
+  // отличаются внутри, а наружу дают одинаковый набор действий. Поэтому смена
+  // подложки — это пересоздание движка, а не переписывание экрана.
   useEffect(() => {
     let dead = false;
     (async () => {
-      const L = (await import("leaflet")).default;
-      if (dead || !elRef.current || mapRef.current) return;
-      const map = L.map(elRef.current, {
-        zoomControl: true,
-        worldCopyJump: true,
-        // Дробный масштаб: карта может стоять между уровнями, а не только на
-        // целых. Без этого любое приближение — прыжок вдвое.
-        zoomSnap: 0,
-        zoomDelta: 0.6,
-        // Колесо и трекпад обрабатываем сами (см. ниже). Родной обработчик
-        // Leaflet копит движение, ждёт паузу и только потом запускает
-        // анимацию — отсюда и «медленно, с задержкой».
-        scrollWheelZoom: false,
-        zoomAnimation: true,
-        fadeAnimation: false, // проявление плиток добавляет ощущение тормозов
-        inertia: true,
-      }).setView([30, 10], 2);
-      // Подложка — стандартные плитки OpenStreetMap: бесплатные и без ключей.
-      // Красивые «фирменные» слои (CARTO, Stadia) сегодня все просят ключ и
-      // счёт, а ради внешнего вида отдавать ключ в браузер незачем.
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        // Плитки грузятся с раздающей сети и не запрашиваются на каждом кадре
-        // приближения — иначе карта половину времени ждёт картинки.
-        updateWhenZooming: false,
-        updateInterval: 150,
-        keepBuffer: 3,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      }).addTo(map);
-      LRef.current = L;
-      mapRef.current = map;
-      layerRef.current = L.layerGroup().addTo(map);
-
-      // ===== Приближение колесом и щипком по трекпаду =====
-      //
-      // Родной зум Leaflet устроен «накопил — подождал — проиграл анимацию»:
-      // на трекпаде это читается как задержка и вязкость. Здесь масштаб
-      // меняется каждый кадр и БЕЗ анимации, а плавность даёт догоняющее
-      // движение к цели: карта тянется за пальцем, как в мобильных картах.
-      let target: number | null = null;
-      let anchor: any = null;
-      let raf = 0;
-      // Один шаг к цели. Точку под курсором держим на месте: приближаемся
-      // туда, куда смотрим.
-      const ease = (k: number) => {
-        if (target === null) return false;
-        const cur = map.getZoom();
-        const diff = target - cur;
-        if (Math.abs(diff) < 0.004) { target = null; return false; }
-        const at = anchor ? map.containerPointToLatLng(anchor) : map.getCenter();
-        map.setZoomAround(at, cur + diff * k, { animate: false });
-        return true;
-      };
-      const step = () => {
-        raf = 0;
-        if (ease(0.55)) raf = requestAnimationFrame(step);
-      };
-      const onWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        // Разные устройства меряют прокрутку по-разному: пиксели, строки, страницы.
-        const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
-        // Щипок отличаем по ctrl, а трекпад от колеса — по размеру движения:
-        // щелчок колеса приходит крупным куском (сотня пикселей и больше),
-        // трекпад сыплет мелочью.
-        const per = e.ctrlKey ? ZOOM_PX_PINCH : Math.abs(px) >= 100 ? ZOOM_PX_WHEEL : ZOOM_PX_TRACKPAD;
-        // Ускорение, как в самой макоси: медленное движение двумя пальцами
-        // приближает аккуратно, резкое — сразу далеко. Без этого приходится
-        // выбирать между «не поймать нужный масштаб» и «крутить полминуты».
-        const boost = e.ctrlKey ? 1 : Math.min(ZOOM_BOOST_MAX, 1 + Math.abs(px) / 60);
-        const raw = (-px / per) * boost;
-        const delta = Math.max(-ZOOM_MAX_PER_EVENT, Math.min(ZOOM_MAX_PER_EVENT, raw));
-        const base = target === null ? map.getZoom() : target;
-        target = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), base + delta));
-        anchor = map.mouseEventToContainerPoint(e);
-        // Первый шаг делаем прямо здесь, в самом событии: карта отзывается в
-        // тот же миг, а не через кадр. Остальное догоняет плавно.
-        ease(0.6);
-        if (!raf) raf = requestAnimationFrame(step);
-      };
-      elRef.current.addEventListener("wheel", onWheel, { passive: false });
-      wheelOffRef.current = () => {
-        try { elRef.current?.removeEventListener("wheel", onWheel as any); } catch {}
-        if (raf) cancelAnimationFrame(raf);
-      };
-
-      // Пересборка стопок — не на каждый кадр приближения, а когда движение
-      // улеглось: иначе браузер перерисовывает все точки десятки раз в секунду.
-      map.on("zoomend moveend", () => scheduleDraw());
-      map.on("click", (e: any) => {
-        const pl = stateRef.current.placing;
-        if (pl) putPoint(pl, e.latlng.lat, e.latlng.lng);
+      if (!elRef.current) return;
+      const eng = await createEngine(provider, elRef.current, {
+        // Пересборка стопок — не на каждый кадр приближения, а когда движение
+        // улеглось: иначе браузер перерисовывает все точки десятки раз в секунду.
+        onIdle: () => scheduleDraw(),
+        onMapClick: (lat, lng) => {
+          const pl = stateRef.current.placing;
+          if (pl) putPoint(pl, lat, lng);
+        },
       });
+      if (dead) { eng.destroy(); return; }
+      engRef.current = eng;
+      // Если карту Apple не пустили (нет ключа, кончилась квота), движок молча
+      // вернулся к OpenStreetMap — покажем это в переключателе честно.
+      if (eng.kind !== provider) setProvider(eng.kind);
+
       // Карта рождается раньше, чем страница разложит блоки по местам, и меряет
       // себя по нулевой высоте: получаются серые поля вместо плиток и точки за
       // краем экрана. Поэтому пересчитываем размер, как только контейнер его
       // получил, — и заново вписываем все точки в кадр.
-      const refit = () => {
-        try { map.invalidateSize(); } catch {}
-        draw();
-      };
+      const refit = () => { eng.invalidate(); draw(); };
       setTimeout(refit, 60);
       try {
-        const ro = new ResizeObserver(() => { try { map.invalidateSize(); } catch {} draw(); });
+        const ro = new ResizeObserver(() => { eng.invalidate(); draw(); });
         ro.observe(elRef.current);
         roRef.current = ro;
       } catch {}
@@ -411,14 +323,31 @@ export default function LifeMap({
       dead = true;
       try { roRef.current?.disconnect(); } catch {}
       roRef.current = null;
-      try { wheelOffRef.current?.(); } catch {}
-      wheelOffRef.current = null;
       if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
-      try { mapRef.current?.remove(); } catch {}
-      mapRef.current = null;
+      try { engRef.current?.destroy(); } catch {}
+      engRef.current = null;
+      fittedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [provider]);
+
+  // Ночная тема: у карт Apple есть родной тёмный вид, у растровых плиток —
+  // только фильтр в CSS. Следим за темой приложения и сообщаем движку.
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const d = document.documentElement.dataset.theme === "dark"
+          || (!document.documentElement.dataset.theme && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+        engRef.current?.setTheme(!!d);
+      } catch {}
+    };
+    sync();
+    try {
+      const mo = new MutationObserver(sync);
+      mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      return () => mo.disconnect();
+    } catch { return; }
+  }, [provider]);
 
   useEffect(() => {
     stateRef.current = { points, year, route, placing, selIds: (sel || []).map((p) => p.id), orphans, media };
@@ -431,7 +360,7 @@ export default function LifeMap({
   useEffect(() => {
     const onFs = () => {
       setFull(!!document.fullscreenElement);
-      setTimeout(() => { try { mapRef.current?.invalidateSize(); } catch {} }, 120);
+      setTimeout(() => { try { engRef.current?.invalidate(); } catch {} }, 120);
     };
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
@@ -449,15 +378,22 @@ export default function LifeMap({
   // сколько пикселей разойдутся крайние. Меньше размера самой метки — значит
   // приближение ничего не покажет, и лучше открыть карточку.
   function wouldSplit(items: Point[]): boolean {
-    const map = mapRef.current, L = LRef.current;
-    if (!map || !L) return false;
+    const eng = engRef.current;
+    if (!eng) return false;
     try {
-      const b = L.latLngBounds(items.map((i) => [i.lat, i.lng]));
-      const fit = Math.min(map.getBoundsZoom(b, false, L.point(70, 70)), 18);
-      if (fit <= map.getZoom() + 0.05) return false;
-      const a = map.project(b.getNorthWest(), fit);
-      const z = map.project(b.getSouthEast(), fit);
-      return Math.max(Math.abs(a.x - z.x), Math.abs(a.y - z.y)) > 44;
+      const coords: LatLng[] = items.map((i) => [i.lat, i.lng]);
+      const fit = Math.min(eng.boundsZoom(coords), 18);
+      if (fit <= eng.zoom() + 0.05) return false;
+      const lats = coords.map((c) => c[0]), lngs = coords.map((c) => c[1]);
+      const world = 256 * Math.pow(2, fit);
+      const px = (lng: number) => ((lng + 180) / 360) * world;
+      const py = (lat: number) => {
+        const sin = Math.sin((lat * Math.PI) / 180);
+        return (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world;
+      };
+      const dx = Math.abs(px(Math.max(...lngs)) - px(Math.min(...lngs)));
+      const dy = Math.abs(py(Math.max(...lats)) - py(Math.min(...lats)));
+      return Math.max(dx, dy) > 44;
     } catch {
       return false;
     }
@@ -469,12 +405,12 @@ export default function LifeMap({
   }
 
   function draw() {
-    const map = mapRef.current, L = LRef.current, layer = layerRef.current;
-    if (!map || !L || !layer) return;
+    const eng = engRef.current;
+    if (!eng) return;
     const st = stateRef.current;
     const list = st.year === "all" ? st.points : st.points.filter((p) => (p.date || "").startsWith(st.year));
-    layer.clearLayers();
-    if (lineRef.current) { try { map.removeLayer(lineRef.current); } catch {} lineRef.current = null; }
+    eng.clearPins();
+    eng.setRoute(null);
     if (!list.length) return;
 
     // Первое открытие — показываем сразу всё, что есть. Пока карта нулевого
@@ -482,28 +418,21 @@ export default function LifeMap({
     // нечего: Leaflet посчитал бы масштаб по нулевому окну и увёл бы вид в
     // случайную деревню. Значит, ждём настоящий размер.
     if (!fittedRef.current) {
-      const size = map.getSize();
+      const size = eng.size();
       if (size.x > 0 && size.y > 0) {
         fittedRef.current = true;
-        try {
-          const b = L.latLngBounds(list.map((p: Point) => [p.lat, p.lng]));
-          map.flyToBounds(b, { padding: [46, 46], maxZoom: 13, duration: 0.55 });
-        } catch {}
+        eng.fit(list.map((p: Point) => [p.lat, p.lng] as LatLng), 13);
       }
     }
 
     // Маршрут — по времени съёмки, а не по порядку загрузки.
     const chrono = [...list].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-    if (st.route && chrono.length > 1) {
-      lineRef.current = L.polyline(chrono.map((p) => [p.lat, p.lng]), {
-        color: "#6366f1", weight: 2, opacity: 0.55, dashArray: "5 7",
-      }).addTo(map);
-    }
+    if (st.route && chrono.length > 1) eng.setRoute(chrono.map((p) => [p.lat, p.lng] as LatLng));
 
     // Стопки: то, что на текущем масштабе слиплось бы в кашу.
     const clusters: (Cluster & { pt: any })[] = [];
     for (const p of list) {
-      const pt = map.latLngToContainerPoint([p.lat, p.lng]);
+      const pt = eng.project(p.lat, p.lng);
       const hit = clusters.find((c) => Math.abs(c.pt.x - pt.x) < 40 && Math.abs(c.pt.y - pt.y) < 40);
       if (hit) hit.items.push(p);
       else clusters.push({ pt, lat: p.lat, lng: p.lng, items: [p] });
@@ -529,25 +458,19 @@ export default function LifeMap({
         b.textContent = String(c.items.length);
         box.appendChild(b);
       }
-      const marker = L.marker([c.lat, c.lng], {
-        icon: L.divIcon({ html: box, className: "", iconSize: [44, 44], iconAnchor: [22, 22] }),
-        keyboard: false,
-      });
-      marker.on("click", () => {
+      eng.addPin(c.lat, c.lng, box, () => {
         // Нажатие на стопку — это «покажи, что там внутри». Правильный ответ
         // для карты — приблизиться к этому месту, чтобы точки разъехались.
         // Но если снимки сделаны буквально в одной точке (или мы уже у предела
         // приближения), разъезжаться нечему — тогда сразу открываем карточку.
         if (c.items.length > 1 && wouldSplit(c.items)) {
-          const b = L.latLngBounds(c.items.map((i) => [i.lat, i.lng]));
-          map.flyToBounds(b, { padding: [70, 70], maxZoom: 18, duration: 0.6 });
+          eng.fit(c.items.map((i) => [i.lat, i.lng] as LatLng), 18);
           return;
         }
         setSel(c.items);
         setShot(0);
         setEditing(false);
       });
-      marker.addTo(layer);
     }
   }
 
@@ -582,7 +505,7 @@ export default function LifeMap({
       setShot(0);
     }
     setMedia((m) => m.map((x) => (x.id === pl.id ? { ...x, lat, lng } : x)));
-    try { mapRef.current?.panTo([lat, lng], { animate: true, duration: 0.6 }); } catch {}
+    engRef.current?.flyTo(lat, lng);
   }
 
   // ===== Убрать с карты / удалить насовсем =====
@@ -636,7 +559,7 @@ export default function LifeMap({
       // Пока ходили на сервер, человек мог передумать и выбрать другой кадр.
       if (g && stateRef.current.placing?.id === id) {
         setGuess({ id, lat: g.lat, lng: g.lng, place: g.place });
-        try { mapRef.current?.flyTo([g.lat, g.lng], 13, { duration: 0.9 }); } catch {}
+        engRef.current?.flyTo(g.lat, g.lng, 13);
       }
     } catch {}
     setGuessBusy(false);
@@ -662,16 +585,14 @@ export default function LifeMap({
     const p = points.find((x) => x.id === item.id);
     if (p) { setSel([p]); setShot(0); setEditing(false); }
     setPlacing(null);
-    try {
-      const map = mapRef.current;
-      if (map) map.flyTo([item.lat, item.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
-    } catch {}
+    const eng = engRef.current;
+    if (eng) eng.flyTo(item.lat, item.lng, Math.max(eng.zoom(), 15));
   }
 
   function zoomToPoint(p: Point) {
-    const map = mapRef.current;
-    if (!map) return;
-    try { map.flyTo([p.lat, p.lng], Math.max(map.getZoom(), 15), { duration: 0.6 }); } catch {}
+    const eng = engRef.current;
+    if (!eng) return;
+    eng.flyTo(p.lat, p.lng, Math.max(eng.zoom(), 15));
   }
 
   // ===== Добавить фото или видео прямо с карты =====
@@ -743,7 +664,7 @@ export default function LifeMap({
             placedFirst = true;
             setSel([fresh]);
             setShot(0);
-            try { mapRef.current?.flyTo([geo.lat, geo.lng], 13, { duration: 1 }); } catch {}
+            engRef.current?.flyTo(geo.lat, geo.lng, 13);
           }
         } else {
           const orph: Orphan = { id, url: preview, video: video ? URL.createObjectURL(file) : null, title: ing.memory.title || file.name, date: null };
@@ -830,6 +751,25 @@ export default function LifeMap({
         <button className="lm-chip" onClick={() => fileRef.current?.click()} disabled={!!busy}>
           <i className="ti ti-plus" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />{busy || s.add}
         </button>
+        {appleReady && (
+          <button
+            className="lm-chip"
+            title={s.mapSwitch}
+            onClick={() => {
+              const next = provider === "apple" ? "osm" : "apple";
+              fittedRef.current = false;
+              setProvider(next);
+              // Выбор запоминаем: возвращаться к нему на каждом заходе не нужно.
+              fetch("/api/map", {
+                method: "POST", headers: { "content-type": "application/json" },
+                body: JSON.stringify({ action: "provider", id: "self", provider: next }),
+              }).catch(() => {});
+            }}
+          >
+            <i className="ti ti-map-2" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />
+            {provider === "apple" ? s.mapApple : s.mapOsm}
+          </button>
+        )}
         <button className={`lm-chip ${route ? "on" : ""}`} onClick={() => setRoute((v) => !v)}>
           <i className="ti ti-route" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />{s.route}
         </button>

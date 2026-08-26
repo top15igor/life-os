@@ -62,6 +62,20 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Какую подложку человек выбрал — Apple или OpenStreetMap. Личная настройка,
+  // живёт рядом с остальными в morning_prefs.
+  if (action === "provider") {
+    const value = body?.provider === "apple" ? "apple" : "osm";
+    try {
+      const { data } = await db.from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+      const raw = (data as any)?.morning_prefs && typeof (data as any).morning_prefs === "object" ? (data as any).morning_prefs : {};
+      await db.from("users").update({ morning_prefs: { ...raw, mapProvider: value } }).eq("id", user.id);
+      return NextResponse.json({ ok: true });
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 500 });
+    }
+  }
+
   // «Похоже, это Брюарфосс»: AI узнал место на снимке — превращаем его название
   // в координаты, чтобы человек подтвердил одним нажатием, а не искал сам.
   if (action === "guess") {
