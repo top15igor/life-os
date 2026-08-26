@@ -78,6 +78,21 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
 };
 
+// Подпись «доля от всех расходов месяца» — без неё процент рядом с лимитом
+// читался как «процент от лимита», и цифры выглядели неправильными.
+const OF_ALL_L: Record<string, string> = {
+  ru: "всех расходов", en: "of all spending", uk: "усіх витрат", fr: "des dépenses", es: "del gasto total",
+};
+
+// Перевод между своими счетами — не расход и не доход: категория ему не нужна.
+const TRANSFER_L: Record<string, { hint: string; addCat: string }> = {
+  ru: { hint: "Это перевод между своими счетами или картами — не расход, категория не нужна.", addCat: "➕ Новая категория…" },
+  en: { hint: "This is a transfer between your own accounts — not an expense, no category needed.", addCat: "➕ New category…" },
+  uk: { hint: "Це переказ між своїми рахунками або картками — не витрата, категорія не потрібна.", addCat: "➕ Нова категорія…" },
+  fr: { hint: "C'est un virement entre tes propres comptes — pas une dépense, pas de catégorie.", addCat: "➕ Nouvelle catégorie…" },
+  es: { hint: "Es una transferencia entre tus propias cuentas — no es un gasto, sin categoría.", addCat: "➕ Nueva categoría…" },
+};
+
 const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string; stdT: string; reset: string }> = {
   ru: { title: "Мои категории", rename: "Переименовать", delWhere: "Куда перенести её операции?", delGo: "Удалить и перенести", moveAll: "Перенести всё в…", moveMonth: "за этот месяц", moveEver: "за всё время", catOps: (n: number) => `операций: ${n}`, back: "Все категории", total: "Итого", stdT: "Стандартные — можно переименовать и сменить иконку", reset: "Сбросить", hint: "Добавь свою статью расходов/доходов — бот и AI начнут в неё раскладывать.", ph: "Название (напр. Штрафы)", expense: "Расход", income: "Доход", add: "Добавить" },
   en: { title: "My categories", rename: "Rename", delWhere: "Where to move its operations?", delGo: "Delete & move", moveAll: "Move all to…", moveMonth: "this month", moveEver: "all time", catOps: (n: number) => `operations: ${n}`, back: "All categories", total: "Total", stdT: "Standard — rename or change the icon", reset: "Reset", hint: "Add your own expense/income category — the bot and AI will sort into it.", ph: "Name (e.g. Fines)", expense: "Expense", income: "Income", add: "Add" },
@@ -200,6 +215,21 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatEmoji, setNewCatEmoji] = useState("");
   const [newCatKind, setNewCatKind] = useState<"income" | "expense">("expense");
+  // Новая категория, не выходя из формы операции («прямо в этом окне»):
+  // ncFor помнит, откуда открыли — из формы добавления или из правки.
+  const [ncFor, setNcFor] = useState<null | "add" | "edit">(null);
+  const [ncLabel, setNcLabel] = useState("");
+  const [ncEmoji, setNcEmoji] = useState("");
+  async function addInlineCat(k: "income" | "expense") {
+    const label = ncLabel.trim();
+    if (!label) return;
+    const r = await fetch("/api/finance/categories", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label, emoji: ncEmoji.trim() || null, kind: k }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok && r.category) {
+      setCustom((cs) => [...cs, r.category]);
+      if (ncFor === "edit") setECategory(r.category.slug); else setCategory(r.category.slug);
+      setNcFor(null); setNcLabel(""); setNcEmoji("");
+    }
+  }
   async function addCustomCat() {
     const label = newCatLabel.trim();
     if (!label) return;
@@ -528,7 +558,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setBusy(true);
     const r = await fetch("/api/finance", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eCategory.trim() || null, subcategory: eSubcategory.trim() || null, note: eNote.trim() || null, scope: eScope }),
+      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eScope === "transfer" ? null : (eCategory.trim() || null), subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null), note: eNote.trim() || null, scope: eScope }),
     });
     setBusy(false);
     if (r.ok) { setEditTx(null); router.refresh(); }
@@ -669,6 +699,13 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     return { main: fmtMoney(t.amountBase, base, locale), orig: fmtMoney(t.amount, t.currency, locale) };
   }
 
+  // Вид операции в списке: перевод — не расход, показываем его «🔁 Перевод»,
+  // а не категорией расходов.
+  function txView(t: Tx): { icon: string; color: string; label: string } {
+    if (t.scope === "transfer") return { icon: "🔁", color: "#8b5cf6", label: (SCOPE_L[locale] || SCOPE_L.ru).transfer };
+    return catView(t.kind, t.category, locale);
+  }
+
   // Форма правки операции — одна на оба места: список операций и аккордеон
   // категории. Раньше карандаш в аккордеоне «перекидывал» наверх в другой блок.
   function renderEdit(t: Tx) {
@@ -699,11 +736,29 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                         </select>
                         <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
                       </div>
-                      <select value={eCategory} onChange={(e) => setECategory(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
+                      {eScope === "transfer" ? (
+                        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, background: "var(--surface-2)", borderRadius: 10, padding: "8px 11px", marginBottom: 8, display: "flex", gap: 6 }}>
+                          <span style={{ flexShrink: 0 }}>🔁</span>
+                          <span>{(TRANSFER_L[locale] || TRANSFER_L.ru).hint}</span>
+                        </div>
+                      ) : (<>
+                      <select value={eCategory} onChange={(e) => { const v = e.target.value; if (v === "__new") { setNcFor("edit"); setNcLabel(""); setNcEmoji(""); } else { setECategory(v); setNcFor(null); } }} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
                         {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
                         {eCategory && !pickerCats(eKind).some((o) => o.key === eCategory) && <option value={eCategory}>{eCategory}</option>}
+                        <option value="__new">{(TRANSFER_L[locale] || TRANSFER_L.ru).addCat}</option>
                       </select>
+                      {ncFor === "edit" && (
+                        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                          <input value={ncEmoji} onChange={(e) => setNcEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
+                          <input autoFocus value={ncLabel} onChange={(e) => setNcLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40}
+                            onKeyDown={(e) => { if (e.key === "Enter") addInlineCat(eKind); if (e.key === "Escape") setNcFor(null); }}
+                            style={{ ...input, flex: 1, minWidth: 0 }} />
+                          <button onClick={() => addInlineCat(eKind)} disabled={!ncLabel.trim()} style={{ ...btnG, opacity: ncLabel.trim() ? 1 : 0.5, flexShrink: 0 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
+                          <button onClick={() => setNcFor(null)} aria-label="close" style={{ ...btnG, padding: "10px 12px", flexShrink: 0 }}>×</button>
+                        </div>
+                      )}
                       <input type="text" placeholder={s.subcategoryPh} value={eSubcategory} onChange={(e) => setESubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+                      </>)}
                       <input type="text" placeholder={s.note} value={eNote} onChange={(e) => setENote(e.target.value)} maxLength={200} style={{ ...input, width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
                       <div style={{ display: "flex", gap: 8 }}>
                         <button disabled={busy} onClick={saveEdit} style={{ ...btnP, flex: 1 }}>{s.save}</button>
@@ -724,7 +779,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             <div key={d} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", textTransform: "capitalize", marginBottom: 6 }}>{dayLabel(d)}</div>
               {items.map((t) => {
-                const m = catView(t.kind, t.category, locale);
+                const m = txView(t);
                 const pos = t.kind === "income";
                 return (
                   <div key={t.id} className="fin-row" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 0" }}>
@@ -777,7 +832,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
           <div onClick={() => setEditTx(null)} style={{ position: "fixed", inset: 0, zIndex: 220, background: "rgba(15, 18, 34, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "min(460px, 100%)", maxHeight: "90vh", overflowY: "auto", background: "var(--surface)", borderRadius: 16, padding: "16px 16px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.25)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)} · {t.note || catView(t.kind, t.category, locale).label}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)} · {t.note || txView(t).label}</div>
                 <button onClick={() => setEditTx(null)} aria-label="close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
               </div>
               {renderEdit(t)}
@@ -1150,7 +1205,21 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                   display: "inline-flex", alignItems: "center", gap: 5, fontWeight: category === c.key ? 600 : 400,
                 }}><span>{c.icon}</span>{c.label}</button>
               ))}
+              <button onClick={() => { setNcFor(ncFor === "add" ? null : "add"); setNcLabel(""); setNcEmoji(""); }} title={(TRANSFER_L[locale] || TRANSFER_L.ru).addCat} style={{
+                fontSize: 12.5, padding: "6px 11px", borderRadius: 20, cursor: "pointer",
+                border: "1px dashed var(--border)", background: "var(--surface)", color: "var(--text-2)",
+                display: "inline-flex", alignItems: "center", gap: 5,
+              }}>{(TRANSFER_L[locale] || TRANSFER_L.ru).addCat}</button>
             </div>
+            {ncFor === "add" && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                <input value={ncEmoji} onChange={(e) => setNcEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
+                <input autoFocus value={ncLabel} onChange={(e) => setNcLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40}
+                  onKeyDown={(e) => { if (e.key === "Enter") addInlineCat(kind); if (e.key === "Escape") setNcFor(null); }}
+                  style={{ ...input, flex: 1, minWidth: 0 }} />
+                <button onClick={() => addInlineCat(kind)} disabled={!ncLabel.trim()} style={{ ...btnG, opacity: ncLabel.trim() ? 1 : 0.5, flexShrink: 0 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
+              </div>
+            )}
             <input type="text" placeholder={s.subcategoryPh} value={subcategory} onChange={(e) => setSubcategory(e.target.value)} maxLength={40} style={{ ...input, width: "100%", marginBottom: 6, boxSizing: "border-box" }} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
               {(s.subSuggest as string[]).map((sg) => (
@@ -1424,7 +1493,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                         {c.over && <span style={{ fontSize: 10.5, fontWeight: 500, color: "#ef4444", background: "#ef44441a", padding: "1px 7px", borderRadius: 10, flexShrink: 0 }}>{s.over} {fmtMoney(c.amount - (c.limit || 0), base, locale)}</span>}
                       </div>
                       <div style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 1 }}>
-                        {c.pct}%{hasBudget ? ` · ${s.ofLimit} ${fmtMoney(c.limit!, base, locale)}` : ""}
+                        {hasBudget
+                          ? `${Math.round(c.budgetPct || 0)}% ${s.ofLimit} ${fmtMoney(c.limit!, base, locale)} · ${c.pct}% ${OF_ALL_L[locale] || OF_ALL_L.ru}`
+                          : `${c.pct}% ${OF_ALL_L[locale] || OF_ALL_L.ru}`}
                       </div>
                     </div>
                     <b style={{ fontSize: 14, flexShrink: 0 }}>{fmtMoney(c.amount, base, locale)}</b>
