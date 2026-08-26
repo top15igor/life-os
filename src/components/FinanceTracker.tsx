@@ -133,6 +133,28 @@ function monthCells(month: string): (string | null)[] {
   return cells;
 }
 
+// Поле эмодзи с готовым набором: клик — и выбирай. Просто «текстовое поле для
+// эмодзи» ставило в тупик («как менять эмодзи?») — панель эмодзи macOS
+// (Fn / Ctrl+Cmd+Пробел) знают не все. Вставить свой символ по-прежнему можно.
+const EMOJI_SET = ["🍔", "🛒", "☕", "🍷", "🚗", "🚕", "⛽", "🅿️", "🏠", "💡", "📱", "💊", "🏥", "🏋️", "⚽", "🎮", "🎬", "🎵", "📚", "🎓", "✈️", "🌴", "🎁", "🧸", "👶", "🐶", "💅", "✂️", "🔧", "🧾", "🏦", "💳", "💼", "💻", "📈", "💰", "🎄", "❤️", "⭐", "🏷️"];
+function EmojiInput({ value, onChange, inputStyle }: { value: string; onChange: (v: string) => void; inputStyle: any }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+      <input value={value} onChange={(e) => onChange(e.target.value)} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="🙂" maxLength={4} style={inputStyle} />
+      {open && (
+        <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 260, marginTop: 4, width: 236, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,.16)", padding: 8, display: "flex", flexWrap: "wrap", gap: 2 }}>
+          {EMOJI_SET.map((e) => (
+            <button key={e} onMouseDown={(ev) => { ev.preventDefault(); onChange(e); setOpen(false); }}
+              style={{ border: "none", background: "none", fontSize: 18, cursor: "pointer", padding: 3, borderRadius: 6, lineHeight: 1 }}>{e}</button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
 // Палитра для произвольных (импортированных) категорий — стабильный цвет по имени.
 const HASH_COLORS = ["#22c55e", "#f97316", "#3b82f6", "#8b5cf6", "#0ea5e9", "#ec4899", "#ef4444", "#a855f7", "#14b8a6", "#06b6d4", "#f43f5e", "#eab308", "#10b981", "#6366f1"];
 function hashColor(s: string) {
@@ -749,7 +771,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                       </select>
                       {ncFor === "edit" && (
                         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                          <input value={ncEmoji} onChange={(e) => setNcEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
+                          <EmojiInput value={ncEmoji} onChange={setNcEmoji} inputStyle={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
                           <input autoFocus value={ncLabel} onChange={(e) => setNcLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40}
                             onKeyDown={(e) => { if (e.key === "Enter") addInlineCat(eKind); if (e.key === "Escape") setNcFor(null); }}
                             style={{ ...input, flex: 1, minWidth: 0 }} />
@@ -1064,7 +1086,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                   if (stdEditKey === keyId) {
                     return (
                       <span key={keyId} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12.5, padding: "4px 8px", borderRadius: 999, border: "1px solid var(--accent)", background: "var(--surface)" }}>
-                        <input value={stdEmoji} onChange={(e) => setStdEmoji(e.target.value)} maxLength={4} style={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
+                        <EmojiInput value={stdEmoji} onChange={setStdEmoji} inputStyle={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
                         <input autoFocus value={stdLabel} onChange={(e) => setStdLabel(e.target.value)} maxLength={40}
                           onKeyDown={(e) => { if (e.key === "Enter") saveStdCat(); if (e.key === "Escape") setStdEditKey(null); }}
                           style={{ ...input, width: 110, padding: "3px 8px", fontSize: 12.5 }} />
@@ -1093,7 +1115,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                     <span>{c.emoji || "🏷️"}</span>
                     {renameCatId === c.id ? (
                       <>
-                        <input value={renameEmoji} onChange={(e) => setRenameEmoji(e.target.value)} maxLength={4} style={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
+                        <EmojiInput value={renameEmoji} onChange={setRenameEmoji} inputStyle={{ ...input, width: 40, padding: "3px 4px", textAlign: "center", fontSize: 13 }} />
                         <input autoFocus value={renameVal} onChange={(e) => setRenameVal(e.target.value)} maxLength={40}
                           onKeyDown={(e) => { if (e.key === "Enter") renameCustomCat(c.id); if (e.key === "Escape") setRenameCatId(null); }}
                           style={{ ...input, width: 130, padding: "3px 8px", fontSize: 12.5 }} />
@@ -1131,7 +1153,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               );
             })()}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
-              <input value={newCatEmoji} onChange={(e) => setNewCatEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center" }} />
+              <EmojiInput value={newCatEmoji} onChange={setNewCatEmoji} inputStyle={{ ...input, width: 52, textAlign: "center" }} />
               <input value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40} style={{ ...input, width: 190 }} />
               <select value={newCatKind} onChange={(e) => setNewCatKind(e.target.value as any)} style={{ ...input, width: 120 }}>
                 <option value="expense">{(CAT_MGR[locale] || CAT_MGR.ru).expense}</option>
@@ -1213,7 +1235,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             </div>
             {ncFor === "add" && (
               <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-                <input value={ncEmoji} onChange={(e) => setNcEmoji(e.target.value)} placeholder="🙂" maxLength={4} style={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
+                <EmojiInput value={ncEmoji} onChange={setNcEmoji} inputStyle={{ ...input, width: 52, textAlign: "center", flexShrink: 0 }} />
                 <input autoFocus value={ncLabel} onChange={(e) => setNcLabel(e.target.value)} placeholder={(CAT_MGR[locale] || CAT_MGR.ru).ph} maxLength={40}
                   onKeyDown={(e) => { if (e.key === "Enter") addInlineCat(kind); if (e.key === "Escape") setNcFor(null); }}
                   style={{ ...input, flex: 1, minWidth: 0 }} />
