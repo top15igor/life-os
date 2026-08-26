@@ -32,10 +32,14 @@ export async function POST(req: NextRequest) {
     ? body.scope
     : classifyScope({ note, category });
   const row: any = { user_id: user.id, day, kind, amount, currency, category, subcategory, note, scope };
+  // Привязка к счёту (необязательная): uuid или ничего.
+  const isUuid = (x: any) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x);
+  if (isUuid(body?.account_id)) row.account_id = body.account_id;
+  if (isUuid(body?.account2_id)) row.account2_id = body.account2_id;
   let { error } = await db.from("finance_tx").insert(row);
-  // Старая база без колонки subcategory — вставляем без неё.
-  if (error && /subcategory|scope|column|schema cache/i.test(error.message)) {
-    const { subcategory: _s, scope: _sc, ...bare } = row;
+  // Старая база без колонок subcategory/scope/account — вставляем без них.
+  if (error && /subcategory|scope|account|column|schema cache/i.test(error.message)) {
+    const { subcategory: _s, scope: _sc, account_id: _a1, account2_id: _a2, ...bare } = row;
     ({ error } = await db.from("finance_tx").insert(bare));
   }
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -68,14 +72,17 @@ export async function PATCH(req: NextRequest) {
   if (body?.subcategory !== undefined) upd.subcategory = body.subcategory ? String(body.subcategory).slice(0, 40) : null;
   if (body?.scope !== undefined && ["personal", "business", "transfer"].includes(body.scope)) upd.scope = body.scope;
   if (body?.note !== undefined) upd.note = body.note ? String(body.note).slice(0, 200) : null;
+  const isUuid = (x: any) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x);
+  if (body?.account_id !== undefined) upd.account_id = isUuid(body.account_id) ? body.account_id : null;
+  if (body?.account2_id !== undefined) upd.account2_id = isUuid(body.account2_id) ? body.account2_id : null;
 
   if (!Object.keys(upd).length) return NextResponse.json({ ok: false, error: "nothing" }, { status: 400 });
 
   const db = supabaseAdmin();
   let { error } = await db.from("finance_tx").update(upd).eq("id", id).eq("user_id", user.id);
-  // Старая база без колонки subcategory — повторяем без неё.
-  if (error && /subcategory|column|schema cache/i.test(error.message)) {
-    const { subcategory, ...bare } = upd;
+  // Старая база без колонок subcategory/account — повторяем без них.
+  if (error && /subcategory|account|column|schema cache/i.test(error.message)) {
+    const { subcategory, account_id, account2_id, ...bare } = upd;
     if (Object.keys(bare).length) ({ error } = await db.from("finance_tx").update(bare).eq("id", id).eq("user_id", user.id));
     else error = null as any;
   }
