@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ensureMonoAccount } from "@/lib/monoAccount";
 
 export const runtime = "nodejs";
 
@@ -79,12 +80,14 @@ export async function POST(req: NextRequest) {
       if (error) throw error;
       const { data: row } = await db.from("bank_monobank").select("hook_secret").eq("id", (same as any).id).maybeSingle();
       secret = (row as any)?.hook_secret || null;
+      ensureMonoAccount(user.id, { id: (same as any).id, client_name: clientName }).catch(() => {});
     } else {
       const { data: row, error } = await db.from("bank_monobank")
         .insert({ user_id: user.id, token, client_name: clientName, client_id: clientId, accounts, webhook_set: false })
-        .select("hook_secret").single();
+        .select("id, hook_secret").single();
       if (error) throw error;
       secret = (row as any)?.hook_secret || null;
+      ensureMonoAccount(user.id, { id: (row as any)?.id || null, client_name: clientName }).catch(() => {});
     }
   } catch {
     // Старая схема (user_id — первичный ключ, нет id/client_id): одно

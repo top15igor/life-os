@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { mapStatementItem, currencyAlpha } from "@/lib/monobank";
+import { ensureMonoAccount } from "@/lib/monoAccount";
 
 export const runtime = "nodejs";
 
@@ -19,13 +20,23 @@ export async function POST(req: NextRequest) {
   let userId: string | null = null;
   let accounts: any[] = [];
   let token: string | null = null;
+  let conn: { id?: string | null; client_name?: string | null; account_id?: string | null } = {};
   try {
-    const { data } = await db.from("bank_monobank").select("user_id, accounts, token").eq("hook_secret", secret).maybeSingle();
+    const { data, error } = await db.from("bank_monobank").select("user_id, accounts, token, id, client_name, account_id").eq("hook_secret", secret).maybeSingle();
+    if (error) throw error;
     userId = (data as any)?.user_id || null;
     accounts = Array.isArray((data as any)?.accounts) ? (data as any).accounts : [];
     token = (data as any)?.token || null;
+    conn = { id: (data as any)?.id || null, client_name: (data as any)?.client_name || null, account_id: (data as any)?.account_id || null };
   } catch {
-    try { const { data } = await db.from("bank_monobank").select("user_id").eq("hook_secret", secret).maybeSingle(); userId = (data as any)?.user_id || null; } catch { /* нет таблицы */ }
+    try {
+      const { data } = await db.from("bank_monobank").select("user_id, accounts, token").eq("hook_secret", secret).maybeSingle();
+      userId = (data as any)?.user_id || null;
+      accounts = Array.isArray((data as any)?.accounts) ? (data as any).accounts : [];
+      token = (data as any)?.token || null;
+    } catch {
+      try { const { data } = await db.from("bank_monobank").select("user_id").eq("hook_secret", secret).maybeSingle(); userId = (data as any)?.user_id || null; } catch { /* нет таблицы */ }
+    }
   }
   if (!userId) return NextResponse.json({ ok: true });
 
@@ -63,14 +74,17 @@ export async function POST(req: NextRequest) {
       .eq("ext_id", mapped.ext_id)
       .maybeSingle();
     if (!dup) {
+      // Привязка к счёту подключения: аккаунты банка можно смотреть раздельно.
+      const monoAcc = await ensureMonoAccount(userId, conn);
       const row: any = {
         user_id: userId, day: mapped.day, kind: mapped.kind, amount: mapped.amount,
         currency: mapped.currency, category: mapped.category, note: mapped.note,
         source: "monobank", ext_id: mapped.ext_id, scope: mapped.scope,
+        ...(monoAcc ? { account_id: monoAcc } : {}),
       };
       let { error } = await db.from("finance_tx").insert(row);
-      if (error && /ext_id|source|scope|column|schema cache/i.test(error.message)) {
-        const { ext_id, source, scope, ...bare } = row; // старая база без колонок
+      if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
+        const { ext_id, source, scope, account_id, ...bare } = row; // старая база без колонок
         await db.from("finance_tx").insert(bare);
       }
     }

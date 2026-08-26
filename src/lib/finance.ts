@@ -109,7 +109,7 @@ export function shiftMonth(m: string, delta: number): string {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 // Данные по финансам за выбранный месяц: итоги в основной валюте + бюджеты по категориям.
-export async function getFinanceData(userId: string, month?: string, view: Scope | "all" = "personal"): Promise<FinanceData> {
+export async function getFinanceData(userId: string, month?: string, view: Scope | "all" = "personal", accId?: string | null): Promise<FinanceData> {
   const m = /^\d{4}-\d{2}$/.test(month || "") ? (month as string) : currentMonth();
   const db = supabaseAdmin();
 
@@ -155,6 +155,9 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
     txsRaw = (data || []).map((t: any) => ({ subcategory: null, scope: null, account_id: null, account2_id: null, ...t, amount: Number(t.amount) }));
     // Фильтр режима: Личное (по умолчанию) / Бизнес / Переводы / Всё.
     txsRaw = txsRaw.filter((t: any) => inScope(t.scope, view));
+    // Фильтр по счёту: месяц глазами одной карты/кошелька. Итоги, категории
+    // и календарь ниже считаются из этого же списка — пересчитается всё.
+    if (accId) txsRaw = txsRaw.filter((t: any) => t.account_id === accId || t.account2_id === accId);
   } catch {
     // нет таблицы — пустой месяц
   }

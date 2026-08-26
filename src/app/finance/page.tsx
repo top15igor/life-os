@@ -20,7 +20,7 @@ const SCOPES: { key: Scope | "all"; ru: string; en: string; uk: string; fr: stri
   { key: "transfer", ru: "Переводы", en: "Transfers", uk: "Перекази", fr: "Virements", es: "Transferencias" },
 ];
 
-export default async function FinancePage({ searchParams }: { searchParams: Promise<{ m?: string; scope?: string }> }) {
+export default async function FinancePage({ searchParams }: { searchParams: Promise<{ m?: string; scope?: string; acc?: string }> }) {
   const sp = await searchParams;
   const user = await requireUser();
   const locale = await getLocale();
@@ -30,7 +30,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   // картами, и расходы месяца в ней выглядят страшнее, чем есть (живой случай:
   // 13 178 € на «Всё» против настоящих 8 551 € личных).
   const view = (["personal", "business", "transfer", "all"].includes(sp.scope || "") ? sp.scope : "personal") as Scope | "all";
-  const data = await getFinanceData(user.id, sp.m, view);
+  // Фильтр по счёту (?acc=): месяц глазами одной карты; без него — все вместе.
+  const acc = sp.acc && /^[0-9a-f-]{36}$/i.test(sp.acc) ? sp.acc : null;
+  const data = await getFinanceData(user.id, sp.m, view, acc);
   const lc = (locale === "uk" ? "uk" : locale === "fr" ? "fr" : locale === "en" ? "en" : locale === "es" ? "es" : "ru") as "ru" | "en" | "uk" | "fr" | "es";
 
   return (
@@ -45,6 +47,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             const qs = new URLSearchParams();
             if (sp.m) qs.set("m", sp.m);
             qs.set("scope", s.key);
+            if (acc) qs.set("acc", acc);
             return (
               <Link
                 key={s.key}
@@ -56,7 +59,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             );
           })}
         </div>
-        <FinanceTracker data={data} locale={locale} />
+        <FinanceTracker data={data} locale={locale} accFilter={acc} />
       </main>
       <TipsRail locale={locale} section="finance" />
     </div>

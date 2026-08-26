@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { mapStatementItem, currencyAlpha } from "@/lib/monobank";
+import { ensureMonoAccount } from "@/lib/monoAccount";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -19,21 +20,29 @@ export async function POST() {
   // импортируем по каждому токену. Старая схема вернёт одну строку.
   let rows: any[] = [];
   try {
-    const { data, error } = await db.from("bank_monobank").select("token, accounts").eq("user_id", user.id);
+    const { data, error } = await db.from("bank_monobank").select("id, token, accounts, client_name, account_id").eq("user_id", user.id);
     if (error) throw error;
     rows = data || [];
   } catch {
-    try { const { data } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle(); rows = data ? [data] : []; }
-    catch { rows = []; }
+    try {
+      const { data, error } = await db.from("bank_monobank").select("token, accounts, client_name").eq("user_id", user.id);
+      if (error) throw error;
+      rows = data || [];
+    } catch {
+      try { const { data } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle(); rows = data ? [data] : []; }
+      catch { rows = []; }
+    }
   }
   rows = rows.filter((r) => r?.token);
   if (!rows.length) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
 
-  // Счета каждого подключения (id + валюта счёта + токен). Сначала сохранённые
-  // при подключении (без лишнего client-info ради лимита 1 запрос/60с).
-  const accounts: { id: string; currency: string; token: string }[] = [];
+  // Счета каждого подключения (id + валюта счёта + токен + наш счёт-кошелёк,
+  // к которому привязываются операции). Список счетов — сохранённый при
+  // подключении (без лишнего client-info ради лимита 1 запрос/60с).
+  const accounts: { id: string; currency: string; token: string; monoAcc: string | null }[] = [];
   for (const row of rows) {
     const token = row.token as string;
+    const monoAcc = await ensureMonoAccount(user.id, row);
     let list: any[] = Array.isArray(row?.accounts) ? row.accounts.filter((a: any) => a?.id) : [];
     if (!list.length) {
       try {
@@ -41,7 +50,7 @@ export async function POST() {
         if (r.ok) { const info = await r.json(); list = (info?.accounts || []).filter((a: any) => a?.id); }
       } catch { /* этот токен пропускаем */ }
     }
-    for (const a of list) accounts.push({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)), token });
+    for (const a of list) accounts.push({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)), token, monoAcc });
   }
   if (!accounts.length) return NextResponse.json({ ok: true, inserted: 0, accounts: 0 });
 
@@ -83,7 +92,18 @@ export async function POST() {
         continue;
       }
       existing.set(m.ext_id, { currency: m.currency, amount: m.amount });
-      toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id, scope: m.scope });
+      toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id, scope: m.scope, ...(acc.monoAcc ? { account_id: acc.monoAcc } : {}) });
+    }
+    // Бэкфилл привязки к счёту: старые операции этого банка без счёта получают
+    // его (только пустые — ручную привязку не трогаем).
+    if (acc.monoAcc) {
+      const ids = (items as any[]).map((it) => mapStatementItem(it, acc.currency)?.ext_id).filter(Boolean) as string[];
+      for (let i = 0; i < ids.length; i += 200) {
+        await db.from("finance_tx").update({ account_id: acc.monoAcc })
+          .eq("user_id", user.id).eq("source", "monobank").is("account_id", null)
+          .in("ext_id", ids.slice(i, i + 200))
+          .then(() => undefined, () => undefined);
+      }
     }
   }
 
@@ -96,8 +116,8 @@ export async function POST() {
   for (let i = 0; i < toInsert.length; i += 500) {
     const chunk = toInsert.slice(i, i + 500);
     let { error } = await db.from("finance_tx").insert(chunk);
-    if (error && /ext_id|source|scope|column|schema cache/i.test(error.message)) {
-      const bare = chunk.map(({ ext_id, source, scope, ...rest }) => rest);
+    if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
+      const bare = chunk.map(({ ext_id, source, scope, account_id, ...rest }: any) => rest);
       ({ error } = await db.from("finance_tx").insert(bare));
     }
     if (error) return NextResponse.json({ ok: false, error: error.message, inserted }, { status: 500 });

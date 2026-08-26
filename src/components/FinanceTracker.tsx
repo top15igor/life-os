@@ -90,6 +90,15 @@ const MONO_MORE_L: Record<string, string> = {
   es: "Puedes añadir otra cuenta de Monobank — de un familiar o una segunda tuya (con su token de api.monobank.ua).",
 };
 
+// Фильтр по счёту: клик по чипу показывает месяц глазами одной карты.
+const ACC_FILTER_L: Record<string, { on: string; off: string; showing: string; showAll: string }> = {
+  ru: { on: "Показать только этот счёт", off: "Показать все счета вместе", showing: "Показаны только операции этого счёта — баланс, категории и календарь месяца пересчитаны по нему.", showAll: "Показать всё вместе" },
+  en: { on: "Show only this account", off: "Show all accounts together", showing: "Showing only this account's operations — the month balance, categories and calendar are computed for it.", showAll: "Show everything together" },
+  uk: { on: "Показати лише цей рахунок", off: "Показати всі рахунки разом", showing: "Показано лише операції цього рахунку — баланс, категорії та календар місяця перераховано за ним.", showAll: "Показати все разом" },
+  fr: { on: "Voir uniquement ce compte", off: "Voir tous les comptes ensemble", showing: "Seules les opérations de ce compte sont affichées — solde, catégories et calendrier recalculés.", showAll: "Tout afficher ensemble" },
+  es: { on: "Ver solo esta cuenta", off: "Ver todas las cuentas juntas", showing: "Solo se muestran las operaciones de esta cuenta — saldo, categorías y calendario recalculados.", showAll: "Mostrar todo junto" },
+};
+
 // Подписи блока «Счета».
 const ACC_L: Record<string, { title: string; add: string; ph: string; opening: string; hint: string; accSel: string; newAcc: string; none: string; del: string; delConfirm: string; from: string; to: string }> = {
   ru: { title: "Счета", add: "Счёт", ph: "Название (напр. Моно белая)", opening: "Остаток сейчас", hint: "Баланс = остаток, который ты задал, плюс все операции, привязанные к счёту после этого. Привязывай операции к счетам в правке (карандаш) — и балансы будут жить сами.", accSel: "Счёт (необязательно)", newAcc: "➕ Новый счёт…", none: "Заведи свои карты и кошельки — у каждого будет живой баланс, а у переводов появится «откуда → куда».", del: "Удалить счёт? Операции останутся, просто отвяжутся.", delConfirm: "Удалить", from: "Откуда", to: "Куда" },
@@ -224,10 +233,18 @@ function budgetColor(pct: number) {
   return "#10b981";
 }
 
-export default function FinanceTracker({ data, locale }: { data: Data; locale: string }) {
+export default function FinanceTracker({ data, locale, accFilter }: { data: Data; locale: string; accFilter?: string | null }) {
   const s = STR[locale] || STR.ru;
   const router = useRouter();
   const { month, income, expense, balance, byCategory, txs, budgetTotal } = data;
+
+  // Переход с сохранением остального адреса (вкладка, счёт, месяц).
+  function pushQuery(set: Record<string, string | null>) {
+    const q = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+    for (const [k, v] of Object.entries(set)) { if (v == null) q.delete(k); else q.set(k, v); }
+    const qs = q.toString();
+    router.push(`/finance${qs ? `?${qs}` : ""}`);
+  }
   const base = data.currency;
 
   const [open, setOpen] = useState(false);
@@ -616,7 +633,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   }
   const cats = pickerCats(kind);
 
-  function gotoMonth(d: number) { router.push(`/finance?m=${shift(month, d)}`); }
+  function gotoMonth(d: number) { pushQuery({ m: shift(month, d) }); }
   function switchKind(k: "income" | "expense") { setKind(k); setCategory(k === "income" ? "salary" : "food"); }
 
   // Календарь: данные по месяцам, границы периода, переходы.
@@ -634,11 +651,11 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const mm = `${pickerYear}-${String(moIdx + 1).padStart(2, "0")}`;
     if (mm > nowMonth) return; // будущее недоступно
     setPickerOpen(false);
-    router.push(`/finance?m=${mm}`);
+    pushQuery({ m: mm });
   }
   function jumpEarliest() {
     const earliest = [...data.monthsWithData].sort()[0];
-    if (earliest) { setPickerOpen(false); router.push(`/finance?m=${earliest}`); }
+    if (earliest) { setPickerOpen(false); pushQuery({ m: earliest }); }
   }
 
   async function save() {
@@ -1689,15 +1706,26 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                   <button onClick={() => setAccEditId(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, fontSize: 15, lineHeight: 1 }}>×</button>
                 </span>
               ) : (
-                <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 13px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)" }}>
+                <span key={a.id} onClick={() => pushQuery({ acc: accFilter === a.id ? null : a.id })}
+                  title={accFilter === a.id ? (ACC_FILTER_L[locale] || ACC_FILTER_L.ru).off : (ACC_FILTER_L[locale] || ACC_FILTER_L.ru).on}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 13px", borderRadius: 12, cursor: "pointer",
+                    border: accFilter === a.id ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                    background: accFilter === a.id ? "color-mix(in srgb, var(--accent) 9%, var(--surface))" : "var(--surface)" }}>
                   <span style={{ fontSize: 16 }}>{a.emoji || "💳"}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-2)" }}>{a.name}</span>
+                  <span style={{ fontSize: 13, color: accFilter === a.id ? "var(--text)" : "var(--text-2)", fontWeight: accFilter === a.id ? 600 : 400 }}>{a.name}</span>
                   <b style={{ fontSize: 14, color: a.balance < 0 ? "#ef4444" : "var(--text)" }}>{fmtMoney(a.balance, a.currency, locale)}</b>
-                  <button onClick={() => { setAccEditId(a.id); setAccEName(a.name); setAccEEmoji(a.emoji || ""); setAccEBal(""); setAccNewOpen(false); }} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
+                  <button onClick={(e) => { e.stopPropagation(); setAccEditId(a.id); setAccEName(a.name); setAccEEmoji(a.emoji || ""); setAccEBal(""); setAccNewOpen(false); }} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
                     <i className="ti ti-pencil" style={{ fontSize: 13 }} />
                   </button>
                 </span>
               ))}
+            </div>
+          )}
+          {accFilter && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10, fontSize: 12, color: "var(--text-2)", background: "color-mix(in srgb, var(--accent) 8%, var(--surface))", border: "1px solid color-mix(in srgb, var(--accent) 35%, var(--border))", borderRadius: 10, padding: "7px 11px" }}>
+              <i className="ti ti-filter" style={{ fontSize: 13, color: "var(--accent)", flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 160 }}>{(ACC_FILTER_L[locale] || ACC_FILTER_L.ru).showing}</span>
+              <button onClick={() => pushQuery({ acc: null })} style={{ ...btnG, padding: "4px 11px", fontSize: 12, flexShrink: 0 }}>{(ACC_FILTER_L[locale] || ACC_FILTER_L.ru).showAll}</button>
             </div>
           )}
           {accNewOpen && (

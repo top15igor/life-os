@@ -5,6 +5,9 @@
 
 alter table bank_monobank add column if not exists id uuid not null default gen_random_uuid();
 alter table bank_monobank add column if not exists client_id text;
+-- Link to finance_accounts: bank operations auto-attach to this account,
+-- so each Monobank connection can be viewed separately or combined.
+alter table bank_monobank add column if not exists account_id uuid;
 
 do $$ begin
   if exists (
