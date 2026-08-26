@@ -11,9 +11,9 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   try {
-    const { data, error } = await supabaseAdmin().from("bank_privat").select("id, name").eq("user_id", user.id);
+    const { data, error } = await supabaseAdmin().from("bank_privat").select("id, name, account_id").eq("user_id", user.id);
     if (error) throw error;
-    return NextResponse.json({ ok: true, connections: (data || []).map((r: any) => ({ id: r.id, name: r.name || null })) });
+    return NextResponse.json({ ok: true, connections: (data || []).map((r: any) => ({ id: r.id, name: r.name || null, accountId: r.account_id || null })) });
   } catch {
     // Таблицы ещё нет (SQL не применён) — фича не показывается.
     return NextResponse.json({ ok: false, needsSql: true, connections: [] });
@@ -58,6 +58,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: String(e?.message || e), needsSql: /bank_privat|schema cache/i.test(String(e?.message)) }, { status: 500 });
+  }
+}
+
+// Связка подключения со счётом из «Счетов». body: { id: string, account_id: string|null }.
+export async function PATCH(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const id = String(body?.id || "");
+  const accountId = body?.account_id && /^[0-9a-f-]{36}$/i.test(String(body.account_id)) ? String(body.account_id) : null;
+  if (!id) return NextResponse.json({ ok: false }, { status: 400 });
+  try {
+    const { error } = await supabaseAdmin().from("bank_privat").update({ account_id: accountId }).eq("id", id).eq("user_id", user.id);
+    if (error) throw error;
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
   }
 }
 

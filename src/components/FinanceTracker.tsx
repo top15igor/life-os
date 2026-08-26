@@ -110,12 +110,12 @@ const ACC_FILTER_L: Record<string, { on: string; off: string; showing: string; s
 };
 
 // Подписи блока «Счета».
-const ACC_L: Record<string, { title: string; add: string; ph: string; opening: string; hint: string; accSel: string; newAcc: string; none: string; del: string; delConfirm: string; from: string; to: string }> = {
-  ru: { title: "Счета", add: "Счёт", ph: "Название (напр. Моно белая)", opening: "Остаток сейчас", hint: "Баланс = остаток, который ты задал, плюс все операции, привязанные к счёту после этого. Привязывай операции к счетам в правке (карандаш) — и балансы будут жить сами.", accSel: "Счёт (необязательно)", newAcc: "➕ Новый счёт…", none: "Заведи свои карты и кошельки — у каждого будет живой баланс, а у переводов появится «откуда → куда».", del: "Удалить счёт? Операции останутся, просто отвяжутся.", delConfirm: "Удалить", from: "Откуда", to: "Куда" },
-  en: { title: "Accounts", add: "Account", ph: "Name (e.g. Mono white)", opening: "Balance now", hint: "Balance = the amount you set plus every operation linked to the account after that. Link operations in the edit dialog (pencil) — balances will live on their own.", accSel: "Account (optional)", newAcc: "➕ New account…", none: "Add your cards and wallets — each gets a live balance, and transfers get a real \"from → to\".", del: "Delete this account? Operations stay, they just get unlinked.", delConfirm: "Delete", from: "From", to: "To" },
-  uk: { title: "Рахунки", add: "Рахунок", ph: "Назва (напр. Моно біла)", opening: "Залишок зараз", hint: "Баланс = залишок, який ти задав, плюс усі операції, привʼязані до рахунку після цього. Привʼязуй операції у правці (олівець) — і баланси житимуть самі.", accSel: "Рахунок (необовʼязково)", newAcc: "➕ Новий рахунок…", none: "Заведи свої картки й гаманці — у кожного буде живий баланс, а в переказів зʼявиться «звідки → куди».", del: "Видалити рахунок? Операції залишаться, просто відвʼяжуться.", delConfirm: "Видалити", from: "Звідки", to: "Куди" },
-  fr: { title: "Comptes", add: "Compte", ph: "Nom (ex. Mono blanche)", opening: "Solde actuel", hint: "Solde = le montant fixé plus chaque opération liée au compte ensuite. Lie les opérations dans l'édition (crayon) — les soldes vivront tout seuls.", accSel: "Compte (facultatif)", newAcc: "➕ Nouveau compte…", none: "Ajoute tes cartes et portefeuilles — chacun aura un solde vivant.", del: "Supprimer ce compte ? Les opérations restent, juste déliées.", delConfirm: "Supprimer", from: "De", to: "Vers" },
-  es: { title: "Cuentas", add: "Cuenta", ph: "Nombre (ej. Mono blanca)", opening: "Saldo actual", hint: "Saldo = el importe fijado más cada operación vinculada a la cuenta después. Vincula operaciones en la edición (lápiz) — los saldos vivirán solos.", accSel: "Cuenta (opcional)", newAcc: "➕ Nueva cuenta…", none: "Añade tus tarjetas y billeteras — cada una tendrá un saldo vivo.", del: "¿Eliminar esta cuenta? Las operaciones quedan, solo se desvinculan.", delConfirm: "Eliminar", from: "Desde", to: "Hacia" },
+const ACC_L: Record<string, { title: string; add: string; ph: string; opening: string; hint: string; accSel: string; newAcc: string; none: string; del: string; delConfirm: string; from: string; to: string; bankNone: string }> = {
+  ru: { title: "Счета", add: "Счёт", ph: "Название (напр. Моно белая)", opening: "Остаток сейчас", hint: "Баланс = остаток, который ты задал, плюс все операции, привязанные к счёту после этого. Привязывай операции к счетам в правке (карандаш) — и балансы будут жить сами.", accSel: "Счёт (необязательно)", newAcc: "➕ Новый счёт…", none: "Заведи свои карты и кошельки — у каждого будет живой баланс, а у переводов появится «откуда → куда».", del: "Удалить счёт? Операции останутся, просто отвяжутся.", delConfirm: "Удалить", from: "Откуда", to: "Куда", bankNone: "🏦 Без банка" },
+  en: { title: "Accounts", add: "Account", ph: "Name (e.g. Mono white)", opening: "Balance now", hint: "Balance = the amount you set plus every operation linked to the account after that. Link operations in the edit dialog (pencil) — balances will live on their own.", accSel: "Account (optional)", newAcc: "➕ New account…", none: "Add your cards and wallets — each gets a live balance, and transfers get a real \"from → to\".", del: "Delete this account? Operations stay, they just get unlinked.", delConfirm: "Delete", from: "From", to: "To", bankNone: "🏦 No bank" },
+  uk: { title: "Рахунки", add: "Рахунок", ph: "Назва (напр. Моно біла)", opening: "Залишок зараз", hint: "Баланс = залишок, який ти задав, плюс усі операції, привʼязані до рахунку після цього. Привʼязуй операції у правці (олівець) — і баланси житимуть самі.", accSel: "Рахунок (необовʼязково)", newAcc: "➕ Новий рахунок…", none: "Заведи свої картки й гаманці — у кожного буде живий баланс, а в переказів зʼявиться «звідки → куди».", del: "Видалити рахунок? Операції залишаться, просто відвʼяжуться.", delConfirm: "Видалити", from: "Звідки", to: "Куди", bankNone: "🏦 Без банку" },
+  fr: { title: "Comptes", add: "Compte", ph: "Nom (ex. Mono blanche)", opening: "Solde actuel", hint: "Solde = le montant fixé plus chaque opération liée au compte ensuite. Lie les opérations dans l'édition (crayon) — les soldes vivront tout seuls.", accSel: "Compte (facultatif)", newAcc: "➕ Nouveau compte…", none: "Ajoute tes cartes et portefeuilles — chacun aura un solde vivant.", del: "Supprimer ce compte ? Les opérations restent, juste déliées.", delConfirm: "Supprimer", from: "De", to: "Vers", bankNone: "🏦 Sans banque" },
+  es: { title: "Cuentas", add: "Cuenta", ph: "Nombre (ej. Mono blanca)", opening: "Saldo actual", hint: "Saldo = el importe fijado más cada operación vinculada a la cuenta después. Vincula operaciones en la edición (lápiz) — los saldos vivirán solos.", accSel: "Cuenta (opcional)", newAcc: "➕ Nueva cuenta…", none: "Añade tus tarjetas y billeteras — cada una tendrá un saldo vivo.", del: "¿Eliminar esta cuenta? Las operaciones quedan, solo se desvinculan.", delConfirm: "Eliminar", from: "Desde", to: "Hacia", bankNone: "🏦 Sin banco" },
 };
 
 // Подпись «доля от всех расходов месяца» — без неё процент рядом с лимитом
@@ -323,13 +323,16 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
   const [accNewEmoji, setAccNewEmoji] = useState("");
   const [accNewCur, setAccNewCur] = useState("UAH");
   const [accNewBal, setAccNewBal] = useState("");
+  const [accNewBank, setAccNewBank] = useState("");
   async function createAccount(): Promise<Account | null> {
     const name = accNewName.trim();
     if (!name) return null;
     const r = await fetch("/api/finance/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, emoji: accNewEmoji.trim() || null, currency: accNewCur, opening_balance: parseFloat(accNewBal.replace(",", ".")) || 0 }) }).then((x) => x.json()).catch(() => null);
     if (r?.ok && r.account) {
       setAccounts((as) => [...(as || []), r.account]);
-      setAccNewOpen(false); setAccNewName(""); setAccNewEmoji(""); setAccNewBal("");
+      // Сразу связываем со своим банковским подключением, если выбрано.
+      if (accNewBank) await linkBank(r.account.id, accNewBank);
+      setAccNewOpen(false); setAccNewName(""); setAccNewEmoji(""); setAccNewBal(""); setAccNewBank("");
       return r.account as Account;
     }
     return null;
@@ -338,12 +341,18 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
   const [accEName, setAccEName] = useState("");
   const [accEEmoji, setAccEEmoji] = useState("");
   const [accEBal, setAccEBal] = useState("");
+  const [accEBank, setAccEBank] = useState("");
   async function saveAccount(id: string) {
     const body: any = { id, name: accEName.trim(), emoji: accEEmoji.trim() || null };
     const v = parseFloat(accEBal.replace(",", "."));
     if (accEBal.trim() && isFinite(v)) body.opening_balance = v;
     const r = await fetch("/api/finance/accounts", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((x) => x.json()).catch(() => null);
-    if (r?.ok) { setAccEditId(null); loadAccounts(); }
+    if (r?.ok) {
+      // Связка с банком: выбранное подключение начнёт класть операции сюда,
+      // «без банка» — снимет прежнюю связку.
+      if (accEBank !== bankKeyOf(id)) await linkBank(id, accEBank);
+      setAccEditId(null); loadAccounts();
+    }
   }
   async function delAccount(id: string) {
     if (!window.confirm(A.del)) return;
@@ -494,7 +503,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
   useEffect(() => { loadRecur(); /* eslint-disable-next-line */ }, []);
 
   // Подключение Monobank.
-  type MonoStatus = { connected: boolean; clientName: string | null; webhookSet?: boolean; connections?: { id: string | null; clientName: string | null; webhookSet?: boolean }[] };
+  type MonoStatus = { connected: boolean; clientName: string | null; webhookSet?: boolean; connections?: { id: string | null; clientName: string | null; webhookSet?: boolean; accountId?: string | null }[] };
   const [mono, setMono] = useState<MonoStatus | null>(null);
   const [monoToken, setMonoToken] = useState("");
   const [monoBusy, setMonoBusy] = useState(false);
@@ -536,7 +545,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
 
   // Подключение ПриватБанка (бизнес/ФОП): null — таблицы нет, фича скрыта.
   const PV = PRIVAT_L[locale] || PRIVAT_L.ru;
-  const [privat, setPrivat] = useState<{ id: string; name: string | null }[] | null>(null);
+  const [privat, setPrivat] = useState<{ id: string; name: string | null; accountId?: string | null }[] | null>(null);
   const [pvId, setPvId] = useState("");
   const [pvToken, setPvToken] = useState("");
   const [pvName, setPvName] = useState("");
@@ -573,6 +582,27 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
       else setPvMsg(PV.err);
     } catch { setPvMsg(PV.err); }
     setPvBusy(false);
+  }
+
+  // Связка «банковское подключение → счёт»: выбранный банк кладёт операции в счёт.
+  const bankOptions = [
+    ...(((mono?.connections?.length ? mono.connections : (mono?.connected ? [{ id: null as string | null, clientName: mono?.clientName || null, accountId: null as string | null }] : []))).map((c) => ({ key: `mono:${c.id || ""}`, label: `Monobank · ${c.clientName || ""}`.replace(/ · $/, ""), accId: (c as any).accountId || null }))),
+    ...((privat || []).map((c) => ({ key: `pb:${c.id}`, label: `Приват · ${c.name || "ФОП"}`, accId: c.accountId || null }))),
+  ];
+  const bankKeyOf = (accountId: string) => bankOptions.find((o) => o.accId === accountId)?.key || "";
+  async function linkBank(accountId: string, key: string) {
+    const patch = (url: string, body: any) => fetch(url, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    if (key.startsWith("mono:")) await patch("/api/bank/monobank", { id: key.slice(5) || null, account_id: accountId });
+    else if (key.startsWith("pb:")) await patch("/api/bank/privat", { id: key.slice(3), account_id: accountId });
+    else {
+      // «Без банка»: снять связку со всех подключений, указывающих на этот счёт.
+      for (const o of bankOptions) {
+        if (o.accId !== accountId) continue;
+        if (o.key.startsWith("mono:")) await patch("/api/bank/monobank", { id: o.key.slice(5) || null, account_id: null });
+        if (o.key.startsWith("pb:")) await patch("/api/bank/privat", { id: o.key.slice(3), account_id: null });
+      }
+    }
+    loadMono(); loadPrivat();
   }
 
   // Цели по накоплениям.
@@ -1784,6 +1814,12 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                   <EmojiInput value={accEEmoji} onChange={setAccEEmoji} inputStyle={{ ...input, width: 44, padding: "4px", textAlign: "center", fontSize: 13 }} />
                   <input value={accEName} onChange={(e) => setAccEName(e.target.value)} maxLength={60} style={{ ...input, width: 140, padding: "4px 8px", fontSize: 13 }} />
                   <input value={accEBal} onChange={(e) => setAccEBal(e.target.value)} inputMode="decimal" placeholder={`${A.opening} (${a.currency})`} style={{ ...input, width: 150, padding: "4px 8px", fontSize: 13 }} />
+                  {bankOptions.length > 0 && (
+                    <select value={accEBank} onChange={(e) => setAccEBank(e.target.value)} style={{ ...input, width: 170, padding: "4px 8px", fontSize: 12.5 }}>
+                      <option value="">{A.bankNone}</option>
+                      {bankOptions.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                    </select>
+                  )}
                   <button onClick={() => saveAccount(a.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--accent)", padding: 0 }}><i className="ti ti-check" style={{ fontSize: 16 }} /></button>
                   <button onClick={() => delAccount(a.id)} title={A.delConfirm} style={{ border: "none", background: "none", cursor: "pointer", color: "#ef4444", padding: 0 }}><i className="ti ti-trash" style={{ fontSize: 14 }} /></button>
                   <button onClick={() => setAccEditId(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, fontSize: 15, lineHeight: 1 }}>×</button>
@@ -1797,7 +1833,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                   <span style={{ fontSize: 16 }}>{a.emoji || "💳"}</span>
                   <span style={{ fontSize: 13, color: accFilter === a.id ? "var(--text)" : "var(--text-2)", fontWeight: accFilter === a.id ? 600 : 400 }}>{a.name}</span>
                   <b style={{ fontSize: 14, color: a.balance < 0 ? "#ef4444" : "var(--text)" }}>{fmtMoney(a.balance, a.currency, locale)}</b>
-                  <button onClick={(e) => { e.stopPropagation(); setAccEditId(a.id); setAccEName(a.name); setAccEEmoji(a.emoji || ""); setAccEBal(""); setAccNewOpen(false); }} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
+                  <button onClick={(e) => { e.stopPropagation(); setAccEditId(a.id); setAccEName(a.name); setAccEEmoji(a.emoji || ""); setAccEBal(""); setAccEBank(bankKeyOf(a.id)); setAccNewOpen(false); }} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
                     <i className="ti ti-pencil" style={{ fontSize: 13 }} />
                   </button>
                 </span>
@@ -1821,6 +1857,12 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                 {CUR.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
               </select>
               <input value={accNewBal} onChange={(e) => setAccNewBal(e.target.value)} inputMode="decimal" placeholder={A.opening} style={{ ...input, width: 150 }} />
+              {bankOptions.length > 0 && (
+                <select value={accNewBank} onChange={(e) => setAccNewBank(e.target.value)} style={{ ...input, width: 190 }}>
+                  <option value="">{A.bankNone}</option>
+                  {bankOptions.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+              )}
               <button onClick={createAccount} disabled={!accNewName.trim()} style={{ ...btnG, opacity: accNewName.trim() ? 1 : 0.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
             </div>
           )}

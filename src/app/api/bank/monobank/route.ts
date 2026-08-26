@@ -22,11 +22,11 @@ export async function GET() {
   try {
     let rows: any[] = [];
     try {
-      const { data, error } = await supabaseAdmin().from("bank_monobank").select("id, client_name, webhook_set").eq("user_id", user.id);
+      const { data, error } = await supabaseAdmin().from("bank_monobank").select("id, client_name, webhook_set, account_id").eq("user_id", user.id);
       if (error) throw error;
       rows = data || [];
     } catch {
-      // Старая схема без колонки id — одна строка на пользователя.
+      // Старая схема без колонок id/account_id — одна строка на пользователя.
       const { data } = await supabaseAdmin().from("bank_monobank").select("client_name, webhook_set").eq("user_id", user.id).maybeSingle();
       rows = data ? [data] : [];
     }
@@ -35,7 +35,7 @@ export async function GET() {
       connected: rows.length > 0,
       clientName: rows[0]?.client_name || null,
       webhookSet: !!rows[0]?.webhook_set,
-      connections: rows.map((r) => ({ id: r.id || null, clientName: r.client_name || null, webhookSet: !!r.webhook_set })),
+      connections: rows.map((r) => ({ id: r.id || null, clientName: r.client_name || null, webhookSet: !!r.webhook_set, accountId: r.account_id || null })),
     });
   } catch {
     return NextResponse.json({ ok: true, connected: false, connections: [] });
@@ -124,6 +124,25 @@ export async function POST(req: NextRequest) {
 
   if (webhookSet) await db.from("bank_monobank").update({ webhook_set: true }).eq("hook_secret", secret);
   return NextResponse.json({ ok: true, clientName, webhookSet });
+}
+
+// Связка подключения со счётом из «Счетов»: операции банка будут привязываться
+// к выбранному счёту. body: { id?: string|null, account_id: string|null }.
+export async function PATCH(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const accountId = body?.account_id && /^[0-9a-f-]{36}$/i.test(String(body.account_id)) ? String(body.account_id) : null;
+  const id = body?.id && /^[0-9a-f-]{36}$/i.test(String(body.id)) ? String(body.id) : null;
+  try {
+    let q: any = supabaseAdmin().from("bank_monobank").update({ account_id: accountId }).eq("user_id", user.id);
+    if (id) q = q.eq("id", id);
+    const { error } = await q;
+    if (error) throw error;
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+  }
 }
 
 // Отключить: убираем вебхук в Monobank и удаляем сохранённый токен.
