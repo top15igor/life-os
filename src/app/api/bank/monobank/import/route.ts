@@ -15,26 +15,33 @@ export async function POST() {
   if (!user) return NextResponse.json({ ok: false }, { status: 401 });
   const db = supabaseAdmin();
 
-  let row: any = null;
-  try { ({ data: row } = await db.from("bank_monobank").select("token, accounts").eq("user_id", user.id).maybeSingle()); }
-  catch { ({ data: row } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle()); }
-  const token = row?.token;
-  if (!token) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
+  // Подключений может быть несколько (свой аккаунт + аккаунт близкого) —
+  // импортируем по каждому токену. Старая схема вернёт одну строку.
+  let rows: any[] = [];
+  try {
+    const { data, error } = await db.from("bank_monobank").select("token, accounts").eq("user_id", user.id);
+    if (error) throw error;
+    rows = data || [];
+  } catch {
+    try { const { data } = await db.from("bank_monobank").select("token").eq("user_id", user.id).maybeSingle(); rows = data ? [data] : []; }
+    catch { rows = []; }
+  }
+  rows = rows.filter((r) => r?.token);
+  if (!rows.length) return NextResponse.json({ ok: false, error: "not_connected" }, { status: 400 });
 
-  // Счета (id + валюта счёта). Сначала сохранённые при подключении (без лишнего client-info ради лимита).
-  let accounts: { id: string; currency: string }[] = Array.isArray(row?.accounts)
-    ? row.accounts.filter((a: any) => a?.id).map((a: any) => ({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)) }))
-    : [];
-  if (!accounts.length) {
-    try {
-      const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
-      if (r.status === 429) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
-      if (!r.ok) return NextResponse.json({ ok: false, error: "mono_error" }, { status: 400 });
-      const info = await r.json();
-      accounts = (info?.accounts || []).filter((a: any) => a?.id).map((a: any) => ({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)) }));
-    } catch {
-      return NextResponse.json({ ok: false, error: "network" }, { status: 502 });
+  // Счета каждого подключения (id + валюта счёта + токен). Сначала сохранённые
+  // при подключении (без лишнего client-info ради лимита 1 запрос/60с).
+  const accounts: { id: string; currency: string; token: string }[] = [];
+  for (const row of rows) {
+    const token = row.token as string;
+    let list: any[] = Array.isArray(row?.accounts) ? row.accounts.filter((a: any) => a?.id) : [];
+    if (!list.length) {
+      try {
+        const r = await fetch(`${MONO}/personal/client-info`, { headers: { "X-Token": token }, cache: "no-store" });
+        if (r.ok) { const info = await r.json(); list = (info?.accounts || []).filter((a: any) => a?.id); }
+      } catch { /* этот токен пропускаем */ }
     }
+    for (const a of list) accounts.push({ id: a.id, currency: currencyAlpha(Number(a.currencyCode)), token });
   }
   if (!accounts.length) return NextResponse.json({ ok: true, inserted: 0, accounts: 0 });
 
@@ -54,11 +61,13 @@ export async function POST() {
   let rateLimited = false;
   const toInsert: any[] = [];
   const toFix: { ext_id: string; currency: string; amount: number }[] = [];
+  const throttled = new Set<string>(); // токен, упёршийся в лимит, дальше не дёргаем
   for (const acc of accounts) {
+    if (throttled.has(acc.token)) continue;
     let res: Response;
-    try { res = await fetch(`${MONO}/personal/statement/${acc.id}/${from}/${to}`, { headers: { "X-Token": token }, cache: "no-store" }); }
+    try { res = await fetch(`${MONO}/personal/statement/${acc.id}/${from}/${to}`, { headers: { "X-Token": acc.token }, cache: "no-store" }); }
     catch { continue; }
-    if (res.status === 429) { rateLimited = true; break; }
+    if (res.status === 429) { rateLimited = true; throttled.add(acc.token); continue; }
     if (!res.ok) continue;
     const items = await res.json().catch(() => []);
     for (const it of items as any[]) {

@@ -81,6 +81,15 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
 };
 
+// «Добавить ещё один аккаунт Monobank» — подпись у поля токена, когда уже подключено.
+const MONO_MORE_L: Record<string, string> = {
+  ru: "Можно добавить ещё один аккаунт Monobank — например, близкого человека или второй свой (по его токену с api.monobank.ua). Операции всех аккаунтов будут падать в «Деньги» вместе.",
+  en: "You can add another Monobank account — a family member's or a second one of yours (with its token from api.monobank.ua). Operations from all accounts land in Money together.",
+  uk: "Можна додати ще один акаунт Monobank — наприклад, близької людини або другий свій (за його токеном з api.monobank.ua). Операції всіх акаунтів падатимуть у «Гроші» разом.",
+  fr: "Tu peux ajouter un autre compte Monobank — celui d'un proche ou un second à toi (avec son token de api.monobank.ua).",
+  es: "Puedes añadir otra cuenta de Monobank — de un familiar o una segunda tuya (con su token de api.monobank.ua).",
+};
+
 // Подписи блока «Счета».
 const ACC_L: Record<string, { title: string; add: string; ph: string; opening: string; hint: string; accSel: string; newAcc: string; none: string; del: string; delConfirm: string; from: string; to: string }> = {
   ru: { title: "Счета", add: "Счёт", ph: "Название (напр. Моно белая)", opening: "Остаток сейчас", hint: "Баланс = остаток, который ты задал, плюс все операции, привязанные к счёту после этого. Привязывай операции к счетам в правке (карандаш) — и балансы будут жить сами.", accSel: "Счёт (необязательно)", newAcc: "➕ Новый счёт…", none: "Заведи свои карты и кошельки — у каждого будет живой баланс, а у переводов появится «откуда → куда».", del: "Удалить счёт? Операции останутся, просто отвяжутся.", delConfirm: "Удалить", from: "Откуда", to: "Куда" },
@@ -458,7 +467,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   useEffect(() => { loadRecur(); /* eslint-disable-next-line */ }, []);
 
   // Подключение Monobank.
-  type MonoStatus = { connected: boolean; clientName: string | null; webhookSet?: boolean };
+  type MonoStatus = { connected: boolean; clientName: string | null; webhookSet?: boolean; connections?: { id: string | null; clientName: string | null; webhookSet?: boolean }[] };
   const [mono, setMono] = useState<MonoStatus | null>(null);
   const [monoToken, setMonoToken] = useState("");
   const [monoBusy, setMonoBusy] = useState(false);
@@ -475,16 +484,18 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     try {
       const r = await fetch("/api/bank/monobank", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: t }) });
       const j = await r.json();
-      if (r.ok && j?.ok) { setMonoToken(""); setMono({ connected: true, clientName: j.clientName, webhookSet: j.webhookSet }); if (!j.webhookSet) setMonoMsg(s.monoWebhookWarn); }
+      if (r.ok && j?.ok) { setMonoToken(""); await loadMono(); if (!j.webhookSet) setMonoMsg(s.monoWebhookWarn); }
       else setMonoMsg(j?.error === "invalid_token" ? s.monoBadToken : j?.error === "rate_limited" ? s.monoRate : s.monoErr);
     } catch { setMonoMsg(s.monoErr); }
     setMonoBusy(false);
   }
-  async function disconnectMono() {
+  // Отключить одно подключение (id) или все разом (без id — старая схема).
+  async function disconnectMono(id?: string | null) {
     if (!window.confirm(s.monoDisconnectConfirm)) return;
     setMonoBusy(true);
-    await fetch("/api/bank/monobank", { method: "DELETE" });
-    setMonoBusy(false); setMono({ connected: false, clientName: null }); setMonoMsg(null);
+    await fetch(`/api/bank/monobank${id ? `?id=${encodeURIComponent(id)}` : ""}`, { method: "DELETE" });
+    setMonoBusy(false); setMonoMsg(null);
+    await loadMono();
   }
   async function importMono() {
     setMonoBusy(true); setMonoMsg(null);
@@ -1226,28 +1237,30 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
             <div style={secHead}>
               <i className="ti ti-building-bank" style={{ fontSize: 16, color: "var(--accent)" }} />{s.monoTitle}
             </div>
-            {mono?.connected ? (
-              <div>
-                <div style={{ fontSize: 12.5, color: "#065f46", background: "#10b9811a", border: "1px solid #6ee7b7", borderRadius: 9, padding: "8px 11px", marginBottom: 8 }}>{s.monoConnected(mono.clientName)}</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button disabled={monoBusy} onClick={importMono} style={btnG}>
-                    <i className="ti ti-history" style={{ fontSize: 14 }} /> {s.monoImportBtn}
-                  </button>
-                  <button disabled={monoBusy} onClick={disconnectMono} style={{ ...btnG, color: "#ef4444" }}>{s.monoDisconnect}</button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{s.monoHint}</div>
-                <input type="password" placeholder={s.monoTokenPh} value={monoToken} onChange={(e) => setMonoToken(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <button disabled={monoBusy} onClick={connectMono} style={{ ...btnP, opacity: monoBusy ? 0.7 : 1 }}>
-                    <i className="ti ti-plug" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.monoConnect}
-                  </button>
-                  <a href="https://api.monobank.ua/" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--accent)" }}>{s.monoGetToken}</a>
-                </div>
+            {mono?.connected && (
+              <div style={{ marginBottom: 10 }}>
+                {(mono.connections?.length ? mono.connections : [{ id: null, clientName: mono.clientName }]).map((c, i) => (
+                  <div key={c.id || i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#065f46", background: "#10b9811a", border: "1px solid #6ee7b7", borderRadius: 9, padding: "8px 11px", marginBottom: 6 }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>{s.monoConnected(c.clientName)}</span>
+                    <button disabled={monoBusy} onClick={() => disconnectMono(c.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "#ef4444", fontSize: 12, flexShrink: 0, padding: 0 }}>{s.monoDisconnect}</button>
+                  </div>
+                ))}
+                <button disabled={monoBusy} onClick={importMono} style={btnG}>
+                  <i className="ti ti-history" style={{ fontSize: 14 }} /> {s.monoImportBtn}
+                </button>
               </div>
             )}
+            {/* Поле токена видно всегда: первым подключением и «добавить ещё один аккаунт». */}
+            <div>
+              <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{mono?.connected ? (MONO_MORE_L[locale] || MONO_MORE_L.ru) : s.monoHint}</div>
+              <input type="password" placeholder={s.monoTokenPh} value={monoToken} onChange={(e) => setMonoToken(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button disabled={monoBusy} onClick={connectMono} style={{ ...btnP, opacity: monoBusy ? 0.7 : 1 }}>
+                  <i className="ti ti-plug" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {s.monoConnect}
+                </button>
+                <a href="https://api.monobank.ua/" target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--accent)" }}>{s.monoGetToken}</a>
+              </div>
+            </div>
             {monoMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{monoMsg}</div>}
           </div>
 
