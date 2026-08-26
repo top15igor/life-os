@@ -48,6 +48,7 @@ const S: Record<string, any> = {
     delAsk: "Удалить это фото насовсем? Оно исчезнет и с карты, и из «Памяти».",
     unpinDone: "Снимок вернулся в список без точки",
     dropHere: "Отпусти — поставлю на карту",
+    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…",
     allTitle: "Все фото и видео", allHint: "Нажми на кадр — покажу его на карте.", showAll: "Показать все", collapse: "Свернуть", noPin: "без точки",
   },
   en: {
@@ -66,6 +67,7 @@ const S: Record<string, any> = {
     delAsk: "Delete this photo for good? It disappears from the map and from Memory.",
     unpinDone: "The shot is back in the list without a point",
     dropHere: "Drop it — I'll put it on the map",
+    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…",
     allTitle: "All photos & videos", allHint: "Tap a shot — I'll show it on the map.", showAll: "Show all", collapse: "Collapse", noPin: "no point",
   },
   uk: {
@@ -84,6 +86,7 @@ const S: Record<string, any> = {
     delAsk: "Видалити це фото назавжди? Воно зникне і з карти, і з «Пам'яті».",
     unpinDone: "Знімок повернувся до списку без точки",
     dropHere: "Відпусти — поставлю на карту",
+    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…",
     allTitle: "Усі фото та відео", allHint: "Натисни на кадр — покажу його на карті.", showAll: "Показати всі", collapse: "Згорнути", noPin: "без точки",
   },
   fr: {
@@ -102,6 +105,7 @@ const S: Record<string, any> = {
     delAsk: "Supprimer cette photo définitivement ? Elle disparaît de la carte et de la Mémoire.",
     unpinDone: "La photo est revenue dans la liste sans point",
     dropHere: "Lâche — je la mets sur la carte",
+    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…",
     allTitle: "Toutes les photos et vidéos", allHint: "Touche une photo — je la montre sur la carte.", showAll: "Tout afficher", collapse: "Replier", noPin: "sans point",
   },
   es: {
@@ -120,6 +124,7 @@ const S: Record<string, any> = {
     delAsk: "¿Eliminar esta foto para siempre? Desaparece del mapa y de la Memoria.",
     unpinDone: "La foto volvió a la lista sin punto",
     dropHere: "Suéltala — la pongo en el mapa",
+    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…",
     allTitle: "Todas las fotos y vídeos", allHint: "Toca una foto — la muestro en el mapa.", showAll: "Mostrar todas", collapse: "Contraer", noPin: "sin punto",
   },
 };
@@ -245,6 +250,8 @@ export default function LifeMap({
   const [recording, setRecording] = useState(false);
   const [recBusy, setRecBusy] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [guess, setGuess] = useState<{ id: string; lat: number; lng: number; place: string } | null>(null);
+  const [guessBusy, setGuessBusy] = useState(false);
   const [full, setFull] = useState(false);
 
   const elRef = useRef<HTMLDivElement | null>(null);
@@ -547,6 +554,7 @@ export default function LifeMap({
   // ===== Поставить/переставить точку =====
   async function putPoint(pl: Placing, lat: number, lng: number) {
     setPlacing(null);
+    setGuess(null);
     let place: string | null = null;
     try {
       const r = await fetch("/api/map", {
@@ -613,12 +621,39 @@ export default function LifeMap({
     } catch {}
   }
 
+  // Снимок без координат: спрашиваем, не узнал ли AI место на нём. Если узнал —
+  // подлетаем туда и предлагаем подтвердить. Человеку остаётся одно нажатие
+  // вместо поисков по карте.
+  async function askGuess(id: string) {
+    setGuess(null);
+    setGuessBusy(true);
+    try {
+      const r = await fetch("/api/map", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "guess", id, kind: "memory" }),
+      }).then((x) => x.json());
+      const g = r?.guess;
+      // Пока ходили на сервер, человек мог передумать и выбрать другой кадр.
+      if (g && stateRef.current.placing?.id === id) {
+        setGuess({ id, lat: g.lat, lng: g.lng, place: g.place });
+        try { mapRef.current?.flyTo([g.lat, g.lng], 13, { duration: 0.9 }); } catch {}
+      }
+    } catch {}
+    setGuessBusy(false);
+  }
+
+  function startPlacing(id: string, from: "orphan" | "point" = "orphan") {
+    setPlacing({ id, kind: "memory", from });
+    try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+    if (from === "orphan") askGuess(id);
+  }
+
   // Нажатие на кадр в общей ленте: у кадра есть точка — подлетаем к ней и
   // открываем карточку; точки нет — сразу предлагаем поставить её руками.
   function showOnMap(item: MediaItem) {
     try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
     if (item.lat === null || item.lng === null) {
-      setPlacing({ id: item.id, kind: "memory", from: "orphan" });
+      startPlacing(item.id);
       return;
     }
     // Кадр может быть спрятан фильтром по годам — тогда снимаем фильтр,
@@ -716,7 +751,7 @@ export default function LifeMap({
           // Координат в файле не было — сразу предлагаем поставить точку руками.
           if (!placedFirst) {
             placedFirst = true;
-            setPlacing({ id, kind: "memory", from: "orphan" });
+            startPlacing(id);
           }
         }
       }
@@ -817,8 +852,22 @@ export default function LifeMap({
         {placing && (
           <div className="lm-banner">
             <i className="ti ti-map-pin-plus" style={{ fontSize: 15 }} />
-            {placing.from === "point" ? s.placingMove : s.placing}
-            <button onClick={() => setPlacing(null)} style={{ background: "rgba(255,255,255,.22)", border: "none", color: "#fff", borderRadius: 999, padding: "3px 9px", fontSize: 12, cursor: "pointer" }}>{s.cancel}</button>
+            {guess && guess.id === placing.id
+              ? s.guessAsk(guess.place)
+              : guessBusy
+                ? s.guessBusy
+                : placing.from === "point" ? s.placingMove : s.placing}
+            {guess && guess.id === placing.id && (
+              <button
+                onClick={() => putPoint(placing, guess.lat, guess.lng)}
+                style={{ background: "#fff", border: "none", color: "var(--accent, #6366f1)", borderRadius: 999, padding: "3px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                {s.guessYes}
+              </button>
+            )}
+            <button onClick={() => { setPlacing(null); setGuess(null); }} style={{ background: "rgba(255,255,255,.22)", border: "none", color: "#fff", borderRadius: 999, padding: "3px 9px", fontSize: 12, cursor: "pointer" }}>
+              {guess && guess.id === placing.id ? s.guessNo : s.cancel}
+            </button>
           </div>
         )}
 
@@ -925,8 +974,8 @@ export default function LifeMap({
                 key={o.id} title={o.title}
                 className={`lm-orph ${placing?.id === o.id ? "on" : ""}`}
                 onClick={() => {
-                  setPlacing(placing?.id === o.id ? null : { id: o.id, kind: "memory", from: "orphan" });
-                  try { wrapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); } catch {}
+                  if (placing?.id === o.id) { setPlacing(null); setGuess(null); return; }
+                  startPlacing(o.id);
                 }}
               >
                 {o.url ? <img src={o.url} alt={o.title} /> : <span className="play"><i className="ti ti-video" /></span>}

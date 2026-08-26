@@ -72,7 +72,27 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
   // Точка на карте жизни: координаты берём из самого файла (и, если их там нет,
   // из подписи). Снимок без координат просто не встанет на карту — это нормально.
   const geo = memory?.id ? await geoTagMemory(memory.id, userId, buf, { ...geoOpts, mediaType }) : null;
+  if (!geo && memory?.id) await rememberGuess(memory.id, userId, vision.place);
   return { memory, vision, geo };
+}
+
+// Координат в файле не нашлось, но AI УЗНАЛ место на снимке («Водопад
+// Брюарфосс, Исландия»). Запоминаем это название рядом со снимком: точку по
+// нему не ставим (AI может ошибиться), но человеку больше не придётся искать
+// место на карте руками — приложение предложит, а он подтвердит одним нажатием.
+//
+// Координаты не храним намеренно: колонок под догадку нет, а название легко
+// превратить в точку в момент подтверждения.
+async function rememberGuess(memoryId: string, userId: string, place?: string | null): Promise<void> {
+  const name = (place || "").trim();
+  if (name.length < 3 || name.length > 120) return;
+  try {
+    await supabaseAdmin()
+      .from("memories")
+      .update({ place_name: name, geo_source: "guess" })
+      .eq("id", memoryId)
+      .eq("user_id", userId);
+  } catch {}
 }
 
 // Загрузить ЛЮБОЙ файл (фото или PDF), распознать его смысл и сохранить в «Визуальную память».
@@ -150,6 +170,7 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
   // Фото, присланное файлом, — единственный путь, где координаты съёмки доходят
   // до нас целыми: Telegram вырезает их из сжатых картинок.
   const geo = memory?.id && (isImage || isVideo) ? await geoTagMemory(memory.id, userId, buf, { ...geoOpts, mediaType }) : null;
+  if (!geo && memory?.id && (isImage || isVideo)) await rememberGuess(memory.id, userId, vision.place);
   return { memory, vision, geo };
 }
 

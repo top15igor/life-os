@@ -12,6 +12,7 @@ export type VisionResult = {
   fields: { label: string; value: string }[];
   folder?: string | null;
   date?: string | null;
+  place?: string | null;
   confidence?: "low" | "medium" | "high";
 };
 
@@ -27,6 +28,7 @@ const TOOL: Anthropic.Tool = {
       fields: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] }, description: "Важные извлечённые данные парами (дата, сумма, организация, предмет, гарантия, номер, модель, серийный, пробег, адрес) — ТОЛЬКО что реально видно." },
       folder: { type: "string", description: "Короткое имя стопки-папки для похожих вещей ВНУТРИ категории, во множественном числе, в языке документа: «Паспорта», «Чеки», «Свидетельства о рождении», «Гарантии», «Билеты», «Медицина». Одинаковые по типу вещи ДОЛЖНЫ получать ОДНО и то же имя папки. Для уникальных моментов/фото, которым папка не нужна — не заполняй." },
       date: { type: "string", description: "YYYY-MM-DD, если на документе видна дата." },
+      place: { type: "string", description: "Если на снимке УЗНАЁШЬ конкретное место — назови его так, как ищут на карте: «Водопад Брюарфосс, Исландия», «Концертный зал Харпа, Рейкьявик», «Эйфелева башня, Париж». Достаточно города со страной, если само место не определяется. НЕ ГАДАЙ: пустое поле лучше выдуманного места." },
       confidence: { type: "string", enum: ["low", "medium", "high"] },
     },
     required: ["category", "title", "summary"],

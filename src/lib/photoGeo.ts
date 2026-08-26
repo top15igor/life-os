@@ -21,17 +21,33 @@ export type PhotoPoint = { lat: number; lng: number; place: string | null; sourc
 // точка всё равно встанет на карту, просто без подписи.
 export async function placeNameAt(lat: number, lng: number, lang = "ru"): Promise<string | null> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
+  if (!key) return placeNameOsm(lat, lng, lang);
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=${encodeURIComponent(lang)}&key=${key}`;
     const r = await fetch(url).then((x) => x.json());
-    if (r?.status !== "OK" || !Array.isArray(r.results) || !r.results.length) return null;
+    if (r?.status !== "OK" || !Array.isArray(r.results) || !r.results.length) return placeNameOsm(lat, lng, lang);
     // Ищем человеческое имя: город, потом район, потом страна. Полный адрес с
     // номером дома под точкой на карте не нужен.
     const want = ["locality", "postal_town", "administrative_area_level_2", "administrative_area_level_1", "country"];
     const comps: any[] = r.results.flatMap((res: any) => res.address_components || []);
     const city = want.map((t) => comps.find((c) => (c.types || []).includes(t))?.long_name).find(Boolean) || null;
     const country = comps.find((c) => (c.types || []).includes("country"))?.long_name || null;
+    if (city && country && city !== country) return `${city}, ${country}`;
+    return city || country || null;
+  } catch {
+    return null;
+  }
+}
+
+// Название места без ключа Google — через общий поиск OpenStreetMap. Без него
+// точки на карте оставались безымянными у всех, у кого ключа нет.
+async function placeNameOsm(lat: number, lng: number, lang: string): Promise<string | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=12&accept-language=${encodeURIComponent(lang)}&lat=${lat}&lon=${lng}`;
+    const r = await fetch(url, { headers: { "User-Agent": "LIFE OS (life-os.today)" } }).then((x) => x.json());
+    const a = r?.address || {};
+    const city = a.city || a.town || a.village || a.municipality || a.county || a.state || null;
+    const country = a.country || null;
     if (city && country && city !== country) return `${city}, ${country}`;
     return city || country || null;
   } catch {

@@ -4,18 +4,36 @@
 
 export type GeoResult = { lat: number; lng: number; country: string | null; formatted: string };
 
+// Запасной геокодер — общий поиск OpenStreetMap. Нужен, когда ключа Google нет
+// (а без него раньше вся геопривязка молча выключалась). Их правила просят
+// представляться и не частить — у нас запросы редкие, по одному на снимок.
+async function geocodeOsm(q: string): Promise<GeoResult | null | "notfound"> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=${encodeURIComponent(q)}`;
+    const r = await fetch(url, { headers: { "User-Agent": "LIFE OS (life-os.today)" } }).then((x) => x.json());
+    const top = Array.isArray(r) ? r[0] : null;
+    if (!top) return "notfound";
+    const lat = Number(top.lat), lng = Number(top.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "notfound";
+    const parts = String(top.display_name || "").split(",").map((x: string) => x.trim());
+    return { lat, lng, country: parts.length ? parts[parts.length - 1] : null, formatted: top.display_name || q };
+  } catch {
+    return null;
+  }
+}
+
 export async function geocodeName(name: string, hint?: string): Promise<GeoResult | null | "notfound"> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return null;
   const q = [name, hint].filter(Boolean).join(", ").trim();
   if (!q) return "notfound";
+  if (!key) return geocodeOsm(q);
   try {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&key=${key}`;
     const r = await fetch(url).then((x) => x.json());
-    if (r?.status === "ZERO_RESULTS") return "notfound";
+    if (r?.status === "ZERO_RESULTS") return geocodeOsm(q);
     if (r?.status !== "OK" || !r.results?.length) {
       console.error("geocode", r?.status, r?.error_message);
-      return null;
+      return geocodeOsm(q);
     }
     const top = r.results[0];
     const loc = top.geometry?.location;
@@ -25,7 +43,7 @@ export async function geocodeName(name: string, hint?: string): Promise<GeoResul
     return { lat: loc.lat, lng: loc.lng, country, formatted: top.formatted_address || q };
   } catch (e) {
     console.error("geocode", e);
-    return null;
+    return geocodeOsm(q);
   }
 }
 

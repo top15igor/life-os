@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { placeNameAt } from "@/lib/photoGeo";
 import { parseStorageUrl } from "@/lib/fileLink";
+import { guessFor } from "@/lib/placeGuess";
 import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
@@ -59,6 +60,14 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json({ ok: false, error: "apply photo_map.sql" }, { status: 400 });
     }
+  }
+
+  // «Похоже, это Брюарфосс»: AI узнал место на снимке — превращаем его название
+  // в координаты, чтобы человек подтвердил одним нажатием, а не искал сам.
+  if (action === "guess") {
+    if (kind !== "memories") return NextResponse.json({ ok: true, guess: null });
+    const g = await guessFor(user.id, id);
+    return NextResponse.json({ ok: true, guess: g });
   }
 
   // Точка ушла с карты, но сам снимок остаётся в «Памяти» — он просто

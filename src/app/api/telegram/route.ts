@@ -19,6 +19,8 @@ import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
 import { mapMsg, mapButton, shouldHintFile, markFileHinted, handleLocation } from "@/lib/mapBot";
+import { guessFor } from "@/lib/placeGuess";
+import { saveGeo } from "@/lib/photoGeo";
 import { extractInstagramUrl, importInstagram } from "@/lib/instagram";
 import { extractYoutubeUrl, importYoutube } from "@/lib/youtube";
 import { extractTiktokUrl, importTiktok } from "@/lib/tiktok";
@@ -1021,6 +1023,29 @@ async function handleUpdate(req: NextRequest) {
         await sendMessage(cqChat, B.d, { reply_markup: { inline_keyboard: [[{ text: B.open, login_url: { url: `${req.nextUrl.origin}/auth/tg?next=${encodeURIComponent("/lifebook")}` } }]] } });
       } catch {}
       await answerCallback(cq.id);
+    } else if (data.startsWith("mg:") && cqChat) {
+      // «Похоже, это Брюарфосс» → человек подтвердил место, узнанное AI на снимке.
+      // Координаты считаем заново по названию: в кнопку они бы не поместились,
+      // а поиск по имени даёт тот же ответ.
+      const memId = data.slice(3);
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id, lang").eq("chat_id", cqChat).maybeSingle();
+        if (!u || memId === "skip") { await answerCallback(cq.id); }
+        else {
+          const lng2 = pickLang((u as any).lang);
+          const g = await guessFor((u as any).id, memId);
+          if (!g) { await answerCallback(cq.id, "…"); }
+          else {
+            const ok = await saveGeo(memId, (u as any).id, { lat: g.lat, lng: g.lng, place: g.place, source: "manual" });
+            await answerCallback(cq.id);
+            const M = mapMsg(lng2);
+            await sendMessage(cqChat, ok ? M.at(esc(g.place)) : M.failed, {
+              reply_markup: { inline_keyboard: [[mapButton(req.nextUrl.origin, lng2)]] },
+            });
+          }
+        }
+      } catch { await answerCallback(cq.id); }
     } else if (data.startsWith("mood:") && cqChat) {
       // mood:<YYYY-MM-DD>:<band 1-5> — one-tap evening mood check.
       const [, day, bandStr] = data.split(":");
@@ -2283,6 +2308,18 @@ async function handleUpdate(req: NextRequest) {
         }
         const rows: any[][] = [[{ text: L.open, url: `${origin}/go?next=/memory` }]];
         if (geo) rows.push([mapButton(origin, lang)]);
+        // Координат в снимке нет, но AI УЗНАЛ место — предлагаем поставить точку
+        // туда одним нажатием, вместо поисков по карте руками.
+        if (!geo && memory?.id) {
+          const g = await guessFor(user.id, memory.id);
+          if (g) {
+            body += `\n\n${MP.guessAsk(esc(g.place))}`;
+            rows.push([
+              { text: MP.guessYes, callback_data: `mg:${memory.id}` },
+              { text: MP.guessNo, callback_data: "mg:skip" },
+            ]);
+          }
+        }
         const extra = memory ? { reply_markup: { inline_keyboard: rows } } : undefined;
         await sendMessage(chatId, body, extra);
       } catch (e) {
