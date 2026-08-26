@@ -85,12 +85,12 @@ const OF_ALL_L: Record<string, string> = {
 };
 
 // Перевод между своими счетами — не расход и не доход: категория ему не нужна.
-const TRANSFER_L: Record<string, { hint: string; addCat: string }> = {
-  ru: { hint: "Это перевод между своими счетами или картами — не расход, категория не нужна.", addCat: "➕ Новая категория…" },
-  en: { hint: "This is a transfer between your own accounts — not an expense, no category needed.", addCat: "➕ New category…" },
-  uk: { hint: "Це переказ між своїми рахунками або картками — не витрата, категорія не потрібна.", addCat: "➕ Нова категорія…" },
-  fr: { hint: "C'est un virement entre tes propres comptes — pas une dépense, pas de catégorie.", addCat: "➕ Nouvelle catégorie…" },
-  es: { hint: "Es una transferencia entre tus propias cuentas — no es un gasto, sin categoría.", addCat: "➕ Nueva categoría…" },
+const TRANSFER_L: Record<string, { hint: string; addCat: string; out: string; in: string }> = {
+  ru: { hint: "Это перевод между своими счетами или картами — не расход, категория не нужна.", addCat: "➕ Новая категория…", out: "↗️ Ушло со счёта", in: "↘️ Пришло на счёт" },
+  en: { hint: "This is a transfer between your own accounts — not an expense, no category needed.", addCat: "➕ New category…", out: "↗️ Sent from account", in: "↘️ Received to account" },
+  uk: { hint: "Це переказ між своїми рахунками або картками — не витрата, категорія не потрібна.", addCat: "➕ Нова категорія…", out: "↗️ Пішло з рахунку", in: "↘️ Прийшло на рахунок" },
+  fr: { hint: "C'est un virement entre tes propres comptes — pas une dépense, pas de catégorie.", addCat: "➕ Nouvelle catégorie…", out: "↗️ Parti du compte", in: "↘️ Arrivé sur le compte" },
+  es: { hint: "Es una transferencia entre tus propias cuentas — no es un gasto, sin categoría.", addCat: "➕ Nueva categoría…", out: "↗️ Salió de la cuenta", in: "↘️ Llegó a la cuenta" },
 };
 
 const CAT_MGR: Record<string, { title: string; hint: string; ph: string; expense: string; income: string; add: string; rename: string; delWhere: string; delGo: string; moveAll: string; moveMonth: string; moveEver: string; catOps: (n: number) => string; back: string; total: string; stdT: string; reset: string }> = {
@@ -554,7 +554,12 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const v = parseFloat(amount.replace(",", "."));
     if (!isFinite(v) || v <= 0) return;
     setBusy(true);
-    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category, subcategory: subcategory.trim() || null, note: note.trim() || null }) });
+    let cat = category;
+    if (ncFor === "add") {
+      const slug = await ensurePendingCat(kind);
+      if (slug) { cat = slug; setCategory(slug); }
+    }
+    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category: cat, subcategory: subcategory.trim() || null, note: note.trim() || null }) });
     setBusy(false);
     if (r.ok) { setOpen(false); setAmount(""); setNote(""); setSubcategory(""); router.refresh(); }
   }
@@ -573,14 +578,33 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setEScope((t.scope === "business" || t.scope === "transfer") ? t.scope : "personal");
   }
 
+  // Человек вписал имя новой категории, но не нажал «Добавить» и сразу жмёт
+  // «Сохранить» — доводим за него: живой случай Игоря 26.08, категория Waily
+  // молча пропадала, а операция сохранялась со старой категорией.
+  async function ensurePendingCat(k: "income" | "expense"): Promise<string | null> {
+    if (!ncFor || !ncLabel.trim()) return null;
+    const r = await fetch("/api/finance/categories", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: ncLabel.trim(), emoji: ncEmoji.trim() || null, kind: k }) }).then((x) => x.json()).catch(() => null);
+    if (r?.ok && r.category) {
+      setCustom((cs) => [...cs, r.category]);
+      setNcFor(null); setNcLabel(""); setNcEmoji("");
+      return r.category.slug as string;
+    }
+    return null;
+  }
+
   async function saveEdit() {
     if (!editTx) return;
     const v = parseFloat(eAmount.replace(",", "."));
     if (!isFinite(v) || v <= 0) return;
     setBusy(true);
+    let cat = eCategory.trim() || null;
+    if (eScope !== "transfer" && ncFor === "edit") {
+      const slug = await ensurePendingCat(eKind);
+      if (slug) { cat = slug; setECategory(slug); }
+    }
     const r = await fetch("/api/finance", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eScope === "transfer" ? null : (eCategory.trim() || null), subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null), note: eNote.trim() || null, scope: eScope }),
+      body: JSON.stringify({ id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency, category: eScope === "transfer" ? null : cat, subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null), note: eNote.trim() || null, scope: eScope }),
     });
     setBusy(false);
     if (r.ok) { setEditTx(null); router.refresh(); }
@@ -733,24 +757,47 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   function renderEdit(t: Tx) {
     return (
                     <div style={{ padding: "8px 0 0" }}>
+                      {/* Тип — одним рядом: Расход / Доход / Перевод. Раньше перевод жил во
+                          втором ряду, и «Доход + Перевод» выглядели как противоречие. */}
                       <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
-                        {(["expense", "income"] as const).map((k) => (
-                          <button key={k} onClick={() => setEKind(k)} style={{
-                            flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
-                            background: eKind === k ? (k === "income" ? "#10b981" : "#ef4444") : "transparent",
-                            color: eKind === k ? "#fff" : "var(--text-2)",
-                          }}>{k === "income" ? s.addIncome : s.addExpense}</button>
-                        ))}
+                        {(["expense", "income", "transfer"] as const).map((k) => {
+                          const active = eScope === "transfer" ? k === "transfer" : eKind === k;
+                          const color = k === "income" ? "#10b981" : k === "transfer" ? "#8b5cf6" : "#ef4444";
+                          const label = k === "income" ? s.addIncome : k === "expense" ? s.addExpense : (SCOPE_L[locale] || SCOPE_L.ru).transfer;
+                          return (
+                            <button key={k} onClick={() => {
+                              if (k === "transfer") { setEScope("transfer"); }
+                              else { setEKind(k); if (eScope === "transfer") setEScope("personal"); }
+                            }} style={{
+                              flex: 1, fontSize: 13, padding: "7px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                              background: active ? color : "transparent",
+                              color: active ? "#fff" : "var(--text-2)",
+                            }}>{label}</button>
+                          );
+                        })}
                       </div>
-                      <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
-                        {(["personal", "business", "transfer"] as const).map((sc) => (
-                          <button key={sc} onClick={() => setEScope(sc)} style={{
-                            flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
-                            background: eScope === sc ? "var(--accent)" : "transparent",
-                            color: eScope === sc ? "#fff" : "var(--text-2)",
-                          }}>{(SCOPE_L[locale] || SCOPE_L.ru)[sc]}</button>
-                        ))}
-                      </div>
+                      {eScope === "transfer" ? (
+                        // У перевода вместо Личное/Бизнес — направление: ушло или пришло.
+                        <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                          {(["expense", "income"] as const).map((k) => (
+                            <button key={k} onClick={() => setEKind(k)} style={{
+                              flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                              background: eKind === k ? "#8b5cf6" : "transparent",
+                              color: eKind === k ? "#fff" : "var(--text-2)",
+                            }}>{k === "expense" ? (TRANSFER_L[locale] || TRANSFER_L.ru).out : (TRANSFER_L[locale] || TRANSFER_L.ru).in}</button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: 6, background: "var(--surface-2)", padding: 4, borderRadius: 10, marginBottom: 10 }}>
+                          {(["personal", "business"] as const).map((sc) => (
+                            <button key={sc} onClick={() => setEScope(sc)} style={{
+                              flex: 1, fontSize: 12.5, padding: "6px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 500,
+                              background: eScope === sc ? "var(--accent)" : "transparent",
+                              color: eScope === sc ? "#fff" : "var(--text-2)",
+                            }}>{(SCOPE_L[locale] || SCOPE_L.ru)[sc]}</button>
+                          ))}
+                        </div>
+                      )}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                         <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
                         <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
