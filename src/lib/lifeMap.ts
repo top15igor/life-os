@@ -14,12 +14,18 @@ export type MapPoint = {
   kind: "memory" | "photo";
   lat: number;
   lng: number;
-  url: string | null;
+  url: string | null;      // картинка: сам снимок или кадр-обложка ролика
+  video: string | null;    // ссылка на ролик, если это видео
   title: string;
   place: string | null;
-  date: string | null; // ISO, момент съёмки
+  date: string | null;     // ISO, момент съёмки
   note: string | null;
 };
+
+// Что человек считает «своей жизнью на карте»: моменты, места, люди, вещи.
+// Чеки, договоры и скриншоты — не про место, и в списке «фото без точки» они
+// только мешают: их там сотни, а поставить их на карту никто не захочет.
+const OFF_MAP_CATEGORIES = ["document", "info"];
 
 const MAX_POINTS = 2000;
 
@@ -37,7 +43,7 @@ async function fromMemories(userId: string): Promise<MapPoint[]> {
   try {
     const { data, error } = await supabaseAdmin()
       .from("memories")
-      .select("id, title, summary, image_url, mem_date, shot_at, created_at, lat, lng, place_name, note")
+      .select("id, title, summary, image_url, file_url, mime_type, mem_date, shot_at, created_at, lat, lng, place_name, note")
       .eq("user_id", userId)
       .not("lat", "is", null)
       .order("created_at", { ascending: false })
@@ -51,6 +57,7 @@ async function fromMemories(userId: string): Promise<MapPoint[]> {
         lat: Number(r.lat),
         lng: Number(r.lng),
         url: r.image_url ? await signForWeb(r.image_url) : null,
+        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
         title: r.title || r.summary || "",
         place: r.place_name || null,
         date: dateOf(r),
@@ -80,6 +87,7 @@ async function fromArchive(userId: string): Promise<MapPoint[]> {
         lat: Number(r.gps_lat),
         lng: Number(r.gps_lng),
         url: r.thumb_url ? await signForWeb(r.thumb_url) : null,
+        video: null,
         title: r.caption || "",
         place: [r.location_city, r.location_country].filter(Boolean).join(", ") || null,
         date: dateOf(r),
@@ -102,29 +110,36 @@ export async function getMapPoints(userId: string): Promise<MapPoint[]> {
 // вырезает из сжатых картинок), поэтому на карту фото поставит сам человек —
 // выбрал снимок, ткнул в место. Без этого списка карта у большинства осталась
 // бы почти пустой.
-export type Orphan = { id: string; url: string | null; title: string; date: string | null };
+export type Orphan = { id: string; url: string | null; video: string | null; title: string; date: string | null };
 
 export async function getPhotosWithoutGeo(userId: string, limit = 60): Promise<{ items: Orphan[]; total: number }> {
   try {
-    const { data, error, count } = await supabaseAdmin()
+    const { data, error } = await supabaseAdmin()
       .from("memories")
-      .select("id, title, summary, image_url, mem_date, shot_at, created_at", { count: "exact" })
+      .select("id, title, summary, image_url, file_url, mime_type, mem_date, shot_at, created_at")
       .eq("user_id", userId)
-      .not("image_url", "is", null)
       .is("lat", null)
+      // Пустая категория — тоже «не документ»: у старых записей её просто нет,
+      // и терять их из-за этого нельзя.
+      .or(`category.is.null,category.not.in.(${OFF_MAP_CATEGORIES.join(",")})`)
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(limit * 3);
     if (error) throw error;
-    const rows = (data as any[]) || [];
+    const rows = ((data as any[]) || []).filter(
+      (r) => r.image_url || String(r.mime_type || "").startsWith("video/"),
+    );
     const items = await Promise.all(
-      rows.map(async (r) => ({
+      rows.slice(0, limit).map(async (r) => ({
         id: r.id,
         url: r.image_url ? await signForWeb(r.image_url) : null,
+        video: String(r.mime_type || "").startsWith("video/") && r.file_url ? await signForWeb(r.file_url) : null,
         title: r.title || r.summary || "",
         date: dateOf(r),
       })),
     );
-    return { items, total: count || items.length };
+    // Счётчик — по тому же правилу, что и список: обещать «26 фото» и показать
+    // из них только снимки было бы обманом.
+    return { items, total: rows.length };
   } catch {
     return { items: [], total: 0 };
   }

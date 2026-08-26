@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { createMemoryFromFile } from "@/lib/memory";
+import { createMemoryFromFile, createVideoMemory } from "@/lib/memory";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,13 +23,23 @@ export const maxDuration = 60;
 
 const MAX_FILES = 60;
 const MAX_BYTES = 25 * 1024 * 1024;
+// Ролик тяжелее документа по природе. Предел в 45 МБ — не наша прихоть:
+// столько принимает само хранилище на текущем тарифе, и лучше сказать об
+// этом сразу, чем оборвать загрузку на середине.
+const MAX_VIDEO_BYTES = 45 * 1024 * 1024;
 
 // Что вообще имеет смысл класть в «Память». Всё остальное человек всё равно
 // не сможет найти по смыслу — а место займёт.
+function isVideo(type: string, name: string): boolean {
+  const t = (type || "").toLowerCase();
+  return t.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(name || "");
+}
+
 function allowed(type: string, name: string): boolean {
   const t = (type || "").toLowerCase();
   const n = (name || "").toLowerCase();
   if (t.startsWith("image/")) return true;
+  if (isVideo(type, name)) return true;
   if (t === "application/pdf" || n.endsWith(".pdf")) return true;
   if (n.endsWith(".docx") || n.endsWith(".xlsx") || n.endsWith(".txt") || n.endsWith(".md") || n.endsWith(".csv")) return true;
   return t.startsWith("text/") || t.includes("wordprocessingml") || t.includes("spreadsheetml");
@@ -64,7 +74,8 @@ export async function POST(req: NextRequest) {
         out.push({ name, error: "type" });
         continue;
       }
-      if (size > MAX_BYTES) {
+      const cap = isVideo(type, name) ? MAX_VIDEO_BYTES : MAX_BYTES;
+      if (size > cap) {
         out.push({ name, error: "big" });
         continue;
       }
@@ -89,17 +100,30 @@ export async function POST(req: NextRequest) {
     // Пускаем только в свою папку, даже если клиент придумает чужой путь.
     if (!path.startsWith(`${user.id}/`)) return NextResponse.json({ ok: false, error: "path" }, { status: 400 });
 
+    // Видео не скачиваем целиком: карточку заводим сразу, а координаты и время
+    // съёмки читаем кусочками по краям файла — иначе стомегабайтный ролик просто
+    // не поместится в память сервера.
+    if (isVideo(type, name)) {
+      const { memory, geo } = await createVideoMemory(user.id, path, name, type || "video/mp4", { size: Number(body?.size) || undefined });
+      if (!memory) {
+        await db.storage.from("memories").remove([path]).catch(() => {});
+        return NextResponse.json({ ok: false, error: "parse" }, { status: 500 });
+      }
+      // geo — чтобы карта сразу показала точку, не дожидаясь перезагрузки страницы.
+      return NextResponse.json({ ok: true, memory, geo });
+    }
+
     try {
       const { data, error } = await db.storage.from("memories").download(path);
       if (error || !data) return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });
       const buf = Buffer.from(await data.arrayBuffer());
-      const { memory } = await createMemoryFromFile(user.id, buf, type || "application/octet-stream", name, undefined, path);
+      const { memory, geo } = await createMemoryFromFile(user.id, buf, type || "application/octet-stream", name, undefined, path);
       if (!memory) {
         // Разбор не удался — не оставляем мусор в хранилище.
         await db.storage.from("memories").remove([path]).catch(() => {});
         return NextResponse.json({ ok: false, error: "parse" }, { status: 500 });
       }
-      return NextResponse.json({ ok: true, memory });
+      return NextResponse.json({ ok: true, memory, geo });
     } catch {
       return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
     }

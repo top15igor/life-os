@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { indexRow } from "./vaultIndex";
-import { geoTagMemory, type PhotoPoint } from "./photoGeo";
+import { geoTagMemory, placeNameAt, saveGeo, type PhotoPoint } from "./photoGeo";
+import { readVideoMetaFromUrl } from "./videoMeta";
 import { analyzeImage, analyzeDocument, analyzeText, type VisionResult } from "./vision";
 import { extractText } from "./docText";
 
@@ -70,7 +71,7 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
   if (memory?.id) await indexRow("memories", memory.id, userId);
   // Точка на карте жизни: координаты берём из самого файла (и, если их там нет,
   // из подписи). Снимок без координат просто не встанет на карту — это нормально.
-  const geo = memory?.id ? await geoTagMemory(memory.id, userId, buf, geoOpts) : null;
+  const geo = memory?.id ? await geoTagMemory(memory.id, userId, buf, { ...geoOpts, mediaType }) : null;
   return { memory, vision, geo };
 }
 
@@ -83,9 +84,10 @@ export async function createMemoryFromImage(userId: string, buf: Buffer, mediaTy
 export async function createMemoryFromFile(userId: string, buf: Buffer, mediaType: string, fileName?: string, entryId?: string, storedPath?: string, geoOpts?: { caption?: string; lang?: string }): Promise<{ memory: Memory | null; vision: VisionResult; geo: PhotoPoint | null }> {
   const db = supabaseAdmin();
   const isImage = mediaType.startsWith("image/");
+  const isVideo = mediaType.startsWith("video/");
   const ext = isImage
     ? (mediaType.includes("png") ? "png" : mediaType.includes("webp") ? "webp" : "jpg")
-    : (mediaType === "application/pdf" ? "pdf" : ((fileName || "").match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase() || "bin"));
+    : (mediaType === "application/pdf" ? "pdf" : ((fileName || "").match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase() || (isVideo ? "mp4" : "bin")));
   const path = storedPath || `${userId}/${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
 
   let url: string | null = null;
@@ -101,6 +103,9 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
   let vision: VisionResult;
   try {
     if (isImage) vision = await analyzeImage(buf.toString("base64"), mediaType, userId);
+    // Видео AI-зрение не смотрит: смысл берём из подписи человека и имени файла,
+    // а само место в жизни ролику даёт карта — по координатам съёмки.
+    else if (isVideo) vision = { category: "moment", title: (geoOpts?.caption || "").slice(0, 80) || fileName || "Видео", summary: geoOpts?.caption || "", fields: [] };
     else if (mediaType === "application/pdf") vision = await analyzeDocument(buf.toString("base64"), userId);
     else {
       // Офисные и текстовые файлы Claude напрямую не читает — достаём текст сами.
@@ -108,7 +113,7 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
       vision = ex && ex.text.trim() ? await analyzeText(ex.text, fileName, userId) : { category: "document", title: fileName || "Документ", summary: "", fields: [] };
     }
   } catch {
-    vision = { category: isImage ? "other" : "document", title: fileName || (isImage ? "Фото" : "Документ"), summary: "", fields: [] };
+    vision = { category: isImage ? "other" : isVideo ? "moment" : "document", title: fileName || (isImage ? "Фото" : isVideo ? "Видео" : "Документ"), summary: "", fields: [] };
   }
 
   const base: any = {
@@ -144,6 +149,67 @@ export async function createMemoryFromFile(userId: string, buf: Buffer, mediaTyp
   if (memory?.id) await indexRow("memories", memory.id, userId);
   // Фото, присланное файлом, — единственный путь, где координаты съёмки доходят
   // до нас целыми: Telegram вырезает их из сжатых картинок.
-  const geo = memory?.id && isImage ? await geoTagMemory(memory.id, userId, buf, geoOpts) : null;
+  const geo = memory?.id && (isImage || isVideo) ? await geoTagMemory(memory.id, userId, buf, { ...geoOpts, mediaType }) : null;
   return { memory, vision, geo };
+}
+
+// Ролик уже лежит в хранилище (браузер залил его напрямую) — заводим ему карточку.
+//
+// Почему отдельным путём, а не через createMemoryFromFile: видео с телефона
+// весит сотни мегабайт, и втягивать его в память сервера ради заголовка нельзя.
+// Смысл ролику даёт человек (подпись), координаты — метаданные съёмки, которые
+// читаются кусочками по краям файла.
+export async function createVideoMemory(
+  userId: string,
+  storedPath: string,
+  fileName: string,
+  mediaType: string,
+  opts?: { caption?: string; lang?: string; size?: number },
+): Promise<{ memory: Memory | null; geo: PhotoPoint | null }> {
+  const db = supabaseAdmin();
+  const url = db.storage.from("memories").getPublicUrl(storedPath).data?.publicUrl || null;
+  const title = (opts?.caption || "").trim().slice(0, 80) || fileName || "Видео";
+
+  const base: any = {
+    user_id: userId,
+    category: "moment",
+    title,
+    summary: (opts?.caption || "").trim(),
+    fields: [],
+    mem_date: null,
+    image_url: null,
+    status: "ok",
+  };
+
+  let memory: Memory | null = null;
+  try {
+    const { data, error } = await db
+      .from("memories")
+      .insert({ ...base, file_url: url, file_name: fileName || null, mime_type: mediaType })
+      .select("id, category, title, summary, fields, mem_date, image_url, status, created_at")
+      .single();
+    if (error) throw error;
+    memory = (data as any) || null;
+  } catch {
+    return { memory: null, geo: null };
+  }
+
+  if (memory?.id) await indexRow("memories", memory.id, userId);
+
+  let geo: PhotoPoint | null = null;
+  try {
+    const { data: signed } = await db.storage.from("memories").createSignedUrl(storedPath, 300);
+    if (signed?.signedUrl && memory?.id) {
+      const meta = await readVideoMetaFromUrl(signed.signedUrl, opts?.size);
+      if (meta.lat !== null && meta.lng !== null) {
+        const place = await placeNameAt(meta.lat, meta.lng, opts?.lang || "ru");
+        const point: PhotoPoint = { lat: meta.lat, lng: meta.lng, place, source: "exif", shotAt: meta.shotAt };
+        if (await saveGeo(memory.id, userId, point)) geo = point;
+      } else if (meta.shotAt) {
+        try { await db.from("memories").update({ shot_at: meta.shotAt }).eq("id", memory.id).eq("user_id", userId); } catch {}
+      }
+    }
+  } catch {}
+
+  return { memory, geo };
 }

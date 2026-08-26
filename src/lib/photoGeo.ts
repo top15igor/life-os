@@ -11,6 +11,7 @@
 
 import { supabaseAdmin } from "./supabaseAdmin";
 import { readExif } from "./exif";
+import { readVideoMeta } from "./videoMeta";
 import { geocodeName } from "./geocode";
 
 export type GeoSource = "exif" | "telegram" | "caption" | "manual";
@@ -38,16 +39,17 @@ export async function placeNameAt(lat: number, lng: number, lang = "ru"): Promis
   }
 }
 
-// Координаты из самого файла.
-export function pointFromFile(buf: Buffer): { lat: number; lng: number; shotAt: string | null } | null {
-  const ex = readExif(buf);
-  if (ex.lat === null || ex.lng === null) return null;
-  return { lat: ex.lat, lng: ex.lng, shotAt: ex.shotAt };
+// Координаты из самого файла. У фотографии их держит EXIF, у видео — атом
+// «©xyz» внутри mp4/mov; наружу это одна и та же точка.
+export function pointFromFile(buf: Buffer, mediaType?: string): { lat: number; lng: number; shotAt: string | null } | null {
+  const meta = (mediaType || "").startsWith("video/") ? readVideoMeta(buf) : readExif(buf);
+  if (meta.lat === null || meta.lng === null) return null;
+  return { lat: meta.lat, lng: meta.lng, shotAt: meta.shotAt };
 }
 
 // Момент съёмки из файла — пригодится, даже когда координат нет.
-export function shotAtOfFile(buf: Buffer): string | null {
-  return readExif(buf).shotAt;
+export function shotAtOfFile(buf: Buffer, mediaType?: string): string | null {
+  return (mediaType || "").startsWith("video/") ? readVideoMeta(buf).shotAt : readExif(buf).shotAt;
 }
 
 // Место из подписи к фото: «на пляже в Биаррице» → координаты Биаррица.
@@ -89,11 +91,11 @@ export async function geoTagMemory(
   memoryId: string,
   userId: string,
   buf: Buffer,
-  opts?: { caption?: string; lang?: string },
+  opts?: { caption?: string; lang?: string; mediaType?: string },
 ): Promise<PhotoPoint | null> {
   let point: PhotoPoint | null = null;
 
-  const fromFile = pointFromFile(buf);
+  const fromFile = pointFromFile(buf, opts?.mediaType);
   if (fromFile) {
     point = { lat: fromFile.lat, lng: fromFile.lng, place: null, source: "exif", shotAt: fromFile.shotAt };
   } else if (opts?.caption) {
@@ -103,7 +105,7 @@ export async function geoTagMemory(
   if (!point) {
     // Координат нет, но время съёмки из файла всё равно ценно: по нему фото
     // встаёт в правильное место маршрута, когда точку добавят геометкой.
-    const shotAt = shotAtOfFile(buf);
+    const shotAt = shotAtOfFile(buf, opts?.mediaType);
     if (shotAt) {
       try {
         await supabaseAdmin().from("memories").update({ shot_at: shotAt }).eq("id", memoryId).eq("user_id", userId);

@@ -64,7 +64,7 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
   const [moveOpen, setMoveOpen] = useState(false);
   const [path, setPath] = useState<string[]>([]); // текущий путь внутри категории (дерево папок)
   const [sendId, setSendId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ url: string; pdf: boolean; title: string } | null>(null);
+  const [preview, setPreview] = useState<{ url: string; pdf: boolean; video?: boolean; title: string } | null>(null);
   const [menu, setMenu] = useState<{ id: string; type: "move" | "cat" | "send" | "remind"; x: number; y: number; up: boolean; maxH: number } | null>(null);
   const [toast, setToast] = useState<string>("");
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(""), 2200); }
@@ -279,9 +279,11 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
   }
   // Открыть фото/документ во всплывающем окне (лайтбокс), а не в новой вкладке.
   function openPreview(m: Memory) {
-    const url = m.image_url || m.file_url;
+    // У ролика image_url — это кадр-обложка, а смотреть надо сам файл.
+    const isVideo = String(m.mime_type || "").startsWith("video/") && !!m.file_url;
+    const url = isVideo ? (m.file_url as string) : m.image_url || m.file_url;
     if (!url) return;
-    setPreview({ url, pdf: !m.image_url && !!m.file_url, title: m.title || "" });
+    setPreview({ url, pdf: !isVideo && !m.image_url && !!m.file_url, video: isVideo, title: m.title || "" });
   }
   function openNote(m: Memory) { setEditId(m.id); setDraft(m.note || ""); setRecording(false); }
   async function saveNote(id: string) {
@@ -598,7 +600,7 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
 
   return (
     <div>
-      <input ref={fileRef} type="file" multiple accept="image/*,application/pdf,.pdf,.docx,.xlsx,.txt,.md,.csv" style={{ display: "none" }} onChange={(e) => { const fs = Array.from(e.target.files || []); if (fs.length) onFiles(fs); e.target.value = ""; }} />
+      <input ref={fileRef} type="file" multiple accept="image/*,video/*,application/pdf,.pdf,.docx,.xlsx,.txt,.md,.csv" style={{ display: "none" }} onChange={(e) => { const fs = Array.from(e.target.files || []); if (fs.length) onFiles(fs); e.target.value = ""; }} />
       {toast && (
         <div style={{ position: "fixed", left: "50%", bottom: 26, transform: "translateX(-50%)", zIndex: 50, background: "var(--text)", color: "var(--surface)", padding: "10px 18px", borderRadius: 999, fontSize: 13.5, fontWeight: 500, boxShadow: "0 6px 20px rgba(0,0,0,.22)" }}>{toast}</div>
       )}
@@ -654,7 +656,9 @@ export default function MemoryArchive({ initial, locale, catLabels: catLabelsIni
         <div onClick={() => setPreview(null)} style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,.82)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <button onClick={() => setPreview(null)} aria-label="close" style={{ position: "absolute", top: 16, right: 18, width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.15)", color: "#fff", cursor: "pointer", fontSize: 20 }}><i className="ti ti-x" /></button>
           <a href={preview.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 16, left: 18, display: "inline-flex", alignItems: "center", gap: 6, color: "#fff", textDecoration: "none", fontSize: 13.5, background: "rgba(255,255,255,.15)", padding: "8px 14px", borderRadius: 999 }}><i className="ti ti-external-link" style={{ fontSize: 16 }} />{s.sendDownload}</a>
-          {preview.pdf ? (
+          {preview.video ? (
+            <video src={preview.url} controls autoPlay playsInline onClick={(e) => e.stopPropagation()} style={{ maxWidth: "92vw", maxHeight: "88vh", borderRadius: 10, background: "#000" }} />
+          ) : preview.pdf ? (
             <iframe title={preview.title} src={preview.url} onClick={(e) => e.stopPropagation()} style={{ width: "min(1000px,92vw)", height: "88vh", border: "none", borderRadius: 10, background: "#fff" }} />
           ) : (
             <img src={preview.url} alt={preview.title} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "92vw", maxHeight: "88vh", objectFit: "contain", borderRadius: 10 }} />

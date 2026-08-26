@@ -624,6 +624,16 @@ const HELP: Record<string, (o: string) => string> = {
   es: (o) => `Esto es lo que puedo hacer:\n• 🎤 Mantén pulsado el micrófono junto al campo de texto y habla — transcribo y guardo.\n• ✍️ O simplemente escribe lo que pasó.\n• 🧠 Haz una pregunta — te responderé según tu diario.\n• 🗺 Manda una foto como archivo o una ubicación — será un punto en tu mapa de vida (/map).\n• 🌐 Cambiar el idioma del bot — /lang.\n• 🛠 ¿Algo se rompió? — /problem, lo reviso.\n\nTodas las secciones y comandos están en la Guía:\n${o}/guide`,
 };
 
+// 🎬 Видео: у ролика нет «смысла на картинке», который читает AI, — зато у него
+// есть место и время съёмки. Поэтому ответ короткий: сохранил, вот точка.
+const VIDEO_MSG: Record<string, { working: string; saved: string; open: string; failed: string; tooBig: string }> = {
+  ru: { working: "🎬 Сохраняю видео…", saved: "Сохранил видео:", open: "📂 Открыть память", failed: "Не получилось сохранить видео, попробуй ещё раз.", tooBig: "Ролик больше 20 МБ Telegram мне не отдаёт. Загрузи его на сайте в «Память» — там принимаю до 45 МБ." },
+  en: { working: "🎬 Saving the video…", saved: "Video saved:", open: "📂 Open memory", failed: "Couldn't save the video, try again.", tooBig: "Telegram won't hand me a clip over 20 MB. Upload it on the site into Memory — up to 45 MB there." },
+  uk: { working: "🎬 Зберігаю відео…", saved: "Зберіг відео:", open: "📂 Відкрити пам'ять", failed: "Не вдалося зберегти відео, спробуй ще раз.", tooBig: "Ролик більший за 20 МБ Telegram мені не віддає. Завантаж його на сайті в «Пам'ять» — там приймаю до 45 МБ." },
+  fr: { working: "🎬 J'enregistre la vidéo…", saved: "Vidéo enregistrée :", open: "📂 Ouvrir la mémoire", failed: "Impossible d'enregistrer la vidéo, réessaie.", tooBig: "Telegram ne me donne pas un clip de plus de 20 Mo. Dépose-le sur le site dans « Mémoire » — jusqu'à 45 Mo." },
+  es: { working: "🎬 Guardando el vídeo…", saved: "Vídeo guardado:", open: "📂 Abrir memoria", failed: "No pude guardar el vídeo, inténtalo de nuevo.", tooBig: "Telegram no me entrega un clip de más de 20 MB. Súbelo en la web a «Memoria» — hasta 45 MB." },
+};
+
 const LINK_WARN: Record<string, string> = {
   ru: "⚠️ Ссылка одноразовая и логинит в твой аккаунт — никому её не пересылай.",
   en: "⚠️ This link is one-time and signs into YOUR account — don't forward it to anyone.",
@@ -2282,6 +2292,41 @@ async function handleUpdate(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // 🎬 Видео → «Визуальная память» и точка на карте жизни. Ролик с телефона
+    //    хранит место и время съёмки внутри себя (атом «©xyz»), и Telegram их,
+    //    в отличие от фотографий, НЕ вырезает — поэтому видео встаёт на карту
+    //    само, даже присланное обычным способом.
+    if (msg.video || msg.video_note || msg.animation) {
+      const lang = langOf(user, msg);
+      const V = VIDEO_MSG[lang] || VIDEO_MSG.ru;
+      const vid = msg.video || msg.video_note || msg.animation;
+      const size = Number(vid?.file_size || 0);
+      // Предел не наш: файлы больше 20 МБ Telegram боту просто не отдаёт.
+      if (size > 20 * 1024 * 1024) {
+        await sendMessage(chatId, V.tooBig, { reply_markup: { inline_keyboard: [[{ text: V.open, url: `${origin}/go?next=/memory` }]] } });
+        return NextResponse.json({ ok: true });
+      }
+      await sendMessage(chatId, V.working);
+      try {
+        const fileUrl = await getFileUrl(vid.file_id);
+        const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
+        const mime = String(vid.mime_type || "video/mp4");
+        const name = String(vid.file_name || "video.mp4");
+        const cap = String(msg.caption || "").trim();
+        const { memory, vision, geo } = await createMemoryFromFile(user.id, buf, mime, name, undefined, undefined, { caption: cap, lang });
+        let body = `🎬 ${V.saved}\n\n<b>${esc(vision.title)}</b>`;
+        const MPV = mapMsg(lang);
+        if (geo) body += `\n\n${geo.place ? MPV.at(esc(geo.place)) : MPV.atRaw}`;
+        const rowsV: any[][] = [[{ text: V.open, url: `${origin}/go?next=/memory` }]];
+        if (geo) rowsV.push([mapButton(origin, lang)]);
+        await sendMessage(chatId, body, memory ? { reply_markup: { inline_keyboard: rowsV } } : undefined);
+      } catch (e) {
+        logError("bot:video", e, { userId: user.id, chatId });
+        await sendMessage(chatId, V.failed);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     // 📄 Документ/файл (PDF, скан как файл) → «Визуальная память» с распознаванием содержимого.
     if (msg.document && msg.document.file_id) {
       const lang = langOf(user, msg);
@@ -2339,12 +2384,18 @@ async function handleUpdate(req: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
-      const supported = mime.startsWith("image/") || mime === "application/pdf";
+      const isVideoDoc = mime.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(doc.file_name || "");
+      const supported = mime.startsWith("image/") || mime === "application/pdf" || isVideoDoc;
       if (!supported) {
         await sendMessage(chatId, L.unsupported);
         return NextResponse.json({ ok: true });
       }
-      await sendMessage(chatId, mime === "application/pdf" ? L.readingDoc : L.recognizing);
+      if (isVideoDoc && Number(doc.file_size || 0) > 20 * 1024 * 1024) {
+        const V = VIDEO_MSG[lang] || VIDEO_MSG.ru;
+        await sendMessage(chatId, V.tooBig, { reply_markup: { inline_keyboard: [[{ text: V.open, url: `${origin}/go?next=/memory` }]] } });
+        return NextResponse.json({ ok: true });
+      }
+      await sendMessage(chatId, isVideoDoc ? (VIDEO_MSG[lang] || VIDEO_MSG.ru).working : mime === "application/pdf" ? L.readingDoc : L.recognizing);
       try {
         const fileUrl = await getFileUrl(doc.file_id);
         const buf = Buffer.from(await (await fetch(fileUrl)).arrayBuffer());
@@ -2352,7 +2403,7 @@ async function handleUpdate(req: NextRequest) {
           caption: String(msg.caption || "").trim(),
           lang,
         });
-        let body = `${mime === "application/pdf" ? "📄" : "📸"} ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
+        let body = `${isVideoDoc ? "🎬" : mime === "application/pdf" ? "📄" : "📸"} ${L.saved}\n\n<b>${esc(vision.title)}</b>`;
         if (vision.summary) body += `\n${esc(vision.summary)}`;
         if (vision.fields?.length) body += "\n\n" + vision.fields.slice(0, 8).map((f) => `• ${esc(f.label)}: ${esc(f.value)}`).join("\n");
         // Снимок файлом — единственная отправка, где координаты доживают до нас.

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { placeNameAt } from "@/lib/photoGeo";
+import { parseStorageUrl } from "@/lib/fileLink";
 import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
@@ -57,6 +58,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, place });
     } catch {
       return NextResponse.json({ ok: false, error: "apply photo_map.sql" }, { status: 400 });
+    }
+  }
+
+  // Точка ушла с карты, но сам снимок остаётся в «Памяти» — он просто
+  // возвращается в список «Фото без точки». Это не удаление, и путать эти два
+  // действия нельзя: одно отменяется одним нажатием, другое — никогда.
+  if (action === "unpin") {
+    try {
+      const patch = kind === "photos" ? { gps_lat: null, gps_lng: null } : { lat: null, lng: null, place_name: null, geo_source: null };
+      const { error } = await db.from(kind).update(patch).eq("id", id).eq("user_id", user.id);
+      if (error) throw error;
+      return NextResponse.json({ ok: true });
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+  }
+
+  // Удаление насовсем: и карточка, и сам файл в хранилище. Только своё.
+  if (action === "delete") {
+    if (kind === "photos") {
+      // Снимок домашнего архива — это лишь указатель на файл, который лежит
+      // дома у человека. Оригинал мы не трогаем никогда, убираем только запись.
+      await db.from("photos").delete().eq("id", id).eq("user_id", user.id);
+      return NextResponse.json({ ok: true });
+    }
+    try {
+      const { data } = await db.from("memories").select("image_url, file_url").eq("id", id).eq("user_id", user.id).maybeSingle();
+      const paths = [(data as any)?.image_url, (data as any)?.file_url]
+        .map((u: string | null) => (u ? parseStorageUrl(u) : null))
+        .filter((p): p is { bucket: string; path: string } => !!p && p.bucket === "memories" && p.path.startsWith(`${user.id}/`))
+        .map((p) => p.path);
+      await db.from("memories").delete().eq("id", id).eq("user_id", user.id);
+      if (paths.length) await db.storage.from("memories").remove(paths).catch(() => {});
+      return NextResponse.json({ ok: true });
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 500 });
+    }
+  }
+
+  // Обложка ролика. Кадр снимает сам браузер при загрузке (сервер видео не
+  // смотрит) и кладёт картинку в то же хранилище — здесь мы только связываем
+  // её с карточкой, чтобы на карте у видео была не серая заглушка, а кадр.
+  if (action === "poster") {
+    const path = String(body?.path || "");
+    if (!path.startsWith(`${user.id}/`)) return NextResponse.json({ ok: false }, { status: 400 });
+    try {
+      const url = db.storage.from("memories").getPublicUrl(path).data?.publicUrl || null;
+      if (!url) throw new Error("no url");
+      const { error } = await db.from("memories").update({ image_url: url }).eq("id", id).eq("user_id", user.id);
+      if (error) throw error;
+      return NextResponse.json({ ok: true });
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 500 });
     }
   }
 
