@@ -8,10 +8,14 @@
 // сама подложка спрятана за общим набором действий: OpenStreetMap (Leaflet) и
 // Apple Maps (MapKit JS) отличаются только внутри.
 
+import "maplibre-gl/dist/maplibre-gl.css";
+
 export type LatLng = [number, number];
 
+export type Provider = "vector" | "osm" | "apple";
+
 export type MapEngine = {
-  kind: "osm" | "apple";
+  kind: Provider;
   destroy(): void;
   invalidate(): void;                 // размер контейнера изменился
   clearPins(): void;
@@ -140,6 +144,132 @@ async function createOsm(el: HTMLElement, h: Handlers): Promise<MapEngine> {
       try { return map.getBoundsZoom(L.latLngBounds(coords), false, L.point(padding, padding)); } catch { return map.getZoom(); }
     },
     setTheme() { /* у растровых плиток тема одна, ночь делается фильтром в CSS */ },
+  };
+}
+
+// ============================================================
+//  Векторная карта (MapLibre + OpenFreeMap)
+// ============================================================
+//
+// В отличие от растровой, эта карта не картинки, а данные: браузер рисует её
+// сам. Отсюда чёткость на любом экране, по-настоящему непрерывный зум и
+// возможность попросить подписи по-русски. Плитки раздаёт OpenFreeMap —
+// бесплатно и без ключей.
+
+const VECTOR_STYLE = (dark: boolean) => `https://tiles.openfreemap.org/styles/${dark ? "dark" : "liberty"}`;
+
+const isDarkNow = () => {
+  try {
+    return document.documentElement.dataset.theme === "dark"
+      || (!document.documentElement.dataset.theme && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  } catch { return false; }
+};
+
+// Подписи на карте — на русском там, где они есть в данных.
+function ruLabels(map: any) {
+  try {
+    for (const l of map.getStyle().layers || []) {
+      if (l.type === "symbol" && (l.layout as any)?.["text-field"]) {
+        map.setLayoutProperty(l.id, "text-field", ["coalesce", ["get", "name:ru"], ["get", "name:latin"], ["get", "name"]]);
+      }
+    }
+  } catch {}
+}
+
+const ROUTE_SRC = "life-route";
+
+async function createVector(el: HTMLElement, h: Handlers): Promise<MapEngine> {
+  const gl = (await import("maplibre-gl")).default;
+  const map = new gl.Map({
+    container: el,
+    style: VECTOR_STYLE(isDarkNow()),
+    center: [10, 30],
+    zoom: 2,
+    attributionControl: { compact: true },
+  });
+  map.addControl(new gl.NavigationControl({ showCompass: false }), "top-left");
+
+  let route: LatLng[] | null = null;
+  const drawRoute = () => {
+    try {
+      const data: any = {
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: (route || []).map((c) => [c[1], c[0]]) },
+        properties: {},
+      };
+      const src = map.getSource(ROUTE_SRC);
+      if (src) { (src as any).setData(data); return; }
+      if (!route) return;
+      map.addSource(ROUTE_SRC, { type: "geojson", data });
+      map.addLayer({
+        id: ROUTE_SRC,
+        type: "line",
+        source: ROUTE_SRC,
+        paint: { "line-color": "#6366f1", "line-width": 2, "line-opacity": 0.55, "line-dasharray": [2, 2.5] },
+      });
+    } catch {}
+  };
+
+  await new Promise<void>((resolve) => {
+    let done = false;
+    const ok = () => { if (!done) { done = true; resolve(); } };
+    map.once("load", () => { ruLabels(map); ok(); });
+    setTimeout(ok, 8000); // не ждём вечно: карта покажется и без подписей
+  });
+
+  map.on("moveend", () => h.onIdle());
+  map.on("click", (e: any) => h.onMapClick(e.lngLat.lat, e.lngLat.lng));
+  // Смена стиля (день/ночь) стирает слои. Возвращаем подписи и маршрут, а
+  // заодно просим экран перерисоваться целиком: так точки и стопки заново
+  // встают на место, даже если стиль подгрузился не мгновенно.
+  map.on("styledata", () => { ruLabels(map); drawRoute(); h.onIdle(); });
+
+  const markers: any[] = [];
+
+  return {
+    kind: "vector",
+    destroy() { try { map.remove(); } catch {} },
+    invalidate() { try { map.resize(); } catch {} },
+    clearPins() { for (const m of markers.splice(0)) { try { m.remove(); } catch {} } },
+    addPin(lat, lng, node, onClick) {
+      node.addEventListener("click", (ev) => { ev.stopPropagation(); onClick(); });
+      const m = new gl.Marker({ element: node }).setLngLat([lng, lat]).addTo(map);
+      markers.push(m);
+    },
+    setRoute(coords) {
+      route = coords && coords.length > 1 ? coords : null;
+      drawRoute();
+    },
+    fit(coords, maxZoom = 13) {
+      if (!coords.length) return;
+      try {
+        const b = new gl.LngLatBounds();
+        for (const c of coords) b.extend([c[1], c[0]]);
+        map.fitBounds(b, { padding: 60, maxZoom, duration: 700 });
+      } catch {}
+    },
+    flyTo(lat, lng, zoom) {
+      try { map.flyTo({ center: [lng, lat], zoom: zoom ?? map.getZoom(), duration: 700 }); } catch {}
+    },
+    zoom() { try { return map.getZoom(); } catch { return 2; } },
+    size() { return { x: el.clientWidth, y: el.clientHeight }; },
+    project(lat, lng) {
+      try { const p = map.project([lng, lat]); return { x: p.x, y: p.y }; } catch { return { x: -1e6, y: -1e6 }; }
+    },
+    boundsZoom(coords, padding = 70) {
+      try {
+        const b = new gl.LngLatBounds();
+        for (const c of coords) b.extend([c[1], c[0]]);
+        const cam = map.cameraForBounds(b, { padding });
+        return cam?.zoom ?? map.getZoom();
+      } catch { return map.getZoom(); }
+    },
+    setTheme(dark) {
+      try {
+        const want = VECTOR_STYLE(dark);
+        if ((map as any).__style !== want) { (map as any).__style = want; map.setStyle(want); }
+      } catch {}
+    },
   };
 }
 
@@ -309,7 +439,7 @@ async function createApple(el: HTMLElement, h: Handlers): Promise<MapEngine> {
 
 // Apple может не ответить: не оплачен аккаунт разработчика, не заведён ключ,
 // сеть. Тогда молча возвращаемся к OpenStreetMap — карта важнее подложки.
-export async function createEngine(kind: "osm" | "apple", el: HTMLElement, h: Handlers): Promise<MapEngine> {
+export async function createEngine(kind: Provider, el: HTMLElement, h: Handlers): Promise<MapEngine> {
   // Контейнер мог остаться от прежней подложки: обе библиотеки вешают в него
   // свою разметку и свои классы, и вторая на чужих следах ведёт себя странно.
   try {
@@ -323,6 +453,15 @@ export async function createEngine(kind: "osm" | "apple", el: HTMLElement, h: Ha
       return await createApple(el, h);
     } catch (e) {
       console.error("apple maps", e);
+      return createVector(el, h);
+    }
+  }
+  if (kind === "vector") {
+    try {
+      return await createVector(el, h);
+    } catch (e) {
+      // Векторная карта требует WebGL: на старом железе его может не быть.
+      console.error("vector map", e);
       return createOsm(el, h);
     }
   }

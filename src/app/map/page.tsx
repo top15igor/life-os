@@ -23,15 +23,16 @@ export default async function MapPage() {
 
   // Карты Apple доступны, только если заведён ключ разработчика. Нет ключа —
   // человек даже не увидит переключатель, и карта работает как раньше.
+  // По умолчанию — векторная карта: чёткая на ретине, с непрерывным зумом,
+  // ночной темой и русскими подписями, и при этом бесплатная и без ключей.
   const appleReady = mapkitConfigured();
-  let provider: "osm" | "apple" = appleReady ? "apple" : "osm";
-  if (appleReady) {
-    try {
-      const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
-      const saved = (data as any)?.morning_prefs?.mapProvider;
-      if (saved === "osm" || saved === "apple") provider = saved;
-    } catch {}
-  }
+  let provider: "vector" | "osm" | "apple" = "vector";
+  try {
+    const { data } = await supabaseAdmin().from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+    const saved = (data as any)?.morning_prefs?.mapProvider;
+    if (saved === "osm" || saved === "vector") provider = saved;
+    else if (saved === "apple" && appleReady) provider = "apple";
+  } catch {}
 
   return (
     <div className="shell">

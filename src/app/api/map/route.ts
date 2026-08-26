@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
   // Какую подложку человек выбрал — Apple или OpenStreetMap. Личная настройка,
   // живёт рядом с остальными в morning_prefs.
   if (action === "provider") {
-    const value = body?.provider === "apple" ? "apple" : "osm";
+    const raw = String(body?.provider || "");
+    const value = raw === "apple" || raw === "osm" || raw === "vector" ? raw : "vector";
     try {
       const { data } = await db.from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
       const raw = (data as any)?.morning_prefs && typeof (data as any).morning_prefs === "object" ? (data as any).morning_prefs : {};

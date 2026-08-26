@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import "leaflet/dist/leaflet.css";
-import { createEngine, type MapEngine, type LatLng } from "@/lib/mapEngine";
+import { createEngine, type MapEngine, type LatLng, type Provider } from "@/lib/mapEngine";
 import type { Locale } from "@/lib/i18n";
 
 // Карта жизни: где ты был — по своим же фотографиям и роликам.
@@ -49,7 +49,7 @@ const S: Record<string, any> = {
     delAsk: "Удалить это фото насовсем? Оно исчезнет и с карты, и из «Памяти».",
     unpinDone: "Снимок вернулся в список без точки",
     dropHere: "Отпусти — поставлю на карту",
-    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Подложка карты",
+    guessAsk: (p: string) => `Похоже, это ${p}`, guessYes: "Поставить сюда", guessNo: "Выберу сам", guessBusy: "Смотрю, что это за место…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторная", mapSwitch: "Подложка карты — нажми, чтобы сменить",
     allTitle: "Все фото и видео", allHint: "Нажми на кадр — покажу его на карте.", showAll: "Показать все", collapse: "Свернуть", noPin: "без точки",
   },
   en: {
@@ -68,7 +68,7 @@ const S: Record<string, any> = {
     delAsk: "Delete this photo for good? It disappears from the map and from Memory.",
     unpinDone: "The shot is back in the list without a point",
     dropHere: "Drop it — I'll put it on the map",
-    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Map style",
+    guessAsk: (p: string) => `Looks like ${p}`, guessYes: "Put it here", guessNo: "I'll pick myself", guessBusy: "Working out the place…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vector", mapSwitch: "Base map — tap to change",
     allTitle: "All photos & videos", allHint: "Tap a shot — I'll show it on the map.", showAll: "Show all", collapse: "Collapse", noPin: "no point",
   },
   uk: {
@@ -87,7 +87,7 @@ const S: Record<string, any> = {
     delAsk: "Видалити це фото назавжди? Воно зникне і з карти, і з «Пам'яті».",
     unpinDone: "Знімок повернувся до списку без точки",
     dropHere: "Відпусти — поставлю на карту",
-    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Підкладка карти",
+    guessAsk: (p: string) => `Схоже, це ${p}`, guessYes: "Поставити сюди", guessNo: "Оберу сам", guessBusy: "Дивлюся, що це за місце…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Векторна", mapSwitch: "Підкладка карти — натисни, щоб змінити",
     allTitle: "Усі фото та відео", allHint: "Натисни на кадр — покажу його на карті.", showAll: "Показати всі", collapse: "Згорнути", noPin: "без точки",
   },
   fr: {
@@ -106,7 +106,7 @@ const S: Record<string, any> = {
     delAsk: "Supprimer cette photo définitivement ? Elle disparaît de la carte et de la Mémoire.",
     unpinDone: "La photo est revenue dans la liste sans point",
     dropHere: "Lâche — je la mets sur la carte",
-    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Fond de carte",
+    guessAsk: (p: string) => `On dirait ${p}`, guessYes: "Placer ici", guessNo: "Je choisis", guessBusy: "Je cherche le lieu…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorielle", mapSwitch: "Fond de carte — touche pour changer",
     allTitle: "Toutes les photos et vidéos", allHint: "Touche une photo — je la montre sur la carte.", showAll: "Tout afficher", collapse: "Replier", noPin: "sans point",
   },
   es: {
@@ -125,7 +125,7 @@ const S: Record<string, any> = {
     delAsk: "¿Eliminar esta foto para siempre? Desaparece del mapa y de la Memoria.",
     unpinDone: "La foto volvió a la lista sin punto",
     dropHere: "Suéltala — la pongo en el mapa",
-    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…", mapApple: "Apple", mapOsm: "OSM", mapSwitch: "Fondo del mapa",
+    guessAsk: (p: string) => `Parece ${p}`, guessYes: "Ponerlo aquí", guessNo: "Lo elijo yo", guessBusy: "Averiguando el lugar…", mapApple: "Apple", mapOsm: "OSM", mapVector: "Vectorial", mapSwitch: "Fondo del mapa — toca para cambiar",
     allTitle: "Todas las fotos y vídeos", allHint: "Toca una foto — la muestro en el mapa.", showAll: "Mostrar todas", collapse: "Contraer", noPin: "sin punto",
   },
 };
@@ -213,7 +213,7 @@ function posterOf(file: File): Promise<Blob | null> {
 
 export default function LifeMap({
   locale, points: initPoints, orphans: initOrphans, orphanTotal, media: initMedia = [],
-  appleReady = false, provider: initProvider = "osm",
+  appleReady = false, provider: initProvider = "vector",
 }: {
   locale: Locale;
   points: Point[];
@@ -221,7 +221,7 @@ export default function LifeMap({
   orphanTotal: number;
   media?: MediaItem[];
   appleReady?: boolean;
-  provider?: "osm" | "apple";
+  provider?: Provider;
 }) {
   const s = S[locale] || S.ru;
   const router = useRouter();
@@ -242,7 +242,9 @@ export default function LifeMap({
   const [busy, setBusy] = useState<string | null>(null);
   const [guess, setGuess] = useState<{ id: string; lat: number; lng: number; place: string } | null>(null);
   const [guessBusy, setGuessBusy] = useState(false);
-  const [provider, setProvider] = useState<"osm" | "apple">(appleReady ? initProvider : "osm");
+  const [provider, setProvider] = useState<Provider>(
+    initProvider === "apple" && !appleReady ? "vector" : initProvider,
+  );
   const [full, setFull] = useState(false);
 
   const elRef = useRef<HTMLDivElement | null>(null);
@@ -302,6 +304,13 @@ export default function LifeMap({
       });
       if (dead) { eng.destroy(); return; }
       engRef.current = eng;
+      // Тему применяем сразу: пока карта создавалась (а это секунды), человек
+      // мог переключить ночной режим — и подложка осталась бы дневной.
+      try {
+        const d = document.documentElement.dataset.theme === "dark"
+          || (!document.documentElement.dataset.theme && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+        eng.setTheme(!!d);
+      } catch {}
       // Если карту Apple не пустили (нет ключа, кончилась квота), движок молча
       // вернулся к OpenStreetMap — покажем это в переключателе честно.
       if (eng.kind !== provider) setProvider(eng.kind);
@@ -751,25 +760,25 @@ export default function LifeMap({
         <button className="lm-chip" onClick={() => fileRef.current?.click()} disabled={!!busy}>
           <i className="ti ti-plus" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />{busy || s.add}
         </button>
-        {appleReady && (
-          <button
-            className="lm-chip"
-            title={s.mapSwitch}
-            onClick={() => {
-              const next = provider === "apple" ? "osm" : "apple";
-              fittedRef.current = false;
-              setProvider(next);
-              // Выбор запоминаем: возвращаться к нему на каждом заходе не нужно.
-              fetch("/api/map", {
-                method: "POST", headers: { "content-type": "application/json" },
-                body: JSON.stringify({ action: "provider", id: "self", provider: next }),
-              }).catch(() => {});
-            }}
-          >
-            <i className="ti ti-map-2" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />
-            {provider === "apple" ? s.mapApple : s.mapOsm}
-          </button>
-        )}
+        <button
+          className="lm-chip"
+          title={s.mapSwitch}
+          onClick={() => {
+            // По кругу: векторная → растровая → Apple (если подключена).
+            const ring: Provider[] = appleReady ? ["vector", "osm", "apple"] : ["vector", "osm"];
+            const next = ring[(ring.indexOf(provider) + 1) % ring.length];
+            fittedRef.current = false;
+            setProvider(next);
+            // Выбор запоминаем: возвращаться к нему на каждом заходе не нужно.
+            fetch("/api/map", {
+              method: "POST", headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "provider", id: "self", provider: next }),
+            }).catch(() => {});
+          }}
+        >
+          <i className="ti ti-map-2" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />
+          {provider === "apple" ? s.mapApple : provider === "osm" ? s.mapOsm : s.mapVector}
+        </button>
         <button className={`lm-chip ${route ? "on" : ""}`} onClick={() => setRoute((v) => !v)}>
           <i className="ti ti-route" style={{ fontSize: 14, marginRight: 4, verticalAlign: -2 }} />{s.route}
         </button>
