@@ -4,10 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
-type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null; amountBase?: number; account_id?: string | null; account2_id?: string | null };
-
-// Счёт (карта, кошелёк, наличные): своя валюта и живой баланс.
-type Account = { id: string; name: string; emoji: string | null; currency: string; opening_balance: number; opening_date: string; archived: boolean; balance: number };
+type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null; amountBase?: number };
 type CatSlice = { category: string; amount: number; pct: number; limit: number | null; budgetPct: number | null; over: boolean; subs: { name: string; amount: number; limit: number | null; over: boolean; budgetPct: number | null }[] };
 type DaySlice = { day: string; count: number; income: number; expense: number; net: number };
 type Data = {
@@ -79,15 +76,6 @@ const SCOPE_L: Record<string, { personal: string; business: string; transfer: st
   uk: { personal: "Особисте", business: "Бізнес", transfer: "Переказ" },
   fr: { personal: "Perso", business: "Business", transfer: "Virement" },
   es: { personal: "Personal", business: "Negocio", transfer: "Transferencia" },
-};
-
-// Подписи блока «Счета».
-const ACC_L: Record<string, { title: string; add: string; ph: string; opening: string; hint: string; accSel: string; newAcc: string; none: string; del: string; delConfirm: string; from: string; to: string }> = {
-  ru: { title: "Счета", add: "Счёт", ph: "Название (напр. Моно белая)", opening: "Остаток сейчас", hint: "Баланс = остаток, который ты задал, плюс все операции, привязанные к счёту после этого. Привязывай операции к счетам в правке (карандаш) — и балансы будут жить сами.", accSel: "Счёт (необязательно)", newAcc: "➕ Новый счёт…", none: "Заведи свои карты и кошельки — у каждого будет живой баланс, а у переводов появится «откуда → куда».", del: "Удалить счёт? Операции останутся, просто отвяжутся.", delConfirm: "Удалить", from: "Откуда", to: "Куда" },
-  en: { title: "Accounts", add: "Account", ph: "Name (e.g. Mono white)", opening: "Balance now", hint: "Balance = the amount you set plus every operation linked to the account after that. Link operations in the edit dialog (pencil) — balances will live on their own.", accSel: "Account (optional)", newAcc: "➕ New account…", none: "Add your cards and wallets — each gets a live balance, and transfers get a real \"from → to\".", del: "Delete this account? Operations stay, they just get unlinked.", delConfirm: "Delete", from: "From", to: "To" },
-  uk: { title: "Рахунки", add: "Рахунок", ph: "Назва (напр. Моно біла)", opening: "Залишок зараз", hint: "Баланс = залишок, який ти задав, плюс усі операції, привʼязані до рахунку після цього. Привʼязуй операції у правці (олівець) — і баланси житимуть самі.", accSel: "Рахунок (необовʼязково)", newAcc: "➕ Новий рахунок…", none: "Заведи свої картки й гаманці — у кожного буде живий баланс, а в переказів зʼявиться «звідки → куди».", del: "Видалити рахунок? Операції залишаться, просто відвʼяжуться.", delConfirm: "Видалити", from: "Звідки", to: "Куди" },
-  fr: { title: "Comptes", add: "Compte", ph: "Nom (ex. Mono blanche)", opening: "Solde actuel", hint: "Solde = le montant fixé plus chaque opération liée au compte ensuite. Lie les opérations dans l'édition (crayon) — les soldes vivront tout seuls.", accSel: "Compte (facultatif)", newAcc: "➕ Nouveau compte…", none: "Ajoute tes cartes et portefeuilles — chacun aura un solde vivant.", del: "Supprimer ce compte ? Les opérations restent, juste déliées.", delConfirm: "Supprimer", from: "De", to: "Vers" },
-  es: { title: "Cuentas", add: "Cuenta", ph: "Nombre (ej. Mono blanca)", opening: "Saldo actual", hint: "Saldo = el importe fijado más cada operación vinculada a la cuenta después. Vincula operaciones en la edición (lápiz) — los saldos vivirán solos.", accSel: "Cuenta (opcional)", newAcc: "➕ Nueva cuenta…", none: "Añade tus tarjetas y billeteras — cada una tendrá un saldo vivo.", del: "¿Eliminar esta cuenta? Las operaciones quedan, solo se desvinculan.", delConfirm: "Eliminar", from: "Desde", to: "Hacia" },
 };
 
 // Подпись «доля от всех расходов месяца» — без неё процент рядом с лимитом
@@ -244,28 +232,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   // Перевод: откуда и куда (хранится в заметке как «Откуда → Куда»).
   const [eFrom, setEFrom] = useState("");
   const [eTo, setETo] = useState("");
-  // Привязка к счетам: eAcc1 — счёт операции (у перевода: источник), eAcc2 — куда пришло.
-  const [eAcc1, setEAcc1] = useState("");
-  const [eAcc2, setEAcc2] = useState("");
-  // Быстрое создание счёта из формы операции: для какого поля открыто.
-  const [qAccFor, setQAccFor] = useState<null | "one" | "from" | "to" | "add">(null);
-  const [qAccName, setQAccName] = useState("");
-  const [qAccCur, setQAccCur] = useState("UAH");
-  async function quickAccount(): Promise<void> {
-    const name = qAccName.trim();
-    if (!name) return;
-    const r = await fetch("/api/finance/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, currency: qAccCur, opening_balance: 0 }) }).then((x) => x.json()).catch(() => null);
-    if (r?.ok && r.account) {
-      setAccounts((as) => [...(as || []), r.account]);
-      if (qAccFor === "one") setEAcc1(r.account.id);
-      if (qAccFor === "from") setEAcc1(r.account.id);
-      if (qAccFor === "to") setEAcc2(r.account.id);
-      if (qAccFor === "add") setAAcc(r.account.id);
-      setQAccFor(null); setQAccName("");
-    }
-  }
-  // Счёт в форме добавления.
-  const [aAcc, setAAcc] = useState("");
 
   // Пользовательские категории (вариант А): грузим список и держим реестр для catView.
   const [custom, setCustom] = useState<CustomCat[]>([]);
@@ -274,49 +240,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatEmoji, setNewCatEmoji] = useState("");
   const [newCatKind, setNewCatKind] = useState<"income" | "expense">("expense");
-  // Счета: null — таблицы ещё нет (SQL не применён), фича не показывается.
-  const [accounts, setAccounts] = useState<Account[] | null>(null);
-  const loadAccounts = () => fetch("/api/finance/accounts").then((r) => r.json()).then((j) => { setAccounts(j?.ok ? (j.accounts || []) : null); }).catch(() => setAccounts(null));
-  useEffect(() => { loadAccounts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const A = ACC_L[locale] || ACC_L.ru;
-  const activeAccounts = (accounts || []).filter((a) => !a.archived);
-  const accName = (id: string | null | undefined) => activeAccounts.find((a) => a.id === id)?.name || (accounts || []).find((a) => a.id === id)?.name || "";
-  // Создание/правка счёта (в карточке «Счета» и быстрое — из формы операции).
-  const [accNewOpen, setAccNewOpen] = useState(false);
-  const [accNewName, setAccNewName] = useState("");
-  const [accNewEmoji, setAccNewEmoji] = useState("");
-  const [accNewCur, setAccNewCur] = useState("UAH");
-  const [accNewBal, setAccNewBal] = useState("");
-  async function createAccount(): Promise<Account | null> {
-    const name = accNewName.trim();
-    if (!name) return null;
-    const r = await fetch("/api/finance/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, emoji: accNewEmoji.trim() || null, currency: accNewCur, opening_balance: parseFloat(accNewBal.replace(",", ".")) || 0 }) }).then((x) => x.json()).catch(() => null);
-    if (r?.ok && r.account) {
-      setAccounts((as) => [...(as || []), r.account]);
-      setAccNewOpen(false); setAccNewName(""); setAccNewEmoji(""); setAccNewBal("");
-      return r.account as Account;
-    }
-    return null;
-  }
-  const [accEditId, setAccEditId] = useState<string | null>(null);
-  const [accEName, setAccEName] = useState("");
-  const [accEEmoji, setAccEEmoji] = useState("");
-  const [accEBal, setAccEBal] = useState("");
-  async function saveAccount(id: string) {
-    const body: any = { id, name: accEName.trim(), emoji: accEEmoji.trim() || null };
-    const v = parseFloat(accEBal.replace(",", "."));
-    if (accEBal.trim() && isFinite(v)) body.opening_balance = v;
-    const r = await fetch("/api/finance/accounts", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then((x) => x.json()).catch(() => null);
-    if (r?.ok) { setAccEditId(null); loadAccounts(); }
-  }
-  async function delAccount(id: string) {
-    if (!window.confirm(A.del)) return;
-    await fetch(`/api/finance/accounts?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
-    setAccEditId(null);
-    setAccounts((as) => (as || []).filter((a) => a.id !== id));
-    router.refresh();
-  }
-
   // Новая категория, не выходя из формы операции («прямо в этом окне»):
   // ncFor помнит, откуда открыли — из формы добавления или из правки.
   const [ncFor, setNcFor] = useState<null | "add" | "edit">(null);
@@ -639,9 +562,9 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
       const slug = await ensurePendingCat(kind);
       if (slug) { cat = slug; setCategory(slug); }
     }
-    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category: cat, subcategory: subcategory.trim() || null, note: note.trim() || null, account_id: aAcc || null }) });
+    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category: cat, subcategory: subcategory.trim() || null, note: note.trim() || null }) });
     setBusy(false);
-    if (r.ok) { setOpen(false); setAmount(""); setNote(""); setSubcategory(""); loadAccounts(); router.refresh(); }
+    if (r.ok) { setOpen(false); setAmount(""); setNote(""); setSubcategory(""); router.refresh(); }
   }
 
   function startEdit(t: Tx) {
@@ -660,9 +583,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     const arrow = String(t.note || "").split("→");
     if (arrow.length === 2) { setEFrom(arrow[0].trim()); setETo(arrow[1].trim()); }
     else { setEFrom(""); setETo(""); }
-    setEAcc1(t.account_id || "");
-    setEAcc2(t.account2_id || "");
-    setQAccFor(null);
   }
 
   // Человек вписал имя новой категории, но не нажал «Добавить» и сразу жмёт
@@ -691,26 +611,19 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     }
     const r = await fetch("/api/finance", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify((() => {
-        // У перевода «откуда/куда» — счета (если заведены) или текст; заметка
-        // собирается из имён, чтобы в списке читалось «Белая → Чёрная».
-        const fromName = accName(eAcc1) || eFrom.trim();
-        const toName = eScope === "transfer" ? (accName(eAcc2) || eTo.trim()) : "";
-        return {
-          id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency,
-          category: eScope === "transfer" ? null : cat,
-          subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null),
-          note: eScope === "transfer"
-            ? ((fromName || toName) ? [fromName, toName].filter(Boolean).join(" → ") : (eNote.trim() || null))
-            : (eNote.trim() || null),
-          scope: eScope,
-          account_id: eAcc1 || null,
-          account2_id: eScope === "transfer" ? (eAcc2 || null) : null,
-        };
-      })()),
+      body: JSON.stringify({
+        id: editTx, day: eDay, kind: eKind, amount: v, currency: eCurrency,
+        category: eScope === "transfer" ? null : cat,
+        subcategory: eScope === "transfer" ? null : (eSubcategory.trim() || null),
+        // У перевода заметка — это «Откуда → Куда»; если поля пустые, старую не трогаем.
+        note: eScope === "transfer"
+          ? ((eFrom.trim() || eTo.trim()) ? [eFrom.trim(), eTo.trim()].filter(Boolean).join(" → ") : (eNote.trim() || null))
+          : (eNote.trim() || null),
+        scope: eScope,
+      }),
     });
     setBusy(false);
-    if (r.ok) { setEditTx(null); loadAccounts(); router.refresh(); }
+    if (r.ok) { setEditTx(null); router.refresh(); }
   }
 
   async function del(id: string) {
@@ -718,7 +631,7 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     setBusy(true);
     const r = await fetch("/api/finance", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) });
     setBusy(false);
-    if (r.ok) { loadAccounts(); router.refresh(); }
+    if (r.ok) router.refresh();
   }
 
   async function saveBudget(cat: string, raw: string) {
@@ -863,34 +776,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
     return catView(t.kind, t.category, locale);
   }
 
-  // Быстрое создание счёта, не выходя из формы операции.
-  function renderQuickAcc() {
-    if (!qAccFor || qAccFor === "add") return null;
-    return (
-      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-        <input autoFocus value={qAccName} onChange={(e) => setQAccName(e.target.value)} placeholder={A.ph} maxLength={60}
-          onKeyDown={(e) => { if (e.key === "Enter") quickAccount(); if (e.key === "Escape") setQAccFor(null); }}
-          style={{ ...input, flex: 1, minWidth: 0 }} />
-        <select value={qAccCur} onChange={(e) => setQAccCur(e.target.value)} style={{ ...input, width: 90, flexShrink: 0 }}>
-          {CUR.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
-        </select>
-        <button onClick={quickAccount} disabled={!qAccName.trim()} style={{ ...btnG, opacity: qAccName.trim() ? 1 : 0.5, flexShrink: 0 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
-        <button onClick={() => setQAccFor(null)} aria-label="close" style={{ ...btnG, padding: "10px 12px", flexShrink: 0 }}>×</button>
-      </div>
-    );
-  }
-
-  // Селект счёта: пункт «Новый счёт…» открывает быстрое создание.
-  function accSelect(value: string, setValue: (v: string) => void, emptyLabel: string, forKey: "one" | "from" | "to", style: any) {
-    return (
-      <select value={value} onChange={(e) => { const v = e.target.value; if (v === "__new") { setQAccFor(forKey); setQAccName(""); } else { setValue(v); if (qAccFor === forKey) setQAccFor(null); } }} style={style}>
-        <option value="">{emptyLabel}</option>
-        {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.emoji || "💳"} {a.name}</option>)}
-        <option value="__new">{A.newAcc}</option>
-      </select>
-    );
-  }
-
   // Форма правки операции — одна на оба места: список операций и аккордеон
   // категории. Раньше карандаш в аккордеоне «перекидывал» наверх в другой блок.
   function renderEdit(t: Tx) {
@@ -937,10 +822,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                           ))}
                         </div>
                       )}
-                      {eScope !== "transfer" && accounts !== null && activeAccounts.length > 0 && (<>
-                        {accSelect(eAcc1, setEAcc1, `💳 ${A.accSel}`, "one", { ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" })}
-                        {qAccFor === "one" && renderQuickAcc()}
-                      </>)}
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                         <input autoFocus type="number" inputMode="decimal" step="0.01" placeholder={s.amount} value={eAmount} onChange={(e) => setEAmount(e.target.value)} style={{ ...input, flex: "2 1 110px", fontSize: 16, fontWeight: 600 }} />
                         <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
@@ -953,24 +834,15 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
                           <span style={{ flexShrink: 0 }}>🔁</span>
                           <span>{(TRANSFER_L[locale] || TRANSFER_L.ru).hint}</span>
                         </div>
-                        {/* Откуда и куда — счета, если они заведены; иначе свободный текст. */}
-                        {accounts !== null ? (<>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8, alignItems: "center" }}>
-                            {accSelect(eAcc1, setEAcc1, `${A.from}…`, "from", { ...input, flex: "1 1 150px", minWidth: 0 })}
-                            <span style={{ color: "var(--text-3)" }}>→</span>
-                            {accSelect(eAcc2, setEAcc2, `${A.to}…`, "to", { ...input, flex: "1 1 150px", minWidth: 0 })}
-                          </div>
-                          {renderQuickAcc()}
-                        </>) : (<>
-                          <datalist id="fin-acc-sug">
-                            {accSug.map((a) => <option key={a} value={a} />)}
-                          </datalist>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                            <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).fromPh} value={eFrom} onChange={(e) => setEFrom(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
-                            <span style={{ alignSelf: "center", color: "var(--text-3)" }}>→</span>
-                            <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).toPh} value={eTo} onChange={(e) => setETo(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
-                          </div>
-                        </>)}
+                        {/* Откуда и куда — иначе «ушло/пришло» не отвечает на главный вопрос. */}
+                        <datalist id="fin-acc-sug">
+                          {accSug.map((a) => <option key={a} value={a} />)}
+                        </datalist>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                          <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).fromPh} value={eFrom} onChange={(e) => setEFrom(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
+                          <span style={{ alignSelf: "center", color: "var(--text-3)" }}>→</span>
+                          <input type="text" list="fin-acc-sug" placeholder={(TRANSFER_L[locale] || TRANSFER_L.ru).toPh} value={eTo} onChange={(e) => setETo(e.target.value)} maxLength={60} style={{ ...input, flex: "1 1 150px", minWidth: 0 }} />
+                        </div>
                       </>) : (<>
                       <select value={eCategory} onChange={(e) => { const v = e.target.value; if (v === "__new") { setNcFor("edit"); setNcLabel(""); setNcEmoji(""); } else { setECategory(v); setNcFor(null); } }} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
                         {pickerCats(eKind).map((o) => <option key={o.key} value={o.key}>{o.icon} {o.label}</option>)}
@@ -1426,12 +1298,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
               </select>
               <input type="date" value={day} max={todayISO()} onChange={(e) => setDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
             </div>
-            {accounts !== null && activeAccounts.length > 0 && (
-              <select value={aAcc} onChange={(e) => setAAcc(e.target.value)} style={{ ...input, width: "100%", marginBottom: 12, boxSizing: "border-box" }}>
-                <option value="">💳 {A.accSel}</option>
-                {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.emoji || "💳"} {a.name}</option>)}
-              </select>
-            )}
             <div style={{ fontSize: 12, color: "var(--text-3)", marginBottom: 6 }}>{s.category}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
               {cats.map((c) => (
@@ -1649,62 +1515,6 @@ export default function FinanceTracker({ data, locale }: { data: Data; locale: s
         </div>
       )}
       </div>
-
-      {/* Счета: карты и кошельки с живыми балансами (после SQL finance_accounts). */}
-      {accounts !== null && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: activeAccounts.length || accNewOpen ? 10 : 6 }}>
-            <span style={{ fontSize: 13, color: "var(--text-2)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <i className="ti ti-credit-card" style={{ fontSize: 15, color: "var(--accent)" }} />{A.title}
-            </span>
-            <button onClick={() => { setAccNewOpen((o) => !o); setAccEditId(null); }} style={{ ...btnG, padding: "5px 12px", fontSize: 12.5 }}>
-              <i className="ti ti-plus" style={{ fontSize: 13 }} /> {A.add}
-            </button>
-          </div>
-          {!activeAccounts.length && !accNewOpen && (
-            <div style={{ fontSize: 12.5, color: "var(--text-3)", lineHeight: 1.55 }}>{A.none}</div>
-          )}
-          {activeAccounts.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {activeAccounts.map((a) => accEditId === a.id ? (
-                <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 12, border: "1px solid var(--accent)", background: "var(--surface)", flexWrap: "wrap" }}>
-                  <EmojiInput value={accEEmoji} onChange={setAccEEmoji} inputStyle={{ ...input, width: 44, padding: "4px", textAlign: "center", fontSize: 13 }} />
-                  <input value={accEName} onChange={(e) => setAccEName(e.target.value)} maxLength={60} style={{ ...input, width: 140, padding: "4px 8px", fontSize: 13 }} />
-                  <input value={accEBal} onChange={(e) => setAccEBal(e.target.value)} inputMode="decimal" placeholder={`${A.opening} (${a.currency})`} style={{ ...input, width: 150, padding: "4px 8px", fontSize: 13 }} />
-                  <button onClick={() => saveAccount(a.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--accent)", padding: 0 }}><i className="ti ti-check" style={{ fontSize: 16 }} /></button>
-                  <button onClick={() => delAccount(a.id)} title={A.delConfirm} style={{ border: "none", background: "none", cursor: "pointer", color: "#ef4444", padding: 0 }}><i className="ti ti-trash" style={{ fontSize: 14 }} /></button>
-                  <button onClick={() => setAccEditId(null)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0, fontSize: 15, lineHeight: 1 }}>×</button>
-                </span>
-              ) : (
-                <span key={a.id} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 13px", borderRadius: 12, border: "1px solid var(--border)", background: "var(--surface)" }}>
-                  <span style={{ fontSize: 16 }}>{a.emoji || "💳"}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-2)" }}>{a.name}</span>
-                  <b style={{ fontSize: 14, color: a.balance < 0 ? "#ef4444" : "var(--text)" }}>{fmtMoney(a.balance, a.currency, locale)}</b>
-                  <button onClick={() => { setAccEditId(a.id); setAccEName(a.name); setAccEEmoji(a.emoji || ""); setAccEBal(""); setAccNewOpen(false); }} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--text-3)", padding: 0 }}>
-                    <i className="ti ti-pencil" style={{ fontSize: 13 }} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-          {accNewOpen && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
-              <EmojiInput value={accNewEmoji} onChange={setAccNewEmoji} inputStyle={{ ...input, width: 52, textAlign: "center" }} />
-              <input autoFocus value={accNewName} onChange={(e) => setAccNewName(e.target.value)} placeholder={A.ph} maxLength={60}
-                onKeyDown={(e) => { if (e.key === "Enter") createAccount(); if (e.key === "Escape") setAccNewOpen(false); }}
-                style={{ ...input, width: 200 }} />
-              <select value={accNewCur} onChange={(e) => setAccNewCur(e.target.value)} style={{ ...input, width: 90 }}>
-                {CUR.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
-              </select>
-              <input value={accNewBal} onChange={(e) => setAccNewBal(e.target.value)} inputMode="decimal" placeholder={A.opening} style={{ ...input, width: 150 }} />
-              <button onClick={createAccount} disabled={!accNewName.trim()} style={{ ...btnG, opacity: accNewName.trim() ? 1 : 0.5 }}>{(CAT_MGR[locale] || CAT_MGR.ru).add}</button>
-            </div>
-          )}
-          {(activeAccounts.length > 0 || accNewOpen) && (
-            <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.5, marginTop: 10 }}>{A.hint}</div>
-          )}
-        </div>
-      )}
 
       {/* Сводный бюджет на месяц */}
       {(budgetTotal || data.hasAny) && (
