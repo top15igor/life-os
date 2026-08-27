@@ -91,6 +91,15 @@ const PRIVAT_L: Record<string, { title: string; hint: string; noPersonal: string
   es: { title: "PrivatBank (negocio)", hint: "Conecta las cuentas de negocio: Privat24 business → Ajustes → API AutoClient, crea un token — necesitas el ID de cliente y el token.", noPersonal: "Las tarjetas personales de Privat no tienen API pública — la automatización cubre solo cuentas de negocio.", idPh: "ID de cliente", tokenPh: "Token de AutoClient", namePh: "Nombre (opcional)", connect: "Conectar", connected: (n) => `✅ Conectado${n ? `: ${n}` : ""}. Sincroniza cada hora.`, disconnect: "Desconectar", importBtn: "Importar 30 días", imported: (n) => `Operaciones importadas: ${n}.`, badToken: "Privat rechazó el ID o el token.", err: "No se pudo conectar. Inténtalo más tarde.", auto: "Las operaciones de negocio se marcan Business automáticamente." },
 };
 
+// Выписка личной карты Привата файлом (у физлиц открытого API нет).
+const PRIVAT_ST_L: Record<string, { title: string; hint: string; btn: string; undo: string; done: (n: number, d: number) => string; undone: (n: number) => string; fail: string; accSel: string }> = {
+  ru: { title: "Личная карта — выписка файлом", hint: "Приват24 → карта → «Выписка» → выгрузи .xlsx или .csv за нужный период и загрузи сюда. Повторная загрузка того же файла дублей не создаёт. Траты за границей лягут в валюте покупки.", btn: "Выбрать файл выписки", undo: "Откатить импорт выписки", done: (n, d) => `Импортировано операций: ${n}${d ? `, пропущено дублей: ${d}` : ""}.`, fail: "Не получилось разобрать файл. Нужна выписка из Приват24 в .xlsx или .csv.", accSel: "💳 В какой счёт класть (необязательно)", undone: (n) => `Убрано операций из выписок: ${n}.` },
+  en: { title: "Personal card — statement file", hint: "Privat24 → card → Statement → export .xlsx or .csv and upload it here. Re-uploading the same file creates no duplicates. Foreign purchases keep their currency.", btn: "Choose statement file", undo: "Undo statement import", done: (n, d) => `Imported operations: ${n}${d ? `, duplicates skipped: ${d}` : ""}.`, fail: "Couldn't parse the file. It must be a Privat24 statement in .xlsx or .csv.", accSel: "💳 Account to put them into (optional)", undone: (n) => `Removed statement operations: ${n}.` },
+  uk: { title: "Особиста картка — виписка файлом", hint: "Приват24 → картка → «Виписка» → вивантаж .xlsx або .csv і завантаж сюди. Повторне завантаження того ж файлу дублів не створює. Витрати за кордоном ляжуть у валюті покупки.", btn: "Обрати файл виписки", undo: "Відкотити імпорт виписки", done: (n, d) => `Імпортовано операцій: ${n}${d ? `, пропущено дублів: ${d}` : ""}.`, fail: "Не вдалося розібрати файл. Потрібна виписка з Приват24 у .xlsx або .csv.", accSel: "💳 У який рахунок класти (необовʼязково)", undone: (n) => `Прибрано операцій з виписок: ${n}.` },
+  fr: { title: "Carte perso — relevé en fichier", hint: "Privat24 → carte → Relevé → exporte .xlsx ou .csv et charge-le ici. Recharger le même fichier ne crée pas de doublons.", btn: "Choisir le relevé", undo: "Annuler l'import du relevé", done: (n, d) => `Opérations importées : ${n}${d ? `, doublons ignorés : ${d}` : ""}.`, fail: "Fichier illisible. Il faut un relevé Privat24 en .xlsx ou .csv.", accSel: "💳 Compte de destination (facultatif)", undone: (n) => `Opérations retirées : ${n}.` },
+  es: { title: "Tarjeta personal — extracto en archivo", hint: "Privat24 → tarjeta → Extracto → exporta .xlsx o .csv y súbelo aquí. Volver a subir el mismo archivo no crea duplicados.", btn: "Elegir archivo", undo: "Deshacer importación", done: (n, d) => `Operaciones importadas: ${n}${d ? `, duplicados omitidos: ${d}` : ""}.`, fail: "No se pudo leer el archivo. Debe ser un extracto de Privat24 en .xlsx o .csv.", accSel: "💳 Cuenta de destino (opcional)", undone: (n) => `Operaciones eliminadas: ${n}.` },
+};
+
 // «Добавить ещё один аккаунт Monobank» — подпись у поля токена, когда уже подключено.
 const MONO_MORE_L: Record<string, string> = {
   ru: "Можно добавить ещё один аккаунт Monobank — например, близкого человека или второй свой (по его токену с api.monobank.ua). Операции всех аккаунтов будут падать в «Деньги» вместе.",
@@ -581,6 +590,32 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
       if (j?.ok) { setPvMsg(PV.imported(j.inserted || 0)); loadAccounts(); router.refresh(); }
       else setPvMsg(PV.err);
     } catch { setPvMsg(PV.err); }
+    setPvBusy(false);
+  }
+  // Выписка личной карты файлом (.xlsx/.csv из Приват24).
+  const PS = PRIVAT_ST_L[locale] || PRIVAT_ST_L.ru;
+  const pvFileRef = useRef<HTMLInputElement | null>(null);
+  const [pvStAcc, setPvStAcc] = useState("");
+  async function uploadPrivatStatement(f: File) {
+    setPvBusy(true); setPvMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      if (pvStAcc) fd.append("accountId", pvStAcc);
+      const j = await (await fetch("/api/bank/privat/statement", { method: "POST", body: fd })).json();
+      if (j?.ok) { setPvMsg(PS.done(j.inserted || 0, j.duplicates || 0)); loadAccounts(); router.refresh(); }
+      else setPvMsg(PS.fail);
+    } catch { setPvMsg(PS.fail); }
+    setPvBusy(false);
+    if (pvFileRef.current) pvFileRef.current.value = "";
+  }
+  async function undoPrivatStatement() {
+    setPvBusy(true); setPvMsg(null);
+    try {
+      const j = await (await fetch("/api/bank/privat/statement", { method: "DELETE" })).json();
+      if (j?.ok) { setPvMsg(PS.undone(j.removed || 0)); loadAccounts(); router.refresh(); }
+      else setPvMsg(PS.fail);
+    } catch { setPvMsg(PS.fail); }
     setPvBusy(false);
   }
 
@@ -1362,13 +1397,14 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
             {monoMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{monoMsg}</div>}
           </div>
 
-          {/* Блок: подключение ПриватБанка (бизнес/ФОП, API Автоклиент) */}
-          {privat !== null && (
+          {/* Блок: ПриватБанк — API Автоклиент (ФОП) + выписка личной карты файлом.
+              API-часть видна после bank_privat.sql; выписка работает всегда. */}
+          {(
             <div style={secBox}>
               <div style={secHead}>
                 <i className="ti ti-building-bank" style={{ fontSize: 16, color: "var(--accent)" }} />{PV.title}
               </div>
-              {privat.length > 0 && (
+              {privat !== null && privat.length > 0 && (
                 <div style={{ marginBottom: 10 }}>
                   {privat.map((c) => (
                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#065f46", background: "#10b9811a", border: "1px solid #6ee7b7", borderRadius: 9, padding: "8px 11px", marginBottom: 6 }}>
@@ -1381,6 +1417,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                   </button>
                 </div>
               )}
+              {privat !== null && (<>
               <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{PV.hint} {PV.auto}<br />{PV.noPersonal}</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                 <input type="text" placeholder={PV.idPh} value={pvId} onChange={(e) => setPvId(e.target.value)} style={{ ...input, flex: "1 1 160px", minWidth: 0 }} />
@@ -1390,6 +1427,28 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
               <button disabled={pvBusy} onClick={connectPrivat} style={{ ...btnP, opacity: pvBusy ? 0.7 : 1 }}>
                 <i className="ti ti-plug" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {PV.connect}
               </button>
+              </>)}
+              {/* Личная карта: выписка файлом (открытого API для физлиц у Привата нет). */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--border)" }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>{PS.title}</div>
+                <div style={{ fontSize: 11.5, color: "var(--text-3)", marginBottom: 8, lineHeight: 1.5 }}>{PS.hint}</div>
+                {activeAccounts.length > 0 && (
+                  <select value={pvStAcc} onChange={(e) => setPvStAcc(e.target.value)} style={{ ...input, width: "100%", marginBottom: 8, boxSizing: "border-box" }}>
+                    <option value="">{PS.accSel}</option>
+                    {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.emoji || "💳"} {a.name}</option>)}
+                  </select>
+                )}
+                <input ref={pvFileRef} type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: "none" }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPrivatStatement(f); }} />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button disabled={pvBusy} onClick={() => pvFileRef.current?.click()} style={{ ...btnG, opacity: pvBusy ? 0.6 : 1 }}>
+                    <i className="ti ti-upload" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {PS.btn}
+                  </button>
+                  <button disabled={pvBusy} onClick={undoPrivatStatement} style={{ ...btnG, opacity: pvBusy ? 0.6 : 1, color: "#ef4444" }}>
+                    <i className="ti ti-arrow-back-up" style={{ fontSize: 14, verticalAlign: "-2px" }} /> {PS.undo}
+                  </button>
+                </div>
+              </div>
               {pvMsg && <div style={{ fontSize: 12, color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 9, padding: "8px 11px", marginTop: 8 }}>{pvMsg}</div>}
             </div>
           )}
