@@ -56,6 +56,14 @@ export async function POST(req: NextRequest) {
     inserted += chunk.length;
   }
 
+  // Бэкфилл времени у ранее загруженных операций этой же выписки.
+  for (const t of rows) {
+    if (!t.time) continue;
+    await db.from("finance_tx").update({ op_time: t.time })
+      .eq("user_id", user.id).eq("source", "privatcard").eq("ext_id", t.ext_id).is("op_time", null)
+      .then(() => undefined, () => undefined);
+  }
+
   return NextResponse.json({ ok: true, inserted, duplicates: rows.length - toInsert.length, skipped, total });
 }
 

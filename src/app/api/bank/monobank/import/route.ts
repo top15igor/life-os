@@ -105,6 +105,14 @@ export async function POST() {
           .then(() => undefined, () => undefined);
       }
     }
+    // Бэкфилл времени: у ранее импортированных операций проставляем op_time.
+    for (const it of items as any[]) {
+      const mm = mapStatementItem(it, acc.currency);
+      if (!mm?.time) continue;
+      await db.from("finance_tx").update({ op_time: mm.time })
+        .eq("user_id", user.id).eq("source", "monobank").eq("ext_id", mm.ext_id).is("op_time", null)
+        .then(() => undefined, () => undefined);
+    }
   }
 
   // Починка валюты и суммы у ранее импортированных операций.
