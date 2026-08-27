@@ -57,6 +57,7 @@ import { classifyScope } from "./financeScope";
 export type MonoMapped = {
   ext_id: string;
   day: string;
+  time: string | null;
   kind: "income" | "expense";
   amount: number;
   currency: string;
@@ -85,12 +86,20 @@ export function mapStatementItem(item: any, accountCurrency?: string): MonoMappe
   if (!(amount > 0)) return null;
   const currency = useOp ? (opAlpha as string) : (accountCurrency || "UAH");
   const day = new Date((Number(item.time) || 0) * 1000).toISOString().slice(0, 10);
+  // Время операции — по Киеву: банк украинский, и человек помнит покупку
+  // в местном времени, а не в UTC.
+  let time: string | null = null;
+  try {
+    time = new Date((Number(item.time) || 0) * 1000).toLocaleTimeString("uk-UA", { timeZone: "Europe/Kiev", hour: "2-digit", minute: "2-digit" });
+    if (!/^\d{2}:\d{2}$/.test(time || "")) time = null;
+  } catch { time = null; }
   const category = mccCategory(Number(item.mcc));
   const desc = [item.description, item.comment].filter(Boolean).join(" · ").trim();
   const note = desc ? desc.slice(0, 200) : null;
   return {
     ext_id: String(item.id),
     day,
+    time,
     kind,
     amount,
     currency,

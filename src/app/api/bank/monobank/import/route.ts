@@ -92,7 +92,7 @@ export async function POST() {
         continue;
       }
       existing.set(m.ext_id, { currency: m.currency, amount: m.amount });
-      toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id, scope: m.scope, ...(acc.monoAcc ? { account_id: acc.monoAcc } : {}) });
+      toInsert.push({ user_id: user.id, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "monobank", ext_id: m.ext_id, scope: m.scope, ...(m.time ? { op_time: m.time } : {}), ...(acc.monoAcc ? { account_id: acc.monoAcc } : {}) });
     }
     // Бэкфилл привязки к счёту: старые операции этого банка без счёта получают
     // его (только пустые — ручную привязку не трогаем).
@@ -116,8 +116,8 @@ export async function POST() {
   for (let i = 0; i < toInsert.length; i += 500) {
     const chunk = toInsert.slice(i, i + 500);
     let { error } = await db.from("finance_tx").insert(chunk);
-    if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
-      const bare = chunk.map(({ ext_id, source, scope, account_id, ...rest }: any) => rest);
+    if (error && /ext_id|source|scope|account|op_time|column|schema cache/i.test(error.message)) {
+      const bare = chunk.map(({ ext_id, source, scope, account_id, op_time, ...rest }: any) => rest);
       ({ error } = await db.from("finance_tx").insert(bare));
     }
     if (error) return NextResponse.json({ ok: false, error: error.message, inserted }, { status: 500 });

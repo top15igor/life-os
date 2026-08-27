@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { guessCatKey } from "@/lib/moneyok";
 
-type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null; amountBase?: number; account_id?: string | null; account2_id?: string | null };
+type Tx = { id: string; day: string; kind: "income" | "expense"; amount: number; currency: string; category: string | null; subcategory: string | null; note: string | null; scope?: string | null; amountBase?: number; account_id?: string | null; account2_id?: string | null; op_time?: string | null };
 
 // Счёт (карта, кошелёк, наличные): своя валюта и живой баланс.
 type Account = { id: string; name: string; emoji: string | null; currency: string; opening_balance: number; opening_date: string; archived: boolean; balance: number };
@@ -274,6 +274,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
   const [category, setCategory] = useState("food");
   const [subcategory, setSubcategory] = useState("");
   const [day, setDay] = useState(todayISO());
+  const [aTime, setATime] = useState("");
   const [note, setNote] = useState("");
 
   // Редактирование существующей операции.
@@ -285,6 +286,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
   const [eSubcategory, setESubcategory] = useState("");
   const [eNote, setENote] = useState("");
   const [eDay, setEDay] = useState(todayISO());
+  const [eTime, setETime] = useState("");
   const [eScope, setEScope] = useState<"personal" | "business" | "transfer">("personal");
   // Перевод: откуда и куда (хранится в заметке как «Откуда → Куда»).
   const [eFrom, setEFrom] = useState("");
@@ -783,7 +785,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
       const slug = await ensurePendingCat(kind);
       if (slug) { cat = slug; setCategory(slug); }
     }
-    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category: cat, subcategory: subcategory.trim() || null, note: note.trim() || null, account_id: aAcc || null }) });
+    const r = await fetch("/api/finance", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ day, kind, amount: v, currency, category: cat, subcategory: subcategory.trim() || null, note: note.trim() || null, account_id: aAcc || null, op_time: /^\d{2}:\d{2}$/.test(aTime) ? aTime : null }) });
     setBusy(false);
     if (r.ok) { setOpen(false); setAmount(""); setNote(""); setSubcategory(""); loadAccounts(); router.refresh(); }
   }
@@ -799,6 +801,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
     setESubcategory(t.subcategory || "");
     setENote(t.note || "");
     setEDay(t.day);
+    setETime(t.op_time || "");
     setEScope((t.scope === "business" || t.scope === "transfer") ? t.scope : "personal");
     // «Откуда → Куда» из заметки перевода; заметку без стрелки не трогаем.
     const arrow = String(t.note || "").split("→");
@@ -848,6 +851,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
             ? ((fromName || toName) ? [fromName, toName].filter(Boolean).join(" → ") : (eNote.trim() || null))
             : (eNote.trim() || null),
           scope: eScope,
+          op_time: /^\d{2}:\d{2}$/.test(eTime) ? eTime : null,
           account_id: eAcc1 || null,
           account2_id: eScope === "transfer" ? (eAcc2 || null) : null,
         };
@@ -1090,7 +1094,8 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                         <select value={eCurrency} onChange={(e) => setECurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
                           {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
                         </select>
-                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+                        <input type="date" value={eDay} max={todayISO()} onChange={(e) => setEDay(e.target.value)} style={{ ...input, flex: "1 1 120px" }} />
+                        <input type="time" value={eTime} onChange={(e) => setETime(e.target.value)} style={{ ...input, flex: "0 1 96px" }} />
                       </div>
                       {eScope === "transfer" ? (<>
                         <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, background: "var(--surface-2)", borderRadius: 10, padding: "8px 11px", marginBottom: 8, display: "flex", gap: 6 }}>
@@ -1165,7 +1170,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                         {m.label}
                         {t.subcategory && <span style={{ fontSize: 11.5, fontWeight: 500, color: m.color, background: `${m.color}1f`, padding: "1px 7px", borderRadius: 10, marginLeft: 6 }}>{t.subcategory}</span>}
                       </div>
-                      {t.note && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</div>}
+                      {(t.note || t.op_time) && <div style={{ fontSize: 12, color: "var(--text-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.op_time && <span style={{ opacity: 0.75 }}>{t.op_time}</span>}{t.op_time && t.note ? " · " : ""}{t.note}</div>}
                     </div>
                     <div onClick={() => startEdit(t)} style={{ fontSize: 14.5, fontWeight: 600, color: pos ? "#10b981" : "var(--text)", whiteSpace: "nowrap", cursor: "pointer", textAlign: "right" }}>
                       {pos ? "+" : "−"}{moneyPair(t).main}
@@ -1208,7 +1213,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
           <div onClick={() => setEditTx(null)} style={{ position: "fixed", inset: 0, zIndex: 220, background: "rgba(15, 18, 34, 0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
             <div onClick={(e) => e.stopPropagation()} style={{ width: "min(460px, 100%)", maxHeight: "90vh", overflowY: "auto", background: "var(--surface)", borderRadius: 16, padding: "16px 16px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.25)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)} · {t.note || txView(t).label}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)}{t.op_time ? ` ${t.op_time}` : ""} · {t.note || txView(t).label}</div>
                 <button onClick={() => setEditTx(null)} aria-label="close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", fontSize: 18, lineHeight: 1, padding: 4 }}>×</button>
               </div>
               {renderEdit(t)}
@@ -1626,7 +1631,8 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
               <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={{ ...input, flex: "1 1 80px" }}>
                 {CUR.map((c) => <option key={c.code} value={c.code}>{c.code} {c.sym}</option>)}
               </select>
-              <input type="date" value={day} max={todayISO()} onChange={(e) => setDay(e.target.value)} style={{ ...input, flex: "1 1 140px" }} />
+              <input type="date" value={day} max={todayISO()} onChange={(e) => setDay(e.target.value)} style={{ ...input, flex: "1 1 120px" }} />
+              <input type="time" value={aTime} onChange={(e) => setATime(e.target.value)} style={{ ...input, flex: "0 1 96px" }} />
             </div>
             {accounts !== null && activeAccounts.length > 0 && (
               <select value={aAcc} onChange={(e) => setAAcc(e.target.value)} style={{ ...input, width: "100%", marginBottom: 12, boxSizing: "border-box" }}>
@@ -2098,6 +2104,7 @@ export default function FinanceTracker({ data, locale, accFilter }: { data: Data
                           return (
                           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderTop: "1px solid var(--border)", fontSize: 12.5 }}>
                             <span style={{ color: "var(--text-3)", flexShrink: 0, width: 42 }}>{t.day.slice(8, 10)}.{t.day.slice(5, 7)}</span>
+                            {t.op_time && <span style={{ color: "var(--text-3)", flexShrink: 0, opacity: 0.75 }}>{t.op_time}</span>}
                             <span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-2)" }}>
                               {t.subcategory && <span style={{ color: m.color, marginRight: 5 }}>{t.subcategory}</span>}
                               {t.note || "—"}

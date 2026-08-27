@@ -80,11 +80,12 @@ export async function POST(req: NextRequest) {
         user_id: userId, day: mapped.day, kind: mapped.kind, amount: mapped.amount,
         currency: mapped.currency, category: mapped.category, note: mapped.note,
         source: "monobank", ext_id: mapped.ext_id, scope: mapped.scope,
+        ...(mapped.time ? { op_time: mapped.time } : {}),
         ...(monoAcc ? { account_id: monoAcc } : {}),
       };
       let { error } = await db.from("finance_tx").insert(row);
-      if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
-        const { ext_id, source, scope, account_id, ...bare } = row; // старая база без колонок
+      if (error && /ext_id|source|scope|account|op_time|column|schema cache/i.test(error.message)) {
+        const { ext_id, source, scope, account_id, op_time, ...bare } = row; // старая база без колонок
         await db.from("finance_tx").insert(bare);
       }
     }

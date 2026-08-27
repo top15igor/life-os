@@ -10,7 +10,7 @@ import { classifyScope } from "./financeScope";
 // евро/кроны, а не гривна со счёта. Знак «суммы в валюте карты» даёт тип.
 
 export type PrivatStRow = {
-  ext_id: string; day: string; kind: "income" | "expense"; amount: number;
+  ext_id: string; day: string; time: string | null; kind: "income" | "expense"; amount: number;
   currency: string; category: string | null; note: string | null; scope: string;
 };
 
@@ -176,9 +176,10 @@ export function parsePrivatStatement(rows: string[][]): { rows: PrivatStRow[]; t
     const isTransfer = /перекази|переказ|перевод/i.test(pbCat) || classifyScope({ note, category }) === "transfer";
     const time = String((cTime >= 0 ? r[cTime] : "") || "").trim();
     const card = String((cCard >= 0 ? r[cCard] : "") || "").trim();
+    const tm = time.match(/(\d{1,2}):(\d{2})/);
     out.push({
       ext_id: `pbst:${hashOf([day, time, signed, cardCur, desc, card].join("|"))}`,
-      day, kind, amount, currency,
+      day, time: tm ? `${tm[1].padStart(2, "0")}:${tm[2]}` : null, kind, amount, currency,
       category: isTransfer ? null : category,
       note,
       scope: isTransfer ? "transfer" : "personal",

@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
   const isUuid = (x: any) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x);
   if (isUuid(body?.account_id)) row.account_id = body.account_id;
   if (isUuid(body?.account2_id)) row.account2_id = body.account2_id;
+  if (typeof body?.op_time === "string" && /^\d{2}:\d{2}$/.test(body.op_time)) row.op_time = body.op_time;
   let { error } = await db.from("finance_tx").insert(row);
   // Старая база без колонок subcategory/scope/account — вставляем без них.
-  if (error && /subcategory|scope|account|column|schema cache/i.test(error.message)) {
-    const { subcategory: _s, scope: _sc, account_id: _a1, account2_id: _a2, ...bare } = row;
+  if (error && /subcategory|scope|account|op_time|column|schema cache/i.test(error.message)) {
+    const { subcategory: _s, scope: _sc, account_id: _a1, account2_id: _a2, op_time: _t, ...bare } = row;
     ({ error } = await db.from("finance_tx").insert(bare));
   }
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -75,14 +76,15 @@ export async function PATCH(req: NextRequest) {
   const isUuid = (x: any) => typeof x === "string" && /^[0-9a-f-]{36}$/i.test(x);
   if (body?.account_id !== undefined) upd.account_id = isUuid(body.account_id) ? body.account_id : null;
   if (body?.account2_id !== undefined) upd.account2_id = isUuid(body.account2_id) ? body.account2_id : null;
+  if (body?.op_time !== undefined) upd.op_time = typeof body.op_time === "string" && /^\d{2}:\d{2}$/.test(body.op_time) ? body.op_time : null;
 
   if (!Object.keys(upd).length) return NextResponse.json({ ok: false, error: "nothing" }, { status: 400 });
 
   const db = supabaseAdmin();
   let { error } = await db.from("finance_tx").update(upd).eq("id", id).eq("user_id", user.id);
   // Старая база без колонок subcategory/account — повторяем без них.
-  if (error && /subcategory|account|column|schema cache/i.test(error.message)) {
-    const { subcategory, account_id, account2_id, ...bare } = upd;
+  if (error && /subcategory|account|op_time|column|schema cache/i.test(error.message)) {
+    const { subcategory, account_id, account2_id, op_time, ...bare } = upd;
     if (Object.keys(bare).length) ({ error } = await db.from("finance_tx").update(bare).eq("id", id).eq("user_id", user.id));
     else error = null as any;
   }

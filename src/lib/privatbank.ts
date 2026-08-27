@@ -52,7 +52,7 @@ export async function fetchPrivatTransactions(clientId: string, token: string, d
 }
 
 export type PrivatMapped = {
-  ext_id: string; day: string; kind: "income" | "expense"; amount: number;
+  ext_id: string; day: string; time: string | null; kind: "income" | "expense"; amount: number;
   currency: string; note: string | null; scope: string; category: string | null;
 };
 
@@ -65,12 +65,14 @@ export function mapPrivatTx(t: any): PrivatMapped | null {
   const currency = String(t?.CCY || "UAH").toUpperCase().slice(0, 3);
   const dm = String(t?.DAT_OD || t?.DAT_KL || "").match(/(\d{2})\.(\d{2})\.(\d{4})/);
   const day = dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : new Date().toISOString().slice(0, 10);
+  const tm = String(t?.TIM_P || t?.DATE_TIME_DAT_OD_TIM_P || "").match(/(\d{1,2}):(\d{2})/);
+  const time = tm ? `${tm[1].padStart(2, "0")}:${tm[2]}` : null;
   const who = String(t?.AUT_CNTR_NAM || "").replace(/\s+/g, " ").trim();
   const osnd = String(t?.OSND || "").replace(/\s+/g, " ").trim();
   const note = ((who && osnd ? `${who} · ${osnd}` : who || osnd) || null)?.slice(0, 200) || null;
   // Это счёт ФОП: всё по умолчанию «Бизнес», а переводы на свои карты — «Перевод».
   const scope = classifyScope({ note, category: null }) === "transfer" ? "transfer" : "business";
-  return { ext_id: `pb:${ref}`, day, kind, amount, currency, note, scope, category: null };
+  return { ext_id: `pb:${ref}`, day, time, kind, amount, currency, note, scope, category: null };
 }
 
 // Синхронизация одного пользователя: все его подключения, дедуп по ext_id.
@@ -104,13 +106,13 @@ export async function syncPrivat(userId: string, days: number): Promise<{ insert
       const m = mapPrivatTx(t);
       if (!m || existing.has(m.ext_id)) continue;
       existing.add(m.ext_id);
-      toInsert.push({ user_id: userId, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "privatbank", ext_id: m.ext_id, scope: m.scope, ...(accId ? { account_id: accId } : {}) });
+      toInsert.push({ user_id: userId, day: m.day, kind: m.kind, amount: m.amount, currency: m.currency, category: m.category, note: m.note, source: "privatbank", ext_id: m.ext_id, scope: m.scope, ...(m.time ? { op_time: m.time } : {}), ...(accId ? { account_id: accId } : {}) });
     }
     for (let i = 0; i < toInsert.length; i += 500) {
       const chunk = toInsert.slice(i, i + 500);
       let { error } = await db.from("finance_tx").insert(chunk);
-      if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
-        const bare = chunk.map(({ ext_id, source, scope, account_id, ...rest }: any) => rest);
+      if (error && /ext_id|source|scope|account|op_time|column|schema cache/i.test(error.message)) {
+        const bare = chunk.map(({ ext_id, source, scope, account_id, op_time, ...rest }: any) => rest);
         ({ error } = await db.from("finance_tx").insert(bare));
       }
       if (!error) inserted += chunk.length;

@@ -42,14 +42,14 @@ export async function POST(req: NextRequest) {
   const seen = new Set<string>();
   const toInsert = rows
     .filter((t) => { if (existing.has(t.ext_id) || seen.has(t.ext_id)) return false; seen.add(t.ext_id); return true; })
-    .map((t) => ({ user_id: user.id, day: t.day, kind: t.kind, amount: t.amount, currency: t.currency, category: t.category, note: t.note, source: "privatcard", ext_id: t.ext_id, scope: t.scope, ...(accountId ? { account_id: accountId } : {}) }));
+    .map((t) => ({ user_id: user.id, day: t.day, kind: t.kind, amount: t.amount, currency: t.currency, category: t.category, note: t.note, source: "privatcard", ext_id: t.ext_id, scope: t.scope, ...(t.time ? { op_time: t.time } : {}), ...(accountId ? { account_id: accountId } : {}) }));
 
   let inserted = 0;
   for (let i = 0; i < toInsert.length; i += 500) {
     let chunk: any[] = toInsert.slice(i, i + 500);
     let { error } = await db.from("finance_tx").insert(chunk);
-    if (error && /ext_id|source|scope|account|column|schema cache/i.test(error.message)) {
-      chunk = chunk.map(({ ext_id, source, scope, account_id, ...rest }: any) => rest);
+    if (error && /ext_id|source|scope|account|op_time|column|schema cache/i.test(error.message)) {
+      chunk = chunk.map(({ ext_id, source, scope, account_id, op_time, ...rest }: any) => rest);
       ({ error } = await db.from("finance_tx").insert(chunk));
     }
     if (error) return NextResponse.json({ ok: false, error: error.message, inserted }, { status: 500 });

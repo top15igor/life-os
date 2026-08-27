@@ -47,6 +47,7 @@ export type Tx = {
   scope?: string | null;
   account_id?: string | null;
   account2_id?: string | null;
+  op_time?: string | null;
   // Сумма в основной валюте пользователя (по курсу на месяц операции). Для
   // интерфейса: главная цифра всегда в одной валюте, оригинал — в скобках.
   amountBase?: number;
@@ -147,12 +148,12 @@ export async function getFinanceData(userId: string, month?: string, view: Scope
       .order("day", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5000);
-    let { data, error } = await q("id, day, kind, amount, currency, category, subcategory, note, scope, account_id, account2_id");
+    let { data, error } = await q("id, day, kind, amount, currency, category, subcategory, note, scope, account_id, account2_id, op_time");
     // Старая база без колонок scope/subcategory/account — повторяем запрос без них.
-    if (error && /scope|subcategory|account|column|schema cache/i.test(error.message)) {
+    if (error && /scope|subcategory|account|op_time|column|schema cache/i.test(error.message)) {
       ({ data, error } = await q("id, day, kind, amount, currency, category, note"));
     }
-    txsRaw = (data || []).map((t: any) => ({ subcategory: null, scope: null, account_id: null, account2_id: null, ...t, amount: Number(t.amount) }));
+    txsRaw = (data || []).map((t: any) => ({ subcategory: null, scope: null, account_id: null, account2_id: null, op_time: null, ...t, amount: Number(t.amount) }));
     // Фильтр режима: Личное (по умолчанию) / Бизнес / Переводы / Всё.
     txsRaw = txsRaw.filter((t: any) => inScope(t.scope, view));
     // Фильтр по счёту: месяц глазами одной карты/кошелька. Итоги, категории
