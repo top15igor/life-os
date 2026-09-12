@@ -5,6 +5,7 @@ import { logClaude } from "./usage";
 import { rememberClarify } from "./clarify";
 import { DREAM_SPHERES } from "./ai";
 import { createReminder, localToISO, deleteReminder } from "./reminders";
+import { nextOccurrence } from "./reminderDelivery";
 import type { Recurrence } from "./googleCalendar";
 import { addMediaByTitle } from "./books";
 import { normalizeMorningPrefs } from "./morningPrefs";
@@ -71,15 +72,15 @@ export const ACTION_TOOLS: any[] = [
   {
     name: "set_reminder",
     description:
-      "Поставить НАПОМИНАНИЕ на конкретное время/дату (уйдёт в календарь с уведомлением). Команды: «напомни …», «напоминай …», «напомни мне …», «через час …», «завтра в 9 …», «каждый день в 8 …». Разбери: что напомнить (text, без слова «напомни»), дату и время по МЕСТНОМУ времени пользователя. Если ПРЕДМЕТА нет вовсе («напоминай мне каждый день в 9 утра» — а ЧТО напоминать, не сказано) — это не сюда, это set_pushes (утренняя рассылка).",
+      "Поставить НАПОМИНАНИЕ на конкретное время/дату (уйдёт в календарь с уведомлением). Команды: «напомни …», «напоминай …», «напомни мне …», «через час …», «завтра в 9 …», «каждый день в 8 …». Сюда же намерение с временем, сказанное без слова «напомни»: «мне надо делать зарядку каждое утро в 7 утра». Разбери: что напомнить (text, без слова «напомни»), дату и время по МЕСТНОМУ времени пользователя. Если ПРЕДМЕТА нет вовсе («напоминай мне каждый день в 9 утра» — а ЧТО напоминать, не сказано) — это не сюда, это set_pushes (утренняя рассылка).",
     input_schema: {
       type: "object",
       properties: {
         text: { type: "string", description: "что напомнить, без слова «напомни»" },
-        date: { type: "string", description: "дата YYYY-MM-DD по местному времени, ТОЛЬКО если человек назвал день («завтра», «в субботу», «15 июля») или время («через час» — значит сегодня). НЕ выдумывай: не назвал ни дня, ни времени — не заполняй, бот сам спросит «когда?»." },
+        date: { type: "string", description: "дата YYYY-MM-DD по местному времени, ТОЛЬКО если человек назвал день («завтра», «в субботу», «15 июля») или время («через час» — значит сегодня). НЕ выдумывай: не назвал ни дня, ни времени — не заполняй, бот сам спросит «когда?». При повторе («каждый день в 7 утра») день можно не заполнять: хватит time и recurrence — бот сам возьмёт ближайший подходящий день." },
         time: { type: "string", description: "время HH:MM 24ч по местному, ТОЛЬКО если названо или следует из слов («через час», «вечером»); не выдумывай и не указывай для «на весь день»" },
         all_day: { type: "boolean", description: "true, если без конкретного времени (день рождения и т.п.)" },
-        recurrence: { type: "string", enum: ["none", "hourly", "daily", "weekly", "monthly", "yearly"], description: "повтор: «каждый день/неделю/месяц/год»; hourly — «каждый час» (тогда задай from_hour/to_hour)" },
+        recurrence: { type: "string", enum: ["none", "hourly", "daily", "weekly", "monthly", "yearly"], description: "повтор: «каждый день/неделю/месяц/год»; hourly — «каждый час» (тогда задай from_hour/to_hour). «каждое утро», «ежедневно», «по утрам» — это daily; «каждое утро в 7 утра» → recurrence=daily, time=07:00. Повтор нельзя терять: если человек сказал «каждый», заполни это поле." },
         from_hour: { type: "number", description: "для hourly: с какого часа (0–23), напр. «с 9 утра» → 9; по умолчанию 9" },
         to_hour: { type: "number", description: "для hourly: до какого часа (0–23), напр. «до 9 вечера» → 21; по умолчанию 21" },
         remind_min: { type: "number", description: "за сколько минут предупредить, если названо (10/30/60/1440); иначе не указывай" },
@@ -393,6 +394,7 @@ const SYS =
   "выбирай ТОЛЬКО при ЯВНОЙ ПОВЕЛИТЕЛЬНОЙ команде боту («добавь…», «напомни…», «отметь…», «удали…», «запиши вес…», «заверши задачу…»). " +
   "«Напомни …» с датой/временем → set_reminder (разбери дату и время по местному времени). «Добавь задачу» без времени → add_task. " +
   "«Напоминай КАЖДЫЙ ЧАС с 9 до 21 …» (интервал в течение дня) → ОДИН set_reminder с recurrence=hourly, from_hour=9, to_hour=21. НИКОГДА не создавай для этого десяток отдельных напоминаний на каждый час. " +
+  "«КАЖДЫЙ ДЕНЬ (каждое утро, ежедневно, по утрам) в 7 утра …» → set_reminder с recurrence=daily и time=07:00; день (date) при этом можно НЕ заполнять — бот сам возьмёт ближайший. Не переспрашивай «когда?», если время и повтор уже названы, и не теряй повтор, отвечая на свой же вопрос про день. " +
   "Если человек просто описывает, что сделал («сегодня пробежал 5 км», «поговорил с мамой») — это save_entry, НЕ действие. " +
   "ВАЖНО: фразы-поправки, недовольство и уточнения («не так записал», «не надо было это добавлять», «надо было иначе», «зачем ты…», «неправильно понял») — это НЕ команда действия и тем более НЕ удаление; по умолчанию save_entry. " +
   "ИСКЛЮЧЕНИЕ: если поправка — про ИМЯ человека («её зовут X», «настоящее имя — X», «переименуй Y в X», «исправь имя», «запиши у себя и измени: её зовут X») → rename_person, чтобы имя исправилось во всей базе, а не легло новой записью. " +
@@ -904,6 +906,29 @@ export async function renderListMessage(userId: string, listKey: string, lang: L
   return { text: lines.join("\n"), markup: kb.length ? { inline_keyboard: kb } : null };
 }
 
+// Ближайший день, когда названное время ещё впереди, — по МЕСТНОМУ времени
+// человека: сегодня, если время не прошло, иначе завтра. Нужен там, где день не
+// назван, а сказанного уже достаточно: «каждый день в 7 утра» в 23:19 — это
+// завтрашние 7 утра, и переспрашивать тут нечего.
+export function nextLocalDate(time: string | null, tzOffsetMin?: number | null): string {
+  const off = typeof tzOffsetMin === "number" ? tzOffsetMin : 0;
+  const loc = new Date(Date.now() + off * 60000);
+  const m = time ? /^(\d{1,2}):(\d{2})$/.exec(time) : null;
+  const target = m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  const now = loc.getUTCHours() * 60 + loc.getUTCMinutes();
+  // Без времени (почасовой повтор) день считаем сегодняшним: точный час всё
+  // равно пересчитает ветка hourly ниже.
+  if (target !== null && target <= now) loc.setUTCDate(loc.getUTCDate() + 1);
+  return localYMD(loc.getTime() - off * 60000, off);
+}
+
+// YYYY-MM-DD этого момента по местному времени человека. Календарю и подписи
+// нужен именно местный день: в UTC «завтра в 7 утра» легко превращается в другую дату.
+function localYMD(ms: number, tzOffsetMin?: number | null): string {
+  const d = new Date(ms + (typeof tzOffsetMin === "number" ? tzOffsetMin : 0) * 60000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 const RELAY_SELF: Record<Lang, string> = {
   ru: "Это же ты сам 🙂 Скажи, кому передать: «передай Коле, что…».",
   en: "That's you 🙂 Tell me who to send it to: “tell Nick that…”.",
@@ -951,23 +976,9 @@ export async function runAction(userId: string, name: string, input: any, lang: 
     }
     if (name === "set_reminder") {
       const t = String(input?.text || "").trim();
-      const date = String(input?.date || "").trim();
+      let date = String(input?.date || "").trim();
       if (!t) return { text: s.fail };
-      // «Напомни купить молоко» — без дня и времени. Раньше date был обязательным
-      // полем, и модель ВЫДУМЫВАЛА его (исследователь поймал это ~55 раз: «бот
-      // поставил напоминание на выдуманное время»). Выдуманное напоминание хуже
-      // вопроса: оно срабатывает, когда не ждут, и молчит, когда надо.
-      if (!date) {
-        const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
-        await rememberClarify(userId, rm.whenAsk(t), `напомни: ${t}`);
-        return {
-          text: rm.whenAsk(t),
-          markup: { inline_keyboard: rm.btns.map((b) => [{ text: b, callback_data: `clar:${b.slice(0, 50)}` }]) },
-        };
-      }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
       const time = input?.time ? String(input.time).trim() : null;
-      const allDay = !!input?.all_day || !time;
       // Повтор: стандартный (день/неделя/месяц/год) или почасовой с окном
       // («каждый час с 9 до 21») — он хранится строкой "hourly:<from>-<to>".
       const hourFrom = Math.min(23, Math.max(0, Math.round(Number(input?.from_hour ?? 9)) || 0));
@@ -975,9 +986,40 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const recurrence: string | null = input?.recurrence === "hourly"
         ? `hourly:${Math.min(hourFrom, hourTo)}-${Math.max(hourFrom, hourTo)}`
         : (["daily", "weekly", "monthly", "yearly"] as Recurrence[]).includes(input?.recurrence) ? (input.recurrence as Recurrence) : null;
+      // «Каждый день в 7 утра» — день НЕ назван, но он и не нужен: время известно,
+      // дальше повтор сам ведёт счёт. Раньше пустой date упирался в вопрос
+      // «когда напомнить?», человек отвечал «каждый день в 7 утра» — и получал тот
+      // же вопрос снова (живой случай Игоря 12.09). Считаем ближайший день сами:
+      // сегодня, если время ещё впереди, иначе завтра. Это не выдумка — это
+      // единственное прочтение сказанного.
+      if (!date && (time || input?.recurrence === "hourly")) date = nextLocalDate(time, tzOffset);
+      // «Напомни купить молоко» — без дня и времени. Раньше date был обязательным
+      // полем, и модель ВЫДУМЫВАЛА его (исследователь поймал это ~55 раз: «бот
+      // поставил напоминание на выдуманное время»). Выдуманное напоминание хуже
+      // вопроса: оно срабатывает, когда не ждут, и молчит, когда надо.
+      if (!date) {
+        const rm = REMIND_MSG[lang] || REMIND_MSG.ru;
+        // Повтор кладём в саму просьбу: ответ «завтра в 7» вернётся к мозгу вместе
+        // с ней, и «каждый день» не потеряется по дороге к одноразовому напоминанию.
+        const rep = recurrence ? ` (повтор: ${String(input?.recurrence)})` : "";
+        await rememberClarify(userId, rm.whenAsk(t), `напомни: ${t}${rep}`);
+        return {
+          text: rm.whenAsk(t),
+          markup: { inline_keyboard: rm.btns.map((b) => [{ text: b, callback_data: `clar:${b.slice(0, 50)}` }]) },
+        };
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { text: s.fail };
+      const allDay = !!input?.all_day || !time;
       const remindMin = typeof input?.remind_min === "number" ? input.remind_min : null;
       let dueISO = localToISO(date, allDay ? null : time, tzOffset);
       if (!dueISO) return { text: s.fail };
+      // Повторяющееся, а первый срок уже позади («каждый день в 7 утра», сказано
+      // в 23:19, день посчитан сегодняшним) — сдвигаем на следующий круг. Иначе
+      // напоминание сработает сразу, в ту же секунду: не «каждое утро», а «сейчас».
+      if (recurrence && input?.recurrence !== "hourly" && Date.parse(dueISO) <= Date.now()) {
+        dueISO = nextOccurrence(dueISO, recurrence, Date.now());
+        date = localYMD(Date.parse(dueISO), tzOffset);
+      }
 
       // Почасовой: первое срабатывание — ближайший будущий час внутри окна
       // (иначе «каждый час с 9» в 16:20 сработало бы сразу, задним числом).
