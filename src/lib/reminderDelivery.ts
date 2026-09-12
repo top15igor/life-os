@@ -38,7 +38,7 @@ export function parseHourly(recurrence: string): { from: number; to: number } | 
 // Для повторяющихся: следующее срабатывание ПОСЛЕ «сейчас», с сохранением времени дня.
 // Почасовой повтор идёт по местным часам и не выходит за окно (9→21, потом
 // следующее утро в 9) — иначе «каждый час» будило бы ночью.
-function nextOccurrence(dueISO: string, recurrence: string, nowMs: number, offMin = 0): string {
+export function nextOccurrence(dueISO: string, recurrence: string, nowMs: number, offMin = 0): string {
   const hourly = parseHourly(recurrence);
   if (hourly) {
     let t = Date.parse(dueISO);
