@@ -400,6 +400,19 @@ const BACKDATED: Record<string, (d: string) => string> = {
   es: (d) => `📅 Guardado con fecha pasada: <b>${d}</b>`,
 };
 
+// То же, но дня человек НЕ называл — его вычислили из «на выходных» / «неделю
+// назад». Живой случай: «на выходные ездили в Тулузу» бот подшил к субботе и
+// объявил это как факт, хотя поездка могла быть в воскресенье. День всё равно
+// нужен (иначе выходные лягут в понедельник), но выдавать догадку за названную
+// дату нельзя — говорим, что это предположение, и зовём поправить.
+const BACKDATED_GUESS: Record<string, (d: string) => string> = {
+  ru: (d) => `📅 Отнёс к <b>${d}</b> — точного дня ты не называл. Если был другой, скажи «это было в воскресенье».`,
+  en: (d) => `📅 Filed under <b>${d}</b> — you didn't name the exact day. If it was another one, just say “it was on Sunday”.`,
+  uk: (d) => `📅 Відніс до <b>${d}</b> — точного дня ти не називав. Якщо був інший, скажи «це було в неділю».`,
+  fr: (d) => `📅 Classé au <b>${d}</b> — tu n'as pas précisé le jour. Si c'était un autre, dis « c'était dimanche ».`,
+  es: (d) => `📅 Lo puse en <b>${d}</b> — no dijiste el día exacto. Si fue otro, dime «fue el domingo».`,
+};
+
 const MEM: Record<string, any> = {
   ru: { year: (t: string) => `⏳ Год назад в этот день ты писал: «${t}»`, month: (t: string) => `⏳ Месяц назад в этот день: «${t}»` },
   en: { year: (t: string) => `⏳ A year ago today you wrote: “${t}”`, month: (t: string) => `⏳ A month ago today: “${t}”` },
@@ -3044,7 +3057,14 @@ async function handleUpdate(req: NextRequest) {
     // Если разбор увидел явный прошлый день («вчера», «15 июля») и запись легла
     // этим числом — говорим об этом первой строкой, чтобы не было сюрпризов.
     if ((analysis as any).entry_date && (entry as any).entry_date === (analysis as any).entry_date) {
-      body = `${(BACKDATED[lang] || BACKDATED.ru)((entry as any).entry_date)}\n\n${body}`;
+      // Точный день («вчера», «в субботу») подтверждаем как факт; вычисленный из
+      // прикидки — как предположение. Разбор мог и не ответить про точность:
+      // молчание считаем прикидкой, это честнее в обе стороны.
+      const exact = (analysis as any).entry_date_exact === true;
+      const line = exact
+        ? (BACKDATED[lang] || BACKDATED.ru)((entry as any).entry_date)
+        : (BACKDATED_GUESS[lang] || BACKDATED_GUESS.ru)((entry as any).entry_date);
+      body = `${line}\n\n${body}`;
     }
     const ms = milestoneFor(count, streak, lang);
     if (ms) body += `\n\n${ms}`;

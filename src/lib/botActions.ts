@@ -657,7 +657,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, оставил запись.",
     delNone: "Записей для удаления нет.",
     fail: "Не получилось выполнить — попробуй ещё раз чуть позже.",
-    amendOk: "✏️ Поправил последнюю запись.", amendNotFound: (q: string) => `Не нашёл записи про «${q}». Скажи иначе — или назови дату.`, amendFound: (d: string, t: string) => `✏️ Поправил запись за ${d}: «${t}…»`, amendNone: "Не нашёл сегодняшней записи, которую можно поправить. Расскажи заново — сохраню как новую.",
+    amendOk: "✏️ Поправил последнюю запись.", amendMoved: (d: string) => `✏️ Поправил и перенёс запись на ${d}.`, amendNotFound: (q: string) => `Не нашёл записи про «${q}». Скажи иначе — или назови дату.`, amendFound: (d: string, t: string) => `✏️ Поправил запись за ${d}: «${t}…»`, amendNone: "Не нашёл сегодняшней записи, которую можно поправить. Расскажи заново — сохраню как новую.",
     jrn: { head: "📋 <b>Что я менял в твоих данных</b>", empty: "Я ничего не удалял и не переписывал — журнал пуст.", undoneMark: "(отменено)", foot: "Любое из этого можно вернуть: скажи «отмени последнее»." },
     undo: { done: (w: string) => `↩️ Вернул как было${w ? `: ${w}` : ""}.`, none: "Нечего отменять — за последнюю неделю я ничего не удалял и не переписывал.", failed: "Не получилось вернуть — данные уже изменились с тех пор. Расскажи, что восстановить, и я сделаю руками." },
     shelfAsk: (t: string) => `Не понял, куда это лучше положить:\n\n«${t}»\n\nВ дневник — если это про твою жизнь. В хранилище — если это справка, которую надо будет найти.`,
@@ -695,7 +695,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, kept the entry.",
     delNone: "No entries to delete.",
     fail: "Couldn't do it — try again a bit later.",
-    amendOk: "\u270f\ufe0f Fixed the last entry.", amendNotFound: (q: string) => `No entry about \u201c${q}\u201d. Try other words \u2014 or give me the date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Fixed the entry from ${d}: \u201c${t}\u2026\u201d`, amendNone: "No entry from today to fix. Tell me again and I\u2019ll save it as a new one.",
+    amendOk: "\u270f\ufe0f Fixed the last entry.", amendMoved: (d: string) => `\u270f\ufe0f Fixed it and moved the entry to ${d}.`, amendNotFound: (q: string) => `No entry about \u201c${q}\u201d. Try other words \u2014 or give me the date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Fixed the entry from ${d}: \u201c${t}\u2026\u201d`, amendNone: "No entry from today to fix. Tell me again and I\u2019ll save it as a new one.",
     jrn: { head: "\ud83d\udccb <b>What I changed in your data</b>", empty: "I haven\u2019t deleted or rewritten anything \u2014 the log is empty.", undoneMark: "(undone)", foot: "Any of it can be brought back: say \u201cundo the last one\u201d." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restored${w ? `: ${w}` : ""}.`, none: "Nothing to undo \u2014 I haven\u2019t deleted or rewritten anything this week.", failed: "Couldn\u2019t restore it \u2014 the data has changed since. Tell me what to bring back and I\u2019ll do it by hand." },
     shelfAsk: (t: string) => `I can\u2019t tell where this belongs:\n\n\u201c${t}\u201d\n\nThe diary is for your life. The vault is for reference you\u2019ll want to find later.`,
@@ -733,7 +733,7 @@ const M: Record<Lang, any> = {
     delKept: "Ок, залишив запис.",
     delNone: "Записів для видалення немає.",
     fail: "Не вдалося виконати — спробуй ще раз трохи пізніше.",
-    amendOk: "✏️ Виправив останній запис.", amendNotFound: (q: string) => `Не знайшов запису про «${q}». Скажи інакше — або назви дату.`, amendFound: (d: string, t: string) => `✏️ Виправив запис за ${d}: «${t}…»`, amendNone: "Не знайшов сьогоднішнього запису, який можна виправити. Розкажи знову — збережу як новий.",
+    amendOk: "✏️ Виправив останній запис.", amendMoved: (d: string) => `✏️ Виправив і переніс запис на ${d}.`, amendNotFound: (q: string) => `Не знайшов запису про «${q}». Скажи інакше — або назви дату.`, amendFound: (d: string, t: string) => `✏️ Виправив запис за ${d}: «${t}…»`, amendNone: "Не знайшов сьогоднішнього запису, який можна виправити. Розкажи знову — збережу як новий.",
     jrn: { head: "📋 <b>Що я змінював у твоїх даних</b>", empty: "Я нічого не видаляв і не переписував — журнал порожній.", undoneMark: "(скасовано)", foot: "Будь-що з цього можна повернути: скажи «скасуй останнє»." },
     undo: { done: (w: string) => `↩️ Повернув як було${w ? `: ${w}` : ""}.`, none: "Нема чого скасовувати — за останній тиждень я нічого не видаляв і не переписував.", failed: "Не вдалося повернути — дані відтоді змінилися. Скажи, що відновити, і я зроблю руками." },
     shelfAsk: (t: string) => `Не зрозумів, куди це краще покласти:\n\n«${t}»\n\nУ щоденник — якщо це про твоє життя. У сховище — якщо це довідка, яку треба буде знайти.`,
@@ -771,7 +771,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, entrée conservée.",
     delNone: "Aucune entrée à supprimer.",
     fail: "Échec — réessaie un peu plus tard.",
-    amendOk: "\u270f\ufe0f J\u2019ai corrig\u00e9 la derni\u00e8re entr\u00e9e.", amendNotFound: (q: string) => `Aucune entr\u00e9e sur \u00ab\u00a0${q}\u00a0\u00bb. Dis-le autrement ou donne la date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f J\u2019ai corrig\u00e9 l\u2019entr\u00e9e du ${d}\u00a0: \u00ab\u00a0${t}\u2026\u00a0\u00bb`, amendNone: "Aucune entr\u00e9e d\u2019aujourd\u2019hui \u00e0 corriger. Redis-le et je l\u2019enregistre.",
+    amendOk: "\u270f\ufe0f J\u2019ai corrig\u00e9 la derni\u00e8re entr\u00e9e.", amendMoved: (d: string) => `\u270f\ufe0f Corrig\u00e9 et d\u00e9plac\u00e9 au ${d}.`, amendNotFound: (q: string) => `Aucune entr\u00e9e sur \u00ab\u00a0${q}\u00a0\u00bb. Dis-le autrement ou donne la date.`, amendFound: (d: string, t: string) => `\u270f\ufe0f J\u2019ai corrig\u00e9 l\u2019entr\u00e9e du ${d}\u00a0: \u00ab\u00a0${t}\u2026\u00a0\u00bb`, amendNone: "Aucune entr\u00e9e d\u2019aujourd\u2019hui \u00e0 corriger. Redis-le et je l\u2019enregistre.",
     jrn: { head: "\ud83d\udccb <b>Ce que j\u2019ai modifi\u00e9 dans tes donn\u00e9es</b>", empty: "Je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit \u2014 le journal est vide.", undoneMark: "(annul\u00e9)", foot: "Tout \u00e7a peut \u00eatre restaur\u00e9 : dis \u00ab annule la derni\u00e8re \u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f C\u2019est restaur\u00e9${w ? ` : ${w}` : ""}.`, none: "Rien \u00e0 annuler \u2014 je n\u2019ai rien supprim\u00e9 ni r\u00e9\u00e9crit cette semaine.", failed: "Impossible de restaurer \u2014 les donn\u00e9es ont chang\u00e9 depuis. Dis-moi quoi remettre et je le ferai." },
     shelfAsk: (t: string) => `Je ne sais pas o\u00f9 ranger \u00e7a :\n\n\u00ab ${t} \u00bb\n\nLe journal, c\u2019est ta vie. Le coffre, c\u2019est ce que tu voudras retrouver.`,
@@ -809,7 +809,7 @@ const M: Record<Lang, any> = {
     delKept: "Ok, dejé la entrada.",
     delNone: "No hay entradas para eliminar.",
     fail: "No se pudo hacer — intenta de nuevo un poco más tarde.",
-    amendOk: "\u270f\ufe0f Corregí la última entrada.", amendNotFound: (q: string) => `No encontré una entrada sobre \u00ab${q}\u00bb. Dilo de otra forma o dame la fecha.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Corregí la entrada del ${d}: \u00ab${t}\u2026\u00bb`, amendNone: "No hay entrada de hoy que corregir. Cuéntamelo otra vez y la guardo.",
+    amendOk: "\u270f\ufe0f Corregí la última entrada.", amendMoved: (d: string) => `\u270f\ufe0f Corregida y movida al ${d}.`, amendNotFound: (q: string) => `No encontré una entrada sobre \u00ab${q}\u00bb. Dilo de otra forma o dame la fecha.`, amendFound: (d: string, t: string) => `\u270f\ufe0f Corregí la entrada del ${d}: \u00ab${t}\u2026\u00bb`, amendNone: "No hay entrada de hoy que corregir. Cuéntamelo otra vez y la guardo.",
     jrn: { head: "\ud83d\udccb <b>Lo que cambi\u00e9 en tus datos</b>", empty: "No he borrado ni reescrito nada \u2014 el registro est\u00e1 vac\u00edo.", undoneMark: "(deshecho)", foot: "Todo esto se puede recuperar: di \u00abdeshaz lo \u00faltimo\u00bb." },
     undo: { done: (w: string) => `\u21a9\ufe0f Restaurado${w ? `: ${w}` : ""}.`, none: "No hay nada que deshacer \u2014 esta semana no borr\u00e9 ni reescrib\u00ed nada.", failed: "No pude restaurarlo \u2014 los datos cambiaron desde entonces. Dime qu\u00e9 recuperar y lo hago a mano." },
     shelfAsk: (t: string) => `No s\u00e9 d\u00f3nde va mejor:\n\n\u00ab${t}\u00bb\n\nEl diario es tu vida. El ba\u00fal es informaci\u00f3n que querr\u00e1s encontrar luego.`,
@@ -1464,7 +1464,13 @@ export async function runAction(userId: string, name: string, input: any, lang: 
 
       const res = await amendLastEntry(userId, c);
       if (!res) return { text: (s as any).amendNone };
-      return { text: (s as any).amendOk, openNext: "/diary" };
+      // Переехала ли запись на другой день — говорим прямо. Молчаливое «поправил»
+      // на поправку «это было в воскресенье» не даёт понять, сработало ли вообще.
+      const [, mm, dd] = String(res.entry.entry_date || "").split("-");
+      return {
+        text: res.moved && dd && mm ? (s as any).amendMoved(`${dd}.${mm}`) : (s as any).amendOk,
+        openNext: "/diary",
+      };
     }
     if (name === "agent_log") {
       // Прозрачность: человек должен видеть, что агент трогал в его данных.
