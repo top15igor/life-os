@@ -1425,7 +1425,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const q = String(input?.query || "").trim();
       if (!q) return { text: s.fail };
       const ans = await askKnowledge(userId, q, lang);
-      return { text: ans, openNext: "/knowledge" };
+      // Модель могла вернуть пустоту (перегрузка, обрыв, отказ). Отдавать пустую
+      // строку наверх нельзя: человек увидит «я запутался» и не поймёт, что
+      // сломалось не он. Честное «не получилось, попробуй позже» лучше.
+      return { text: ans?.trim() ? ans : s.fail, openNext: "/knowledge" };
     }
     if (name === "set_birthday") {
       const iso = birthdayISO(Number(input?.day), Number(input?.month), input?.year ? Number(input.year) : null);
@@ -1463,7 +1466,19 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       }
 
       const res = await amendLastEntry(userId, c);
-      if (!res) return { text: (s as any).amendNone };
+      if (!res) {
+        // Сегодняшней записи нет — но человек мог показывать на старую («исправь
+        // запись про поездку в Лиссабон»), а роутер не выделил слова для поиска
+        // в find. Прежде чем сдаваться, ищем по самой поправке: на конкретную
+        // просьбу ответить «расскажи заново» — это отказ, а не честность.
+        // Самопроверка ловила это как «не назвал, какую запись искал».
+        const hit = await findEntry(userId, c);
+        if (hit) {
+          const done = await amendEntryById(userId, hit.id, c);
+          if (done) return { text: (s as any).amendFound(hit.date, hit.text.slice(0, 90)), openNext: `/entry/${hit.id}` };
+        }
+        return { text: (s as any).amendNone };
+      }
       // Переехала ли запись на другой день — говорим прямо. Молчаливое «поправил»
       // на поправку «это было в воскресенье» не даёт понять, сработало ли вообще.
       const [, mm, dd] = String(res.entry.entry_date || "").split("-");
@@ -1497,6 +1512,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       const topic = String(input?.topic || "").trim();
       if (!topic) return { text: s.fail };
       const res = await deepSummary(userId, topic, lang);
+      if (!res?.text?.trim()) return { text: s.fail };
       const foot = res.items ? `\n\n<i>Просмотрено материалов: ${res.items}${res.sources ? ` (${res.sources})` : ""}</i>` : "";
       return { text: res.text + foot, openNext: "/diary" };
     }
@@ -1507,6 +1523,7 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       if (!q) return { text: s.fail };
       const ans = await answerFromEverything(userId, q, lang);
       if (ans.sources.length) await rememberFocus(userId, ans.sources.map((sr) => ({ kind: "found", label: sr.label })));
+      if (!ans?.text?.trim()) return { text: s.fail };
       return { text: ans.text, sources: ans.sources, files2: ans.files };
     }
     if (name === "cannot_do") {
@@ -1686,7 +1703,10 @@ export async function runAction(userId: string, name: string, input: any, lang: 
       }
 
       const found = await findIdea(userId, q, userId === "00000000-0000-0000-0000-000000000000");
-      if (found) return { text: await resumeIdea(userId, found) };
+      if (found) {
+        const back = await resumeIdea(userId, found);
+        if (back?.trim()) return { text: back };
+      }
 
       // Не нашли ничего — не оставляем в тупике: показываем, что вообще есть.
       const mine = await listIdeas(userId, false);
