@@ -96,7 +96,10 @@ export async function GET(req: NextRequest) {
   // в задание планировщика руками нельзя. См. supabase/pg_cron_morning.sql.
   const key = req.nextUrl.searchParams.get("key");
   const okKey = !!key && !!process.env.REMINDER_KEY && key === process.env.REMINDER_KEY;
-  if (!okKey && process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Закрыто по умолчанию: без заданного CRON_SECRET вход по Bearer не работает
+  // вовсе (раньше в этом случае эндпоинт был открыт любому).
+  const okBearer = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
+  if (!okKey && !okBearer) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 // Плашка-напоминалка вверху портала: показывается, пока бот не подключён
 // (chat_id пустой). Ведёт на экран подключения. Скрыта в мобильном webview,
-// на экране подключения и для незалогиненных (статус вернёт 401).
+// на экране подключения и для незалогиненных (статус в мягком режиме вернёт «неизвестно»).
 const HIDE_ON = ["/just-joined", "/login", "/about", "/privacy", "/welcome"];
 
 export default function ConnectBotBanner() {
@@ -18,7 +18,7 @@ export default function ConnectBotBanner() {
     if (sessionStorage.getItem("cbBannerHidden") === "1") return;
 
     let alive = true;
-    fetch("/api/link-telegram/status", { cache: "no-store" })
+    fetch("/api/link-telegram/status?soft=1", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => { if (alive && j && j.connected === false) setShow(true); })
       .catch(() => {});
