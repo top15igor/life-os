@@ -8,6 +8,8 @@ import { documentExpiry } from "@/lib/docExpiry";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const COOLDOWN_MS = 6 * 3600_000;
+
 // Перечитать уже загруженные документы, у которых не распознан срок действия,
 // и добавить поле «Действителен до» (обновлённый разбор AI). Только для владельца,
 // по его сессии. GET — предпросмотр (сколько кандидатов), POST — выполнить.
@@ -25,6 +27,23 @@ async function run(apply: boolean) {
   const candidates = rows.filter((r) => ["document", "thing", "info"].includes(r.category) && !documentExpiry(r.category, r.fields) && (r.file_url || r.image_url));
 
   if (!apply) return NextResponse.json({ ok: true, candidates: candidates.length });
+
+  // Передышка между прогонами. Документ без срока остаётся кандидатом навсегда
+  // (срока в нём просто нет), поэтому каждое нажатие заново отправляло те же
+  // 25 файлов на распознавание — платно и без шанса на новый результат. Раз в
+  // шесть часов достаточно: новые документы разбираются сразу при загрузке.
+  let prefs: any = {};
+  try {
+    const { data: u } = await db.from("users").select("morning_prefs").eq("id", user.id).maybeSingle();
+    if ((u as any)?.morning_prefs && typeof (u as any).morning_prefs === "object") prefs = (u as any).morning_prefs;
+  } catch { /* нет колонки — работаем без передышки */ }
+  const last = Date.parse(String(prefs.memReanalyzedAt || ""));
+  if (Number.isFinite(last) && Date.now() - last < COOLDOWN_MS) {
+    return NextResponse.json({ ok: true, updated: 0, candidates: candidates.length, limited: true });
+  }
+  if (candidates.length) {
+    try { await db.from("users").update({ morning_prefs: { ...prefs, memReanalyzedAt: new Date().toISOString() } }).eq("id", user.id); } catch {}
+  }
 
   let updated = 0;
   for (const r of candidates.slice(0, 25)) {
