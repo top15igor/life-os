@@ -3,7 +3,7 @@
 ## 🇷🇺 Как сообщить об уязвимости
 
 Если вы нашли уязвимость или проблему с безопасностью в LIFE OS
-(сайт **mylifebookai.vercel.app** или Telegram-бот) — пожалуйста,
+(сайт **life-os.today** или Telegram-бот) — пожалуйста,
 сообщите нам **приватно**, а не публично.
 
 **Контакт:** **0636388813@ukr.net**
@@ -27,7 +27,7 @@
 
 ## 🇬🇧 Reporting a vulnerability
 
-If you find a security issue in LIFE OS (the site **mylifebookai.vercel.app**
+If you find a security issue in LIFE OS (the site **life-os.today**
 or the Telegram bot), please report it **privately**, not publicly.
 
 **Contact:** **0636388813@ukr.net**
