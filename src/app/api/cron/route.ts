@@ -359,9 +359,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Vercel Cron присылает Authorization: Bearer <CRON_SECRET> (если задан).
+  // Vercel Cron присылает Authorization: Bearer <CRON_SECRET>.
+  // Закрыто по умолчанию: раньше проверка шла, только если переменная задана, —
+  // и стоило ей пропасть из окружения, вечернюю рассылку всем пользователям мог
+  // запустить любой, кто знает адрес. Нет секрета — нет входа.
   const auth = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

@@ -18,14 +18,15 @@ export async function GET(req: NextRequest) {
   const okKey = !!key && (key === process.env.TELEGRAM_WEBHOOK_SECRET || (!!process.env.REMINDER_KEY && key === process.env.REMINDER_KEY));
   if (!okBearer && !okKey) {
     // Отказ должен объяснять себя: голое {"ok":false} не различает «переменной
-    // нет на проде» и «ключ не совпал», а это лечится по-разному. Значения не
-    // раскрываем — только факт наличия и длину, чтобы поймать лишний пробел.
+    // нет на проде» и «ключ не совпал», а это лечится по-разному. Отдаём факт
+    // наличия ключа и длину ПРИСЛАННОГО — её хватает, чтобы поймать лишний
+    // пробел. Длину настоящего ключа не называем: ответ видит кто угодно, а
+    // это уже сведения о секрете.
     return NextResponse.json({
       ok: false,
       error: "key rejected",
       reminderKeyConfigured: !!process.env.REMINDER_KEY,
       gotKeyLength: key ? key.length : 0,
-      expectedKeyLength: process.env.REMINDER_KEY ? process.env.REMINDER_KEY.length : 0,
     }, { status: 401 });
   }
 
