@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { loadMaplibre } from "@/lib/mapEngine";
 
 // Витрина подложек карты: одно и то же место, твои же точки — в четырёх
 // исполнениях. Страница временная, чтобы выбрать глазами, а не по описанию.
@@ -72,7 +73,7 @@ export default function MapCompare({ points }: { points: CmpPoint[] }) {
     (async () => {
       try {
       const L = (await import("leaflet")).default;
-      const gl = (await import("maplibre-gl")).default;
+      const gl = await loadMaplibre();
 
       const center: [number, number] = points.length
         ? [points[points.length - 1].lat, points[points.length - 1].lng]

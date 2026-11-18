@@ -24,14 +24,24 @@ function dayOfYear(): number {
 
 const pickLang = (l: any) => (["ru", "en", "uk", "fr", "es"].includes(l) ? l : "ru");
 
+// Сколько часов после выбранного времени пуш ещё считается «утренним» и
+// досылается. Будильник может проспать: расписание GitHub Actions вместо «каждый
+// час» по факту срабатывало раз в ~8 часов, и при точном сравнении часа человек,
+// выбравший 7:00, не получал утреннее сообщение вообще — тик просто не попадал
+// в его час. Опоздать на час-два лучше, чем не прийти.
+const CATCH_UP_HOURS = 3;
+
 // «Пора ли слать этому пользователю прямо сейчас?» Возвращает локальный ключ-дату
-// (для защиты от повтора) или null, если ещё не его час.
-function dueNow(prefs: MorningPrefs, lp: { hour: number; weekday: number; dateKey: string }, now: Date): { todayKey: string } | null {
+// (для защиты от повтора) или null, если ещё не его час. catchUp разрешает
+// досылку в окне после выбранного часа — только когда есть защита от повтора
+// (morning_sent_on), иначе каждый тик в окне слал бы сообщение заново.
+function dueNow(prefs: MorningPrefs, lp: { hour: number; weekday: number; dateKey: string }, now: Date, catchUp: boolean): { todayKey: string } | null {
   if (prefs.hour != null && prefs.tz) {
     const isWeekend = lp.weekday === 0 || lp.weekday === 6;
     // В выходные — отдельный час, если задан; иначе как в будни.
     const target = (isWeekend && prefs.hourWeekend != null) ? prefs.hourWeekend : prefs.hour;
-    return lp.hour === target ? { todayKey: lp.dateKey } : null;
+    const late = lp.hour - target;
+    return late === 0 || (catchUp && late > 0 && late <= CATCH_UP_HOURS) ? { todayKey: lp.dateKey } : null;
   }
   // Дефолтное время — 05:00 UTC (~08:00 по Киеву).
   return now.getUTCHours() === LEGACY_UTC_HOUR ? { todayKey: now.toISOString().slice(0, 10) } : null;
@@ -81,7 +91,12 @@ export async function GET(req: NextRequest) {
   }
 
   const auth = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Второй вход — для планировщика Supabase (pg_cron), тем же ключом, что и
+  // доставка напоминаний: CRON_SECRET в Vercel помечен Sensitive, вписать его
+  // в задание планировщика руками нельзя. См. supabase/pg_cron_morning.sql.
+  const key = req.nextUrl.searchParams.get("key");
+  const okKey = !!key && !!process.env.REMINDER_KEY && key === process.env.REMINDER_KEY;
+  if (!okKey && process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
@@ -115,7 +130,7 @@ export async function GET(req: NextRequest) {
       if (!prefs.morningEnabled) continue; // утренний пуш выключен в профиле
       const lp = localParts(prefs.tz, now);
       if (prefs.quietDays.includes(lp.weekday)) continue; // тихий день
-      const due = dueNow(prefs, lp, now);
+      const due = dueNow(prefs, lp, now, hasSentColumn);
       if (!due) continue; // не его час
 
       // Защита от повторной отправки в этот день (атомарно «занимаем» слот).
