@@ -37,7 +37,7 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const DIR = args.dir;
 const TOKEN = args.token || process.env.LIFEOS_SCOUT_TOKEN;
-const API = (args.api || process.env.LIFEOS_API || "https://mylifebookai.vercel.app").replace(/\/$/, "");
+const API = (args.api || process.env.LIFEOS_API || "https://life-os.today").replace(/\/$/, "");
 const LIMIT = args.limit ? parseInt(args.limit, 10) : Infinity; // для пробных прогонов
 
 if (!DIR || !TOKEN) {

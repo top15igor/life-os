@@ -5,7 +5,7 @@
 выделяет задачи и инсайты → красивый веб-дашборд показывает дневник, аналитику,
 «что заметил AI» и отвечает на вопросы о твоей жизни.
 
-**Сайт:** [mylifebookai.vercel.app](https://mylifebookai.vercel.app)
+**Сайт:** [life-os.today](https://life-os.today)
 
 ---
 

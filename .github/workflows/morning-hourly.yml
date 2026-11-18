@@ -5,7 +5,7 @@
 # не больше одного раза в день (защита morning_sent_on).
 #
 # Нужны секреты репозитория (Settings → Secrets and variables → Actions):
-#   APP_URL      — https://mylifebookai.vercel.app (без слэша в конце)
+#   APP_URL      — https://life-os.today (без слэша в конце)
 #   CRON_SECRET  — то же значение, что в переменных окружения Vercel
 #
 # Если workflow не настроен — всё работает по дефолтному времени через Vercel Cron.
