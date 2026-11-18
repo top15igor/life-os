@@ -4,7 +4,7 @@ import { getHandle } from "@/lib/handle";
 
 export const dynamic = "force-dynamic";
 
-// Корень сайта. Незалогиненных middleware отправляет на /about (публичный лендинг).
+// Корень сайта. Незалогиненных proxy отправляет на /about (публичный лендинг).
 // Залогиненных — на их домашнюю ленту /i/<username>.
 export default async function HomePage() {
   const user = await requireUser();

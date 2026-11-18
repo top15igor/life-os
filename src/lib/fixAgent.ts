@@ -38,7 +38,7 @@ function allowedPath(p: string): boolean {
   if (p.includes("..") || p.startsWith("/")) return false;
   if (!/^(src|supabase)\//.test(p)) return false;
   if (/^\.github\//.test(p)) return false;
-  if (/(package(-lock)?\.json|next\.config\.mjs|tsconfig\.json|middleware\.ts)$/.test(p)) return false;
+  if (/(package(-lock)?\.json|next\.config\.mjs|tsconfig\.json|(middleware|proxy)\.ts)$/.test(p)) return false;
   return true;
 }
 

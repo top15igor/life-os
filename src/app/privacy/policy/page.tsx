@@ -13,7 +13,7 @@ export async function generateMetadata() {
   return pageMetadata("policy", "/privacy/policy");
 }
 
-// Формальная версия политики. Публичная (middleware пропускает всё, что начинается с /privacy).
+// Формальная версия политики. Публичная (proxy пропускает всё, что начинается с /privacy).
 // Именно этот адрес отдаём в App Store Connect и в Google OAuth-верификацию.
 export default async function PrivacyPolicyPage() {
   const locale = await getLocale();

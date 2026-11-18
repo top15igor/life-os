@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Пускаем на страницы только при наличии cookie-токена (личная ссылка из бота).
 // Реальная проверка токена по базе — в самих страницах (requireUser).
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const token = req.cookies.get("lifeos_token")?.value;
   if (token) return NextResponse.next();
 

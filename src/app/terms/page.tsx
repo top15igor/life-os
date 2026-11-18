@@ -14,7 +14,7 @@ export async function generateMetadata() {
   return pageMetadata("terms", "/terms");
 }
 
-// Публичная страница (middleware пропускает /terms). Адрес отдаём в App Store Connect.
+// Публичная страница (proxy пропускает /terms). Адрес отдаём в App Store Connect.
 export default async function TermsPage() {
   const locale = await getLocale();
   const isAuthed = !!(await getCurrentUser());
