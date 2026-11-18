@@ -19,7 +19,10 @@ const OWNER = "00000000-0000-0000-0000-000000000000";
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   const cron = process.env.CRON_SECRET;
-  let allowed = !!(key && cron && key === cron);
+  // REMINDER_KEY — вход для планировщика Supabase (pg_cron): CRON_SECRET в Vercel
+  // помечен Sensitive, вписать его в задание руками нельзя. См. supabase/pg_cron_checks.sql.
+  const rk = process.env.REMINDER_KEY;
+  let allowed = !!(key && ((cron && key === cron) || (rk && key === rk)));
   if (!allowed) {
     const user = await getCurrentUser();
     allowed = !!user && user.id === OWNER;
