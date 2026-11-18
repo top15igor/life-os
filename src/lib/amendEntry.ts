@@ -40,21 +40,32 @@ export function isNameCorrection(text: string): boolean {
 export async function amendLastEntry(
   userId: string,
   correction: string
-): Promise<{ entry: { id: string; entry_date: string }; analysis: Analysis } | null> {
+): Promise<{ entry: { id: string; entry_date: string }; analysis: Analysis; moved: boolean } | null> {
   const db = supabaseAdmin();
+  // Последняя — та, что НАПИСАНА последней (created_at), а не та, что подшита к
+  // самому свежему дню. Запись прошлым числом ломала и то, и другое: «на выходных
+  // ездили в Тулузу» ложилось в 26.09, и сразу сказанное «нет, это было в
+  // воскресенье» либо правило чужую запись (у неё entry_date свежее), либо не
+  // правило ничего — проверка «сделана сегодня» сравнивала с 26.09 и отказывала.
   const { data: last } = await db
     .from("entries")
-    .select("id, raw_text, entry_date, entry_time")
+    .select("id, raw_text, entry_date, entry_time, created_at")
     .eq("user_id", userId)
-    .order("entry_date", { ascending: false })
-    .order("entry_time", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (!last) return null;
 
-  // Правим только последнюю запись, если она сделана сегодня.
-  const todayISO = new Date().toISOString().slice(0, 10);
-  if (last.entry_date !== todayISO) return null;
+  // Правим только что написанное: «я ошибся» через неделю не должно переписывать
+  // старую запись. Считаем по местному дню человека — у края суток UTC врёт.
+  let off = 0;
+  try {
+    const { data: u } = await db.from("users").select("tz_offset").eq("id", userId).maybeSingle();
+    if (typeof (u as any)?.tz_offset === "number") off = (u as any).tz_offset;
+  } catch { /* нет колонки — считаем по UTC */ }
+  const localDay = (ms: number) => new Date(ms + off * 60000).toISOString().slice(0, 10);
+  const written = Date.parse(String((last as any).created_at || ""));
+  if (!Number.isFinite(written) || localDay(written) !== localDay(Date.now())) return null;
 
   return amendEntryById(userId, String(last.id), correction);
 }
@@ -66,7 +77,7 @@ export async function amendEntryById(
   userId: string,
   entryId: string,
   correction: string
-): Promise<{ entry: { id: string; entry_date: string }; analysis: Analysis } | null> {
+): Promise<{ entry: { id: string; entry_date: string }; analysis: Analysis; moved: boolean } | null> {
   const db = supabaseAdmin();
   const { data: last } = await db
     .from("entries")
@@ -79,10 +90,18 @@ export async function amendEntryById(
   const combined = `${last.raw_text || ""}\n\n[Поправка пользователя]: ${correction}`;
   const a = await analyze(combined, userId);
 
+  // Поправка про ДЕНЬ («это было в воскресенье», «не 15-го, а 16-го») должна
+  // двигать саму запись — иначе бот отвечает «поправил», а в дневнике всё тот же
+  // чужой день. Берём дату из нового разбора ТОЛЬКО если про день сказано в самой
+  // поправке: «вчера» из старого текста при разборе через неделю означает уже
+  // другой день, и запись уехала бы на ровном месте.
+  const moved = mentionsDay(correction) ? sanePastDate((a as any).entry_date, last.entry_date) : null;
+
   await db
     .from("entries")
     .update({
       raw_text: combined,
+      ...(moved ? { entry_date: moved, entry_time: last.entry_time || "12:00:00" } : {}),
       summary: a.summary ?? null,
       focus: a.focus ?? null,
       mood: a.mood ?? null,
@@ -98,5 +117,19 @@ export async function amendEntryById(
   await clearDerived(last.id);
   await attachDerived(userId, last.id, a);
 
-  return { entry: { id: last.id, entry_date: last.entry_date }, analysis: a };
+  return { entry: { id: last.id, entry_date: moved || last.entry_date }, analysis: a, moved: !!moved };
+}
+
+// Сказано ли в поправке что-то про ДЕНЬ: день недели, «вчера», число с месяцем.
+const DAY_WORD =
+  /(вчера|позавчера|сегодня|учора|позавчора|сьогодні|yesterday|today|понедельник|вторник|сред[ау]|четверг|пятниц|суббот|воскресен|понеділок|вівторок|середу|четвер|п'ятниц|субот|неділ|monday|tuesday|wednesday|thursday|friday|saturday|sunday|(?:[12]\d|3[01]|0?[1-9])[.\/-](?:0[1-9]|1[0-2])\b|\d{1,2}\s*(январ|феврал|март|апрел|ма[яй]|июн|июл|август|сентябр|октябр|ноябр|декабр|січн|лют|берез|квітн|травн|черв|лип|серпн|вересн|жовтн|листопад|грудн))/i;
+export function mentionsDay(text: string): boolean {
+  return !!text && DAY_WORD.test(text);
+}
+
+// Дата годится, только если она в прошлом, не старше года и реально другая.
+function sanePastDate(next: unknown, current: string): string | null {
+  if (typeof next !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(next) || next === current) return null;
+  const diff = Date.now() - Date.parse(next);
+  return diff > -86400000 && diff <= 366 * 86400000 ? next : null;
 }

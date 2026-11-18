@@ -36,34 +36,41 @@ export async function logError(scope: string, err: unknown, meta?: ErrorMeta): P
   } catch { /* нет таблицы или база недоступна — молча, журнал не критичен */ }
 }
 
-export type ErrorGroup = { scope: string; message: string; n: number; users: number; first: string; last: string };
+export type ErrorGroup = { scope: string; message: string; n: number; users: number; first: string; last: string; details: string[] };
 
 // Сводка за период для агента-диагноста: одинаковые сбои схлопываем в группы,
 // потому что важно не «сто строк в логе», а «один баг, задел двенадцать человек».
 export async function errorDigest(hours = 24, limit = 400): Promise<ErrorGroup[]> {
   try {
     const since = new Date(Date.now() - hours * 3600_000).toISOString();
+    // detail берём обязательно: в нём лежит самое ценное — ЧТО именно сломалось
+    // («bot:empty-reply» пишет туда имя действия, вернувшего пустоту). Без него
+    // диагност каждое утро писал «точный файл не указан, ищи по меткам», хотя
+    // ответ уже был в базе.
     const { data } = await supabaseAdmin()
-      .from("error_log").select("scope, message, user_id, created_at")
+      .from("error_log").select("scope, message, user_id, created_at, detail")
       .gte("created_at", since).order("created_at", { ascending: false }).limit(limit);
 
-    const map = new Map<string, ErrorGroup & { userSet: Set<string> }>();
+    const map = new Map<string, ErrorGroup & { userSet: Set<string>; detailSet: Set<string> }>();
     for (const r of ((data as any[]) || [])) {
       // Ключ группы — область + начало сообщения: разные id и цифры внутри одного
       // и того же сбоя не должны плодить десяток «разных» ошибок.
       const key = `${r.scope}|${String(r.message || "").slice(0, 80)}`;
       let g = map.get(key);
       if (!g) {
-        g = { scope: r.scope, message: String(r.message || "").slice(0, 200), n: 0, users: 0, first: r.created_at, last: r.created_at, userSet: new Set<string>() };
+        g = { scope: r.scope, message: String(r.message || "").slice(0, 200), n: 0, users: 0, first: r.created_at, last: r.created_at, details: [], userSet: new Set<string>(), detailSet: new Set<string>() };
         map.set(key, g);
       }
       g.n++;
       if (r.user_id) g.userSet.add(r.user_id);
+      // Внутри одной группы подробности повторяются — храним набор различных.
+      const d = String(r.detail || "").trim();
+      if (d) g.detailSet.add(d.slice(0, 80));
       if (r.created_at < g.first) g.first = r.created_at;
       if (r.created_at > g.last) g.last = r.created_at;
     }
     return [...map.values()]
-      .map(({ userSet, ...g }) => ({ ...g, users: userSet.size }))
+      .map(({ userSet, detailSet, ...g }) => ({ ...g, users: userSet.size, details: [...detailSet].slice(0, 8) }))
       .sort((a, b) => b.users - a.users || b.n - a.n);
   } catch {
     return [];
