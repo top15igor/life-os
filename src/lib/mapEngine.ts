@@ -178,8 +178,21 @@ function ruLabels(map: any) {
 
 const ROUTE_SRC = "life-route";
 
+// Загрузка MapLibre. С шестой версии библиотека — чистый ES-модуль без общего
+// объекта по умолчанию, а разбор плиток живёт в отдельном файле-воркере. Сама
+// она ищет его «рядом с собой» по import.meta.url, но после сборки рядом ничего
+// нет: всё склеено в чанки. Поэтому адрес воркера даём явно — сборщик видит
+// new URL(...) и кладёт файл в статику ровно той же версии, что и библиотека.
+let glReady: Promise<typeof import("maplibre-gl")> | null = null;
+export function loadMaplibre(): Promise<typeof import("maplibre-gl")> {
+  return (glReady ??= import("maplibre-gl").then((gl) => {
+    gl.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
+    return gl;
+  }));
+}
+
 async function createVector(el: HTMLElement, h: Handlers): Promise<MapEngine> {
-  const gl = (await import("maplibre-gl")).default;
+  const gl = await loadMaplibre();
   const map = new gl.Map({
     container: el,
     style: VECTOR_STYLE(isDarkNow()),
