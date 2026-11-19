@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { createDevice, deleteDevice, rotateDevice, listDevices } from "@/lib/devices";
+import { createDevice, deleteDevice, rotateDevice, listDevices, updateDeviceRules } from "@/lib/devices";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +31,17 @@ export async function PATCH(req: NextRequest) {
   const device = await rotateDevice(user.id, String(body?.id || ""));
   if (!device) return NextResponse.json({ ok: false, error: "rotate_failed" }, { status: 500 });
   return NextResponse.json({ ok: true, device });
+}
+
+// Правила отбора для всегда-слушающего устройства (что писать в дневник, что нет).
+export async function PUT(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ ok: false }, { status: 401 });
+  const body = await req.json().catch(() => null);
+  const id = String(body?.id || "");
+  if (!id) return NextResponse.json({ ok: false, error: "no_id" }, { status: 400 });
+  const ok = await updateDeviceRules(user.id, id, body || {});
+  return NextResponse.json({ ok });
 }
 
 export async function DELETE(req: NextRequest) {

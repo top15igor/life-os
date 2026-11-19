@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import DeviceRules from "@/components/DeviceRules";
 
 type Device = {
   id: string;
@@ -11,6 +12,12 @@ type Device = {
   battery: number | null;
   last_seen: string | null;
   sent_count: number;
+  filter_mode?: string | null;
+  trigger_phrases?: string | null;
+  min_words?: number | null;
+  only_me?: boolean | null;
+  quiet_from?: number | null;
+  quiet_to?: number | null;
 };
 
 const STR: Record<string, any> = {
@@ -19,7 +26,8 @@ const STR: Record<string, any> = {
     addWatch: "Добавить Apple Watch",
     addPhone: "Добавить айфон",
     addFob: "Добавить брелок",
-    kindWatch: "Часы", kindPhone: "Айфон", kindFob: "Брелок", kindOther: "Устройство",
+    addOmi: "Добавить кулон Omi",
+    kindWatch: "Часы", kindPhone: "Айфон", kindFob: "Брелок", kindOmi: "Кулон", kindOther: "Устройство",
     namePh: "Название (например, «Мои часы»)",
     add: "Добавить", cancel: "Отмена",
     link: "Личная ссылка устройства",
@@ -61,6 +69,15 @@ const STR: Record<string, any> = {
     ],
     sayTip: "Если сомневаешься — просто расскажи как есть. По умолчанию всё становится записью в дневнике, а не теряется.",
     watchTip: "Это тот же путь, что и на айфоне: команда одна, просто показывается ещё и на часах.",
+    howOmi: "Как подключить Omi",
+    omiSteps: [
+      "В приложении Omi: Settings → включи Developer Mode, затем открой Developer Settings.",
+      "В поле вебхука «Memory Created» (или «Conversation Created») вставь ссылку сверху. Теперь каждый разговор будет приходить к нам.",
+      "Там же, в Developer Settings → Transcription, выбери On-Device — расшифровка пойдёт прямо на айфоне и не будет тратить их облачные минуты.",
+      "Рядом выключи «Send raw audio to Omi», если не хочешь, чтобы звук уходил к ним: нам он не нужен, мы работаем с текстом.",
+      "Ниже задай правила — без них кулон зальёт дневник всем подряд.",
+    ],
+    omiTip: "Omi дописывает к ссылке свой параметр uid — так и должно быть, мы узнаём устройство по токену и uid не используем.",
     howFob: "Для своего брелка (железо)",
     fobLead: "Устройство шлёт запись одним запросом. Если интернета в этот момент нет — пусть сохранит у себя и отправит позже, а в параметре at укажет момент записи: мысль ляжет в дневник тем временем, когда ты её наговорил.",
     fobTip: "Можно прислать и готовый текст: тело {\"text\":\"…\"} — тогда расшифровка не нужна.",
@@ -72,7 +89,8 @@ const STR: Record<string, any> = {
     addWatch: "Add Apple Watch",
     addPhone: "Add iPhone",
     addFob: "Add keyfob",
-    kindWatch: "Watch", kindPhone: "iPhone", kindFob: "Keyfob", kindOther: "Device",
+    addOmi: "Add Omi pendant",
+    kindWatch: "Watch", kindPhone: "iPhone", kindFob: "Keyfob", kindOmi: "Pendant", kindOther: "Device",
     namePh: "Name (e.g. “My watch”)",
     add: "Add", cancel: "Cancel",
     link: "Personal device link",
@@ -114,6 +132,15 @@ const STR: Record<string, any> = {
     ],
     sayTip: "When in doubt — just say it as it is. By default everything becomes a diary entry rather than getting lost.",
     watchTip: "It's the same path as on iPhone: one shortcut, it just also shows up on the watch.",
+    howOmi: "How to connect Omi",
+    omiSteps: [
+      "In the Omi app: Settings → enable Developer Mode, then open Developer Settings.",
+      "Paste the link above into the «Memory Created» (or «Conversation Created») webhook field. Every conversation now reaches us.",
+      "In the same Developer Settings → Transcription, pick On-Device — transcription then runs on your iPhone and burns none of their cloud minutes.",
+      "Next to it, turn off «Send raw audio to Omi» if you would rather the audio never left your phone: we only need the text.",
+      "Set the rules below — without them the pendant will flood your diary.",
+    ],
+    omiTip: "Omi appends its own uid parameter to the link. That is expected: we identify the device by the token and ignore uid.",
     howFob: "For your own keyfob (hardware)",
     fobLead: "The device sends a recording in a single request. With no connection at that moment it can store the clip and upload it later, passing at with the moment of recording — the entry lands in the diary at the time you actually spoke it.",
     fobTip: "Plain text works too: body {\"text\":\"…\"} — no transcription needed.",
@@ -123,7 +150,7 @@ const STR: Record<string, any> = {
 };
 
 function kindIcon(kind: string) {
-  return kind === "watch" ? "ti-device-watch" : kind === "keyfob" ? "ti-circle-dot" : "ti-device-mobile";
+  return kind === "watch" ? "ti-device-watch" : kind === "keyfob" ? "ti-circle-dot" : kind === "omi" ? "ti-microphone" : "ti-device-mobile";
 }
 
 function ago(iso: string | null, locale: string) {
@@ -137,8 +164,9 @@ function DeviceCard({ d, s, locale, origin }: { d: Device; s: any; locale: strin
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [test, setTest] = useState("");
-  const url = `${origin}/api/device/voice?token=${d.token}`;
-  const name = d.name?.trim() || (d.kind === "watch" ? s.kindWatch : d.kind === "phone" ? s.kindPhone : d.kind === "keyfob" ? s.kindFob : s.kindOther);
+  // У всегда-слушающего кулона свой приёмник: он шлёт разговор целиком, а не одну запись.
+  const url = `${origin}/api/device/${d.kind === "omi" ? "omi" : "voice"}?token=${d.token}`;
+  const name = d.name?.trim() || (d.kind === "watch" ? s.kindWatch : d.kind === "phone" ? s.kindPhone : d.kind === "keyfob" ? s.kindFob : d.kind === "omi" ? s.kindOmi : s.kindOther);
 
   const meta = [
     ago(d.last_seen, locale) || s.never,
@@ -191,7 +219,16 @@ function DeviceCard({ d, s, locale, origin }: { d: Device; s: any; locale: strin
       </div>
       <div style={{ fontSize: 11.5, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 12 }}>{s.linkHint}</div>
 
-      {d.kind === "watch" || d.kind === "phone" ? (
+      {d.kind === "omi" ? (
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{s.howOmi}</div>
+          <ol style={{ fontSize: 12.5, color: "var(--text-2)", lineHeight: 1.6, paddingLeft: 18, margin: "0 0 8px" }}>
+            {s.omiSteps.map((x: string, i: number) => <li key={i}>{x}</li>)}
+          </ol>
+          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>{s.omiTip}</div>
+          <DeviceRules device={d} locale={locale} />
+        </div>
+      ) : d.kind === "watch" || d.kind === "phone" ? (
         <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{d.kind === "watch" ? s.howWatch : s.howPhone}</div>
           {/* Команда на айфоне одна и та же — часам добавляется только показ на запястье */}
@@ -292,6 +329,9 @@ export default function DevicesManager({ devices, locale, origin, ready }: { dev
           </button>
           <button onClick={() => setAdding("watch")} style={{ ...addBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}>
             <i className="ti ti-device-watch" style={{ fontSize: 17 }} />{s.addWatch}
+          </button>
+          <button onClick={() => setAdding("omi")} style={{ ...addBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}>
+            <i className="ti ti-microphone" style={{ fontSize: 17 }} />{s.addOmi}
           </button>
           <button onClick={() => setAdding("keyfob")} style={{ ...addBtn, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}>
             <i className="ti ti-circle-dot" style={{ fontSize: 17 }} />{s.addFob}
