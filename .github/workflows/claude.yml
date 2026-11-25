@@ -1,0 +1,62 @@
+# Клод выполняет задачи, поставленные через LIFE OS.
+#
+# Как это работает: в боте или в кулон ты говоришь «Клод, сделай то-то».
+# LIFE OS кладёт задачу в очередь и присылает карточку с кнопкой. По нажатию
+# создаётся issue с обращением @claude — и срабатывает этот workflow.
+# Клод делает правку, выкладывает её отдельной веткой и отчитывается в
+# обсуждении. В main ничего не попадает: решение принимаешь ты.
+#
+# НУЖЕН ОДИН ИЗ ДВУХ СЕКРЕТОВ репозитория
+# (Settings → Secrets and variables → Actions → New repository secret):
+#
+#   CLAUDE_CODE_OAUTH_TOKEN — токен твоей подписки Max. Работа Клода идёт
+#       в счёт того, что уже оплачено. Получается командой `claude setup-token`
+#       (нужен установленный CLI: npm install -g @anthropic-ai/claude-code).
+#
+#   ANTHROPIC_API_KEY — обычный ключ API, тот же, что у приложения на Vercel.
+#       Проще всего: скопировать и вставить. Но работа Клода будет
+#       оплачиваться по API отдельно от подписки.
+#
+# Положи ТОЛЬКО ОДИН. Пустой второй ничего не ломает — действие берёт тот,
+# который заполнен.
+#
+# Ещё нужно один раз поставить приложение Claude на репозиторий:
+# https://github.com/apps/claude
+#
+# ВАЖНО: задачи создаёт LIFE OS личным токеном (GITHUB_FIX_TOKEN), а не
+# встроенным токеном Actions. Это существенно: события от встроенного токена
+# GitHub намеренно НЕ запускают другие workflow, и тогда Клод бы просто
+# не просыпался.
+name: Claude
+
+on:
+  issues:
+    types: [opened, assigned]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  claude:
+    # Просыпаемся только на прямое обращение, а не на каждое обсуждение.
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # создать ветку с правкой
+      pull-requests: write   # открыть pull request
+      issues: write          # отчитаться в обсуждении задачи
+      id-token: write        # нужен для входа действия
+      actions: read          # читать результаты сборки
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
