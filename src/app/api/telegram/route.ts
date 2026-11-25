@@ -15,6 +15,7 @@ import { alreadyHandled } from "@/lib/tgDedupe";
 import { analyze, type Analysis } from "@/lib/ai";
 import { friendReaction } from "@/lib/entryReaction";
 import { routeMessage, runAction, recentBotContext, renderListMessage, lastReplyWasAction, looksLikeDeadEnd, looksLikeNothingInArchive } from "@/lib/botActions";
+import { detectClaudeTask, createTask, sendTask, cancelTask, taskCard, taskKeyboard } from "@/lib/claudeTasks";
 import { userTzOffsetMin } from "@/lib/pushSchedule";
 import { parseNotesText, notesToText } from "@/lib/notesIO";
 import { createMemoryFromImage, createMemoryFromFile } from "@/lib/memory";
@@ -1036,6 +1037,31 @@ async function handleUpdate(req: NextRequest) {
         await sendMessage(cqChat, B.d, { reply_markup: { inline_keyboard: [[{ text: B.open, login_url: { url: `${req.nextUrl.origin}/auth/tg?next=${encodeURIComponent("/lifebook")}` } }]] } });
       } catch {}
       await answerCallback(cq.id);
+    } else if (data.startsWith("clt:") && cqChat) {
+      // Кнопки под задачей Клоду: только здесь она уходит в работу.
+      const [, act, taskId] = data.split(":");
+      try {
+        const db = supabaseAdmin();
+        const { data: u } = await db.from("users").select("id").eq("chat_id", cqChat).maybeSingle();
+        if (u) {
+          if (act === "run") {
+            await answerCallback(cq.id, "Отправляю...");
+            const r = await sendTask((u as any).id, taskId);
+            const done = r.ok
+              ? `🤖 <b>Задача ушла Клоду</b>\n\nОн возьмёт её в работу и отчитается в обсуждении.\n\n<a href="${r.url}">Открыть задачу #${r.number}</a>`
+              : `🤖 Не получилось отправить: ${r.error}`;
+            await editMessageText(cqChat, cq.message.message_id, done, { parse_mode: "HTML" });
+          } else if (act === "del") {
+            await cancelTask((u as any).id, taskId);
+            await editMessageText(cqChat, cq.message.message_id, "🤖 Задача удалена.");
+            await answerCallback(cq.id);
+          }
+        } else {
+          await answerCallback(cq.id);
+        }
+      } catch {
+        await answerCallback(cq.id);
+      }
     } else if (data.startsWith("mg:") && cqChat) {
       // «Похоже, это Брюарфосс» → человек подтвердил место, узнанное AI на снимке.
       // Координаты считаем заново по названию: в кнопку они бы не поместились,
@@ -2799,6 +2825,18 @@ async function handleUpdate(req: NextRequest) {
         await sendMessage(chatId, "После /save напиши текст записи 🙂");
         return NextResponse.json({ ok: true });
       }
+    }
+
+    // «Клод, сделай…» — задача агенту, а не запись в дневник.
+    // Одна фраза НИЧЕГО не запускает: задача ложится в очередь, а в работу уходит
+    // только после нажатия кнопки. У кулона микрофон включён всегда — спусковой
+    // крючок нет, иначе случайная фраза рядом стала бы командой.
+    const claudeTask = detectClaudeTask(text);
+    if (claudeTask) {
+      const t = await createTask(user.id, claudeTask, "bot");
+      if (t) await sendMessage(chatId, taskCard(claudeTask), { parse_mode: "HTML", ...taskKeyboard(t.id) });
+      else await sendMessage(chatId, "Не смог сохранить задачу - похоже, нужна миграция claude_tasks.sql.");
+      return NextResponse.json({ ok: true });
     }
 
     // Похоже на исправление предыдущей записи? Правим её, а НЕ плодим новую

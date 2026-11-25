@@ -6,6 +6,7 @@ import { transcribeFile } from "@/lib/transcribe";
 import { logUsage } from "@/lib/usage";
 import { sendMessage } from "@/lib/telegram";
 import { deviceByToken, touchDevice, localStampFromEpoch, type Device } from "@/lib/devices";
+import { detectClaudeTask, createTask, taskCard, taskKeyboard } from "@/lib/claudeTasks";
 import { routeMessage, runAction } from "@/lib/botActions";
 import { askLife } from "@/lib/biographer";
 import { mdToTelegram } from "@/lib/telegram";
@@ -117,6 +118,23 @@ export async function POST(req: NextRequest) {
     // Кнопку нажали, но записи нет — не молчим: устройство должно понять, что пусто.
     touchDevice(device.id, battery, false);
     return NextResponse.json({ ok: false, error: "empty" }, { status: 400 });
+  }
+
+  // «Клод, сделай…» — задача агенту, а не запись в дневник. В работу уходит
+  // только по нажатию кнопки в Telegram, не от самой фразы.
+  const claudeTask = detectClaudeTask(text);
+  if (claudeTask) {
+    let taskChat: number | null = null;
+    try {
+      const { data: u } = await supabaseAdmin().from("users").select("chat_id").eq("id", device.user_id).maybeSingle();
+      taskChat = (u as any)?.chat_id ?? null;
+    } catch {}
+    const t2 = await createTask(device.user_id, claudeTask, "device");
+    if (t2 && taskChat) {
+      await sendMessage(taskChat, taskCard(claudeTask), { parse_mode: "HTML", ...taskKeyboard(t2.id) }).catch(() => {});
+    }
+    await touchDevice(device.id, battery).catch(() => {});
+    return NextResponse.json({ ok: true, claude_task: true, text });
   }
 
   // Когда мысль была записана: брелок с офлайн-буфером заливает её позже.

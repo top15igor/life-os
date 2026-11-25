@@ -5,6 +5,7 @@ import { saveEntry } from "@/lib/saveEntry";
 import { sendMessage } from "@/lib/telegram";
 import { deviceByToken, touchDevice, localStampFromEpoch, type Device } from "@/lib/devices";
 import { applyFilter } from "@/lib/deviceFilter";
+import { detectClaudeTask, createTask, taskCard, taskKeyboard } from "@/lib/claudeTasks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,6 +94,27 @@ export async function POST(req: NextRequest) {
 
   const stamp = spokenEpoch ? localStampFromEpoch(spokenEpoch, tzOffset) : null;
   const localHour = stamp ? Number(stamp.entry_time.slice(0, 2)) : undefined;
+
+  // «Клод, сделай…» — задача агенту, а не запись. Проверяем ДО фильтра: у задачи
+  // своё обращение, и ключевая фраза дневника ей не нужна. Задача только встаёт
+  // в очередь — запускает её нажатие кнопки, а не сказанное слово.
+  const claudeTask = detectClaudeTask(text);
+  if (claudeTask) {
+    const t = await createTask(device.user_id, claudeTask, "omi");
+    if (t && chatId) {
+      await sendMessage(chatId, taskCard(claudeTask), { parse_mode: "HTML", ...taskKeyboard(t.id) }).catch(() => {});
+    }
+    try {
+      await supabaseAdmin().from("device_inbox").insert({
+        user_id: device.user_id, device_id: device.id, external_id: externalId,
+        text: claudeTask.slice(0, 8000),
+        spoken_at: spokenEpoch ? new Date(spokenEpoch * 1000).toISOString() : null,
+        decision: "filtered", reason: "задача Клоду", raw: body,
+      });
+    } catch {}
+    await touchDevice(device.id, undefined, true).catch(() => {});
+    return NextResponse.json({ ok: true, claude_task: true });
+  }
 
   const verdict = await applyFilter(text, d, localHour);
 
